@@ -1,6 +1,8 @@
 # MeshCrowd 
 <img width="64" height="64" alt="logo" src="https://github.com/user-attachments/assets/71f3a79b-d700-4d38-b396-de1ea6bdf50d" /> 
 
+Visit the Project's Webpage: https://0p3n50urc3-f0r3v3r.github.io/MeshCrowd/index.html
+
 **A self-hosted chat platform you run on your own machine or network.**
 
 MeshCrowd gives a group of people servers, channels, roles, DMs, voice/video calls and screen
@@ -8,6 +10,7 @@ sharing without any third-party service. One Node.js process serves everything: 
 realtime WebSocket, and the web client. Data lives in a single SQLite file. The server has no
 native npm addons and ships with its own Node runtime, so you can copy it to an offline machine
 and start it with a double-click.
+
 
 Not secret, that this project is partially VIBE-Coded and made with AI assisted tools, but it is 
 underwent a supervision/testing/fixing too by human beings also.
