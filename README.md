@@ -1,4 +1,5 @@
-<img width="64" height="64" alt="logo" src="https://github.com/user-attachments/assets/71f3a79b-d700-4d38-b396-de1ea6bdf50d" /> # MeshCrowd 
+# MeshCrowd 
+<img width="64" height="64" alt="logo" src="https://github.com/user-attachments/assets/71f3a79b-d700-4d38-b396-de1ea6bdf50d" /> 
 
 **A self-hosted chat platform you run on your own machine or network.**
 
@@ -12,11 +13,11 @@ Not secret, that this project is partially VIBE-Coded and made with AI assisted 
 underwent a supervision/testing/fixing too by human beings also.
 
 ## Screenshots
-<img width="640" height="400" alt="chat-dev" src="https://github.com/user-attachments/assets/2377b699-ceed-48b5-9dbe-7a47e89ec89c" />
-<img width="640" height="400" alt="chat-general" src="https://github.com/user-attachments/assets/5c4af736-0fed-4e98-9eab-66609b10e935" />
-<img width="640" height="400" alt="settings-roles" src="https://github.com/user-attachments/assets/560c49ee-d56b-4754-bc7c-0ab64993b553" />
-<img width="640" height="400" alt="theme-light" src="https://github.com/user-attachments/assets/e7fc1a14-d1b1-48ad-b8c9-016621a73040" />
-<img width="640" height="400" alt="theme-sunset" src="https://github.com/user-attachments/assets/cb564015-903b-434c-afa0-484217243d59" />
+<img width="320" height="200" alt="chat-dev" src="https://github.com/user-attachments/assets/2377b699-ceed-48b5-9dbe-7a47e89ec89c" />
+<img width="320" height="200" alt="chat-general" src="https://github.com/user-attachments/assets/5c4af736-0fed-4e98-9eab-66609b10e935" />
+<img width="320" height="200" alt="settings-roles" src="https://github.com/user-attachments/assets/560c49ee-d56b-4754-bc7c-0ab64993b553" />
+<img width="320" height="200" alt="theme-light" src="https://github.com/user-attachments/assets/e7fc1a14-d1b1-48ad-b8c9-016621a73040" />
+<img width="320" height="200" alt="theme-sunset" src="https://github.com/user-attachments/assets/cb564015-903b-434c-afa0-484217243d59" />
 
 ## Mobile Screenshots
 <img width="206" height="400" alt="m-chat" src="https://github.com/user-attachments/assets/f5e847b7-987e-4e6f-b627-2b633a676085" />
