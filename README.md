@@ -8,8 +8,8 @@ realtime WebSocket, and the web client. Data lives in a single SQLite file. The 
 native npm addons and ships with its own Node runtime, so you can copy it to an offline machine
 and start it with a double-click.
 
-Codename **MeshCrowd** in this repo (directory/package name); the product name shown in the UI is
-**MeshCrowd**.
+Not secret, that this project is partially VIBE-Coded and made with AI assisted tools, but it is 
+underwent a supervision/testing/fixing too by human beings also.
 
 ## Contents
 
@@ -151,6 +151,9 @@ For the full description of every feature, see [docs/FEATURES.md](docs/FEATURES.
 - Optional: internet access once, to run `npm install` for the Electron desktop client.
 
 ## Quick start
+
+For the most part: Go to the releases, download all portable stuff and extract and play,
+but if you want to mess around:
 
 ```
 npm install
