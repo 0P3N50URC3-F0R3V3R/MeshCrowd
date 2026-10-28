@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="hu" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Üzenetküldés és keresés - MeshCrowd Wiki</title>
+<meta name="description" content="Írás, szerkesztés, válaszok, szálak, fórumok, szavazások, hang- és időzített üzenetek, mellékletek és keresés.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../../assets/img/logo.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="../../wiki/messaging.html">
+<link rel="alternate" hreflang="hu" href="messaging.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root="../.." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki oldalak</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Kezdőlap</a> / <a href="index.html">Wiki</a> / A MeshCrowd használata</div>
+      <h1>Üzenetküldés és keresés</h1>
+      <p class="summary">Írás, szerkesztés, válaszok, szálak, fórumok, szavazások, hang- és időzített üzenetek, mellékletek és keresés.</p>
+<figure class="doc"><div class="window"><img src="../../assets/img/chat-general.jpg" alt="Egy csatorna képpel, kódrészlettel és szavazással" loading="lazy"></div><figcaption>Egy csatorna képpel, kódrészlettel és szavazással</figcaption></figure>
+<h2 id="az-alapok">Az alapok</h2>
+<p>Írj az alul lévő mezőbe és nyomj <strong>Entert</strong>. Új sorhoz használd a <strong>Shift+Entert</strong>. Egy üzenet fölé víve megjelennek a műveletei: válasz, reakció, szál, szerkesztés, kitűzés, továbbítás és még több. Üres mezőben a <strong>Fel</strong> billentyű az utolsó üzenetedet szerkeszti.</p>
+<h3 id="form-z-s">Formázás</h3>
+<ul><li><code>**félkövér**</code>, <code>*dőlt*</code>, `<code> </code>kód<code> </code>` és nyelvvel megjelölt kódblokkok a kiemeléshez.</li><li><code>||spoiler||</code> addig rejti a szöveget, amíg rá nem kattintanak.</li><li>Gépelj <code>:</code> majd nevet az emoji-rövidkódokhoz, <code>@</code>-ot a megemlítésekhez és <code>#</code>-ot a csatornákhoz.</li><li>A linkek előnézeti kártyát kapnak, kivéve a titkosított privát üzenetekben.</li></ul>
+<h3 id="megeml-t-sek">Megemlítések</h3>
+<p>Az <code>@felhasználónév</code> egy embert értesít, az <code>@szerepkörnév</code> egy szerepkört (egyszavas nevek), az <code>@everyone</code> vagy <code>@here</code> pedig mindenkit, illetve az online lévőket. A botok sosem pingelhetik az egész szervert.</p>
+<h2 id="v-laszok-sz-lak-s-f-rumok">Válaszok, szálak és fórumok</h2>
+<ul><li>A <strong>Válasz</strong> idézi az üzenetet. A <strong>Továbbítás</strong> egy üzenetet másik beszélgetésbe másol.</li><li>A <strong>Szálak</strong> bármely üzenetből indulnak, és saját előzményük van. A <strong>Szálak</strong> panel egy csatorna összes szálát listázza. A szál létrehozója vagy egy csatornakezelő ikont adhat neki vagy törölheti.</li><li>A <strong>Fórum</strong> csatornák teljesen bejegyzésekből állnak, mindegyiknek saját szála van. A bejegyzések kártyaként jelennek meg a szerzővel, a nyitóüzenet előnézetével, egy képes bélyegképpel, a reakciók és a válaszok számával. A keresőmező bejegyzést keres vagy indít, rendezhetsz <strong>Legutóbbi aktivitás</strong> vagy <strong>Legújabb bejegyzések</strong> szerint, a lezárt bejegyzéseken <strong>Lezárt</strong> jelvény áll, és csak moderátorok írhatnak beléjük. Széles képernyőn a kiválasztott bejegyzés a lista mellett nyílik meg, telefonon teljes képernyőn.</li></ul>
+<figure class="doc"><div class="window"><img src="../../assets/img/forum.jpg" alt="Fórumcsatorna" loading="lazy"></div><figcaption>Fórumcsatorna</figcaption></figure>
+<h2 id="reakci-k-szavaz-sok-s-kit-z-sek">Reakciók, szavazások és kitűzések</h2>
+<p>Kattints egy reakcióra, hogy a tiéd is megjelenjen. A <strong>szavazások</strong> kérdést és opciókat kapnak, és élő százalékokat mutatnak; ha a szavazás engedi, több opciót is választhatsz. A kitűzött üzenetek a kitűzési panelen láthatók.</p>
+<h2 id="mell-kletek">Mellékletek</h2>
+<p>Üzenetenként legfeljebb öt melléklet. A képek feltöltés előtt átméretezhetők (Eredeti, 1920, 1280 vagy 800 pixel), az animált GIF-ek lejátszás- és szünetgombot kapnak, és az ékezetes fájlnevek megmaradnak. A méretkorlát a konfiguráció <code>maxUploadMb</code> értékéből és az adminpanelből jön; néhány fájltípus (futtathatók, HTML, SVG) mindig tiltott.</p>
+<h2 id="hang-zenetek">Hangüzenetek</h2>
+<p>Az üzenetmező <strong>mikrofon</strong> gombja legfeljebb öt percet rögzít. Egy piros sáv mutatja az időt; a szemetes elveti a felvételt, a küldés gomb pedig kis lejátszóval (lejátszás, haladás, tekerés) elküldi. Opusként rögzül a böngészőben, az asztali alkalmazásban vagy az Android-alkalmazásban, és mikrofonengedélyt, valamint HTTPS-t vagy <code>localhost</code>-ot igényel. A hangüzenetek nem érhetők el a végponttól végpontig titkosított privát üzenetekben.</p>
+<h2 id="id-z-tett-zenetek">Időzített üzenetek</h2>
+<p>Az üzenetmező melletti <strong>óra</strong> gomb megnyitja a <strong>Küldés később</strong> ablakot a beírt szöveghez. Válassz időpontot vagy egy előbeállítást, például holnap 9:00-t. Az üzenet abban a pillanatban a nevedben megy ki, ugyanazokkal az ellenőrzésekkel, mint egy normál üzenet, így még elutasítható, például ha időkizárt vagy az AutoMod kifogásolja. A sikertelenek a listádban maradnak az okukkal, és bármit megszakíthatsz, amit időzítettél. A telefonos felületen tartsd lenyomva a küldés gombot.</p>
+<p>A titkosított privát üzenetek, a Jegyzetcsatornák és a más szervereken lévő partnerekkel folytatott privát üzenetek nem időzíthetők.</p>
+<h2 id="perjeles-parancsok">Perjeles parancsok</h2>
+<p>Gépelj <code>/</code> jelet, hogy lásd az elérhető parancsokat. A beépített parancsok közé tartozik a <code>/me</code>, <code>/nick</code>, <code>/shrug</code>, <code>/spoiler</code>, <code>/thread</code>, <code>/topic</code> és <code>/help</code>. A botok sajátot is hozzáadhatnak; lásd: <a href="slash-commands.html">Perjeles parancsok</a>.</p>
+<h2 id="keres-s">Keresés</h2>
+<p>A keresést a nagyítóval nyithatod meg. Jelöld be, mely mezőkre keressen: <strong>üzenetszöveg</strong> (teljes szöveges keresés), <strong>felhasználónevek</strong>, <strong>csatornanevek</strong> és <strong>mellékletek fájlnevei</strong>. Az eredmények az üzenetnél nyílnak meg a csatornájában. A keresés csak azokat a beszélgetéseket fedi, amelyeket látsz; a Jegyzetcsatornák és a titkosított privát üzenetek nem kereshetők, a korhatáros csatornák pedig kimaradnak, amíg nem erősíted meg a korodat.</p>
+<figure class="doc"><div class="window"><img src="../../assets/img/search.jpg" alt="Keresési találatok" loading="lazy"></div><figcaption>Keresési találatok</figcaption></figure>
+<h2 id="rtes-t-sek">Értesítések</h2>
+<p>Minden csatorna és privát beszélgetés elnémítható, beállítható csak megemlítésekre vagy mindenre (az alapérték csatornáknál a megemlítések, privát üzeneteknél minden). Az asztali értesítések a böngészőt vagy az asztali alkalmazást használják. Az asztali alkalmazás tálcaikonja olvasatlan jelvényt mutat. Androidon lásd az <a href="android.html">Android-alkalmazás</a> oldalt. Az olvasatlan üzenetekkel megnyitott csevegésben egy piros <strong>Új</strong> vonal jelöli az elsőt; a beállításait lásd a <a href="personalization.html#olvasatlan-zenetek">Profilok, állapot és témák</a> oldalon.</p>
+<h2 id="bej-v-webhookok">Bejövő webhookok</h2>
+<p>A csatornakezelő a csatorna beállításai alatt <strong>bejövő webhookokat</strong> hozhat létre. Egy szkript JSON-t küld a webhook URL-jére, és a webhook nevével és avatárjával megjelenik egy üzenet. Lásd: <a href="bots-api.html">Botok, API és webhookok</a>.</p>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="Ezen az oldalon"><h4>Ezen az oldalon</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../../assets/js/wiki-data-hu.js"></script>
+<script src="../../assets/js/site.js" defer></script>
+</body>
+</html>

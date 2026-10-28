@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MeshCrowd - Self-hosted chat, voice and video for your community</title>
+<meta name="description" content="MeshCrowd is a free, self-hosted chat platform with servers, channels, roles, voice and video, bots and a phone app. Your server, your data.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="assets/img/logo.png">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="alternate" hreflang="en" href="index.html">
+<link rel="alternate" hreflang="hu" href="hu/index.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root="." data-page="home">
+
+<main>
+<!-- hero -->
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <span class="eyebrow"><span class="dot"></span> Free software, GNU GPL</span>
+      <h1>Your community.<br><span class="grad">Your server. Your rules.</span></h1>
+      <p class="lead">MeshCrowd is a self-hosted chat platform with servers, channels and roles, voice and video, threads and forums, bots and slash commands, plus a phone app. It runs on your own hardware, keeps everything in one folder and talks to nobody else.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="download.html"><i data-icon="download"></i> Download</a>
+        <a class="btn btn-ghost btn-lg" href="features.html">Explore features <i data-icon="arrow"></i></a>
+      </div>
+      <div class="hero-meta">
+        <span><i data-icon="server"></i> One Node.js process, one SQLite file</span>
+        <span><i data-icon="lock"></i> HTTPS by default</span>
+        <span><i data-icon="globe"></i> No cloud, no tracking, no CDN</span>
+      </div>
+    </div>
+    <div class="hero-art">
+      <div class="window">
+        <div class="chrome"><i></i><i></i><i></i><span>nightowls.example &middot; #general</span></div>
+        <img src="assets/img/chat-general.jpg" alt="The MeshCrowd chat view: channels on the left, a conversation with an image, a code block and a poll, and the member list grouped by role" width="1600" height="1000">
+      </div>
+      <div class="phone"><img src="assets/img/m-chat.jpg" alt="The phone interface showing the same conversation" width="824" height="1720"></div>
+      <div class="float-badge" style="top:-16px;left:-20px"><i data-icon="lock"></i> End-to-end encrypted DMs</div>
+      <div class="float-badge" style="top:42%;right:-6px;animation-delay:-2.5s"><i data-icon="bot"></i> Bots &amp; slash commands</div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="stats reveal">
+      <div class="stat"><b data-count="8">8</b><span>channel types, from text to stage</span></div>
+      <div class="stat"><b data-count="5">5</b><span>voice quality presets, 8 to 48 kHz</span></div>
+      <div class="stat"><b data-count="3">3</b><span>clients: web, Windows and Android</span></div>
+      <div class="stat"><b data-count="0">0</b><span>third-party services needed</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- showcase -->
+<section class="section" id="tour">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="kicker">Everything in one place</span>
+      <h2>A community platform that feels familiar from the first minute</h2>
+      <p>If you have used a modern chat app you already know where things are. The difference is that this one belongs to you.</p>
+    </div>
+    <div class="showcase" data-tabs data-auto>
+      <div class="tabs" role="tablist" aria-label="Feature tour">
+        <button class="tab" role="tab" id="t1" aria-controls="p1"><i data-icon="chat"></i><span><strong>Chat and community</strong><small>Channels, threads, forums, polls, reactions and search</small></span></button>
+        <button class="tab" role="tab" id="t2" aria-controls="p2"><i data-icon="video"></i><span><strong>Voice, video and stages</strong><small>Peer-to-peer calls, quality presets, noise suppression and a built-in relay for NAT</small></span></button>
+        <button class="tab" role="tab" id="t3" aria-controls="p3"><i data-icon="bot"></i><span><strong>Bots and slash commands</strong><small>AI bots, a token API, signed webhooks and private answers</small></span></button>
+        <button class="tab" role="tab" id="t4" aria-controls="p4"><i data-icon="shield"></i><span><strong>Moderation and safety</strong><small>AutoMod, onboarding, verification levels and an audit log</small></span></button>
+        <button class="tab" role="tab" id="t5" aria-controls="p5"><i data-icon="chart"></i><span><strong>Insights and control</strong><small>Server statistics, roles with real permissions, templates</small></span></button>
+        <button class="tab" role="tab" id="t6" aria-controls="p6"><i data-icon="palette"></i><span><strong>Make it yours</strong><small>Themes, role icons, profile cards and layouts</small></span></button>
+      </div>
+      <div>
+        <div class="panel" role="tabpanel" id="p1" aria-labelledby="t1">
+          <div class="window"><div class="chrome"><i></i><i></i><i></i><span>#general</span></div><img src="assets/img/chat-general.jpg" alt="A channel with messages, an image attachment, a code block, reactions and a poll" loading="lazy"></div>
+          <ul class="checks"><li><b>Eight channel types</b>: public, private, announcement, read-only, voice, stage, forum and encrypted Notes.</li><li><b>Threads off any message</b>, forum channels made of posts, pins, replies, forwards and link previews.</li><li><b>Fast search</b> across text, usernames, channel names and file names.</li></ul>
+        </div>
+        <div class="panel" role="tabpanel" id="p2" aria-labelledby="t2">
+          <div class="window"><div class="chrome"><i></i><i></i><i></i><span>Lounge &middot; voice</span></div><img src="assets/img/voice-call.jpg" alt="A voice channel with camera tiles and call controls" loading="lazy"></div>
+          <ul class="checks"><li><b>Voice, camera and screen share</b> in channels and private calls, all peer to peer.</li><li><b>Quality presets</b> from Mobile (8 kHz) to HD Music (48 kHz stereo), chosen when the channel is created.</li><li><b>Optional RNNoise</b> noise suppression that runs on your own device.</li><li><b>Built-in STUN and TURN</b> so calls reach people behind routers and NAT, with no third-party service and a one-click setup script.</li></ul>
+        </div>
+        <div class="panel" role="tabpanel" id="p3" aria-labelledby="t3">
+          <div class="window"><div class="chrome"><i></i><i></i><i></i><span>#general &middot; /roll</span></div><img src="assets/img/slash-answer.jpg" alt="A slash command answered by a bot, and a private answer only the sender can see" loading="lazy"></div>
+          <ul class="checks"><li><b>Slash commands</b> published by any bot, with typed options and a popup in the composer.</li><li><b>Private answers</b> that only you can see and that are never stored.</li><li><b>Token API and signed webhooks</b> for n8n, scripts and your own tools. One bot can also be an AI chat partner.</li></ul>
+        </div>
+        <div class="panel" role="tabpanel" id="p4" aria-labelledby="t4">
+          <div class="window"><div class="chrome"><i></i><i></i><i></i><span>Server Settings &middot; AutoMod</span></div><img src="assets/img/settings-automod.jpg" alt="AutoMod rules in Server Settings" loading="lazy"></div>
+          <ul class="checks"><li><b>AutoMod</b> for blocked words, links, mass mentions, spam and capitals, with optional timeouts.</li><li><b>Rules screening</b> with questions that hand out roles, and <b>verification levels</b> for new accounts.</li><li><b>Age-restricted channels</b> with a one-time click-through, no ID checks and no third parties.</li></ul>
+        </div>
+        <div class="panel" role="tabpanel" id="p5" aria-labelledby="t5">
+          <div class="window"><div class="chrome"><i></i><i></i><i></i><span>Server Settings &middot; Insights</span></div><img src="assets/img/settings-insights.jpg" alt="Server insights with charts for messages per day and per hour" loading="lazy"></div>
+          <ul class="checks"><li><b>Insights</b> computed from what already exists: growth, busiest channels and hours, most active members.</li><li><b>Roles with real permissions</b>, per-channel overrides and an audit log of what moderators did.</li><li><b>Server templates</b> to start new servers from a proven structure.</li></ul>
+        </div>
+        <div class="panel" role="tabpanel" id="p6" aria-labelledby="t6">
+          <div class="window"><div class="chrome"><i></i><i></i><i></i><span>Midnight Purple</span></div><img src="assets/img/theme-purple.jpg" alt="The chat in the Midnight Purple theme" loading="lazy"></div>
+          <ul class="checks"><li><b>Per-user themes</b> with presets, your own colors, fonts and a background gradient.</li><li><b>Role icons</b> as an emoji or an image, shown next to names.</li><li><b>Profile cards</b>, banners, custom status and a server rail you can arrange in folders.</li></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- feature grid -->
+<section class="section alt" id="features">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="kicker">What you get</span>
+      <h2>Everything a community needs, nothing it does not</h2>
+      <p>No paywalls, no boosts, no tiers. Every feature is available to every server.</p>
+    </div>
+    <div class="grid c3">
+      <article class="card reveal"><div class="ic"><i data-icon="key"></i></div><h3>Passport identity</h3><p>Your account is anchored to a key pair created in your browser. Export it as a file to sign in, recover access or register elsewhere.</p><a class="more" href="wiki/accounts.html">Learn more <i data-icon="arrow"></i></a></article>
+      <article class="card reveal"><div class="ic"><i data-icon="lock"></i></div><h3>End-to-end encrypted DMs</h3><p>Switch a 1:1 conversation to encryption with one click. Safety numbers let two people detect a swapped key.</p><a class="more" href="wiki/security.html">Learn more <i data-icon="arrow"></i></a></article>
+      <article class="card reveal"><div class="ic"><i data-icon="mic"></i></div><h3>Voice and stages</h3><p>Voice rooms, stage channels with speakers and audience, camera, screen share, a soundboard and moderator mute.</p><a class="more" href="wiki/voice-video.html">Learn more <i data-icon="arrow"></i></a></article>
+      <article class="card reveal"><div class="ic"><i data-icon="bot"></i></div><h3>Bots and automation</h3><p>Bring Ollama or any OpenAI-compatible model, or drive everything from n8n through the API and signed webhooks.</p><a class="more" href="wiki/bots-api.html">Learn more <i data-icon="arrow"></i></a></article>
+      <article class="card reveal"><div class="ic"><i data-icon="shield"></i></div><h3>Real moderation</h3><p>AutoMod, rules screening, timeouts, bans, reports, a data-pruning tool and a complete audit log.</p><a class="more" href="wiki/moderation.html">Learn more <i data-icon="arrow"></i></a></article>
+      <article class="card reveal"><div class="ic"><i data-icon="clock"></i></div><h3>Scheduled and voice messages</h3><p>Send later at the time you choose, or record a voice message that plays inline for everyone.</p><a class="more" href="wiki/messaging.html">Learn more <i data-icon="arrow"></i></a></article>
+      <article class="card reveal"><div class="ic"><i data-icon="code"></i></div><h3>Sites</h3><p>Host small PHP, HTML and JS intranet pages inside your server, with a code editor and a visual editor.</p><a class="more" href="wiki/sites.html">Learn more <i data-icon="arrow"></i></a></article>
+      <article class="card reveal"><div class="ic"><i data-icon="globe"></i></div><h3>Federation</h3><p>Optionally pair two servers to share friend requests, DMs and discovery. Off by default and never automatic.</p><a class="more" href="wiki/federation.html">Learn more <i data-icon="arrow"></i></a></article>
+      <article class="card reveal"><div class="ic"><i data-icon="layers"></i></div><h3>Templates and invites</h3><p>Expiring invite links, vanity names, and templates that copy a server's structure but never its people or messages.</p><a class="more" href="wiki/community-tools.html">Learn more <i data-icon="arrow"></i></a></article>
+    </div>
+  </div>
+</section>
+
+<!-- mobile -->
+<section class="section" id="mobile">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="kicker">In your pocket</span>
+      <h2>A real phone app, served by your own server</h2>
+      <p>The Android app is a thin shell around a phone interface your server delivers, so updating the server updates every phone. Notifications work without Google services.</p>
+    </div>
+    <div class="phones reveal">
+      <figure style="margin:0"><div class="phone-frame"><img src="assets/img/m-servers.jpg" alt="The channel list on a phone" loading="lazy"></div><figcaption class="phone-caption">Channels</figcaption></figure>
+      <figure style="margin:0"><div class="phone-frame"><img src="assets/img/m-chat.jpg" alt="A conversation on a phone" loading="lazy"></div><figcaption class="phone-caption">Conversations</figcaption></figure>
+      <figure style="margin:0"><div class="phone-frame"><img src="assets/img/m-slash.jpg" alt="Slash command suggestions on a phone" loading="lazy"></div><figcaption class="phone-caption">Slash commands</figcaption></figure>
+      <figure style="margin:0"><div class="phone-frame"><img src="assets/img/m-answer.jpg" alt="A bot answer and a private answer on a phone" loading="lazy"></div><figcaption class="phone-caption">Private answers</figcaption></figure>
+    </div>
+    <div style="text-align:center;margin-top:36px"><a class="btn btn-primary" href="download.html#android"><i data-icon="phone"></i> Get the Android app</a></div>
+  </div>
+</section>
+
+<!-- videos -->
+<section class="section alt" id="video">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="kicker">See it move</span>
+      <h2>A short tour</h2>
+      <p>Recorded on a real MeshCrowd server, a few minutes each. Desktop: chat, slash commands, threads, polls, voice rooms with the resizable call panel, stages, themes and Server Settings. Phone: the Android app with chat, direct messages and a voice call.</p>
+    </div>
+    <div class="video-grid reveal">
+      <div class="video-card">
+        <video preload="none" poster="assets/img/chat-general.jpg" playsinline muted loop aria-label="Desktop tour of MeshCrowd"><source src="assets/video/tour-desktop.webm" type="video/webm"></video>
+        <button class="play" type="button" aria-label="Play the desktop tour"><span><i data-icon="play"></i></span></button>
+      </div>
+      <div class="video-card phone-v">
+        <video preload="none" poster="assets/img/m-chat.jpg" playsinline muted loop aria-label="Phone tour of MeshCrowd"><source src="assets/video/tour-mobile.webm" type="video/webm"></video>
+        <button class="play" type="button" aria-label="Play the phone tour"><span><i data-icon="play"></i></span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- themes -->
+<section class="section" id="themes">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="kicker">Personal by design</span>
+      <h2>Every member picks their own look</h2>
+      <p>Presets or your own colors, saved per account. The buttons in this page's header use the same four palettes.</p>
+    </div>
+    <div class="theme-strip reveal">
+      <figure><div class="window"><img src="assets/img/chat-dev.jpg" alt="MeshCrowd Dark theme" loading="lazy"></div><figcaption>MeshCrowd Dark</figcaption></figure>
+      <figure><div class="window"><img src="assets/img/theme-purple.jpg" alt="Midnight Purple theme" loading="lazy"></div><figcaption>Midnight Purple</figcaption></figure>
+      <figure><div class="window"><img src="assets/img/theme-forest.jpg" alt="Forest theme" loading="lazy"></div><figcaption>Forest</figcaption></figure>
+      <figure><div class="window"><img src="assets/img/theme-sunset.jpg" alt="Sunset theme" loading="lazy"></div><figcaption>Sunset</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- privacy -->
+<section class="section alt" id="privacy">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="kicker">Yours, end to end</span>
+      <h2>Built so that you stay in control</h2>
+    </div>
+    <div class="grid c4">
+      <div class="card reveal"><div class="ic"><i data-icon="server"></i></div><h3>On your hardware</h3><p>Everything lives in a <code>data/</code> folder next to the server. Copy it and you have a backup.</p></div>
+      <div class="card reveal"><div class="ic"><i data-icon="eye"></i></div><h3>No tracking</h3><p>No analytics, no ads and no external fonts or scripts. The client loads nothing from a CDN.</p></div>
+      <div class="card reveal"><div class="ic"><i data-icon="lock"></i></div><h3>Encrypted by default</h3><p>HTTPS and WSS everywhere, bcrypt passwords, optional TOTP and revocable sessions.</p></div>
+      <div class="card reveal"><div class="ic"><i data-icon="heart"></i></div><h3>Free software</h3><p>Licensed under the GNU General Public License. Read it, change it, share it.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- self host -->
+<section class="section" id="selfhost">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="kicker">Up and running</span>
+      <h2>From download to first message in minutes</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><h3>Download and start</h3><p>Unpack the server and run the start script. It ships with its own Node.js runtime on Windows.</p><pre><code>npm install
+npm start</code></pre></div>
+      <div class="step reveal"><h3>Open and register</h3><p>Visit the address, accept the certificate once and create the first account. It becomes the owner.</p><pre><code>https://localhost:8443</code></pre></div>
+      <div class="step reveal"><h3>Invite your people</h3><p>Create a server, copy an invite link and share it. Voice works on a LAN out of the box.</p></div>
+    </div>
+    <div style="text-align:center;margin-top:34px"><a class="btn btn-ghost" href="wiki/installation.html"><i data-icon="book"></i> Full installation guide</a></div>
+  </div>
+</section>
+
+<!-- cta -->
+<section class="section" style="padding-top:20px">
+  <div class="container">
+    <div class="cta reveal">
+      <h2>Bring your community home</h2>
+      <p>Free, self-hosted and yours to change. Start with the server, add the desktop client and put the app on your phone.</p>
+      <div class="hero-cta" style="justify-content:center;margin-bottom:0">
+        <a class="btn btn-primary btn-lg" href="download.html"><i data-icon="download"></i> Download MeshCrowd</a>
+        <a class="btn btn-ghost btn-lg" href="wiki/index.html"><i data-icon="book"></i> Browse the wiki</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<script src="assets/js/site.js" defer></script>
+</body>
+</html>

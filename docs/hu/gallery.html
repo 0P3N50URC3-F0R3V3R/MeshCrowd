@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="hu" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Galéria - MeshCrowd</title>
+<meta name="description" content="Képernyőképek és videók a MeshCrowdról: csevegés, hang, beállítások, moderáció, témák és a telefonos felület.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../assets/img/logo.png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="../gallery.html">
+<link rel="alternate" hreflang="hu" href="gallery.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root=".." data-base="." data-page="gallery">
+<main>
+<section class="page-hero">
+  <div class="container">
+    <h1>Galéria</h1>
+    <p>Valódi képernyőképek egy MeshCrowd demóközösségből. Bármelyik képre kattintva nagyíthatod.</p>
+  </div>
+</section>
+
+<section class="section" style="padding-top:44px">
+  <div class="container">
+    <h2 class="reveal">Videók</h2>
+    <p class="reveal" style="color:var(--text-2)">Két körút, egyenként néhány percesek, hang nélkül; mindkettő az alkalmazás angol nyelvű felületét mutatja. Az asztali: csevegés, perjeles parancsok, szálak, szavazások, hangszobák az átméretezhető hívási panellel, színpadok, témák és Szerverbeállítások. A telefonos az Android-alkalmazásban készült: csevegés, privát üzenetek és hanghívás.</p>
+    <div class="video-grid reveal" style="margin-bottom:56px">
+      <div class="video-card">
+        <video preload="none" poster="../assets/img/chat-general.jpg" playsinline muted loop aria-label="Az asztali felület körútja"><source src="../assets/video/tour-desktop.webm" type="video/webm"></video>
+        <button class="play" type="button" aria-label="Az asztali körút lejátszása"><span><i data-icon="play"></i></span></button>
+      </div>
+      <div class="video-card phone-v">
+        <video preload="none" poster="../assets/img/m-chat.jpg" playsinline muted loop aria-label="A telefonos felület körútja"><source src="../assets/video/tour-mobile.webm" type="video/webm"></video>
+        <button class="play" type="button" aria-label="A telefonos körút lejátszása"><span><i data-icon="play"></i></span></button>
+      </div>
+    </div>
+
+    <h2 class="reveal">Képernyőképek</h2>
+    <p class="reveal" style="color:var(--text-2)">A képernyőképeken az alkalmazás angol nyelvű felülete látható.</p>
+    <div class="filter" role="group" aria-label="Képernyőképek szűrése">
+      <button type="button" data-filter="all" aria-pressed="true">Mind</button>
+      <button type="button" data-filter="chat" aria-pressed="false">Csevegés</button>
+      <button type="button" data-filter="voice" aria-pressed="false">Hang</button>
+      <button type="button" data-filter="admin" aria-pressed="false">Beállítások</button>
+      <button type="button" data-filter="safety" aria-pressed="false">Biztonság</button>
+      <button type="button" data-filter="themes" aria-pressed="false">Témák</button>
+      <button type="button" data-filter="phone" aria-pressed="false">Telefon</button>
+    </div>
+
+    <div class="gallery">
+      <figure data-cat="chat"><div class="window"><img src="../assets/img/chat-general.jpg" alt="Egy forgalmas csatorna" loading="lazy"></div><figcaption>Csatorna képpel, kódrészlettel és szavazással</figcaption></figure>
+      <figure data-cat="chat"><div class="window"><img src="../assets/img/slash-popup.jpg" alt="Perjeles parancsok felugró listája" loading="lazy"></div><figcaption>Perjeles parancsok az üzenetmezőben</figcaption></figure>
+      <figure data-cat="chat"><div class="window"><img src="../assets/img/slash-answer.jpg" alt="Nyilvános és privát botválaszok" loading="lazy"></div><figcaption>Egy nyilvános és egy privát válasz</figcaption></figure>
+      <figure data-cat="chat"><div class="window"><img src="../assets/img/forum.jpg" alt="Fórumcsatorna" loading="lazy"></div><figcaption>Fórumcsatorna</figcaption></figure>
+      <figure data-cat="chat"><div class="window"><img src="../assets/img/chat-dev.jpg" alt="Szerepkörszínek és ikonok" loading="lazy"></div><figcaption>Szerepkörszínek és ikonok</figcaption></figure>
+      <figure data-cat="chat"><div class="window"><img src="../assets/img/dm.jpg" alt="Privát üzenet" loading="lazy"></div><figcaption>Privát üzenetek</figcaption></figure>
+      <figure data-cat="chat"><div class="window"><img src="../assets/img/profile.jpg" alt="Profilkártya" loading="lazy"></div><figcaption>Profilkártya</figcaption></figure>
+      <figure data-cat="chat"><div class="window"><img src="../assets/img/search.jpg" alt="Keresési találatok" loading="lazy"></div><figcaption>Keresés</figcaption></figure>
+      <figure data-cat="voice"><div class="window"><img src="../assets/img/voice-call.jpg" alt="Hanghívás" loading="lazy"></div><figcaption>Hangszoba kamerákkal</figcaption></figure>
+      <figure data-cat="admin"><div class="window"><img src="../assets/img/settings-insights.jpg" alt="Statisztika" loading="lazy"></div><figcaption>Statisztika</figcaption></figure>
+      <figure data-cat="admin"><div class="window"><img src="../assets/img/settings-roles.jpg" alt="Szerepkörök" loading="lazy"></div><figcaption>Szerepkörök és jogosultságok</figcaption></figure>
+      <figure data-cat="admin"><div class="window"><img src="../assets/img/settings-channels.jpg" alt="Csatornák" loading="lazy"></div><figcaption>Csatornák</figcaption></figure>
+      <figure data-cat="admin"><div class="window"><img src="../assets/img/settings-invites.jpg" alt="Meghívók" loading="lazy"></div><figcaption>Meghívók és egyedi linkek</figcaption></figure>
+      <figure data-cat="admin"><div class="window"><img src="../assets/img/settings-overview.jpg" alt="Áttekintés" loading="lazy"></div><figcaption>Áttekintés és ellenőrzési szint</figcaption></figure>
+      <figure data-cat="admin"><div class="window"><img src="../assets/img/settings-bots.jpg" alt="Botok" loading="lazy"></div><figcaption>Botok</figcaption></figure>
+      <figure data-cat="admin"><div class="window"><img src="../assets/img/settings-reactionroles.jpg" alt="Reakciószerepkörök" loading="lazy"></div><figcaption>Reakciószerepkörök</figcaption></figure>
+      <figure data-cat="safety"><div class="window"><img src="../assets/img/settings-automod.jpg" alt="AutoMod" loading="lazy"></div><figcaption>AutoMod</figcaption></figure>
+      <figure data-cat="safety"><div class="window"><img src="../assets/img/settings-onboarding.jpg" alt="Üdvözlés beállítása" loading="lazy"></div><figcaption>Üdvözlés beállítása</figcaption></figure>
+      <figure data-cat="safety"><div class="window"><img src="../assets/img/onboarding.jpg" alt="Üdvözlés egy új tagnak" loading="lazy"></div><figcaption>Amit egy új tag lát</figcaption></figure>
+      <figure data-cat="safety"><div class="window"><img src="../assets/img/age-gate.jpg" alt="Korhatáros csatorna" loading="lazy"></div><figcaption>Korhatáros csatorna</figcaption></figure>
+      <figure data-cat="themes"><div class="window"><img src="../assets/img/theme-purple.jpg" alt="Midnight Purple" loading="lazy"></div><figcaption>Midnight Purple</figcaption></figure>
+      <figure data-cat="themes"><div class="window"><img src="../assets/img/theme-forest.jpg" alt="Forest" loading="lazy"></div><figcaption>Forest</figcaption></figure>
+      <figure data-cat="themes"><div class="window"><img src="../assets/img/theme-sunset.jpg" alt="Sunset" loading="lazy"></div><figcaption>Sunset</figcaption></figure>
+      <figure data-cat="phone"><div class="window"><img src="../assets/img/m-servers.jpg" alt="Csatornalista telefonon" loading="lazy"></div><figcaption>Csatornalista</figcaption></figure>
+      <figure data-cat="phone"><div class="window"><img src="../assets/img/m-chat.jpg" alt="Beszélgetés telefonon" loading="lazy"></div><figcaption>Beszélgetés</figcaption></figure>
+      <figure data-cat="phone"><div class="window"><img src="../assets/img/m-slash.jpg" alt="Perjeles parancsok telefonon" loading="lazy"></div><figcaption>Perjeles parancsok</figcaption></figure>
+      <figure data-cat="phone"><div class="window"><img src="../assets/img/m-answer.jpg" alt="Privát válasz telefonon" loading="lazy"></div><figcaption>Privát válasz</figcaption></figure>
+      <figure data-cat="phone"><div class="window"><img src="../assets/img/m-messages.jpg" alt="Privát üzenetek telefonon" loading="lazy"></div><figcaption>Privát üzenetek</figcaption></figure>
+      <figure data-cat="phone"><div class="window"><img src="../assets/img/m-you.jpg" alt="Beállítások telefonon" loading="lazy"></div><figcaption>Te fül</figcaption></figure>
+      <figure data-cat="phone"><div class="window"><img src="../assets/img/m-age-gate.jpg" alt="Korhatár-megerősítés telefonon" loading="lazy"></div><figcaption>Korhatáros csatorna</figcaption></figure>
+    </div>
+  </div>
+</section>
+</main>
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>

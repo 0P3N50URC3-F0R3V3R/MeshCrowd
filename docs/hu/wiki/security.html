@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="hu" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biztonság és adatvédelem - MeshCrowd Wiki</title>
+<meta name="description" content="Hogyan védi a MeshCrowd a fiókokat és az adatokat, mit fed a végponttól végpontig tartó titkosítás, és hol vannak az őszinte korlátok.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../../assets/img/logo.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="../../wiki/security.html">
+<link rel="alternate" hreflang="hu" href="security.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root="../.." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki oldalak</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Kezdőlap</a> / <a href="index.html">Wiki</a> / Szerver üzemeltetése</div>
+      <h1>Biztonság és adatvédelem</h1>
+      <p class="summary">Hogyan védi a MeshCrowd a fiókokat és az adatokat, mit fed a végponttól végpontig tartó titkosítás, és hol vannak az őszinte korlátok.</p>
+<h2 id="mi-van-v-dve-s-hogyan">Mi van védve, és hogyan</h2>
+<ul><li><strong>Átvitel</strong>: HTTPS és WSS mindenhol, generált vagy saját tanúsítvánnyal.</li><li><strong>Jelszavak</strong>: bcrypt 12 körrel. A megerősített fiókoknál a szerver csak egy származtatott kulcsot lát, a jelszót sosem.</li><li><strong>Munkamenetek</strong>: átlátszatlan szerveroldali tokenek httpOnly sütiben, egyenként visszavonhatók, nem JWT-k.</li><li><strong>Kétlépcsős azonosítás</strong>: TOTP egyszer használható helyreállító kódokkal.</li><li><strong>Feltöltések</strong>: kiterjesztés szerint szűrve, méretkorláttal, és letöltésként, homokozó Content-Security-Policy alatt kiszolgálva.</li><li><strong>Fejlécek és korlátok</strong>: biztonsági fejlécek és Content-Security-Policy minden válaszon, valamint sebességkorlátozás az érzékeny végpontokon.</li><li><strong>Nincsenek harmadik felek</strong>: a webes kliens semmit nem tölt be CDN-ről, és nincs analitika.</li></ul>
+<h2 id="biztons-gi-k-zpont">Biztonsági központ</h2>
+<p>Az Admin panel <strong>Biztonsági központ</strong> oldala (csak oldaladminisztrátoroknak) tartalmazza a botok és elárasztásos támadások elleni eszközöket. Minden a saját szervereden fut, harmadik fél captcha- vagy hírnévszolgáltatásához nem kerül semmi.</p>
+<ul><li><strong>Captcha</strong>: torzított kép a bejelentkezésnél és regisztrációnál; megjelenhet soha, adott számú sikertelen próbálkozás után vagy mindig. Választhatsz véletlen karaktereket, szótári szavakat (beépített angol és magyar, vagy a szerkesztőbe írt saját lista) vagy egyszerű számolást, és állítható a torzítás. A captcha egyszer használható, hibás tipp után új kép kell.</li><li><strong>Elárasztás elleni védelem</strong>: az a cím, amelyik túl sok kérést küld, folyton a kérésszám-korlátba ütközik vagy újra meg újra sikertelenül jelentkezik be, egy időre tiltást kap. Az ilyen tiltások hirtelen sokasodása bekapcsolja a <strong>támadási módot</strong>, amely minden bejelentkezéshez és regisztrációhoz captchát kér.</li><li><strong>IP-tiltások</strong>: címek, tartományok (<code>1.2.3.4-1.2.3.9</code>) és hálózatok (<code>10.0.0.0/8</code>), IPv4 és IPv6, végleg vagy időre. A saját címedet nem tilthatod ki.</li><li><strong>Tiltólisták</strong>: iratkozz fel ismert rossz címek nyilvános listáira (Spamhaus DROP, Tor kilépőpontok, FireHOL) vagy saját URL-re. A frissítés ütemezett, sikertelen frissítésnél a régi másolat marad.</li><li><strong>Engedélyezőlista</strong>: soha nem tiltott és nem korlátozott címek. Alapból maga a gép is rajta van.</li><li><strong>Botcsapdák</strong> (rejtett mező és sebességellenőrzés az űrlapokon), <strong>regisztrációk korlátja címenként</strong>, <strong>IP-ellenőrző</strong> eszköz és <strong>eseménynapló</strong>.</li></ul>
+<p>Ha a MeshCrowd fordított proxy mögött fut, állítsd be a <code>trustProxy</code> értéket a <code>config.json</code>-ban, különben minden látogató a proxynak látszik, és a címenkénti korlátok nem tudják megkülönböztetni az embereket.</p>
+<h2 id="v-gpontt-l-v-gpontig-titkos-tott-priv-t-zenetek">Végponttól végpontig titkosított privát üzenetek</h2>
+<p>Bármely, azonos szerveren lévő két ember közötti kettesben folyó privát beszélgetés átkapcsolható végponttól végpontig titkosításra a zár gombbal. <strong>Egyirányú</strong>: a visszalépéshez töröld a beszélgetést és indíts újat. A szerver csak titkosított szöveget tárol. A kulcsok mindenki Útlevelétől származnak.</p>
+<p><strong>Biztonsági számok</strong>: a titkosított privát beszélgetésnek van Ellenőrzés pajzsa, amely egy 60 számjegyes számot mutat, amit mindketten összevethettek megbízható csatornán. Minden eszköz <strong>rögzíti</strong> a másik ember kulcsát, amikor először beszélget vele; ha ez a kulcs később megváltozik, a küldés le van tiltva, amíg át nem nézed és el nem fogadod az újat. A rögzítés és az ellenőrzés eszközönkénti.</p>
+<p>A titkosított beszélgetésben a szerkesztés, továbbítás, szavazások, hangüzenetek, időzítés és mellékletek le vannak tiltva.</p>
+<h3 id="tudnival-korl-tok">Tudnivaló korlátok</h3>
+<ul><li>Megbízhatóan egyszerre egy eszközről működik; ha két eszköz ír ugyanabba a beszélgetésbe, ütközhetnek, és „Nem sikerült visszafejteni” jelenhet meg.</li><li>Csak helyi: kettesben, ugyanazon a szerveren lévők között. A föderált privát üzenetek nem titkosítottak.</li><li>Az új vagy törölt eszköz nem olvashatja az előzményeket, amelyeket sosem látott.</li><li>A visszafejtett előzmények gyorsítótárazódnak az eszközön.</li></ul>
+<h2 id="jegyzetcsatorn-k">Jegyzetcsatornák</h2>
+<p>A Jegyzetek a böngészőben, az Útleveledből származtatott kulccsal titkosítottak, így sem az adatbázis, sem az adminok nem tudják elolvasni őket. Az Útlevél elvesztése a jegyzeteid elvesztését jelenti.</p>
+<h2 id="mit-l-that-az-zemeltet">Mit láthat az üzemeltető</h2>
+<p>A szerver üzemeltetője olvashatja a szokásos csatornaüzeneteket és feltöltéseket, mert a szerver tárolja őket. A végponttól végpontig titkosított privát üzenetek és a Jegyzetek kivételek. A botok azt küldik a MI-szolgáltatójuknak, amit kérdeznek tőlük, ezért olyan szolgáltatókat válassz, akiknek megbízol.</p>
+<h2 id="a-webes-kliens-bizalmi-feltev-se">A webes kliens bizalmi feltevése</h2>
+<p>Abban bíznak, hogy aki a webes klienst kiszolgálja, őszinte JavaScriptet szolgál ki. Egy rosszindulatú üzemeltető olyan kódot szállíthat, amely elfogja a jelszót vagy egy kulcsot. Ez minden webalapú végponttól végpontig tartó megoldásra igaz. Üzemeltesd a saját szervered, vagy használj olyat, amelyet megbízható emberek üzemeltetnek, és vesd össze a tanúsítvány-ujjlenyomatokat.</p>
+<h2 id="tlev-l-s-meger-s-tett-bejelentkez-s">Útlevél és megerősített bejelentkezés</h2>
+<p>A webes fiókoknál a böngésző két kulcsot származtat a jelszavadból: az <code>authKey</code> elmegy és bcrypt-hash-ként tárolódik, a <code>wrapKey</code> pedig becsomagolja az Útlevél-magodat és sosem hagyja el a böngészőt. Fennmaradó kockázatok: az <code>authKey</code> az adott szerveren jelszóként viselkedik, ezért TLS kell, és egy gyenge jelszó offline kitalálható az <code>authKey</code> alapján. A sikertelen Útlevél-igazolások öt hiba után 15 percre zárolják az adott azonosságot. A telefonos felület az Adminpanel vagy a Szerver beállításainak megnyitása előtt újra kéri a jelszavadat; az ellenőrzés sebességkorlátozott, és ismételt hibás válasz után zárol.</p>
+<h2 id="f-der-ci">Föderáció</h2>
+<p>A partnerekben csak az azonosság tekintetében bíznak, a jogosultságokat mindig a birtokló példány dönti el, a partnereknek előbb jóvá kell hagyni őket, és a partnerek felé irányuló hívások elutasítják az átirányításokat és a nem nyilvános címeket. Lásd: <a href="federation.html">Föderáció</a>.</p>
+<h2 id="sebezhet-s-g-bejelent-se">Sebezhetőség bejelentése</h2>
+<p>Kérjük, a biztonsági problémákat privátban jelezd a projekt karbantartóinak, ne nyilvános hibajegyben, és adj nekik észszerű időt a javításra, mielőtt közzéteszed.</p>
+<h2 id="meger-s-t-si-ellen-rz-lista">Megerősítési ellenőrzőlista</h2>
+<ul><li>Használj valódi hatóság által kiállított tanúsítványt, és tartsd megújítva.</li><li>Proxy mögött a <code>trustProxy</code> értékét ugrásszámra állítsd, sosem <code>true</code>-ra egy kitett szerveren.</li><li>Tartsd naprakészen a Node.js-t és a szervert.</li><li>Korlátozd, kik hozhatnak létre Oldalakat és botokat, mert mindkettő kódot futtathat vagy adatot küldhet kifelé.</li><li>A moderátoroknak csak a szükséges jogosultságokat add, és nézd át a naplót.</li><li>Készíts mentést a <code>data/</code> mappáról, és próbáld ki a visszaállítást.</li></ul>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="Ezen az oldalon"><h4>Ezen az oldalon</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../../assets/js/wiki-data-hu.js"></script>
+<script src="../../assets/js/site.js" defer></script>
+</body>
+</html>

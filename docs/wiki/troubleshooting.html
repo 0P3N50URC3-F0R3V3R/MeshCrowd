@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting and FAQ - MeshCrowd Wiki</title>
+<meta name="description" content="Common problems with certificates, ports, voice, sign-in and notifications, plus known limitations and frequently asked questions.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../assets/img/logo.png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="troubleshooting.html">
+<link rel="alternate" hreflang="hu" href="../hu/wiki/troubleshooting.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root=".." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki pages</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Home</a> / <a href="index.html">Wiki</a> / Operating a server</div>
+      <h1>Troubleshooting and FAQ</h1>
+      <p class="summary">Common problems with certificates, ports, voice, sign-in and notifications, plus known limitations and frequently asked questions.</p>
+<h2 id="quick-fixes">Quick fixes</h2>
+<table><thead><tr><th>Symptom</th><th>What to check</th></tr></thead><tbody><tr><td>Browser warns about the certificate</td><td>Expected with the self-signed certificate: accept it once. For no warning use a certificate from a real authority with <code>serverCrt</code> and <code>serverKey</code>.</td></tr><tr><td>The warning says the certificate does not match the address</td><td><code>publicHost</code> did not match the address you use when the certificate was generated. Fix <code>publicHost</code>, delete <code>data/certs/</code> and restart.</td></tr><tr><td>The server exits with <code>[certs]</code></td><td>Your <code>serverCrt</code> or <code>serverKey</code> is missing, invalid, mismatched, too weak, or only one of them is set. The message names the file and the reason.</td></tr><tr><td><code>Cannot find module 'node:sqlite'</code></td><td>Node.js is older than 22.5. Use the bundled runtime or the start scripts.</td></tr><tr><td>Port already in use</td><td>Change <code>port</code> or <code>httpsPort</code> in <code>data/config.json</code>.</td></tr><tr><td>Voice works on the LAN but not across networks</td><td>Run <code>setup-turn.bat</code> or <code>setup-turn.sh</code>, or turn on <strong>Admin Panel, Calls</strong>, then forward UDP and TCP 3478 and UDP 49152-49999 on the router. Press <strong>Test</strong> in Calls, and try a phone on mobile data. See <a href="configuration.html#stun-and-turn">STUN and TURN</a>.</td></tr><tr><td>A red &quot;Connection lost. Reconnecting...&quot; banner that never goes away</td><td>Live updates use a WebSocket. Older servers only accepted it when the page was opened through <code>publicHost</code>, <code>localhost</code> or <code>127.0.0.1</code>, so another address (a LAN IP, a second name, the Android emulator's <code>10.0.2.2</code>) was refused with HTTP 403. Update the server; on older ones set <code>publicHost</code> to the address people use. Behind a reverse proxy also forward <code>Host</code> and set <code>trustProxy</code>.</td></tr><tr><td>No microphone or camera prompt</td><td>The page is not on HTTPS or localhost.</td></tr><tr><td>&quot;Unrecognised server address&quot; when signing in with a Passport</td><td>Set <code>publicHost</code> to the address people type, or add the exact origin to <code>passportOrigins</code>.</td></tr><tr><td>Sign-in loops behind a reverse proxy</td><td>Set <code>trustProxy</code> to the hop count and forward <code>Host</code> and <code>X-Forwarded-Proto</code>.</td></tr><tr><td>Cookies not marked Secure behind a proxy</td><td>Same: <code>trustProxy</code> is not set.</td></tr><tr><td>The Android app says &quot;invalid credentials&quot; for a strengthened account</td><td>Update the app to 3.0 or newer, or use the web client.</td></tr><tr><td>No notifications on Android</td><td>Check the battery settings for the app, the notification mode in <strong>You, Android app</strong>, and that the server is reachable over HTTPS.</td></tr><tr><td>UnifiedPush does nothing with a ntfy on the LAN</td><td>Set <code>pushAllowPrivateEndpoints</code> to <code>true</code> on the server.</td></tr><tr><td>Lines like <code>TLS client error</code> or <code>SSL alert bad certificate</code> in the log</td><td>Older versions logged every failed TLS handshake. These come from scanners and bots probing the port and are harmless; newer versions stay silent. Set the environment variable <code>MESHCROWD_TLS_DEBUG=1</code> to log one line per failed handshake with the client address. If a real user is affected, check that the certificate covers the hostname they use and that <code>serverCrt</code> contains the full chain.</td></tr><tr><td>&quot;Unable to decrypt&quot; in an encrypted DM</td><td>Two devices wrote into the same conversation, or this device never saw that history. Use one device at a time.</td></tr><tr><td>A Site shows a PHP error about a missing DLL</td><td>Run <code>npm run fetch:php</code> and use the bundled server, or install the Visual C++ redistributable.</td></tr></tbody></table>
+<h2 id="faq">FAQ</h2>
+<p><strong>Is it really free?</strong> Yes. It is free software under the GNU General Public License and has no paid tiers.</p>
+<p><strong>Do I need a domain name?</strong> Not for a LAN. For people outside your network you want one, plus a real certificate.</p>
+<p><strong>How many people can it host?</strong> It depends on your hardware. Text chat is light. Voice is peer to peer, so the limit for calls is each person's upload bandwidth, not the server. Roughly eight or more people with video in one room strains most home connections.</p>
+<p><strong>Can I import from another chat service?</strong> Not at the moment.</p>
+<p><strong>Can I run it with Docker?</strong> There is no official image yet. It is a single Node.js process, so wrapping it is straightforward.</p>
+<p><strong>Is there email verification or password reset by email?</strong> No. Recovery uses your Passport file, and two-factor uses TOTP.</p>
+<p><strong>Does it phone home?</strong> No. There is no telemetry, no analytics and the web client loads nothing from a CDN. Outgoing connections happen only when you configure them: AI providers, webhooks, federation, UnifiedPush and the link previews the server fetches for links people post.</p>
+<p><strong>How do I move to another machine?</strong> Copy the <code>data/</code> folder. See <a href="administration.html">Administration</a>.</p>
+<h2 id="known-limitations">Known limitations</h2>
+<ul><li>Calls are a full peer-to-peer mesh with no media server, so large calls with video are heavy for each participant.</li><li>Federation supports text channels only on remote servers; federated DMs are not end-to-end encrypted.</li><li>End-to-end encrypted DMs work reliably from one device at a time, carry no attachments and are local to one server.</li><li>Notes attachments are encrypted per file, but their encryption is not bound to the file id.</li><li>Bot slash commands work in server channels only.</li><li>Email verification is not implemented.</li></ul>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../assets/js/wiki-data.js"></script>
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>

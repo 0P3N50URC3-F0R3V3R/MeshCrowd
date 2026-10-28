@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security and privacy - MeshCrowd Wiki</title>
+<meta name="description" content="How MeshCrowd protects accounts and data, what end-to-end encryption covers and where the honest limits are.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../assets/img/logo.png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="security.html">
+<link rel="alternate" hreflang="hu" href="../hu/wiki/security.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root=".." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki pages</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Home</a> / <a href="index.html">Wiki</a> / Operating a server</div>
+      <h1>Security and privacy</h1>
+      <p class="summary">How MeshCrowd protects accounts and data, what end-to-end encryption covers and where the honest limits are.</p>
+<h2 id="what-is-protected-and-how">What is protected, and how</h2>
+<ul><li><strong>Transport</strong>: HTTPS and WSS everywhere, with a generated certificate or your own.</li><li><strong>Passwords</strong>: bcrypt with 12 rounds. For strengthened accounts the server only ever sees a derived key, not the password.</li><li><strong>Sessions</strong>: opaque server-side tokens in an httpOnly cookie, individually revocable, not JWTs.</li><li><strong>Two-factor</strong>: TOTP with single-use recovery codes.</li><li><strong>Uploads</strong>: extension filtered, size capped and served as downloads under a sandboxing Content-Security-Policy.</li><li><strong>Headers and limits</strong>: security headers and a Content-Security-Policy on every response, and rate limiting on sensitive endpoints.</li><li><strong>No third parties</strong>: the web client loads nothing from a CDN, and there is no analytics.</li></ul>
+<h2 id="security-center">Security Center</h2>
+<p>Admin Panel, <strong>Security Center</strong> (site administrators only) holds the tools against bots and floods. It all runs on your server; nothing is sent to a third-party captcha or reputation service.</p>
+<ul><li><strong>Captcha</strong>: a distorted picture on sign-in and sign-up, shown never, after a number of failed attempts, or always. Pick random characters, dictionary words (built-in English and Hungarian, or your own list typed into the editor) or a simple sum, and tune the distortion. A captcha works once, so a wrong guess needs a new picture.</li><li><strong>Flood protection</strong>: an address that sends too many requests, keeps hitting the rate limits or keeps failing to sign in is banned for a while. A burst of such bans turns on <strong>under attack mode</strong>, which requires a captcha for every sign-in and sign-up.</li><li><strong>IP bans</strong>: addresses, ranges (<code>1.2.3.4-1.2.3.9</code>) and networks (<code>10.0.0.0/8</code>), IPv4 and IPv6, permanent or timed. You cannot ban your own address.</li><li><strong>Blocklists</strong>: subscribe to public lists of known bad addresses (Spamhaus DROP, Tor exit nodes, FireHOL) or your own URL. Updates run on a schedule and a failed update keeps the old copy.</li><li><strong>Allowlist</strong>: addresses that are never banned or limited. This machine itself is on it by default.</li><li><strong>Bot traps</strong> (a hidden field and a speed check on the forms), a <strong>sign-up cap per address</strong>, an <strong>IP check</strong> tool and an <strong>event log</strong>.</li></ul>
+<p>If MeshCrowd runs behind a reverse proxy, set <code>trustProxy</code> in <code>config.json</code>; otherwise every visitor looks like the proxy and the per-address limits cannot tell people apart.</p>
+<h2 id="end-to-end-encrypted-dms">End-to-end encrypted DMs</h2>
+<p>Any 1:1 DM between two people on the same server can be switched to end-to-end encryption with the lock button. It is <strong>one-way</strong>: to go back, delete the conversation and start a new one. The server stores only ciphertext. Keys come from each person's Passport.</p>
+<p><strong>Safety numbers</strong>: an encrypted DM has a Verify shield showing a 60-digit number both people can compare over a trusted channel. Each device <strong>pins</strong> the other person's key the first time it talks to them; if that key later changes, sending is blocked until you review and accept it. Pinning and verification are per device.</p>
+<p>In an encrypted conversation editing, forwarding, polls, voice messages, scheduling and attachments are disabled.</p>
+<h3 id="limits-to-know">Limits to know</h3>
+<ul><li>It works reliably from one device at a time; two devices sending into the same conversation can collide and show &quot;Unable to decrypt&quot;.</li><li>It is local only: 1:1 between people on the same server. Federated DMs are not encrypted.</li><li>A new or cleared device cannot read history it never saw.</li><li>Decrypted history is cached on the device.</li></ul>
+<h2 id="notes-channels">Notes channels</h2>
+<p>Notes are encrypted in the browser with a key derived from your Passport, so neither the database nor the admins can read them. Losing your Passport means losing your notes.</p>
+<h2 id="what-the-operator-can-see">What the operator can see</h2>
+<p>The server operator can read ordinary channel messages and uploads, because the server stores them. End-to-end encrypted DMs and Notes are the exception. Bots send what they are asked to their AI provider, so choose providers you trust.</p>
+<h2 id="the-trust-assumption-in-the-web-client">The trust assumption in the web client</h2>
+<p>Whoever serves the web client is trusted to serve honest JavaScript. A malicious operator could ship code that captures a password or a key. This is true of every web-based end-to-end design. Host your own server, or use a server run by people you trust, and compare certificate fingerprints.</p>
+<h2 id="passport-and-strengthened-sign-in">Passport and strengthened sign-in</h2>
+<p>For web accounts the browser derives two keys from your password: <code>authKey</code> is sent and stored as a bcrypt hash, and <code>wrapKey</code> wraps your Passport seed and never leaves the browser. Residual risks: <code>authKey</code> acts like a password on that server so TLS is required, and a weak password can be guessed offline from <code>authKey</code>. Failed Passport proofs lock that identity for 15 minutes after five failures. The phone interface asks for your password again before it opens the Admin Panel or Server Settings; that check is rate limited and locks out after repeated wrong answers.</p>
+<h2 id="federation">Federation</h2>
+<p>Peers are trusted only for identity, permissions are always decided by the owning instance, peers must be approved first, and calls to peers refuse redirects and non-public addresses. See <a href="federation.html">Federation</a>.</p>
+<h2 id="reporting-a-vulnerability">Reporting a vulnerability</h2>
+<p>Please report security problems privately to the project maintainers rather than in a public issue, and give them a reasonable time to fix them before you publish.</p>
+<h2 id="hardening-checklist">Hardening checklist</h2>
+<ul><li>Use a certificate from a real authority and keep it renewed.</li><li>Behind a proxy set <code>trustProxy</code> to a hop count, never <code>true</code> on an exposed server.</li><li>Keep Node.js and the server up to date.</li><li>Restrict who can create Sites and bots, since both can run code or send data outward.</li><li>Give moderators only the permissions they need and review the audit log.</li><li>Back up <code>data/</code> and test restoring it.</li></ul>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../assets/js/wiki-data.js"></script>
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>

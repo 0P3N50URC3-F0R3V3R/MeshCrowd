@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="hu" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Közösségi eszközök - MeshCrowd Wiki</title>
+<meta name="description" content="Meghívók és egyedi linkek, sablonok, reakciószerepkörök, időzített események és statisztika.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../../assets/img/logo.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="../../wiki/community-tools.html">
+<link rel="alternate" hreflang="hu" href="community-tools.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root="../.." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki oldalak</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Kezdőlap</a> / <a href="index.html">Wiki</a> / Közösség üzemeltetése</div>
+      <h1>Közösségi eszközök</h1>
+      <p class="summary">Meghívók és egyedi linkek, sablonok, reakciószerepkörök, időzített események és statisztika.</p>
+<h2 id="megh-v-k-s-egyedi-linkek">Meghívók és egyedi linkek</h2>
+<p>A <strong>Szerverbeállítások, Meghívók</strong> további meghívólinkeket hoz létre, mindegyik saját lejárattal és használati korláttal. Az <strong>Áttekintésben</strong> lévő állandó meghívókód továbbra is működik.</p>
+<figure class="doc"><div class="window"><img src="../../assets/img/settings-invites.jpg" alt="Meghívók és az egyedi link" loading="lazy"></div><figcaption>Meghívók és az egyedi link</figcaption></figure>
+<ul><li><strong>Lejárat</strong>: egy perctől 90 napig, vagy soha.</li><li><strong>Legnagyobb használatszám</strong>: 1 és 1000 között, vagy korlátlan. Egy használat csak akkor számít, ha valaki ténylegesen csatlakozik.</li><li><strong>Korlátok</strong>: tagonként legfeljebb 25, szerverenként legfeljebb 100 aktív meghívó.</li><li><strong>Egyedi link</strong>: egy rövid név (3-32 betű, számjegy és kötőjel), amit kód helyett be lehet gépelni. Soha nem jár le; töröld, ha le akarod állítani.</li><li><strong>Közvetlen meghívók</strong> küldhetők valaki profilkártyájáról, a csatornameghívók pedig csak egyetlen csatornához adnak hozzáférést.</li></ul>
+<p>A lejárt vagy elhasznált meghívó ezt közli, ahelyett hogy csendben meghiúsulna.</p>
+<h2 id="szerversablonok">Szerversablonok</h2>
+<p>A <strong>Szerverbeállítások, Sablonok</strong> a szerver szerkezetét megosztható kóddal ellátott sablonként menti: szerepkörök jogosultságokkal, kategóriák, csatornák, csatornajogosultságok és a szabályszöveg. Aki a szerver létrehozásakor beilleszti a kódot a <strong>Sablonkód</strong> mezőbe, egy vadonatúj privát szervert kap ezzel a szerkezettel, és ő lesz a tulajdonosa.</p>
+<p>A tagok, üzenetek, emodzsik, botok és meghívók <strong>sosem</strong> másolódnak. A szervered módosítása után a <strong>Frissítés</strong> frissíti a sablont.</p>
+<h2 id="reakci-szerepk-r-k">Reakció szerepkörök</h2>
+<p><strong>Szerverbeállítások, Reakció szerepkörök</strong> (a <strong>Szerepkörök kezelése</strong> jogosultság kell hozzá). Válassz egy csatornát és az egyik friss üzenetét, egy emodzsit és egy szerepkört. Aki ezzel az emodzsival reagál, megkapja a szerepkört, és elveszti, ha visszavonja a reakciót. Az emodzsit a rendszer helyezi el az üzeneten.</p>
+<ul><li>Jelöld be a <strong>Kizárólagos</strong> lehetőséget, hogy egy üzenet emodzsijai egyetlen választásként viselkedjenek.</li><li>A moderációs vagy kezelői jogokkal rendelkező szerepkörök nem használhatók.</li><li>Azok a tagok, akiknek még el kell fogadniuk a szerver szabályait, nem reagálhatnak.</li></ul>
+<figure class="doc"><div class="window"><img src="../../assets/img/settings-reactionroles.jpg" alt="Reakció szerepkörök" loading="lazy"></div><figcaption>Reakció szerepkörök</figcaption></figure>
+<h2 id="fogad-s">Fogadás</h2>
+<p>Lásd: <a href="moderation.html#rules-screening-onboarding">Moderáció és biztonság</a>: szabályok, szerepköröket osztó kérdések és elfogadás az írás előtt.</p>
+<h2 id="id-z-tett-esem-nyek">Időzített események</h2>
+<p>Hozz létre szerveresemény nevet, leírást, helyet, opcionális hozzárendelt csatornát, kezdő és záró időpontot adva. A tagok <strong>érdekli</strong> jelölést adhatnak, a módosítások élőben közvetítődnek.</p>
+<h2 id="statisztika">Statisztika</h2>
+<p>A <strong>Szerverbeállítások, Statisztika</strong> (a <strong>Szerver kezelése</strong> jogosultság kell hozzá) mutatja a tagszámot és a növekedést, a napi és a napszak szerinti üzenetszámot, a legforgalmasabb csatornákat, a legaktívabb tagokat, és hogy hányan voltak aktívak ezen a héten, az utolsó 7, 14, 30 vagy 90 napra.</p>
+<figure class="doc"><div class="window"><img src="../../assets/img/settings-insights.jpg" alt="Statisztika" loading="lazy"></div><figcaption>Statisztika</figcaption></figure>
+<p>Minden a már meglévő üzenetekből és tagságokból számolódik. Semmit nem követ külön. Az időpontok UTC szerintiek, a számok nagyjából percenként frissülnek.</p>
+<h2 id="dv-zl-k-perny">Üdvözlőképernyő</h2>
+<p>Emelj ki néhány csatornát egy-egy rövid leírással, hogy az új tag tudja, hol kezdje. Nyisd meg a <strong>Szerverbeállítások, Üdvözlőképernyő</strong> oldalt.</p>
+<h2 id="egy-ni-emodzsik-matric-k-s-hangpult">Egyéni emodzsik, matricák és hangpult</h2>
+<p>Tölts fel saját emodzsikat és matricákat (képeket), valamint rövid hangklipekből álló <strong>hangpultot</strong> a <strong>Szerverbeállításokban</strong>. Az emodzsik az üzenetekben és reakciókban működnek; a matricák üzenetként mennek ki; a hangpult a hangszobákban játszik le. Az animált matricák (GIF, APNG, animált WebP) a választóban és a matricaszerkesztőkben állóképként jelennek meg, amíg rájuk nem viszed az egeret; a csevegésben egyszerre csak a képernyőn lévő hat legújabb mozog, bármelyiket lejátszhatod az egérrel.</p>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="Ezen az oldalon"><h4>Ezen az oldalon</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../../assets/js/wiki-data-hu.js"></script>
+<script src="../../assets/js/site.js" defer></script>
+</body>
+</html>

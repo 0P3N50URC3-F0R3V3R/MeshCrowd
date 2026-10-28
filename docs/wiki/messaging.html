@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Messaging and search - MeshCrowd Wiki</title>
+<meta name="description" content="Writing, editing, replies, threads, forums, polls, voice and scheduled messages, attachments and search.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../assets/img/logo.png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="messaging.html">
+<link rel="alternate" hreflang="hu" href="../hu/wiki/messaging.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root=".." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki pages</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Home</a> / <a href="index.html">Wiki</a> / Using MeshCrowd</div>
+      <h1>Messaging and search</h1>
+      <p class="summary">Writing, editing, replies, threads, forums, polls, voice and scheduled messages, attachments and search.</p>
+<figure class="doc"><div class="window"><img src="../assets/img/chat-general.jpg" alt="A channel with an image, a code block and a poll" loading="lazy"></div><figcaption>A channel with an image, a code block and a poll</figcaption></figure>
+<h2 id="the-basics">The basics</h2>
+<p>Type in the box at the bottom and press <strong>Enter</strong>. Use <strong>Shift+Enter</strong> for a new line. Hover a message for its actions: reply, react, thread, edit, pin, forward and more. Press <strong>Up</strong> in an empty box to edit your last message.</p>
+<h3 id="formatting">Formatting</h3>
+<ul><li><code>**bold**</code>, <code>*italic*</code>, `<code> </code>code<code> </code>` and fenced code blocks with a language for highlighting.</li><li><code>||spoiler||</code> hides text until clicked.</li><li>Type <code>:</code> and a name for emoji shortcodes, <code>@</code> for mentions and <code>#</code> for channels.</li><li>Links get a preview card unless you are in an encrypted DM.</li></ul>
+<h3 id="mentions">Mentions</h3>
+<p><code>@username</code> notifies a person, <code>@rolename</code> a role (single-word names), and <code>@everyone</code> or <code>@here</code> everyone or the people online. Bots can never ping the whole server.</p>
+<h2 id="replies-threads-and-forums">Replies, threads and forums</h2>
+<ul><li><strong>Reply</strong> to quote a message. <strong>Forward</strong> copies a message to another conversation.</li><li><strong>Threads</strong> start from any message and have their own history. The <strong>Threads</strong> panel lists every thread in a channel. A thread's creator or a channel manager can give it an icon or delete it.</li><li><strong>Forum</strong> channels consist entirely of posts, each with its own thread. Posts show as cards with the author, a preview of the opening message, an image thumbnail, the reaction count and the reply count. A search box finds or starts a post, you can sort by <strong>Recent activity</strong> or <strong>Newest posts</strong>, and closed posts carry a <strong>Closed</strong> badge and accept messages from moderators only. On a wide screen the chosen post opens beside the list; on a phone it opens full screen.</li></ul>
+<figure class="doc"><div class="window"><img src="../assets/img/forum.jpg" alt="A forum channel" loading="lazy"></div><figcaption>A forum channel</figcaption></figure>
+<h2 id="reactions-polls-and-pins">Reactions, polls and pins</h2>
+<p>Click a reaction to add yours. <strong>Polls</strong> take a question and options and show live percentages; you can choose several options when the poll allows it. Pinned messages are listed in the pin panel.</p>
+<h2 id="attachments">Attachments</h2>
+<p>Up to five attachments per message. Still images can be resized before upload (Original, 1920, 1280 or 800 pixels), animated GIFs get a play and pause button, and non-ASCII file names are kept. The size limit comes from <code>maxUploadMb</code> and the admin panel; some file types (executables, HTML, SVG) are always refused.</p>
+<h2 id="voice-messages">Voice messages</h2>
+<p>The <strong>microphone</strong> button in the composer records up to five minutes. A red bar shows the time; the bin discards the clip and the send button posts it with a small player (play, progress, seek). It is recorded as Opus in the browser, desktop app or Android app and needs microphone permission and HTTPS or <code>localhost</code>. Voice messages are not available in end-to-end encrypted DMs.</p>
+<h2 id="scheduled-messages">Scheduled messages</h2>
+<p>The <strong>clock</strong> button next to the composer opens <strong>Send later</strong> for what you typed. Pick a time or a preset such as tomorrow at 9:00. The message is posted as you at that moment with the same checks as a normal message, so it can still be refused, for example if you are timed out or AutoMod objects. Failures stay in your list with the reason, and you can cancel anything you scheduled. On the phone interface hold the send button.</p>
+<p>Encrypted DMs, Notes channels and DMs with people on other servers cannot be scheduled.</p>
+<h2 id="slash-commands">Slash commands</h2>
+<p>Type <code>/</code> to see the commands you can use. Built-in commands include <code>/me</code>, <code>/nick</code>, <code>/shrug</code>, <code>/spoiler</code>, <code>/thread</code>, <code>/topic</code> and <code>/help</code>. Bots can add their own; see <a href="slash-commands.html">Slash commands</a>.</p>
+<h2 id="search">Search</h2>
+<p>Open search from the magnifier. Tick which fields to match: <strong>message text</strong> (full-text search), <strong>usernames</strong>, <strong>channel names</strong> and <strong>attachment file names</strong>. Results open at the message in its channel. Search covers only conversations you can see; Notes channels and encrypted DMs are not searchable, and age-restricted channels are left out until you confirm your age.</p>
+<figure class="doc"><div class="window"><img src="../assets/img/search.jpg" alt="Search results" loading="lazy"></div><figcaption>Search results</figcaption></figure>
+<h2 id="notifications">Notifications</h2>
+<p>Each channel and DM can be muted, set to mentions only, or to everything (the default is mentions for channels and everything for DMs). Desktop notifications use the browser or the desktop app. The tray icon of the desktop app shows an unread badge. On Android see the <a href="android.html">Android app</a>. A chat you open with unread messages shows a red <strong>New</strong> line above the first one; see <a href="personalization.html#unread-messages">Profiles, status and themes</a> for its settings.</p>
+<h2 id="incoming-webhooks">Incoming webhooks</h2>
+<p>A channel manager can create <strong>incoming webhooks</strong> under the channel's settings. A script <code>POST</code>s JSON to the webhook URL and a message appears with the webhook's name and avatar. See <a href="bots-api.html">Bots, API and webhooks</a>.</p>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../assets/js/wiki-data.js"></script>
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>

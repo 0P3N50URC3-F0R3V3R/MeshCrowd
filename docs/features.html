@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Features - MeshCrowd</title>
+<meta name="description" content="Every MeshCrowd feature in one place: messaging, voice and video, roles, moderation, bots, privacy, themes, Sites, federation and administration.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="assets/img/logo.png">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="alternate" hreflang="en" href="features.html">
+<link rel="alternate" hreflang="hu" href="hu/features.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root="." data-page="features">
+<main>
+<section class="page-hero">
+  <div class="container">
+    <h1>Features</h1>
+    <p>A complete community platform: chat that scales from a handful of friends to a busy server, calls that run without a media server, and the controls to keep it all in order.</p>
+  </div>
+</section>
+
+<div class="container feat-layout">
+  <nav class="side-nav" aria-label="On this page">
+    <div class="grp">Talk</div>
+    <a href="#messaging">Messaging</a>
+    <a href="#voice">Voice and video</a>
+    <div class="grp">Organize</div>
+    <a href="#servers">Servers, channels, roles</a>
+    <a href="#community">Community tools</a>
+    <a href="#moderation">Moderation and safety</a>
+    <div class="grp">Extend</div>
+    <a href="#bots">Bots and automation</a>
+    <a href="#sites">Sites</a>
+    <a href="#federation">Federation</a>
+    <div class="grp">Trust</div>
+    <a href="#privacy">Identity and privacy</a>
+    <a href="#personal">Personalization</a>
+    <div class="grp">Everywhere</div>
+    <a href="#clients">Clients</a>
+    <a href="#admin">Administration</a>
+  </nav>
+
+  <div>
+    <section class="feat-block reveal" id="messaging">
+      <h2><i data-icon="chat"></i> Messaging</h2>
+      <p class="lead">Everything you expect from a modern chat, with the rough edges smoothed out.</p>
+      <div class="feat-split">
+        <ul class="checks">
+          <li><b>Edit, delete, reply, forward and react</b> with Unicode and custom emoji, plus stickers.</li>
+          <li><b>Threads</b> off any message and <b>forum channels</b> made entirely of threaded posts, with a Threads panel per channel. Forum posts show as cards with previews, thumbnails, search and sorting.</li>
+          <li><b>A red "New" line</b> marks the first unread message when you open a chat, and the view jumps there. How far it jumps and how many messages load is up to you.</li>
+          <li><b>Polls</b>, pins, link previews, code blocks with syntax highlighting and spoilers.</li>
+          <li><b>Voice messages</b> up to five minutes with an inline player, recorded in the browser, desktop app or phone.</li>
+          <li><b>Scheduled messages</b>: pick a time and the message is posted as you, with the same checks as a normal one.</li>
+          <li><b>Search</b> across message text (SQLite FTS5), usernames, channel names and attachment names.</li>
+          <li>Up to five attachments per message, optional image resizing before upload and a play/pause button on GIFs.</li>
+          <li><b>Autocomplete</b> for @mentions, #channels, emoji shortcodes and slash commands.</li>
+        </ul>
+        <figure class="shot"><div class="window"><img src="assets/img/chat-dev.jpg" alt="The dev-talk channel with role icons and colored names" loading="lazy"></div><figcaption>Role colors and icons keep a busy channel readable.</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="feat-block reveal" id="voice">
+      <h2><i data-icon="video"></i> Voice and video</h2>
+      <p class="lead">Calls run peer to peer over WebRTC: there is no media server to install, host or pay for.</p>
+      <div class="feat-split flip">
+        <ul class="checks">
+          <li><b>Voice channels, stage channels and private DM calls</b> with camera and screen share as separate tiles.</li>
+          <li><b>Quality presets</b> chosen when a channel is created: Mobile, Low, Medium, High and HD Music, from 8 kHz up to 48 kHz stereo.</li>
+          <li><b>Optional RNNoise</b> noise suppression, a small neural network that runs on your device.</li>
+          <li>Per-person volume, speaking rings, a live level strip, input device picker and a server soundboard.</li>
+          <li><b>Stage channels</b> with speakers and audience, raise hand and invite to speak.</li>
+          <li><b>Mute for everyone</b> for moderators, and fullscreen for any video tile.</li>
+          <li><b>A resizable call panel</b>: large, scrollable tiles above the text chat, with a divider you drag to give the room or the chat more space.</li>
+          <li><b>Built-in STUN and TURN</b> so calls connect across routers and NAT with no third-party service. Off by default, set up with one script or from the Admin Panel.</li>
+        </ul>
+        <figure class="shot"><div class="window"><img src="assets/img/voice-call.jpg" alt="A voice channel with two camera tiles and one avatar tile" loading="lazy"></div><figcaption>A voice room with camera tiles and controls.</figcaption></figure>
+      </div>
+      <div class="callout"><strong>Good to know</strong><p>A full mesh means every participant sends to every other participant, so calls of roughly eight or more people with video need good upload bandwidth. On one network calls just work. For people on different networks turn on the built-in STUN and TURN server (<code>setup-turn.bat</code> or the Admin Panel, Calls) and forward UDP and TCP 3478 plus UDP 49152-49999 on your router. Only the call audio and video ever use it; chat and signaling always go through your server. <a href="wiki/configuration.html#stun-and-turn">How to set it up</a>.</p></div>
+    </section>
+
+    <section class="feat-block reveal" id="servers">
+      <h2><i data-icon="server"></i> Servers, channels and roles</h2>
+      <p class="lead">Nothing is hard-coded: roles are bit flags you edit, and every channel can override them.</p>
+      <div class="feat-split">
+        <ul class="checks">
+          <li><b>Categories</b> with drag-and-drop ordering of channels and categories.</li>
+          <li><b>Roles</b> with 17 permissions, colors and <b>icons</b> (an emoji or an image). Nobody can grant a permission they do not hold.</li>
+          <li><b>Per-role and per-user channel overrides</b>, slowmode, topics, icons and a welcome screen.</li>
+          <li><b>Private Notes channels</b>: an encrypted notebook for every member, unreadable even by admins.</li>
+          <li>A personal <b>server rail</b> with folders, and a discoverable directory of public servers.</li>
+        </ul>
+        <figure class="shot"><div class="window"><img src="assets/img/settings-roles.jpg" alt="The Roles tab with permission switches" loading="lazy"></div><figcaption>Roles with permissions, colors and icons.</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="feat-block reveal" id="community">
+      <h2><i data-icon="users"></i> Community tools</h2>
+      <p class="lead">Grow and look after a community without any extra services.</p>
+      <div class="feat-split flip">
+        <ul class="checks">
+          <li><b>Invites</b> that expire and have use limits, plus a <b>vanity link</b> people can type instead of a code.</li>
+          <li><b>Invite links</b>: <code>/i/&lt;code&gt;</code> opens a join page with <i>Join in browser</i> and <i>Open in app</i> (<code>mcr://</code> links open the desktop and Android apps, always asking before joining).</li>
+          <li><b>Onboarding</b>: new members read the rules, answer up to five questions that hand out roles, and accept before they can post.</li>
+          <li><b>Reaction roles</b>: react with an emoji to get a role, optionally exclusive.</li>
+          <li><b>Server templates</b> that copy structure and permissions, never people, messages or invites.</li>
+          <li><b>Insights</b> with growth and activity charts for 7 to 90 days.</li>
+          <li><b>Scheduled events</b> with RSVP, and a welcome screen with highlighted channels.</li>
+        </ul>
+        <figure class="shot"><div class="window"><img src="assets/img/onboarding.jpg" alt="The welcome window a new member sees, with rules and a question" loading="lazy"></div><figcaption>What a new member sees before they can post.</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="feat-block reveal" id="moderation">
+      <h2><i data-icon="shield"></i> Moderation and safety</h2>
+      <p class="lead">Practical tools that act before a problem spreads, and leave a record of what happened.</p>
+      <div class="feat-split">
+        <ul class="checks">
+          <li><b>AutoMod</b>: blocked words, links (block, allow or deny lists), mass mentions, spam and too many capitals, with optional timeouts and exemptions.</li>
+          <li><b>Verification levels</b> hold back brand-new accounts and recent joiners. Everything is local; no email or phone check.</li>
+          <li><b>Age-restricted channels</b> behind a one-time click-through. Nothing is verified and nothing leaves your server.</li>
+          <li>Kick, ban, timeout, <b>audit log</b> and a user reports queue.</li>
+          <li><b>Data pruning</b> to delete history older than a date, with a preview and an optional 24-hour notice.</li>
+        </ul>
+        <figure class="shot"><div class="window"><img src="assets/img/age-gate.jpg" alt="An age-restricted channel asking the member to confirm they are 18 or older" loading="lazy"></div><figcaption>A one-time confirmation, no third parties.</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="feat-block reveal" id="bots">
+      <h2><i data-icon="bot"></i> Bots and automation</h2>
+      <p class="lead">One bot account can be an AI chat partner, a scripted integration, or both.</p>
+      <div class="feat-split flip">
+        <ul class="checks">
+          <li><b>AI bots</b> backed by Ollama or any OpenAI-compatible service. They answer mentions and, if you allow it, private DMs.</li>
+          <li><b>Bot API</b> with tokens, and <b>HMAC-signed outgoing webhooks</b> that work with n8n, scripts and CI.</li>
+          <li><b>Slash commands</b> published by a bot, with typed options, a popup in the composer and chips on the phone.</li>
+          <li><b>Ephemeral answers</b> that only the person who ran the command can see and that are never stored.</li>
+          <li><b>Incoming webhooks</b> per channel for scripts that only need to post.</li>
+        </ul>
+        <figure class="shot"><div class="window"><img src="assets/img/slash-answer.jpg" alt="A dice roll posted by a bot and a private answer visible only to the sender" loading="lazy"></div><figcaption>A public answer and a private one from the same bot.</figcaption></figure>
+      </div>
+      <div class="callout warn"><strong>Privacy note</strong><p>Everything an AI bot is asked is sent to its provider. Bots never read end-to-end encrypted DMs, group DMs or Notes channels, and only see channels their role can view.</p></div>
+    </section>
+
+    <section class="feat-block reveal" id="sites">
+      <h2><i data-icon="code"></i> Sites</h2>
+      <p class="lead">A Site is a server kind that serves a folder of PHP, HTML, CSS and JS pages inside the app: a team wiki, a rota, a small tool.</p>
+      <ul class="checks">
+        <li>Appears in the server rail and renders in a same-origin frame, with no channels or notifications.</li>
+        <li>Built-in <b>code editor</b> (CodeMirror) and a <b>visual editor</b> (TinyMCE) that keeps PHP blocks intact.</li>
+        <li>A portable PHP runtime is bundled for Windows; elsewhere use your own PHP.</li>
+      </ul>
+      <div class="callout danger"><strong>Trust</strong><p>Site pages run as part of MeshCrowd. Only give edit rights to people you would give server access.</p></div>
+    </section>
+
+    <section class="feat-block reveal" id="federation">
+      <h2><i data-icon="globe"></i> Federation</h2>
+      <p class="lead">Two servers can be paired so that people on one can reach people on the other. It is off by default and never happens by accident.</p>
+      <ul class="checks">
+        <li>Pair with an invite link; each side explicitly accepts or rejects the other, and revoking drops trust on both sides.</li>
+        <li>Share friend requests and DMs, list each other's public servers and join with a <code>code@domain</code> invite.</li>
+        <li>Remote servers are proxied live, never copied. Permissions are always decided by the server that owns the community.</li>
+      </ul>
+    </section>
+
+    <section class="feat-block reveal" id="privacy">
+      <h2><i data-icon="key"></i> Identity and privacy</h2>
+      <p class="lead">Strong defaults, and honest documentation about what the limits are.</p>
+      <ul class="checks">
+        <li><b>Passport</b>: an account key pair created in your browser, exportable as an encrypted <code>.mcpass</code> file for sign-in and recovery.</li>
+        <li><b>Strengthened sign-in</b>: the browser derives the sign-in key; the server never sees the password of a web account.</li>
+        <li><b>End-to-end encrypted DMs</b> with safety numbers and key pinning.</li>
+        <li><b>Two-factor</b> authentication with TOTP and recovery codes, revocable server-side sessions and rate limiting.</li>
+        <li><b>HTTPS by default</b> with an automatic certificate, or bring your own.</li>
+      </ul>
+      <p>Read the <a href="wiki/security.html">security model</a> for details and known limits.</p>
+    </section>
+
+    <section class="feat-block reveal" id="personal">
+      <h2><i data-icon="palette"></i> Personalization</h2>
+      <p class="lead">The interface adapts to people, not the other way round.</p>
+      <div class="feat-split flip">
+        <ul class="checks">
+          <li><b>Themes</b> per user: presets or your own colors, fonts and a background gradient, shareable as a snippet.</li>
+          <li><b>Profiles</b> with avatar, banner, bio, custom status and presence, plus per-status sound rules.</li>
+          <li>Resizable sidebars, name colors, server folders and a <b>language switch</b> (English and Hungarian).</li>
+        </ul>
+        <figure class="shot"><div class="window"><img src="assets/img/theme-sunset.jpg" alt="The chat in the Sunset theme" loading="lazy"></div><figcaption>The Sunset preset.</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="feat-block reveal" id="clients">
+      <h2><i data-icon="monitor"></i> Clients</h2>
+      <p class="lead">Use whatever suits the moment. They all talk to the same server.</p>
+      <div class="grid c3">
+        <div class="card"><div class="ic"><i data-icon="globe"></i></div><h3>Web</h3><p>Nothing to install, every feature available in any modern browser.</p></div>
+        <div class="card"><div class="ic"><i data-icon="monitor"></i></div><h3>Desktop</h3><p>A tray badge with your own colors, native notifications, close to tray and certificate pinning for self-signed servers.</p></div>
+        <div class="card"><div class="ic"><i data-icon="phone"></i></div><h3>Android</h3><p>A phone-first interface with local background notifications and optional UnifiedPush, no Google services needed.</p></div>
+      </div>
+    </section>
+
+    <section class="feat-block reveal" id="admin">
+      <h2><i data-icon="chart"></i> Administration</h2>
+      <p class="lead">Run it like a service, even when it lives on a small box.</p>
+      <div class="feat-split">
+        <ul class="checks">
+          <li><b>Admin panel</b> with stats, user management, staff ranks and instance-wide server management.</li>
+          <li>Runtime <b>upload size limit</b> and optional extension allowlist.</li>
+          <li><b>Portable bundle</b> with its own runtime, and a backup that is just a folder copy.</li>
+          <li>Plenty of automated tests (the suite currently has more than 700).</li>
+        </ul>
+        <figure class="shot"><div class="window"><img src="assets/img/settings-overview.jpg" alt="Server overview settings including the verification level" loading="lazy"></div><figcaption>Server settings, including the verification level.</figcaption></figure>
+      </div>
+    </section>
+  </div>
+</div>
+</main>
+<script src="assets/js/site.js" defer></script>
+</body>
+</html>

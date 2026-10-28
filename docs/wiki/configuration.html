@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Configuration - MeshCrowd Wiki</title>
+<meta name="description" content="Every key in data/config.json explained, with an example.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../assets/img/logo.png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="configuration.html">
+<link rel="alternate" hreflang="hu" href="../hu/wiki/configuration.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root=".." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki pages</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Home</a> / <a href="index.html">Wiki</a> / Start here</div>
+      <h1>Configuration</h1>
+      <p class="summary">Every key in data/config.json explained, with an example.</p>
+<p><code>data/config.json</code> is created on the first start and rewritten on every start, so any key that is missing gets its default. <strong>Restart the server after editing it.</strong> Settings that change often (session lifetime, upload limits, allowed file types) live in the database and are changed from the admin panel.</p>
+<h2 id="keys">Keys</h2>
+<table><thead><tr><th>Key</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr><td><code>port</code></td><td><code>8080</code></td><td>Plain HTTP port. With HTTPS on it only redirects; with <code>useHttps: false</code> it serves the app.</td></tr><tr><td><code>httpsPort</code></td><td><code>8443</code></td><td>Main HTTPS port.</td></tr><tr><td><code>publicHost</code></td><td><code>&quot;localhost&quot;</code></td><td>The name or IP the <strong>self-signed</strong> certificate is issued for. Set it to the address people type, before the first start.</td></tr><tr><td><code>useHttps</code></td><td><code>true</code></td><td>Set <code>false</code> for plain HTTP on a trusted LAN or for development. Voice, video and notifications need HTTPS in most browsers except on <code>localhost</code>.</td></tr><tr><td><code>serverCrt</code></td><td><code>&quot;&quot;</code></td><td>Path to your own PEM certificate. Empty means use the self-signed one.</td></tr><tr><td><code>serverKey</code></td><td><code>&quot;&quot;</code></td><td>Path to the matching private key. Both must be set together.</td></tr><tr><td><code>maxUploadMb</code></td><td><code>25</code></td><td>Upper limit on attachment size. The admin panel can lower it at runtime but never raise it above this value.</td></tr><tr><td><code>federation</code></td><td><code>{&quot;enabled&quot;: false}</code></td><td>Federation between servers. Off by default. See <a href="federation.html">Federation</a>.</td></tr><tr><td><code>downloads</code></td><td><code>{&quot;server&quot;: &quot;https://#&quot;, &quot;clientDesktop&quot;: &quot;https://#&quot;, &quot;clientAndroid&quot;: &quot;https://#&quot;, &quot;website&quot;: &quot;https://#&quot;}</code></td><td>Links shown in the web interface (download window) and on invite pages. The login screen shows <code>website</code>. <code>server</code> is only recorded. Only <code>https://</code> addresses are used. Replace the <code>https://#</code> placeholders and restart the server.</td></tr><tr><td><code>passportOrigins</code></td><td><code>[]</code></td><td>Extra origins a Passport proof may be signed for. See below.</td></tr><tr><td><code>trustProxy</code></td><td><code>false</code></td><td>Express <code>trust proxy</code> value. Set it behind a reverse proxy.</td></tr><tr><td><code>pushAllowPrivateEndpoints</code></td><td><code>false</code></td><td>Let the server send UnifiedPush wake-ups to private network addresses, such as a ntfy on your LAN.</td></tr><tr><td><code>iceServers</code></td><td><code>[]</code></td><td>External STUN and TURN servers for WebRTC calls across networks.</td></tr><tr><td><code>turn</code></td><td>see below</td><td>The built-in STUN/TURN server, off by default. See <a href="#stun-and-turn">STUN and TURN</a>.</td></tr><tr><td><code>sites</code></td><td><code>{&quot;phpPath&quot;: &quot;&quot;, &quot;maxWorkers&quot;: 4}</code></td><td>PHP runtime and worker count for <a href="sites.html">Sites</a>.</td></tr></tbody></table>
+<h2 id="example">Example</h2>
+<pre><code class="lang-json">{
+  &quot;port&quot;: 8080,
+  &quot;httpsPort&quot;: 8443,
+  &quot;publicHost&quot;: &quot;chat.example.com&quot;,
+  &quot;useHttps&quot;: true,
+  &quot;serverCrt&quot;: &quot;/etc/letsencrypt/live/chat.example.com/fullchain.pem&quot;,
+  &quot;serverKey&quot;: &quot;/etc/letsencrypt/live/chat.example.com/privkey.pem&quot;,
+  &quot;maxUploadMb&quot;: 25,
+  &quot;iceServers&quot;: [{ &quot;urls&quot;: &quot;stun:stun.l.google.com:19302&quot; }]
+}</code></pre>
+<p>In JSON a backslash must be written as <code>\\</code>, or simply use forward slashes, which work on every operating system.</p>
+<h2 id="passport-origins">Passport origins</h2>
+<p>A Passport proof is signed for the server's origin, and the server only accepts an origin it recognizes. Accepted origins are:</p>
+<ul><li>loopback hosts (<code>localhost</code>, <code>127.0.0.1</code>, <code>[::1]</code>) on any port;</li><li><code>http://&lt;publicHost&gt;</code> and <code>https://&lt;publicHost&gt;</code> built from <code>publicHost</code>, <code>port</code> and <code>httpsPort</code>;</li><li>every entry of <code>passportOrigins</code>.</li></ul>
+<p>So a LAN or domain setup must set <code>publicHost</code> to the address users type, or list the exact origin (scheme, host and port, no path) in <code>passportOrigins</code>.</p>
+<h2 id="stun-and-turn">STUN and TURN</h2>
+<p>Chat and call signaling always go through your MeshCrowd server. Only the audio and video between people needs STUN or TURN, and only when two of them cannot reach each other directly. On one network calls just work. Across routers and NAT a <strong>STUN</strong> server tells each browser its public address, and behind strict NAT a <strong>TURN</strong> relay carries the media.</p>
+<p>MeshCrowd has both built in, with nothing to install. It is <strong>off by default</strong>, so a LAN-only server never opens an extra port.</p>
+<h3 id="quick-setup">Quick setup</h3>
+<ol><li>Run <strong><code>setup-turn.bat</code></strong> (Windows, it asks for administrator rights once) or <strong><code>./setup-turn.sh</code></strong> (Linux and macOS; use <code>sudo</code> so it can open ufw or firewalld).</li><li>Answer the questions. It can detect your public IP with a single request to a public STUN server, and only if you agree. It saves the settings, opens the firewall on this machine, shows the router forwarding table and proves a relay can be allocated.</li><li>On your router forward <strong>UDP and TCP 3478</strong> and <strong>UDP 49152-49999</strong> to this machine.</li><li>Restart MeshCrowd. To check from outside, join a call from a phone on mobile data.</li></ol>
+<p>The same settings live in <strong>Admin Panel, Calls</strong> (site administrators): enable or disable the server, the external IP with a <strong>Detect</strong> button, ports, a live status, and a <strong>Test</strong> button. Changes apply without a restart. <code>setup-turn --status</code>, <code>--disable</code> and <code>--remove-firewall</code> are also available.</p>
+<h3 id="settings">Settings</h3>
+<p>The <code>turn</code> section of <code>data/config.json</code>:</p>
+<table><thead><tr><th>Key</th><th>Default</th><th>Meaning</th></tr></thead><tbody><tr><td><code>enabled</code></td><td><code>false</code></td><td>Run the built-in server.</td></tr><tr><td><code>port</code></td><td><code>3478</code></td><td>UDP and TCP port clients connect to.</td></tr><tr><td><code>tcp</code></td><td><code>true</code></td><td>Also accept TCP, which helps behind strict firewalls. The relay itself is UDP.</td></tr><tr><td><code>externalIp</code></td><td><code>&quot;&quot;</code></td><td>The machine's public IPv4 address. Set it when the server is behind a router.</td></tr><tr><td><code>advertisedHost</code></td><td><code>&quot;&quot;</code></td><td>Host name given to clients. Empty uses <code>externalIp</code>, then <code>publicHost</code>.</td></tr><tr><td><code>relayPortMin</code>, <code>relayPortMax</code></td><td><code>49152</code>, <code>49999</code></td><td>UDP ports used for relayed streams.</td></tr><tr><td><code>credentialTtlSeconds</code></td><td><code>86400</code></td><td>Lifetime of the per-user credentials.</td></tr><tr><td><code>allowPrivatePeers</code></td><td><code>false</code></td><td>Allow relaying to private addresses. Off so the relay cannot reach into your LAN.</td></tr><tr><td><code>maxAllocations</code>, <code>maxAllocationsPerUser</code></td><td><code>500</code>, <code>20</code></td><td>Limits.</td></tr><tr><td><code>maxKbps</code></td><td><code>0</code></td><td>Bandwidth cap per relay, <code>0</code> for none.</td></tr></tbody></table>
+<p>Signed-in users receive short-lived credentials that expire by themselves, so nothing is stored and a leaked one soon stops working. IPv6 relaying is not supported.</p>
+<h3 id="external-servers">External servers</h3>
+<p>You can also use servers you run or rent elsewhere, in <strong>Admin Panel, Calls</strong> or in <code>iceServers</code>:</p>
+<pre><code class="lang-json">&quot;iceServers&quot;: [
+  { &quot;urls&quot;: &quot;stun:stun.example.org:3478&quot; },
+  { &quot;urls&quot;: &quot;turn:turn.example.org:3478&quot;, &quot;username&quot;: &quot;user&quot;, &quot;credential&quot;: &quot;secret&quot; }
+]</code></pre>
+<p>Entries with a user name and password are only given to signed-in users.</p>
+<div class="callout warn"><strong>Reverse proxies</strong><p>Behind a proxy that terminates TLS set <code>trustProxy</code> to the <strong>hop count or subnet</strong>, not <code>true</code>. <code>true</code> on a directly exposed server lets clients spoof <code>X-Forwarded-For</code>. See <a href="tls.html">TLS and reverse proxies</a>.</p></div>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../assets/js/wiki-data.js"></script>
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>

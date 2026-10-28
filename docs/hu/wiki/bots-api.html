@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="hu" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Botok, API és webhookok - MeshCrowd Wiki</title>
+<meta name="description" content="MI-botok, bot-tokenek, a bot API, aláírt kimenő webhookok, bejövő webhookok és egy n8n-recept.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../../assets/img/logo.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="../../wiki/bots-api.html">
+<link rel="alternate" hreflang="hu" href="bots-api.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root="../.." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki oldalak</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Kezdőlap</a> / <a href="index.html">Wiki</a> / Bővítés</div>
+      <h1>Botok, API és webhookok</h1>
+      <p class="summary">MI-botok, bot-tokenek, a bot API, aláírt kimenő webhookok, bejövő webhookok és egy n8n-recept.</p>
+<p>A <strong>bot</strong> egy különleges fiók, amely egyetlen szerverhez tartozik. A nevén <strong>BOT</strong> jelvény látszik, és nem tud bejelentkezni. Egy bot két feladatot láthat el egyszerre:</p>
+<ul><li><strong>MI-beszélgetőtárs</strong>, amelyet Ollama vagy bármely OpenAI-kompatibilis szolgáltatás hajt. A megemlítésekre válaszol, és ha engedélyezed, privát üzenetekre is.</li><li><strong>Integráció</strong>, amelyet a <strong>Bot API</strong> és az <strong>aláírt webhookok</strong> vezérelnek az n8n, szkriptek és saját eszközeid számára.</li></ul>
+<figure class="doc"><div class="window"><img src="../../assets/img/settings-bots.jpg" alt="Botok a Szerverbeállításokban" loading="lazy"></div><figcaption>Botok a Szerverbeállításokban</figcaption></figure>
+<h2 id="bot-l-trehoz-sa">Bot létrehozása</h2>
+<p>A <strong>Botok kezelése</strong> jogosultsággal rendelkező szerveradminisztrátorok a <strong>Szerverbeállítások, Botok</strong> alatt hozhatnak létre botot. Az oldaladminisztrátorok az adminpanelről bármely szerverhez is létrehozhatnak. A botnak van neve, avatárja, opcionális MI-szolgáltatója és modellje, személyisége (a rendszerprompt), megemlítés be vagy ki, privát üzenet mód be vagy ki, és hogy hány friss üzenetet lát. <strong>Hagyd üresen a szolgáltatót az csak API-s botnál.</strong></p>
+<h2 id="mi-botok">MI-botok</h2>
+<p>A szolgáltatókat egy oldaladminisztrátor állítja be az <strong>Admin, AI</strong> alatt: típus (Ollama vagy OpenAI-kompatibilis), alap URL, opcionális API-kulcs (titkosítva tárolva, és soha nem jelenik meg újra), opcionális modell-engedélyezőlista (a <strong>Kapcsolat tesztelése</strong> gombbal kérhető le a lista), időkorlát és párhuzamos kérések korlátja. Jelöld be a <strong>A szerveradminok használhatják ezt a szolgáltatót</strong> lehetőséget, hogy a szerveradminoknak is felkínáld.</p>
+<div class="callout warn"><strong>Adatvédelem</strong><p>Mindent, amit egy botnak elküldenek, a szolgáltatója kap meg. A botok sosem olvasnak végponttól végpontig titkosított privát üzeneteket, csoportos privát üzeneteket vagy Jegyzetcsatornákat, és csak azokat a csatornákat látják, amelyeket a szerepkörük láthat. A kimenetük nem említhet meg senkit, és nincsenek eszközeik vagy műveleteik.</p></div>
+<p>Csak CPU-s gépen használj kis modelleket (nagyjából 3-4 milliárd paraméterest), vagy irányítsd a szolgáltatót egy erősebb gépen futó Ollamára. Korlátok: alapból egyszerre egy kérés szolgáltatónként, legfeljebb öt várakozik, tíz másodperc várakozás felhasználónként és botonként, a válaszok legfeljebb 4000 karakteresek.</p>
+<h2 id="a-bot-tokenje">A bot tokenje</h2>
+<p>Nyiss meg egy botot és nyomd meg a <strong>Token létrehozása</strong> gombot. A token (<code>mcb_</code> előtaggal kezdődik) <strong>egyszer</strong> jelenik meg; csak az SHA-256 hash-e tárolódik. Újragenerálása leállítja a régit. Fejlécként küldd:</p>
+<pre><code>Authorization: Bot mcb_xxxxxxxxxxxxxxxxxxxxxxxx</code></pre>
+<p>A bot csak a saját szerverét látja, csak azt, amit a szerepköre enged, sosem látja a Jegyzetcsatornákat, és sosem látja a titkosított vagy csoportos privát üzeneteket. Korlátok: botonként percenként 120 kérés és 30 írás (<code>429</code> <code>Retry-After</code> fejléccel). Az <code>@everyone</code> és <code>@here</code> a bot üzeneteiben hatástalanított.</p>
+<h2 id="bot-api">Bot API</h2>
+<table><thead><tr><th>Kérés</th><th>Cél</th></tr></thead><tbody><tr><td><code>GET /api/bot/me</code></td><td>Ki a bot és mi a webhookjának állapota</td></tr><tr><td><code>GET /api/bot/channels</code></td><td>A botnak látható csatornák</td></tr><tr><td><code>GET /api/bot/messages?scopeType=channel&amp;scopeId=7&amp;limit=50</code></td><td>A legrégebbivel kezdődő üzenetoldal olvasása</td></tr><tr><td><code>POST /api/bot/messages</code></td><td>Üzenet küldése</td></tr><tr><td><code>PATCH /api/bot/messages/:id</code></td><td>A bot saját üzenetének szerkesztése</td></tr><tr><td><code>DELETE /api/bot/messages/:id</code></td><td>A bot saját üzenetének törlése</td></tr><tr><td><code>PUT /api/bot/commands</code></td><td>Perjeles parancsok közzététele: lásd <a href="slash-commands.html">Perjeles parancsok</a></td></tr><tr><td><code>POST /api/bot/interactions/:id/respond</code></td><td>Perjeles parancs megválaszolása</td></tr></tbody></table>
+<p>Üzenet küldése:</p>
+<pre><code>curl -X POST https://chat.example.com/api/bot/messages \
+  -H &quot;Authorization: Bot $TOKEN&quot; -H &quot;Content-Type: application/json&quot; \
+  -d '{&quot;scopeType&quot;:&quot;channel&quot;,&quot;scopeId&quot;:7,&quot;content&quot;:&quot;A 214-es build sikeres&quot;}'</code></pre>
+<p>A <code>scopeType</code> értéke <code>channel</code>, <code>thread</code> vagy <code>dm</code> (privát üzenethez a bot privát üzenet módja kell). A tartalom legfeljebb 4000 karakter. A teljes referencia a tároló <code>docs/API.md</code> fájljában található.</p>
+<h2 id="kimen-webhookok">Kimenő webhookok</h2>
+<p>Adj a botnak egy <strong>webhook URL-t</strong>, és a MeshCrowd aláírt JSON-eseményt küld rá, valahányszor történik valami, amiről hallania kell. A bot beállításaiban válaszd ki, mely üzenetek számítanak: <strong>megemlítések</strong> (egy @megemlítés, egy válasz a botnak, vagy egy privát üzenet) vagy <strong>minden</strong> üzenet a bot által látott csatornákban.</p>
+<p>Az <strong>aláíró titkot</strong> a <strong>Titok cseréje</strong> gombbal hozd létre; egyszer jelenik meg. Minden kézbesítés egy <code>POST</code> a következő fejlécekkel:</p>
+<table><thead><tr><th>Fejléc</th><th>Jelentés</th></tr></thead><tbody><tr><td><code>X-MeshCrowd-Event</code></td><td><code>message_create</code>, <code>command</code> vagy <code>ping</code></td></tr><tr><td><code>X-MeshCrowd-Delivery</code></td><td>A kézbesítés egyedi azonosítója</td></tr><tr><td><code>X-MeshCrowd-Timestamp</code></td><td>Unix-másodperc</td></tr><tr><td><code>X-MeshCrowd-Signature</code></td><td><code>sha256=</code> majd a <code>&lt;időbélyeg&gt;.&lt;nyers törzs&gt;</code> HMAC-SHA256 értéke a titokkal kulcsolva</td></tr></tbody></table>
+<p>Ellenőrizd az aláírást, és utasítsd el azokat a kézbesítéseket, amelyek időbélyege néhány percnél régebbi:</p>
+<pre><code class="lang-js">const expected = 'sha256=' + crypto.createHmac('sha256', secret)
+  .update(timestamp + '.' + rawBody).digest('hex');
+const ok = crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader));</code></pre>
+<p>Egy üzenetesemény így néz ki:</p>
+<pre><code class="lang-json">{ &quot;type&quot;: &quot;message_create&quot;, &quot;trigger&quot;: &quot;mention&quot;,
+  &quot;bot&quot;: { &quot;id&quot;: 4, &quot;userId&quot;: 12, &quot;username&quot;: &quot;relay_bot&quot; },
+  &quot;server&quot;: { &quot;id&quot;: 2, &quot;name&quot;: &quot;Hooks&quot; },
+  &quot;channel&quot;: { &quot;id&quot;: 7, &quot;name&quot;: &quot;general&quot;, &quot;type&quot;: &quot;public&quot; },
+  &quot;message&quot;: { &quot;id&quot;: 91, &quot;content&quot;: &quot;@relay_bot foglald ezt össze&quot;,
+    &quot;author&quot;: { &quot;id&quot;: 3, &quot;username&quot;: &quot;anna&quot;, &quot;displayName&quot;: &quot;Anna&quot;, &quot;isBot&quot;: false } } }</code></pre>
+<p>A botok által írt üzenetek sosem váltanak ki kézbesítést, így a botok nem tudnak végtelen ciklust csinálni. Egy bot eseményei sorrendben érkeznek. Az 5xx, 429, 408 vagy hálózati hibát újrapróbálja (összesen háromszor, nagyjából 0, 5 és 30 másodperc után); más 4xx válaszokat nem; botonként legfeljebb 50 esemény vár. Az URL tartalmazhat útvonalat és lekérdezést, de hitelesítő adatot nem, az átirányításokat nem követi, és magáncímet (localhost vagy LAN) csak akkor enged, ha egy <strong>oldaladminisztrátor</strong> mentette az URL-t. A fogadód kipróbálásához használd a <strong>Teszt esemény küldése</strong> gombot.</p>
+<h2 id="n8n-recept">n8n-recept</h2>
+<ol><li>Vegyél fel egy <strong>Webhook</strong> indító csomópontot (módszer: <code>POST</code>), és illeszd be az éles URL-jét a botba.</li><li>Opcionálisan ellenőrizd az aláírást egy Code csomópontban.</li><li>Válaszolj egy <strong>HTTP Request</strong> csomóponttal: <code>POST https://a-te-hosztod/api/bot/messages</code>, fejléc <code>Authorization: Bot &lt;token&gt;</code>, JSON-törzs <code>{&quot;scopeType&quot;: &quot;channel&quot;, &quot;scopeId&quot;: {{ $json.body.channel.id }}, &quot;content&quot;: &quot;...&quot;, &quot;replyToMessageId&quot;: {{ $json.body.message.id }}}</code>.</li></ol>
+<p>Szálhoz használd a <code>scopeType: &quot;thread&quot;</code> értéket az esemény <code>threadId</code> mezőjével, privát üzenethez pedig a <code>scopeType: &quot;dm&quot;</code> értéket a <code>dmId</code> mezővel.</p>
+<h2 id="bej-v-webhookok">Bejövő webhookok</h2>
+<p>Egyszerűbb eszköz az olyan szkriptekhez, amelyeknek csak posztolni kell: a csatornakezelő a csatorna beállításaiban létrehoz egy <strong>bejövő webhookot</strong>, és kap egy URL-t. Küldj rá JSON-t <code>POST</code>-tal, és megjelenik egy üzenet a webhook nevével és avatárjával. Se bot, se token nem kell hozzá.</p>
+<h2 id="bev-lt-gyakorlat">Bevált gyakorlat</h2>
+<ul><li>Ne tartsd a tokeneket és titkokat tárolókban; ha kiszivárognak, cseréld őket.</li><li>Olyan szerepkört adj a botnak, amely csak a szükséges csatornákat látja.</li><li>A <code>429</code>-et kezeld úgy, hogy megvárod a <code>Retry-After</code> időt.</li></ul>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="Ezen az oldalon"><h4>Ezen az oldalon</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../../assets/js/wiki-data-hu.js"></script>
+<script src="../../assets/js/site.js" defer></script>
+</body>
+</html>

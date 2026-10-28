@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Community tools - MeshCrowd Wiki</title>
+<meta name="description" content="Invites and vanity links, templates, reaction roles, scheduled events and insights.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../assets/img/logo.png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="community-tools.html">
+<link rel="alternate" hreflang="hu" href="../hu/wiki/community-tools.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root=".." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki pages</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Home</a> / <a href="index.html">Wiki</a> / Running a community</div>
+      <h1>Community tools</h1>
+      <p class="summary">Invites and vanity links, templates, reaction roles, scheduled events and insights.</p>
+<h2 id="invites-and-vanity-links">Invites and vanity links</h2>
+<p><strong>Server Settings, Invites</strong> creates extra invite links, each with its own expiry and use limit. The permanent invite code in <strong>Overview</strong> keeps working.</p>
+<figure class="doc"><div class="window"><img src="../assets/img/settings-invites.jpg" alt="Invites and the vanity link" loading="lazy"></div><figcaption>Invites and the vanity link</figcaption></figure>
+<ul><li><strong>Expiry</strong>: from one minute to 90 days, or never.</li><li><strong>Maximum uses</strong>: 1 to 1000, or unlimited. A use only counts when someone actually joins.</li><li><strong>Limits</strong>: at most 25 active invites per member and 100 per server.</li><li><strong>Vanity link</strong>: a short name (3 to 32 letters, digits and hyphens) people can type instead of a code. It never expires; clear it to stop it working.</li><li><strong>Direct invites</strong> can be sent from a person's profile card, and channel invites give access to just one channel.</li></ul>
+<p>An expired or used-up invite tells the person so instead of failing silently.</p>
+<h2 id="server-templates">Server templates</h2>
+<p><strong>Server Settings, Templates</strong> saves the structure of the server as a template with a share code: roles with their permissions, categories, channels, channel permissions and the rules text. Anyone who pastes the code in the <strong>Template code</strong> field when creating a server gets a brand-new private server with that structure and becomes its owner.</p>
+<p>Members, messages, emoji, bots and invites are <strong>never</strong> copied. After you change your server, <strong>Update</strong> refreshes the template.</p>
+<h2 id="reaction-roles">Reaction roles</h2>
+<p><strong>Server Settings, Reaction roles</strong> (needs <strong>Manage Roles</strong>). Choose a channel and one of its recent messages, an emoji and a role. Members who react with that emoji get the role and lose it when they remove the reaction. The emoji is placed on the message for you.</p>
+<ul><li>Tick <strong>Exclusive</strong> so that the emojis of one message behave like a single choice.</li><li>Roles with moderation or management powers cannot be used.</li><li>Members who still have to accept the server rules cannot react.</li></ul>
+<figure class="doc"><div class="window"><img src="../assets/img/settings-reactionroles.jpg" alt="Reaction roles" loading="lazy"></div><figcaption>Reaction roles</figcaption></figure>
+<h2 id="onboarding">Onboarding</h2>
+<p>See <a href="moderation.html#rules-screening-onboarding">Moderation and safety</a>: rules, questions that hand out roles and acceptance before posting.</p>
+<h2 id="scheduled-events">Scheduled events</h2>
+<p>Create a server event with a name, description, location, optional linked channel and start and end times. Members can mark themselves <strong>interested</strong>, and changes are broadcast live.</p>
+<h2 id="insights">Insights</h2>
+<p><strong>Server Settings, Insights</strong> (needs <strong>Manage Server</strong>) shows member count and growth, messages per day and per hour of day, the busiest channels, the most active members and how many people were active this week, for the last 7, 14, 30 or 90 days.</p>
+<figure class="doc"><div class="window"><img src="../assets/img/settings-insights.jpg" alt="Insights" loading="lazy"></div><figcaption>Insights</figcaption></figure>
+<p>Everything is computed from the messages and memberships that already exist. Nothing extra is tracked. Times are UTC and the numbers refresh about once a minute.</p>
+<h2 id="welcome-screen">Welcome screen</h2>
+<p>Highlight a few channels with a short description each, so a new member knows where to start. Open <strong>Server Settings, Welcome Screen</strong>.</p>
+<h2 id="custom-emoji-stickers-and-soundboard">Custom emoji, stickers and soundboard</h2>
+<p>Upload your own emoji and stickers (images) and a <strong>soundboard</strong> of short clips under <strong>Server Settings</strong>. Emoji work in messages and reactions; stickers are sent as a message; the soundboard plays into voice rooms. Animated stickers (GIF, APNG, animated WebP) stay still in the picker and the sticker editors until you hover them, and in chat only the six newest on screen play at once; hover any sticker to play it.</p>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../assets/js/wiki-data.js"></script>
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>

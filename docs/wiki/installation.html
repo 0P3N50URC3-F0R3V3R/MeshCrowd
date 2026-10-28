@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installation and updates - MeshCrowd Wiki</title>
+<meta name="description" content="Requirements, the portable bundle, running from source, ports, backups and how to update.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../assets/img/logo.png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="installation.html">
+<link rel="alternate" hreflang="hu" href="../hu/wiki/installation.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root=".." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki pages</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Home</a> / <a href="index.html">Wiki</a> / Start here</div>
+      <h1>Installation and updates</h1>
+      <p class="summary">Requirements, the portable bundle, running from source, ports, backups and how to update.</p>
+<h2 id="requirements">Requirements</h2>
+<table><thead><tr><th>Part</th><th>Needs</th></tr></thead><tbody><tr><td>Server</td><td><strong>Node.js 22.5 or newer</strong> (it uses the built-in <code>node:sqlite</code> module). A suitable <code>node.exe</code> is bundled on Windows.</td></tr><tr><td>Memory and disk</td><td>A few hundred MB of RAM for a small community, and enough disk for uploads.</td></tr><tr><td>Browser</td><td>A current Chromium, Firefox or Safari based browser.</td></tr><tr><td>Voice and video</td><td>HTTPS (or <code>localhost</code>), plus the built-in STUN/TURN server (or an external one) for people on different networks. See <a href="configuration.html#stun-and-turn">STUN and TURN</a>.</td></tr></tbody></table>
+<h2 id="windows-the-portable-bundle">Windows: the portable bundle</h2>
+<p>The bundle contains the server, the web client, a Node.js runtime and an empty <code>data/</code> skeleton. Copy it to any machine with the same operating system, even one without internet access.</p>
+<ol><li>Unzip it anywhere.</li><li>Run <code>start-server.bat</code>.</li><li>Edit <code>data/config.json</code> if the host or ports need to change, then restart.</li></ol>
+<h2 id="linux-and-macos-from-source">Linux and macOS: from source</h2>
+<pre><code>node --version     # must be 22.5 or newer
+npm install
+npm start</code></pre>
+<p><code>./start-server.sh</code> does the same and prefers a bundled runtime when there is one. Use <code>npm run dev</code> while developing; it restarts the server when files change.</p>
+<h2 id="what-the-first-start-creates">What the first start creates</h2>
+<table><thead><tr><th>Path</th><th>What it is</th></tr></thead><tbody><tr><td><code>data/dismesh.db</code></td><td>The SQLite database: users, servers, messages</td></tr><tr><td><code>data/config.json</code></td><td>The configuration, written with defaults on every start</td></tr><tr><td><code>data/certs/</code></td><td>The generated self-signed certificate (unless you configure your own)</td></tr><tr><td><code>data/attachments/</code>, <code>data/avatars/</code> and similar</td><td>Uploaded files</td></tr></tbody></table>
+<h2 id="ports">Ports</h2>
+<p>By default HTTPS listens on <code>8443</code>. The plain <code>8080</code> port only redirects to HTTPS. Change them with <code>httpsPort</code> and <code>port</code> in <code>data/config.json</code>. See <a href="configuration.html">Configuration</a>.</p>
+<h2 id="running-as-a-service">Running as a service</h2>
+<p>Run the start script under your service manager of choice (systemd, a Windows service wrapper, a scheduled task). The process writes its log to standard output. Stop it with a normal termination signal; the database closes cleanly.</p>
+<h2 id="backups">Backups</h2>
+<div class="callout"><strong>One folder</strong><p>Stop the server and copy the whole <code>data/</code> folder. It contains the database, the configuration, the certificate and every uploaded file. Restore by putting the folder back.</p></div>
+<p>Do not copy <code>data/dismesh.db</code> alone while the server runs, because uploads and the database must match.</p>
+<h2 id="updating">Updating</h2>
+<ol><li>Take a backup.</li><li>Stop the server.</li><li>Replace the program files with the new version, keeping your <code>data/</code> folder.</li><li>Start the server. Database changes are applied automatically on start.</li></ol>
+<p>The web client and the phone interface are served by the server, so updating the server updates them everywhere. Desktop and Android apps only need a new release when their own native code changes.</p>
+<h2 id="building-the-portable-bundle-yourself">Building the portable bundle yourself</h2>
+<pre><code>npm run build:portable</code></pre>
+<p>This produces <code>dist/dismesh-portable/</code>. For Sites, run <code>npm run fetch:php</code> once on the build machine to bundle a PHP runtime for Windows. See <a href="sites.html">Sites</a>.</p>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../assets/js/wiki-data.js"></script>
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>

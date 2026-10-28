@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="hu" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Föderáció - MeshCrowd Wiki</title>
+<meta name="description" content="Két szerver összepárosítása, hogy az emberek elérjék egymást, mit osztanak meg, és milyen biztonsági szabályok állnak mögötte.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../../assets/img/logo.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="../../wiki/federation.html">
+<link rel="alternate" hreflang="hu" href="federation.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root="../.." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki oldalak</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Kezdőlap</a> / <a href="index.html">Wiki</a> / Bővítés</div>
+      <h1>Föderáció</h1>
+      <p class="summary">Két szerver összepárosítása, hogy az emberek elérjék egymást, mit osztanak meg, és milyen biztonsági szabályok állnak mögötte.</p>
+<p>A <strong>föderáció</strong> lehetővé teszi, hogy két MeshCrowd szerver megbízzon egymásban, így az embereik kapcsolatba léphetnek. <strong>Alapból kikapcsolt</strong>: egy önálló szerver nem nyit föderációs útvonalat és nem futtat föderációs munkafolyamatot. Az Útlevéllel való bejelentkezés enélkül is működik.</p>
+<h2 id="bekapcsol-s">Bekapcsolás</h2>
+<p>Állítsd a <code>&quot;federation&quot;: { &quot;enabled&quot;: true }</code> értéket a <code>data/config.json</code> fájlban és indítsd újra. Megjelenik egy <strong>Föderáció</strong> oldal az adminpanelen.</p>
+<h2 id="p-ros-t-s">Párosítás</h2>
+<ol><li>Egy oldaladminisztrátor beállítja a föderációs admin jelszót az első alkalommal (bejelentkezve, vagy a szervergépről). Egy névtelen látogató nem foglalhatja le.</li><li>Hozz létre egy <strong>meghívólinket</strong> az egyik szerveren, és <strong>váltsd be</strong> a másikon.</li><li>Mindkét oldalnak kifejezetten <strong>el kell fogadnia</strong> a másikat az <strong>Admin, Föderáció</strong> oldalon. A függőben lévő partner semmit nem tehet, csak befejezheti vagy megszakíthatja a saját párosítását.</li><li><strong>Vond vissza</strong> bármikor. A visszavonás mindkét oldalon megszünteti a bizalmat.</li></ol>
+<h2 id="mit-oszt-meg-a-f-der-ci">Mit oszt meg a föderáció</h2>
+<ul><li><strong>Barátkérések és privát üzenetek</strong> a párosított szerverek emberei között.</li><li><strong>Felfedezés</strong>: egymás nyilvános szerverei megjelennek a könyvtárban.</li><li><strong>Csatlakozás</strong>: egy másik példányon lévő szerverhez <code>kód@domain</code> meghívóval csatlakozhatsz. A távoli szerverek megjelennek a szerversávodban, és egyszerűsített nézetben nyílnak meg szöveges csatornákkal, előzményekkel, írással, szerkesztéssel, törléssel és reakciókkal.</li></ul>
+<p>A távoli szerverek <strong>élőben, proxyn át</strong> jelennek meg a tulajdonos példányról: semmi nem másolódik. Elhalványulnak, amíg az a példány offline.</p>
+<h2 id="amit-m-g-nem-tud">Amit még nem tud</h2>
+<ul><li>A távoli szervereknek csak szöveges csatornáik vannak: nincs melléklet, szál, hang vagy taglista.</li><li>A föderált privát üzenetek nem végponttól végpontig titkosítottak.</li></ul>
+<h2 id="biztons-gi-szab-lyok">Biztonsági szabályok</h2>
+<ul><li>A partnerekben <strong>csak az azonosság</strong> tekintetében bízik. A jogosultságokat mindig az a példány dönti el, amelyik a szervert birtokolja.</li><li>A példányok közötti hívások aláírtak és sebességkorlátozottak.</li><li>A kimenő hívások elutasítják az átirányításokat és rögzítik az ellenőrzött címet, így egy párosított partner nem irányíthatja a szerveredet a belső hálózatodra.</li></ul>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="Ezen az oldalon"><h4>Ezen az oldalon</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../../assets/js/wiki-data-hu.js"></script>
+<script src="../../assets/js/site.js" defer></script>
+</body>
+</html>

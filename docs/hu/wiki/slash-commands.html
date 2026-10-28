@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="hu" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perjeles parancsok - MeshCrowd Wiki</title>
+<meta name="description" content="Beépített parancsok, hogyan tesznek közzé sajátot a botok, opciók, privát válaszok és egy teljes példa.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../../assets/img/logo.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="../../wiki/slash-commands.html">
+<link rel="alternate" hreflang="hu" href="slash-commands.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root="../.." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki oldalak</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Kezdőlap</a> / <a href="index.html">Wiki</a> / Bővítés</div>
+      <h1>Perjeles parancsok</h1>
+      <p class="summary">Beépített parancsok, hogyan tesznek közzé sajátot a botok, opciók, privát válaszok és egy teljes példa.</p>
+<p>Gépelj <code>/</code> jelet egy szervercsatornában, hogy lásd a használható parancsokat. A lista a <strong>beépített parancsokat</strong> keveri a <strong>botok</strong> által közzétettekkel. A telefonos felületen a találó parancsok chipekként jelennek meg az üzenetmező fölött.</p>
+<figure class="doc"><div class="window"><img src="../../assets/img/slash-popup.jpg" alt="A perjeles parancsok felugró listája" loading="lazy"></div><figcaption>A perjeles parancsok felugró listája</figcaption></figure>
+<h2 id="be-p-tett-parancsok">Beépített parancsok</h2>
+<table><thead><tr><th>Parancs</th><th>Mit csinál</th></tr></thead><tbody><tr><td><code>/me &lt;művelet&gt;</code></td><td>Dőlt betűs cselekvést küld</td></tr><tr><td><code>/nick [név]</code></td><td>Módosítja a becenevedet ezen a szerveren</td></tr><tr><td><code>/shrug</code>, <code>/tableflip</code>, <code>/unflip</code></td><td>Hozzáadja a klasszikus szövegarcokat</td></tr><tr><td><code>/spoiler &lt;szöveg&gt;</code></td><td>Spoiler mögé rejtett szöveget küld</td></tr><tr><td><code>/thread &lt;név&gt;</code></td><td>Szálat indít</td></tr><tr><td><code>/topic [szöveg]</code></td><td>Megmutatja vagy beállítja a csatorna témáját (jogosultsággal)</td></tr><tr><td><code>/dm</code>, <code>/msg &lt;felhasználónév&gt; [üzenet]</code></td><td>Privát üzenetet nyit vagy ír</td></tr><tr><td><code>/afk [üzenet]</code></td><td>Üzenettel tétlenre állít</td></tr><tr><td><code>/invite</code></td><td>Meghívót mutat</td></tr><tr><td><code>/ping</code>, <code>/help</code></td><td>Kapcsolatellenőrzés és a parancsok listája</td></tr></tbody></table>
+<h2 id="egy-bot-parancs-nak-haszn-lata">Egy bot parancsának használata</h2>
+<p>Válassz egy parancsot a felugró listából (nyílbillentyűkkel és <strong>Tab</strong>bal, vagy kattintással). Az opciókat sorrendben kell megadni, és az <strong>utolsó szöveges opció a sor hátralévő részét kapja</strong>, így idézőjel nem kell:</p>
+<pre><code>/roll 20 raid boss</code></pre>
+<p>Bármely opciót névvel is megadhatod: <code>/roll sides:20 note:raid boss</code>. Ha hiányzik egy kötelező opció, megmondja, melyik, és a szöveged megmarad. Ha két botnak ugyanaz a parancsneve, a felugró lista <code>név@botnév</code> alakot mutat.</p>
+<p>Az Enter megnyomásakor a parancs a botnak megy, amely kétféleképpen válaszolhat:</p>
+<ul><li><strong>Normál üzenet</strong>, amelyet a bot küld, „Mara Voss használta: /roll” fejléccel.</li><li><strong>Privát (átmeneti) válasz</strong>, amelyet csak te látsz. A csatornában „Csak te látod ezt” felirattal jelenik meg, <strong>sosem tárolódik</strong>, és az <strong>Elrejtés</strong> megnyomásakor vagy újratöltéskor eltűnik.</li></ul>
+<figure class="doc"><div class="window"><img src="../../assets/img/slash-answer.jpg" alt="Egy nyilvános és egy privát válasz" loading="lazy"></div><figcaption>Egy nyilvános és egy privát válasz</figcaption></figure>
+<h2 id="parancsok-k-zz-t-tele-botfejleszt-knek">Parancsok közzététele (botfejlesztőknek)</h2>
+<p>A botnak <strong>tokenre</strong> és <strong>működő webhookra</strong> van szüksége (lásd: <a href="bots-api.html">Botok, API és webhookok</a>). Csak az engedélyezett webhookkal rendelkező botok jelennek meg a felugró listában, mert így értesülnek egy használatról.</p>
+<pre><code>PUT /api/bot/commands
+Authorization: Bot &lt;token&gt;
+
+{ &quot;commands&quot;: [
+  { &quot;name&quot;: &quot;roll&quot;, &quot;description&quot;: &quot;Dobj egy kockával&quot;,
+    &quot;options&quot;: [
+      { &quot;name&quot;: &quot;sides&quot;, &quot;type&quot;: &quot;integer&quot;, &quot;required&quot;: true },
+      { &quot;name&quot;: &quot;note&quot;, &quot;type&quot;: &quot;string&quot; } ] },
+  { &quot;name&quot;: &quot;whisper&quot;, &quot;description&quot;: &quot;A választ csak te látod&quot;,
+    &quot;options&quot;: [ { &quot;name&quot;: &quot;text&quot;, &quot;type&quot;: &quot;string&quot;, &quot;required&quot;: true } ] } ] }</code></pre>
+<p>A hívás <strong>az egész listát lecseréli</strong>. Szabályok: legfeljebb 25 parancs, parancsonként legfeljebb 10 opcióval; a nevek <code>a-z</code>, <code>0-9</code>, <code>_</code> és <code>-</code> karaktereket használnak, legfeljebb 32 hosszan; az opció <code>type</code> értéke <code>string</code> (alapértelmezett), <code>integer</code> vagy <code>boolean</code>; a kötelező opciók legyenek elöl.</p>
+<h3 id="egy-haszn-lat-fogad-sa">Egy használat fogadása</h3>
+<p>A webhook <code>command</code> típusú eseményt kap:</p>
+<pre><code class="lang-json">{ &quot;type&quot;: &quot;command&quot;,
+  &quot;bot&quot;: { &quot;id&quot;: 3, &quot;userId&quot;: 41, &quot;username&quot;: &quot;dicey&quot; },
+  &quot;server&quot;: { &quot;id&quot;: 1, &quot;name&quot;: &quot;Nightowls&quot; },
+  &quot;channel&quot;: { &quot;id&quot;: 7, &quot;name&quot;: &quot;general&quot;, &quot;type&quot;: &quot;public&quot; },
+  &quot;user&quot;: { &quot;id&quot;: 5, &quot;username&quot;: &quot;mara&quot;, &quot;displayName&quot;: &quot;Mara Voss&quot; },
+  &quot;command&quot;: &quot;roll&quot;,
+  &quot;options&quot;: { &quot;sides&quot;: 20, &quot;note&quot;: &quot;raid boss&quot; },
+  &quot;interaction&quot;: { &quot;id&quot;: &quot;9f2c...&quot;, &quot;expiresAt&quot;: &quot;2026-10-19T12:00:00.000Z&quot; } }</code></pre>
+<p>Az opciók már a típusuknak megfelelően átalakítva érkeznek, és a szerver ellenőrizte, hogy a kötelezők megvannak.</p>
+<h3 id="v-laszol-s">Válaszolás</h3>
+<pre><code>POST /api/bot/interactions/&lt;interakció azonosító&gt;/respond
+Authorization: Bot &lt;token&gt;
+
+{ &quot;content&quot;: &quot;17-est dobtál&quot;, &quot;ephemeral&quot;: false }</code></pre>
+<p>Az <code>&quot;ephemeral&quot;: true</code> privát választ ad. Az interakció <strong>15 percig</strong> érvényes és legfeljebb <strong>öt</strong> választ fogad, így a bot küldhet nyugtázást és utólagos választ is.</p>
+<h3 id="egy-teljes-p-lda">Egy teljes példa</h3>
+<pre><code class="lang-js">import http from 'node:http';
+const TOKEN = process.env.BOT_TOKEN, BASE = 'https://chat.example.com';
+
+http.createServer((req, res) =&gt; {
+  let body = '';
+  req.on('data', (c) =&gt; (body += c));
+  req.on('end', async () =&gt; {
+    res.end('ok');                       // előbb a webhookra válaszolj
+    const event = JSON.parse(body);      // éles kódban ellenőrizd az aláírást
+    if (event.type !== 'command' || event.command !== 'roll') return;
+    const n = 1 + Math.floor(Math.random() * event.options.sides);
+    await fetch(`${BASE}/api/bot/interactions/${event.interaction.id}/respond`, {
+      method: 'POST',
+      headers: { Authorization: `Bot ${TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: `${event.user.displayName} dobása: ${n}` }),
+    });
+  });
+}).listen(3000);</code></pre>
+<h2 id="korl-tok">Korlátok</h2>
+<ul><li>A parancsok szervercsatornákban működnek, szálakban és privát üzenetekben nem.</li><li>A tagnak üzenetküldési jogosultság kell a csatornában, és nem lehet időkizárt vagy ellenőrzési szint által visszatartott.</li><li>A parancshasználat személyenként 10 másodpercenként legfeljebb 10 lehet.</li></ul>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="Ezen az oldalon"><h4>Ezen az oldalon</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../../assets/js/wiki-data-hu.js"></script>
+<script src="../../assets/js/site.js" defer></script>
+</body>
+</html>

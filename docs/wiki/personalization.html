@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Profiles, status and themes - MeshCrowd Wiki</title>
+<meta name="description" content="Your profile card, presence and custom status, notification sounds, themes, layout and language.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../assets/img/logo.png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="personalization.html">
+<link rel="alternate" hreflang="hu" href="../hu/wiki/personalization.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root=".." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki pages</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Home</a> / <a href="index.html">Wiki</a> / Using MeshCrowd</div>
+      <h1>Profiles, status and themes</h1>
+      <p class="summary">Your profile card, presence and custom status, notification sounds, themes, layout and language.</p>
+<h2 id="your-profile">Your profile</h2>
+<p>Open <strong>Settings</strong> from the gear in the bottom left. You can set an avatar, a banner image or color, a bio and a display name. A profile card appears when someone clicks your name.</p>
+<figure class="doc"><div class="window"><img src="../assets/img/profile.jpg" alt="A profile card" loading="lazy"></div><figcaption>A profile card</figcaption></figure>
+<p>Privacy settings decide who can send you direct messages and who can see your profile card. You can also choose whether you appear in the discovery directory.</p>
+<h2 id="presence-and-custom-status">Presence and custom status</h2>
+<p>Choose <strong>Online</strong>, <strong>Idle</strong>, <strong>Do not disturb</strong> or <strong>Invisible</strong>, and add a custom status with an emoji and text. The slash command <code>/afk</code> sets idle with a message. Notification sounds follow your presence by default (online and idle chime, do not disturb stays silent), and you can override that per account.</p>
+<h2 id="themes">Themes</h2>
+<p>Every member picks their own look under <strong>Settings, Appearance</strong>. Start with a preset and adjust the colors, or build your own:</p>
+<ul><li><strong>Presets</strong>: MeshCrowd Dark, MeshCrowd Light, Midnight Purple, Forest, Sunset and High Contrast.</li><li><strong>Colors</strong> for the brand, the rail, the sidebar, the chat background and the text.</li><li><strong>Fonts</strong>: default, serif, monospace and a few more.</li><li>An optional <strong>background gradient</strong> (start, end and angle) behind the sidebar, chat and member list.</li><li><strong>Copy CSS</strong> exports your theme as a snippet that someone else can import.</li></ul>
+<figure class="doc"><div class="window"><img src="../assets/img/theme-purple.jpg" alt="Midnight Purple theme" loading="lazy"></div><figcaption>Midnight Purple theme</figcaption></figure>
+<p>Themes are validated to be plain colors and a font choice. They never carry arbitrary CSS, so a shared theme cannot load external resources.</p>
+<h2 id="layout">Layout</h2>
+<p>Drag the edges of the channel list and the member list to resize them; the sizes are saved with your account. The server rail can be arranged with folders.</p>
+<h2 id="when-you-open-meshcrowd">When you open MeshCrowd</h2>
+<p>Under <strong>Settings, Appearance</strong> choose what the app shows at start: the Home screen, or <strong>Resume where I left off</strong> (the last server and channel you used).</p>
+<h2 id="unread-messages">Unread messages</h2>
+<p>When you open a channel or DM that has messages you have not read, a red line with the date and a <strong>New</strong> badge marks the first unread message, and the view jumps there instead of to the bottom. The line stays while the chat is open and is gone the next time you open it. Four settings under <strong>Settings, Appearance</strong> tune it:</p>
+<ul><li><strong>The &quot;new messages&quot; line</strong>: show or hide it.</li><li><strong>When opening a chat with unread messages</strong>: jump to the first unread message, or stay at the latest one.</li><li><strong>Messages shown above the line</strong> (0 to 50): how much context stays visible above the first unread message when you jump.</li><li><strong>Messages loaded when opening a chat</strong> (20 to 100): how many of the latest messages are fetched. If more messages than that are unread, the line sits at the top of the loaded page and you scroll up for the rest.</li></ul>
+<p>The settings are saved with your account, so they apply in the browser, the desktop app and the phone interface alike.</p>
+<h2 id="language">Language</h2>
+<p>The interface speaks English and Hungarian. Change it in your settings, or from the selector on the sign-in page. Administrators can add more languages from the admin panel.</p>
+<h2 id="names-and-nicknames">Names and nicknames</h2>
+<p>A server can give you a <strong>nickname</strong> that only shows there. Server admins can set a per-member name color that beats the role color.</p>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../assets/js/wiki-data.js"></script>
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>

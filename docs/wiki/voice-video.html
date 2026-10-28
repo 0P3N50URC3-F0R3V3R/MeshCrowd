@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice, video and stages - MeshCrowd Wiki</title>
+<meta name="description" content="How calls work, quality presets, camera and screen sharing, stage channels, noise suppression and troubleshooting.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../assets/img/logo.png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="voice-video.html">
+<link rel="alternate" hreflang="hu" href="../hu/wiki/voice-video.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root=".." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki pages</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Home</a> / <a href="index.html">Wiki</a> / Using MeshCrowd</div>
+      <h1>Voice, video and stages</h1>
+      <p class="summary">How calls work, quality presets, camera and screen sharing, stage channels, noise suppression and troubleshooting.</p>
+<figure class="doc"><div class="window"><img src="../assets/img/voice-call.jpg" alt="A voice channel with camera tiles" loading="lazy"></div><figcaption>A voice channel with camera tiles</figcaption></figure>
+<h2 id="how-calls-work">How calls work</h2>
+<p>Voice and video are <strong>peer-to-peer WebRTC</strong>. Every participant connects directly to every other participant, and the server only relays the signaling over the same WebSocket used for chat. There is no media server to host.</p>
+<div class="callout"><strong>Plan for the size of the call</strong><p>Because it is a full mesh, each person uploads their stream once per other participant. A call of roughly eight or more people with video asks a lot of everybody's upload bandwidth. Audio-only rooms scale much further.</p></div>
+<h2 id="joining">Joining</h2>
+<p>Click a voice channel and press <strong>Join voice</strong>. Allow microphone access when the browser asks. Use the controls to mute, deafen, turn the camera on, share your screen, open the soundboard or leave. Calls need <strong>HTTPS or localhost</strong>, and people on different networks need a STUN or TURN server (see <a href="configuration.html">Configuration</a>).</p>
+<p>On each participant's tile you get a speaking ring and a live level strip. Each person's tile has its own volume slider.</p>
+<p>The participant grid uses large tiles and scrolls when a room is full. In a voice channel the call panel sits above the text chat; <strong>drag the divider between them</strong> up or down to give the room or the chat more space. Your height is remembered in the browser. Stage channels use the same large, scrollable tiles. On a phone the call is a full screen of two-column tiles, with the text chat one tap away.</p>
+<h2 id="quality-presets">Quality presets</h2>
+<p>The creator picks a preset when the channel is created. It is fixed afterwards: to change it, delete the channel and create a new one.</p>
+<table><thead><tr><th>Preset</th><th>Sample rate</th><th>Bitrate</th><th>Use</th></tr></thead><tbody><tr><td>Mobile</td><td>8 kHz</td><td>12 kbps</td><td>Poor connections and phones on mobile data</td></tr><tr><td>Low</td><td>16 kHz</td><td>24 kbps</td><td>Speech on a weak line</td></tr><tr><td>Medium</td><td>24 kHz</td><td>48 kbps</td><td>The default</td></tr><tr><td>High</td><td>48 kHz</td><td>96 kbps</td><td>Clear speech</td></tr><tr><td>HD / Music</td><td>48 kHz stereo</td><td>192 kbps</td><td>Music and shared audio</td></tr></tbody></table>
+<h2 id="camera-and-screen-sharing">Camera and screen sharing</h2>
+<p>Camera and screen share are separate tiles, so you can show both at once. Any video tile has a <strong>fullscreen</strong> button. The desktop app uses the system's screen and window picker; in a browser the browser's own picker appears. On a phone the camera has a <strong>flip</strong> button and screen sharing is not offered.</p>
+<h2 id="stage-channels">Stage channels</h2>
+<p>A stage is a voice room split into <strong>speakers</strong> and an <strong>audience</strong>. The audience is muted until a speaker or moderator invites them. Audience members can <strong>raise a hand</strong>; a moderator can invite them to speak or move them back to the audience. Stages work well for town halls and announcements.</p>
+<h2 id="moderator-tools">Moderator tools</h2>
+<p>Members with <strong>Moderate Members</strong> can <strong>mute for everyone</strong> from another person's tile. The target's client stops sending audio and their own unmute button is disabled until a moderator lifts it; a badge shows on the tile. Without a media server this works by instructing the target's client, as in other chat apps.</p>
+<h2 id="private-calls">Private calls</h2>
+<p>Direct messages and group DMs support calls too. A DM call never appears on the &quot;in a call&quot; indicator of the member list or anywhere outside the DM's own members.</p>
+<h2 id="soundboard">Soundboard</h2>
+<p>A server can have a soundboard of short clips that members with permission can play into the call. Manage it under <strong>Server Settings, Soundboard</strong>.</p>
+<h2 id="noise-suppression">Noise suppression</h2>
+<p><strong>Settings, Voice, Advanced noise suppression (RNNoise)</strong> runs your microphone through a small neural network compiled to WebAssembly, which removes keyboard, fan and background noise. It works on your own device, adds about ten milliseconds of delay and is off by default. The module (about 5 MB) is only downloaded the first time a call starts with it on. If it cannot start, the call simply continues without it.</p>
+<h2 id="troubleshooting-calls">Troubleshooting calls</h2>
+<table><thead><tr><th>Symptom</th><th>What to check</th></tr></thead><tbody><tr><td>No microphone prompt</td><td>The page is not on HTTPS or localhost</td></tr><tr><td>Connects on the LAN but not across networks</td><td>Turn on the built-in STUN/TURN server (<code>setup-turn.bat</code>, or Admin Panel, Calls) and forward the ports on the router, see <a href="configuration.html#stun-and-turn">STUN and TURN</a></td></tr><tr><td>One person cannot be heard</td><td>Their browser blocked the microphone, or their input device is wrong in the device picker</td></tr><tr><td>Choppy audio in a big call</td><td>Lower the preset, or ask people to turn cameras off</td></tr></tbody></table>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../assets/js/wiki-data.js"></script>
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>

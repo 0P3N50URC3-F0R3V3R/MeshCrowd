@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Download - MeshCrowd</title>
+<meta name="description" content="Download the MeshCrowd server, the Windows desktop client and the Android app. Requirements, quick start and installation notes.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="assets/img/logo.png">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="alternate" hreflang="en" href="download.html">
+<link rel="alternate" hreflang="hu" href="hu/download.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root="." data-page="download">
+<main>
+<section class="page-hero">
+  <div class="container">
+    <h1>Download</h1>
+    <p>Three pieces, all free: the server that you host, a desktop client for Windows and an Android app. You can also just use a browser.</p>
+  </div>
+</section>
+
+<section class="section" style="padding-top:48px">
+  <div class="container">
+    <div class="callout"><strong>Download links are not live yet</strong><p>The buttons below are placeholders and currently point to <code>#</code>. They will link to the release files once a download location is chosen.</p></div>
+
+    <div class="grid c3" style="margin-top:26px">
+      <article class="card dl-card reveal" id="server" data-os="windows unix">
+        <div class="head"><div class="ic"><i data-icon="server"></i></div><div><h3>Server</h3><div class="ver">Version 0.9 &middot; Windows, Linux, macOS</div></div></div>
+        <p>The MeshCrowd server with the web client built in. One Node.js process and one SQLite database.</p>
+        <ul><li>Windows portable bundle with its own Node.js</li><li>Source package for Linux and macOS (Node.js 22.5 or newer)</li><li>HTTPS with an automatic certificate</li></ul>
+        <div class="btns">
+          <a class="btn btn-primary" href="#"><i data-icon="download"></i> Download server (Windows)</a>
+          <a class="btn btn-ghost" href="#"><i data-icon="download"></i> Download source (Linux / macOS)</a>
+        </div>
+      </article>
+
+      <article class="card dl-card reveal" id="desktop" data-os="windows">
+        <div class="head"><div class="ic"><i data-icon="monitor"></i></div><div><h3>Desktop client</h3><div class="ver">Windows, portable &middot; Electron 44</div></div></div>
+        <p>A portable app with a tray badge, native notifications and certificate pinning. It carries no server, only a window into yours.</p>
+        <ul><li>No installer: unzip and run <code>MeshCrowd.exe</code></li><li>Settings stay in its own <code>data</code> folder</li><li>About 340 MB unpacked</li></ul>
+        <div class="btns">
+          <a class="btn btn-primary" href="#"><i data-icon="download"></i> Download desktop client</a>
+        </div>
+      </article>
+
+      <article class="card dl-card reveal" id="android" data-os="android">
+        <div class="head"><div class="ic"><i data-icon="phone"></i></div><div><h3>Android app</h3><div class="ver">Version 3.12 &middot; Android 8.0 or newer</div></div></div>
+        <p>A thin app around the phone interface your server serves. Notifications work without Google services.</p>
+        <ul><li>One universal APK of about 4 MB</li><li>Local notifications, optional UnifiedPush</li><li>Updating the server updates the interface</li></ul>
+        <div class="btns">
+          <a class="btn btn-primary" href="#"><i data-icon="download"></i> Download Android app (APK)</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section alt">
+  <div class="container">
+    <div class="section-head left reveal">
+      <span class="kicker">Quick start</span>
+      <h2>Run your own server</h2>
+      <p>Pick the path that matches your machine. The <a href="wiki/installation.html">installation guide</a> covers everything in more detail.</p>
+    </div>
+    <div class="showcase" data-tabs style="grid-template-columns:260px 1fr">
+      <div class="tabs" role="tablist" aria-label="Install method">
+        <button class="tab" role="tab" id="q1" aria-controls="qp1"><i data-icon="monitor"></i><span><strong>Windows</strong><small>Portable bundle, nothing to install</small></span></button>
+        <button class="tab" role="tab" id="q2" aria-controls="qp2"><i data-icon="terminal"></i><span><strong>Linux and macOS</strong><small>Node.js 22.5 or newer</small></span></button>
+        <button class="tab" role="tab" id="q3" aria-controls="qp3"><i data-icon="globe"></i><span><strong>Behind a domain</strong><small>Your own certificate or a reverse proxy</small></span></button>
+      </div>
+      <div>
+        <div class="panel" role="tabpanel" id="qp1" aria-labelledby="q1">
+          <ol class="checks" style="list-style:none;padding:0">
+            <li>Unzip the server bundle anywhere.</li>
+            <li>Double-click <code>start-server.bat</code>. It uses the bundled Node.js.</li>
+            <li>Open <code>https://localhost:8443</code> and accept the certificate warning once.</li>
+            <li>Register. <b>The first account becomes the owner</b> with full admin rights.</li>
+          </ol>
+          <p>To let other devices connect, set <code>publicHost</code> in <code>data/config.json</code> to your LAN address <em>before</em> the first start.</p>
+        </div>
+        <div class="panel" role="tabpanel" id="qp2" aria-labelledby="q2">
+<pre><code>node --version        # 22.5 or newer
+npm install
+npm start</code></pre>
+          <p>Or run <code>./start-server.sh</code>. The server creates <code>data/</code> on first start with the database, the configuration and a self-signed certificate.</p>
+        </div>
+        <div class="panel" role="tabpanel" id="qp3" aria-labelledby="q3">
+<pre><code>{
+  "publicHost": "chat.example.com",
+  "useHttps": true,
+  "serverCrt": "/etc/letsencrypt/live/chat.example.com/fullchain.pem",
+  "serverKey": "/etc/letsencrypt/live/chat.example.com/privkey.pem",
+  "turn": { "enabled": true, "externalIp": "203.0.113.10" }
+}</code></pre>
+          <p>Calls across routers and NAT use the built-in STUN/TURN server. Run <code>setup-turn.bat</code> (Windows) or <code>setup-turn.sh</code> (Linux): it saves the settings, opens the firewall and tells you which ports to forward (UDP and TCP 3478, UDP 49152-49999). See <a href="wiki/configuration.html#stun-and-turn">STUN and TURN</a>.</p>
+          <p>Behind a reverse proxy that terminates TLS, set <code>"trustProxy"</code> to the hop count and forward <code>Host</code> and <code>X-Forwarded-Proto</code>. See <a href="wiki/tls.html">TLS and reverse proxies</a>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="grid c2">
+      <div class="reveal">
+        <h2>Requirements</h2>
+        <table>
+          <tr><th>Part</th><th>Needs</th></tr>
+          <tr><td>Server</td><td>Node.js 22.5 or newer (bundled on Windows), a few hundred MB of RAM for a small community, any disk that holds your files</td></tr>
+          <tr><td>Browser</td><td>A current Chromium, Firefox or Safari based browser</td></tr>
+          <tr><td>Voice and video</td><td>HTTPS (or localhost), a microphone and camera. Across networks: the built-in STUN/TURN server, set up with <code>setup-turn.bat</code> or <code>setup-turn.sh</code></td></tr>
+          <tr><td>Desktop client</td><td>Windows 10 or newer</td></tr>
+          <tr><td>Android</td><td>Android 8.0 or newer</td></tr>
+        </table>
+      </div>
+      <div class="reveal">
+        <h2>Installing the Android app</h2>
+        <ol class="checks" style="list-style:none;padding:0">
+          <li>Download the APK on your phone and open it. Android asks you to allow installs from your browser or file manager once.</li>
+          <li>Open the app and type your server address, for example <code>chat.example.com</code> or <code>192.168.1.44:8080</code>.</li>
+          <li>A self-signed certificate is trusted once, by its fingerprint, which you compare with the one the server prints at start.</li>
+          <li>Sign in. Optionally turn on UnifiedPush under <b>You &rsaquo; Android app</b> for instant notifications.</li>
+        </ol>
+        <p>Details: <a href="wiki/android.html">Android app guide</a>.</p>
+      </div>
+    </div>
+    <div class="callout warn reveal" style="margin-top:30px"><strong>Verify what you download</strong><p>Checksums for each release will be published next to the download links. Compare them before you run anything, and compare the certificate fingerprint your server prints with the one a client shows on first connect.</p></div>
+  </div>
+</section>
+</main>
+<script src="assets/js/site.js" defer></script>
+</body>
+</html>

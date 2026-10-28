@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Federation - MeshCrowd Wiki</title>
+<meta name="description" content="Pairing two servers so people can reach each other, what is shared, and the safety rules behind it.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../assets/img/logo.png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="federation.html">
+<link rel="alternate" hreflang="hu" href="../hu/wiki/federation.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root=".." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki pages</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Home</a> / <a href="index.html">Wiki</a> / Extending</div>
+      <h1>Federation</h1>
+      <p class="summary">Pairing two servers so people can reach each other, what is shared, and the safety rules behind it.</p>
+<p><strong>Federation</strong> lets two MeshCrowd servers trust each other so that their people can interact. It is <strong>off by default</strong>: a stand-alone server opens no federation route and runs no federation worker. Passport sign-in works either way.</p>
+<h2 id="turning-it-on">Turning it on</h2>
+<p>Set <code>&quot;federation&quot;: { &quot;enabled&quot;: true }</code> in <code>data/config.json</code> and restart. A <strong>Federation</strong> page appears in the admin panel.</p>
+<h2 id="pairing">Pairing</h2>
+<ol><li>A site administrator sets the federation admin password the first time (signed in, or from the server machine). An anonymous visitor cannot claim it.</li><li>Create an <strong>invite link</strong> on one server and <strong>redeem</strong> it on the other.</li><li>Each side must explicitly <strong>accept</strong> the other in <strong>Admin, Federation</strong>. A pending peer can do nothing except finish or cancel its own pairing.</li><li><strong>Revoke</strong> at any time. Revoking drops trust on both sides.</li></ol>
+<h2 id="what-federation-shares">What federation shares</h2>
+<ul><li><strong>Friend requests and DMs</strong> between people on paired servers.</li><li><strong>Discovery</strong>: each other's public servers appear in the directory.</li><li><strong>Joining</strong>: you can join a server on another instance with a <code>code@domain</code> invite. Remote servers appear in your server rail and open in a simplified view with text channels, history, posting, editing, deleting and reactions.</li></ul>
+<p>Remote servers are <strong>proxied live</strong> from the owning instance: nothing is copied. They grey out while that instance is offline.</p>
+<h2 id="what-it-does-not-do-yet">What it does not do yet</h2>
+<ul><li>Remote servers have text channels only: no attachments, threads, voice or member list.</li><li>Federated DMs are not end-to-end encrypted.</li></ul>
+<h2 id="safety-rules">Safety rules</h2>
+<ul><li>Peers are trusted <strong>only for identity</strong>. Permissions are always decided by the instance that owns the server.</li><li>Calls between instances are signed and rate limited.</li><li>Outgoing calls refuse redirects and pin the validated address, so a paired peer cannot point your server at your internal network.</li></ul>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../assets/js/wiki-data.js"></script>
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>

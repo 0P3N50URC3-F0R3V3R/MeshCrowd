@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="hu" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Első lépések - MeshCrowd Wiki</title>
+<meta name="description" content="Tízperces körút: indíts el egy szervert, hozz létre fiókot, készítsd el az első szerveredet és hívj meg valakit.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../../assets/img/logo.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="../../wiki/getting-started.html">
+<link rel="alternate" hreflang="hu" href="getting-started.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root="../.." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki oldalak</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Kezdőlap</a> / <a href="index.html">Wiki</a> / Kezdd itt</div>
+      <h1>Első lépések</h1>
+      <p class="summary">Tízperces körút: indíts el egy szervert, hozz létre fiókot, készítsd el az első szerveredet és hívj meg valakit.</p>
+<p>Ez az oldal a semmitől egy működő közösségig visz el. Minden lépés mélyebb oldalra mutat tovább.</p>
+<h2 id="mire-lesz-sz-ks-ged">Mire lesz szükséged</h2>
+<ul><li>Egy számítógépre, amelyik bekapcsolva marad, amíg az emberek használják: egy félretett PC-re, egy kis szerverre vagy egy bérelt VPS-re.</li><li>Windowson semmi másra: a szervercsomag saját Node.js-szel érkezik. Linuxon és macOS-en telepítsd a <strong>Node.js 22.5 vagy újabb</strong> verzióját.</li><li>Egy modern böngészőre.</li></ul>
+<h2 id="1-ind-tsd-el-a-szervert">1. Indítsd el a szervert</h2>
+<p>Windowson csomagold ki a szervercsomagot és kattints duplán a <code>start-server.bat</code> fájlra. Linuxon vagy macOS-en:</p>
+<pre><code>npm install
+npm start</code></pre>
+<p>Az első indítás létrehoz egy <code>data/</code> mappát az adatbázissal, egy konfigurációs fájllal és egy önaláírt tanúsítvánnyal. A hordozható csomagról és a frissítésekről a <a href="installation.html">Telepítés</a> oldalon olvashatsz.</p>
+<h2 id="2-nyisd-meg-s-hozd-l-tre-a-tulajdonosi-fi-kot">2. Nyisd meg és hozd létre a tulajdonosi fiókot</h2>
+<p>Nyisd meg a <code>https://localhost:8443</code> címet, és fogadd el egyszer a tanúsítvány-figyelmeztetést. A figyelmeztetés várható: a tanúsítványt a saját szervered generálta. Regisztrálj. <strong>Az első fiók lesz a Tulajdonos</strong>, teljes adminisztrátori jogokkal.</p>
+<figure class="doc"><div class="window"><img src="../../assets/img/chat-general.jpg" alt="A csevegőnézet bejelentkezés után" loading="lazy"></div><figcaption>A csevegőnézet bejelentkezés után</figcaption></figure>
+<h2 id="3-hozd-l-tre-az-els-szerveredet">3. Hozd létre az első szerveredet</h2>
+<p>Kattints a bal oldali sávban a zöld <strong>+</strong> gombra, és válaszd a <strong>Szerver létrehozása</strong> lehetőséget. Adj neki nevet. Egy <code>general</code> szöveges csatornát már kapsz. Több csatornát a <strong>Csatornák</strong> melletti <strong>+</strong> gombbal vehetsz fel, a <strong>Szerverbeállításokat</strong> pedig a lista tetején lévő szervernévre kattintva nyithatod meg.</p>
+<div class="callout"><strong>Indulj sablonból</strong><p>Ha valaki megosztott veled egy sablonkódot, illeszd be a <strong>Sablonkód</strong> mezőbe a szerver létrehozásakor, hogy az ő szerkezetéből indulj. Lásd: <a href="community-tools.html">Közösségi eszközök</a>.</p></div>
+<h2 id="4-h-vj-meg-embereket">4. Hívj meg embereket</h2>
+<p>Nyisd meg a <strong>Szerverbeállítások, Meghívók</strong> oldalt, hozz létre egy meghívót és küldd el a linket (a <strong>Link másolása</strong> egy <code>https://192.168.1.10:8443/i/&lt;kód&gt;</code> formájú címet ad, amely egy csatlakozóoldalt nyit meg; a sima kód továbbra is működik a <strong>Csatlakozás</strong> fülön). A hálózatodon lévők használhatják a LAN-címedet. A hálózatodon kívüliekhez domainnév és rendes tanúsítvány kell: lásd <a href="tls.html">TLS és fordított proxyk</a>.</p>
+<div class="callout warn"><strong>Először a publicHost</strong><p>Ha más eszközök is csatlakozni fognak, állítsd a <code>publicHost</code> értékét a <code>data/config.json</code> fájlban arra a címre, amelyet az emberek be fognak gépelni, <strong>még az első indítás előtt</strong>, hogy a tanúsítvány arra készüljön. Későbbi módosítása a <code>data/certs/</code> törlését és újraindítást jelent.</p></div>
+<h2 id="5-vegy-l-fel-egy-hangcsatorn-t">5. Vegyél fel egy hangcsatornát</h2>
+<p>Hozz létre egy <strong>Hang</strong> típusú csatornát. Most válassz minőség-előbeállítást: a csatorna létrejötte után már nem módosítható. Csatlakozz az oldalsávból, és engedélyezd a mikrofonhozzáférést. A hívásokhoz HTTPS vagy <code>localhost</code> kell. Lásd: <a href="voice-video.html">Hang, videó és színpadok</a>.</p>
+<h2 id="6-v-laszd-ki-a-klienseidet">6. Válaszd ki a klienseidet</h2>
+<ul><li><strong>Böngésző</strong>: nincs mit telepíteni.</li><li><strong>Asztali alkalmazás</strong>: hordozható Windows-kliens. Lásd: <a href="clients.html">Kliensek</a>.</li><li><strong>Android</strong>: lásd az <a href="android.html">Android-alkalmazás</a> útmutatót.</li></ul>
+<h2 id="merre-tov-bb">Merre tovább</h2>
+<ul><li>Ismerd meg a jogosultságok működését a <a href="servers-channels.html">Szerverek, csatornák és szerepkörök</a> oldalon.</li><li>Védd meg a közösségedet a <a href="moderation.html">Moderáció és biztonság</a> segítségével.</li><li>Automatizálj a <a href="bots-api.html">Botok, API és webhookok</a> oldal alapján.</li><li>Mentsd el egyetlen mappa másolásával: <a href="administration.html">Adminisztráció</a>.</li></ul>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="Ezen az oldalon"><h4>Ezen az oldalon</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../../assets/js/wiki-data-hu.js"></script>
+<script src="../../assets/js/site.js" defer></script>
+</body>
+</html>

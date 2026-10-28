@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="hu" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TLS és fordított proxyk - MeshCrowd Wiki</title>
+<meta name="description" content="Az önaláírt tanúsítvány, saját tanúsítvány használata, ujjlenyomatok ellenőrzése és futtatás nginx vagy Caddy mögött.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../../assets/img/logo.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="../../wiki/tls.html">
+<link rel="alternate" hreflang="hu" href="tls.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root="../.." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki oldalak</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Kezdőlap</a> / <a href="index.html">Wiki</a> / Kezdd itt</div>
+      <h1>TLS és fordított proxyk</h1>
+      <p class="summary">Az önaláírt tanúsítvány, saját tanúsítvány használata, ujjlenyomatok ellenőrzése és futtatás nginx vagy Caddy mögött.</p>
+<p>A MeshCrowd alapból HTTPS-t szolgáltat. A böngészők mikrofont, kamerát és értesítéseket csak biztonságos eredeten engednek, ezért a TLS a hanghoz és videóhoz számít.</p>
+<h2 id="1-lehet-s-g-az-nal-rt-tan-s-tv-ny">1. lehetőség: az önaláírt tanúsítvány</h2>
+<p>Hagyd üresen a <code>serverCrt</code> és <code>serverKey</code> értékét. Az első indításkor a szerver tízéves tanúsítványt készít a <code>publicHost</code>, a <code>localhost</code> és a <code>127.0.0.1</code> névre a <code>data/certs/</code> alatt, és ezt használja tovább. A böngészők egyszer figyelmeztetnek, mert semmilyen hatóság nem kezeskedik érte.</p>
+<p>Új hosztra vagy IP-re váltáshoz módosítsd a <code>publicHost</code> értékét, töröld a <code>data/certs/</code> mappát és indítsd újra. Az a kliens, amelyik a régi tanúsítványban megbízott, egyszer „a tanúsítvány megváltozott” figyelmeztetést mutat.</p>
+<h2 id="2-lehet-s-g-saj-t-tan-s-tv-ny">2. lehetőség: saját tanúsítvány</h2>
+<p>Állítsd mindkét értéket PEM-fájlokra, például Let's Encrypt vagy a céged CA-jának tanúsítványára:</p>
+<pre><code class="lang-json">&quot;serverCrt&quot;: &quot;/etc/letsencrypt/live/chat.example.com/fullchain.pem&quot;,
+&quot;serverKey&quot;: &quot;/etc/letsencrypt/live/chat.example.com/privkey.pem&quot;</code></pre>
+<ul><li>Az elérési utak abszolútak, vagy a projekt gyökeréhez viszonyítottak.</li><li><strong>Teljes láncot</strong> tartalmazó fájl ajánlott, hogy a kliensek fel tudják építeni a teljes láncot.</li><li>A kulcsnak illeszkednie kell a tanúsítványhoz, és legalább 2048 bites RSA-nak vagy egyenértékű EC-kulcsnak kell lennie.</li><li><strong>Megújítás után indítsd újra</strong>: a fájlokat a szerver csak induláskor olvassa be.</li></ul>
+<p>Ha bármi hibás (hiányzó fájl, érvénytelen PEM, eltérés, gyenge kulcs), a szerver egyértelmű <code>[certs]</code> hibát naplóz és kilép, ahelyett hogy TLS nélkül indulna.</p>
+<h2 id="az-ujjlenyomat-ellen-rz-se">Az ujjlenyomat ellenőrzése</h2>
+<p>Minden indításkor kiírja a tanúsítvány SHA-256 ujjlenyomatát:</p>
+<pre><code>[certs] SHA-256 fingerprint: 3B:BE:D4:94:...</code></pre>
+<p>Megegyezik az <code>openssl x509 -noout -fingerprint -sha256 -in cert.pem</code> kimenetével, és azzal az ujjlenyomattal, amit az asztali és az Android-kliens mutat, amikor önaláírt szerverhez csatlakozol. Vesd össze más csatornán, mielőtt megbízol egy általad nem ismert szerverben.</p>
+<h2 id="ford-tott-proxy-m-g-tt">Fordított proxy mögött</h2>
+<p>Ha nginx, Caddy vagy másik proxy zárja le a TLS-t a MeshCrowd előtt:</p>
+<ol><li>Futtasd a MeshCrowdot <code>&quot;useHttps&quot;: false</code> beállítással egy helyi porton, vagy tarts HTTPS-t a proxy és a szerver között.</li><li>Állítsd a <code>&quot;trustProxy&quot;</code> értékét a mögötted lévő proxyk számára (például <code>1</code>) vagy azok alhálózatára.</li><li>Továbbítsd a <code>Host</code> és <code>X-Forwarded-Proto</code> fejléceket, és engedélyezd a WebSocket-váltást a <code>/ws</code> útvonalon.</li><li>Állítsd a <code>publicHost</code> értékét a nyilvános névre, vagy vedd fel a pontos nyilvános eredetet a <code>passportOrigins</code> közé.</li></ol>
+<pre><code>location / {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection &quot;upgrade&quot;;
+}</code></pre>
+<div class="callout warn"><strong>Miért számít az ugrásszám</strong><p><code>trustProxy</code> nélkül a szerver minden látogatót a proxyként lát, és a munkamenet-sütik <code>Secure</code> jelző nélkül készülnek. Közvetlenül elérhető szerveren a <code>trustProxy: true</code> lehetővé teszi, hogy a kliensek meghamisítsák a címüket, és kijátsszák a sebességkorlátokat és a naplókat. Használj ugrásszámot vagy alhálózatot.</p></div>
+<h2 id="h-v-sok-h-l-zatok-k-z-tt">Hívások hálózatok között</h2>
+<p>A hang és videó WebRTC-vel, közvetlenül az emberek között megy. Kapcsold be a beépített STUN/TURN szervert, vagy vegyél fel sajátot az <code>iceServers</code> közé (lásd: <a href="configuration.html#stun-s-turn">STUN és TURN</a>). A proxy nem viszi a médiát.</p>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="Ezen az oldalon"><h4>Ezen az oldalon</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../../assets/js/wiki-data-hu.js"></script>
+<script src="../../assets/js/site.js" defer></script>
+</body>
+</html>

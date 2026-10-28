@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="hu" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Telepítés és frissítés - MeshCrowd Wiki</title>
+<meta name="description" content="Követelmények, a hordozható csomag, futtatás forrásból, portok, mentések és a frissítés menete.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../../assets/img/logo.png">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="../../wiki/installation.html">
+<link rel="alternate" hreflang="hu" href="installation.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root="../.." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki oldalak</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Kezdőlap</a> / <a href="index.html">Wiki</a> / Kezdd itt</div>
+      <h1>Telepítés és frissítés</h1>
+      <p class="summary">Követelmények, a hordozható csomag, futtatás forrásból, portok, mentések és a frissítés menete.</p>
+<h2 id="k-vetelm-nyek">Követelmények</h2>
+<table><thead><tr><th>Rész</th><th>Szükséges</th></tr></thead><tbody><tr><td>Szerver</td><td><strong>Node.js 22.5 vagy újabb</strong> (a beépített <code>node:sqlite</code> modult használja). Windowson megfelelő <code>node.exe</code> mellékelve van.</td></tr><tr><td>Memória és lemez</td><td>Egy kis közösséghez néhány száz MB RAM, és elég lemez a feltöltéseknek.</td></tr><tr><td>Böngésző</td><td>Aktuális Chromium-, Firefox- vagy Safari-alapú böngésző.</td></tr><tr><td>Hang és videó</td><td>HTTPS (vagy <code>localhost</code>), plusz a beépített STUN/TURN szerver (vagy egy külső) a különböző hálózaton lévőknek. Lásd: <a href="configuration.html#stun-s-turn">STUN és TURN</a>.</td></tr></tbody></table>
+<h2 id="windows-a-hordozhat-csomag">Windows: a hordozható csomag</h2>
+<p>A csomag tartalmazza a szervert, a webes klienst, egy Node.js futtatókörnyezetet és egy üres <code>data/</code> vázat. Másold át bármely, azonos operációs rendszerű gépre, még internet nélkülire is.</p>
+<ol><li>Csomagold ki bárhová.</li><li>Futtasd a <code>start-server.bat</code> fájlt.</li><li>Szükség esetén szerkeszd a <code>data/config.json</code> fájlt (ha a hosztot vagy a portokat módosítani kell), majd indítsd újra.</li></ol>
+<h2 id="linux-s-macos-forr-sb-l">Linux és macOS: forrásból</h2>
+<pre><code>node --version     # 22.5 vagy újabb kell
+npm install
+npm start</code></pre>
+<p>A <code>./start-server.sh</code> ugyanezt teszi, és ha van mellékelt futtatókörnyezet, azt részesíti előnyben. Fejlesztéskor használd az <code>npm run dev</code> parancsot; az újraindítja a szervert, ha a fájlok változnak.</p>
+<h2 id="mit-hoz-l-tre-az-els-ind-t-s">Mit hoz létre az első indítás</h2>
+<table><thead><tr><th>Elérési út</th><th>Mi ez</th></tr></thead><tbody><tr><td><code>data/dismesh.db</code></td><td>Az SQLite adatbázis: felhasználók, szerverek, üzenetek</td></tr><tr><td><code>data/config.json</code></td><td>A konfiguráció, minden indításkor az alapértékekkel kiegészítve</td></tr><tr><td><code>data/certs/</code></td><td>A generált önaláírt tanúsítvány (hacsak nem állítasz be sajátot)</td></tr><tr><td><code>data/attachments/</code>, <code>data/avatars/</code> és hasonlók</td><td>Feltöltött fájlok</td></tr></tbody></table>
+<h2 id="portok">Portok</h2>
+<p>Alapból a HTTPS a <code>8443</code>-on figyel. A sima <code>8080</code> port csak HTTPS-re irányít át. Módosításukhoz használd a <code>data/config.json</code> fájl <code>httpsPort</code> és <code>port</code> kulcsait. Lásd: <a href="configuration.html">Konfiguráció</a>.</p>
+<h2 id="futtat-s-szolg-ltat-sk-nt">Futtatás szolgáltatásként</h2>
+<p>Futtasd az indítószkriptet a kedvenc szolgáltatáskezelőd alatt (systemd, Windows-szolgáltatás burkoló, ütemezett feladat). A folyamat a naplóját a szabványos kimenetre írja. Normál leállító jellel állítsd le; az adatbázis tisztán bezárul.</p>
+<h2 id="ment-sek">Mentések</h2>
+<div class="callout"><strong>A mentés egy mappa</strong><p>Állítsd le a szervert és másold le az egész <code>data/</code> mappát. Tartalmazza az adatbázist, a konfigurációt, a tanúsítványt és minden feltöltött fájlt. Visszaállításkor tedd vissza a mappát.</p></div>
+<p>Ne másold egyedül a <code>data/dismesh.db</code> fájlt, miközben a szerver fut, mert a feltöltéseknek és az adatbázisnak egyeznie kell.</p>
+<h2 id="friss-t-s">Frissítés</h2>
+<ol><li>Készíts mentést.</li><li>Állítsd le a szervert.</li><li>Cseréld le a programfájlokat az újra, a <code>data/</code> mappádat megtartva.</li><li>Indítsd el a szervert. Az adatbázis-módosítások indításkor automatikusan lefutnak.</li></ol>
+<p>A webes klienst és a telefonos felületet a szerver szolgálja ki, így a szerver frissítése mindenhol frissíti őket. Az asztali és az Android-alkalmazásnak csak akkor kell új kiadás, ha a saját natív kódjuk változik.</p>
+<h2 id="a-hordozhat-csomag-saj-t-p-t-se">A hordozható csomag saját építése</h2>
+<pre><code>npm run build:portable</code></pre>
+<p>Ez a <code>dist/dismesh-portable/</code> mappát hozza létre. Az Oldalakhoz (Sites) futtasd egyszer az <code>npm run fetch:php</code> parancsot az építő gépen, hogy Windowsra PHP futtatókörnyezet kerüljön a csomagba. Lásd: <a href="sites.html">Oldalak</a>.</p>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="Ezen az oldalon"><h4>Ezen az oldalon</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../../assets/js/wiki-data-hu.js"></script>
+<script src="../../assets/js/site.js" defer></script>
+</body>
+</html>

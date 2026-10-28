@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moderation and safety - MeshCrowd Wiki</title>
+<meta name="description" content="AutoMod, rules screening, verification levels, age-restricted channels, timeouts, bans, reports, the audit log and data pruning.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../assets/img/logo.png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="moderation.html">
+<link rel="alternate" hreflang="hu" href="../hu/wiki/moderation.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root=".." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki pages</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Home</a> / <a href="index.html">Wiki</a> / Running a community</div>
+      <h1>Moderation and safety</h1>
+      <p class="summary">AutoMod, rules screening, verification levels, age-restricted channels, timeouts, bans, reports, the audit log and data pruning.</p>
+<p>MeshCrowd gives moderators tools that act before a problem spreads and keep a record afterwards. Most are under <strong>Server Settings</strong>.</p>
+<h2 id="automod">AutoMod</h2>
+<p><strong>Server Settings, AutoMod</strong> (needs <strong>Manage Server</strong>). Rules are checked before a message is posted in a channel or thread, and again when a message is edited.</p>
+<figure class="doc"><div class="window"><img src="../assets/img/settings-automod.jpg" alt="AutoMod rules" loading="lazy"></div><figcaption>AutoMod rules</figcaption></figure>
+<table><thead><tr><th>Rule</th><th>What it catches</th></tr></thead><tbody><tr><td>Blocked words</td><td>Words or phrases, whole-word or substring, with <code>*</code> wildcards</td></tr><tr><td>Links</td><td>Block all links, allow only listed sites, or block listed sites (subdomains included)</td></tr><tr><td>Mass mentions</td><td>Too many people or roles in one message; <code>@everyone</code> and <code>@here</code> always count as too many</td></tr><tr><td>Spam</td><td>Too many messages in a window, or the same message repeated</td></tr><tr><td>Capitals</td><td>Too large a share of capital letters</td></tr></tbody></table>
+<p>A hit refuses the message, names the rule to the author, logs it (author, channel and the first 200 characters) and, if the rule says so, <strong>times the author out</strong>. Each rule can exempt roles and channels. The owner and anyone who can manage messages in the channel are never filtered. Bots and webhooks are not filtered. The log keeps the latest 500 hits per server.</p>
+<div class="callout"><strong>No regular expressions</strong><p>Rules deliberately do not accept user-written regular expressions, which could be crafted to hang the server. Use wildcards instead.</p></div>
+<h2 id="rules-screening-onboarding">Rules screening (onboarding)</h2>
+<p>Turn on <strong>Require new members to accept the rules</strong> under <strong>Server Settings, Onboarding</strong>. New members see a welcome window with the rules, up to five questions whose answers hand out roles, and an &quot;I agree&quot; box. Until they accept they can read what their roles show but cannot post, react, attach files or join voice, and choosing <strong>Later</strong> keeps them in that view-only state. Members who are already in are not affected. Roles with moderation or management powers can never be handed out by a question.</p>
+<figure class="doc"><div class="window"><img src="../assets/img/onboarding.jpg" alt="What a new member sees" loading="lazy"></div><figcaption>What a new member sees</figcaption></figure>
+<h2 id="verification-level">Verification level</h2>
+<p><strong>Server Settings, Overview, Verification level</strong> holds back brand-new accounts and recent joiners from posting:</p>
+<table><thead><tr><th>Level</th><th>Requires</th></tr></thead><tbody><tr><td>None</td><td>Nothing</td></tr><tr><td>Low</td><td>An account at least 5 minutes old</td></tr><tr><td>Medium</td><td>Account 5 minutes old and a member for 10 minutes</td></tr><tr><td>High</td><td>Account 7 days old and a member for 10 minutes</td></tr></tbody></table>
+<p>The owner, bots and anyone who holds a role other than @everyone are never held back. Everything is local: there is no email or phone check.</p>
+<h2 id="age-restricted-channels">Age-restricted channels</h2>
+<p>Tick <strong>Age-restricted channel (18+)</strong> when creating or editing a text channel. The channel gets an <strong>18+</strong> badge, and the first time a member opens one they confirm <strong>I am 18 or older</strong> once for their whole account. It is a plain click-through: nothing is verified and nothing is sent to anyone. Unconfirmed members cannot read or post there, and the channel is left out of their search.</p>
+<figure class="doc"><div class="window"><img src="../assets/img/age-gate.jpg" alt="An age-restricted channel" loading="lazy"></div><figcaption>An age-restricted channel</figcaption></figure>
+<div class="callout warn"><strong>A courtesy gate, not access control</strong><p>The gate does not stop an unconfirmed member's client from receiving live events for the channel. To keep people out of a channel, use channel permissions and private channels.</p></div>
+<h2 id="members-timeouts-kicks-and-bans">Members: timeouts, kicks and bans</h2>
+<p>From a member's right-click menu or <strong>Server Settings, Members</strong>:</p>
+<ul><li><strong>Timeout</strong> stops someone posting or speaking for a while (needs <strong>Moderate Members</strong>).</li><li><strong>Kick</strong> removes someone, who can rejoin with an invite.</li><li><strong>Ban</strong> removes someone and blocks them from rejoining.</li><li><strong>Slowmode</strong> limits how often people can post in a channel.</li><li><strong>Mute for everyone</strong> in voice rooms.</li></ul>
+<h2 id="reports">Reports</h2>
+<p>Any member can report a message or a person. Reports go to a queue that site administrators with the reports permission can resolve from the admin panel.</p>
+<h2 id="audit-log">Audit log</h2>
+<p><strong>Server Settings, Audit Log</strong> lists what moderators did: role and channel changes, kicks, bans, invites, AutoMod rule edits and more, with who and when.</p>
+<h2 id="data-pruning">Data pruning</h2>
+<p>Delete message history older than a chosen date. Server moderators with <strong>Prune Content</strong> can do it for their own server; site administrators can do it instance-wide. Every prune shows a preview (message count, attachments and size) first and can run now or after a <strong>24-hour notice</strong> that gives members time to save things. A notice is always posted in the affected conversation, and attachments can be kept or deleted too.</p>
+<h2 id="good-practice">Good practice</h2>
+<ul><li>Start with a clear rules message and onboarding.</li><li>Turn on a verification level on public servers.</li><li>Give moderators a role with only the permissions they need.</li><li>Review the AutoMod log now and then to tune rules.</li></ul>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../assets/js/wiki-data.js"></script>
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>

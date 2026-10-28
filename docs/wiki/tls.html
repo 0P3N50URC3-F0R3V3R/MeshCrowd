@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TLS and reverse proxies - MeshCrowd Wiki</title>
+<meta name="description" content="The self-signed certificate, bringing your own, checking fingerprints and running behind nginx or Caddy.">
+<meta name="theme-color" content="#1e1f22">
+<link rel="icon" href="../assets/img/logo.png">
+<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="alternate" hreflang="en" href="tls.html">
+<link rel="alternate" hreflang="hu" href="../hu/wiki/tls.html">
+<script>try{var d=document.documentElement,t=localStorage.getItem('mc-theme');if(t&&t!=='dark')d.setAttribute('data-theme',t);var l=d.lang,w=localStorage.getItem('mc-lang');if(!w&&l==='en'){var n=(navigator.languages&&navigator.languages[0])||navigator.language||'';if(/^hu/i.test(n))w='hu'}if(w&&w!==l){var a=document.querySelector('link[rel="alternate"][hreflang="'+w+'"]');if(a)location.replace(a.getAttribute('href'))}}catch(e){}</script>
+</head>
+<body data-root=".." data-base=".." data-page="wiki" data-wiki>
+<main>
+<div class="container wiki-layout">
+  <div>
+    <button class="btn btn-ghost btn-sm wiki-mobile-toggle" id="wiki-toggle" type="button">Wiki pages</button>
+    <nav class="wiki-nav" id="wiki-nav" aria-label="Wiki"></nav>
+  </div>
+  <div class="wiki-main">
+    <article>
+      <div class="crumbs"><a href="../index.html">Home</a> / <a href="index.html">Wiki</a> / Start here</div>
+      <h1>TLS and reverse proxies</h1>
+      <p class="summary">The self-signed certificate, bringing your own, checking fingerprints and running behind nginx or Caddy.</p>
+<p>MeshCrowd serves HTTPS by default. Browsers only allow microphones, cameras and notifications on secure origins, so TLS matters for voice and video.</p>
+<h2 id="option-1-the-self-signed-certificate">Option 1: the self-signed certificate</h2>
+<p>Leave <code>serverCrt</code> and <code>serverKey</code> empty. On the first start the server creates a ten-year certificate for <code>publicHost</code>, <code>localhost</code> and <code>127.0.0.1</code> under <code>data/certs/</code> and reuses it afterwards. Browsers warn once because no authority vouches for it.</p>
+<p>To move to a new host or IP, change <code>publicHost</code>, delete <code>data/certs/</code> and restart. Clients that trusted the old certificate show a &quot;certificate changed&quot; warning once.</p>
+<h2 id="option-2-your-own-certificate">Option 2: your own certificate</h2>
+<p>Set both values to PEM files, for example from Let's Encrypt or your company CA:</p>
+<pre><code class="lang-json">&quot;serverCrt&quot;: &quot;/etc/letsencrypt/live/chat.example.com/fullchain.pem&quot;,
+&quot;serverKey&quot;: &quot;/etc/letsencrypt/live/chat.example.com/privkey.pem&quot;</code></pre>
+<ul><li>Paths are absolute, or relative to the project root.</li><li>A <strong>full chain</strong> file is recommended so clients can build the whole chain.</li><li>The key must match the certificate and be at least 2048-bit RSA or an equivalent EC key.</li><li><strong>Restart after renewing</strong>: the files are read once at start.</li></ul>
+<p>If anything is wrong (missing file, invalid PEM, mismatch, weak key) the server logs a clear <code>[certs]</code> error and exits instead of starting without TLS.</p>
+<h2 id="checking-the-fingerprint">Checking the fingerprint</h2>
+<p>Every start prints the certificate's SHA-256 fingerprint:</p>
+<pre><code>[certs] SHA-256 fingerprint: 3B:BE:D4:94:...</code></pre>
+<p>It matches <code>openssl x509 -noout -fingerprint -sha256 -in cert.pem</code> and the fingerprint the desktop and Android clients show when you connect to a self-signed server. Compare it out of band before you trust a server you do not recognize.</p>
+<h2 id="behind-a-reverse-proxy">Behind a reverse proxy</h2>
+<p>If nginx, Caddy or another proxy terminates TLS in front of MeshCrowd:</p>
+<ol><li>Run MeshCrowd with <code>&quot;useHttps&quot;: false</code> on a local port, or keep HTTPS between the proxy and the server.</li><li>Set <code>&quot;trustProxy&quot;</code> to the number of proxies in front (for example <code>1</code>) or to their subnet.</li><li>Forward <code>Host</code> and <code>X-Forwarded-Proto</code>, and allow WebSocket upgrades on <code>/ws</code>.</li><li>Set <code>publicHost</code> to the public name, or add the exact public origin to <code>passportOrigins</code>.</li></ol>
+<pre><code>location / {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection &quot;upgrade&quot;;
+}</code></pre>
+<div class="callout warn"><strong>Why the hop count matters</strong><p>Without <code>trustProxy</code> the server sees every visitor as the proxy, and session cookies are issued without the <code>Secure</code> flag. With <code>trustProxy: true</code> on a directly exposed server, clients can fake their address and defeat rate limits and audit logs. Use a hop count or subnet.</p></div>
+<h2 id="calls-across-networks">Calls across networks</h2>
+<p>Voice and video use WebRTC directly between people. Turn on the built-in STUN/TURN server or add your own to <code>iceServers</code> (see <a href="configuration.html#stun-and-turn">STUN and TURN</a>). The proxy does not carry media.</p>
+    </article>
+    <div class="pager" id="wiki-pager"></div>
+  </div>
+  <aside class="toc" aria-label="On this page"><h4>On this page</h4><div id="wiki-toc"></div></aside>
+</div>
+</main>
+<script src="../assets/js/wiki-data.js"></script>
+<script src="../assets/js/site.js" defer></script>
+</body>
+</html>
