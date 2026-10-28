@@ -1,0 +1,25 @@
+// Common Discord-style :shortcode: names for Unicode emoji, resolved at render time. Server custom
+// emoji with the same name win (see replaceCustomEmoji in utils.js).
+export const EMOJI_SHORTCODES = {
+  smile: '😄', smiley: '😃', grin: '😁', laughing: '😆', joy: '😂', rofl: '🤣', blush: '😊', wink: '😉',
+  heart_eyes: '😍', kissing_heart: '😘', sunglasses: '😎', thinking: '🤔', neutral_face: '😐', unamused: '😒',
+  rolling_eyes: '🙄', smirk: '😏', sob: '😭', cry: '😢', angry: '😠', rage: '😡', scream: '😱', sweat_smile: '😅',
+  slightly_smiling_face: '🙂', upside_down_face: '🙃', innocent: '😇', partying_face: '🥳', sleeping: '😴',
+  yum: '😋', stuck_out_tongue: '😛', hugging: '🤗', exploding_head: '🤯', flushed: '😳', pleading_face: '🥺',
+  skull: '💀', ghost: '👻', poop: '💩', clown: '🤡', robot: '🤖', alien: '👽',
+  thumbsup: '👍', '+1': '👍', thumbsdown: '👎', '-1': '👎', ok_hand: '👌', wave: '👋', clap: '👏', pray: '🙏',
+  raised_hands: '🙌', muscle: '💪', point_up: '☝️', point_down: '👇', point_left: '👈', point_right: '👉',
+  fist: '✊', eyes: '👀', brain: '🧠',
+  heart: '❤️', orange_heart: '🧡', yellow_heart: '💛', green_heart: '💚', blue_heart: '💙', purple_heart: '💜',
+  black_heart: '🖤', broken_heart: '💔', sparkling_heart: '💖', fire: '🔥', star: '⭐', sparkles: '✨',
+  zap: '⚡', boom: '💥', tada: '🎉', confetti_ball: '🎊', balloon: '🎈', gift: '🎁', trophy: '🏆', medal: '🏅',
+  '100': '💯', check: '✔️', white_check_mark: '✅', warning: '⚠️', question: '❓', exclamation: '❗',
+  rocket: '🚀', bulb: '💡', bell: '🔔', lock: '🔒', key: '🔑', hammer: '🔨', wrench: '🔧', gear: '⚙️',
+  pizza: '🍕', hamburger: '🍔', fries: '🍟', taco: '🌮', cake: '🍰', cookie: '🍪', coffee: '☕', beer: '🍺',
+  wine_glass: '🍷', apple: '🍎', banana: '🍌', avocado: '🥑',
+  dog: '🐶', cat: '🐱', mouse: '🐭', fox: '🦊', bear: '🐻', panda: '🐼', unicorn: '🦄', snake: '🐍', turtle: '🐢',
+  sun: '☀️', moon: '🌙', cloud: '☁️', rainbow: '🌈', snowflake: '❄️', ocean: '🌊', earth_africa: '🌍',
+  computer: '💻', phone: '📱', headphones: '🎧', microphone: '🎤', camera: '📷', tv: '📺', video_game: '🎮',
+  musical_note: '🎵', notes: '🎶', book: '📖', pencil: '📝', pushpin: '📌', paperclip: '📎', link: '🔗',
+  moneybag: '💰', gem: '💎', crown: '👑', soccer: '⚽', basketball: '🏀', dart: '🎯',
+};

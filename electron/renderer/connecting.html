@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>MeshCrowd</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #313338; color: #dbdee1;
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  .card { width: 420px; text-align: center; padding: 32px; }
+  .stage { width: 120px; height: 120px; margin: 0 auto 28px; perspective: 500px; }
+  .tilt { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; animation: sway 4s ease-in-out infinite; }
+  .ring {
+    position: absolute; inset: 0; border-radius: 50%; border: 9px solid transparent;
+    border-top-color: #14b8a6; border-right-color: #0d9488;
+    transform-style: preserve-3d; animation: spin 1.1s linear infinite;
+  }
+  .ring::after {
+    content: ""; position: absolute; top: 50%; right: -17px; width: 0; height: 0; margin-top: -4px;
+    border-style: solid; border-width: 13px 12px 0 12px; border-color: #0d9488 transparent transparent transparent;
+  }
+  .ring.back { transform: translateZ(-14px); opacity: .35; border-top-color: #0d9488; border-right-color: #0b7a70; animation-name: spin-back; }
+  .ring.mid { transform: translateZ(-7px); opacity: .6; animation-name: spin-mid; }
+  .ring.front { transform: translateZ(0); filter: drop-shadow(0 6px 8px rgba(0,0,0,.55)); }
+  @keyframes spin { to { transform: translateZ(0) rotateZ(360deg); } }
+  @keyframes spin-mid { to { transform: translateZ(-7px) rotateZ(360deg); } }
+  @keyframes spin-back { to { transform: translateZ(-14px) rotateZ(360deg); } }
+  @keyframes sway { 0%, 100% { transform: rotateX(55deg) rotateY(-14deg); } 50% { transform: rotateX(38deg) rotateY(14deg); } }
+  .shadow {
+    width: 90px; height: 14px; margin: -14px auto 24px; border-radius: 50%;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,.5), transparent 70%);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { transform: scaleX(1); opacity: .8; } 50% { transform: scaleX(.8); opacity: .5; } }
+  h1 { margin: 0 0 6px; font-size: 20px; color: #f2f3f5; }
+  p { margin: 0; color: #949ba4; font-size: 14px; word-break: break-all; }
+  .actions { display: none; gap: 10px; margin-top: 26px; }
+  button {
+    flex: 1; padding: 11px; border: none; border-radius: 6px; background: #0d9488;
+    color: white; font-weight: 600; font-size: 15px; cursor: pointer;
+  }
+  button:hover { background: #0b7a70; }
+  button.secondary { background: #4e5058; }
+  button.secondary:hover { background: #6d6f78; }
+  body.failed .stage, body.failed .shadow { display: none; }
+  body.failed .actions { display: flex; }
+  .fail-icon { display: none; font-size: 44px; margin-bottom: 14px; color: #f23f42; }
+  body.failed .fail-icon { display: block; }
+  @media (prefers-reduced-motion: reduce) { .tilt, .ring, .shadow { animation-duration: 6s; } }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="fail-icon">&#9888;</div>
+    <div class="stage"><div class="tilt"><div class="ring back"></div><div class="ring mid"></div><div class="ring front"></div></div></div>
+    <div class="shadow"></div>
+    <h1 id="title"></h1>
+    <p id="host"></p>
+    <div class="actions">
+      <button id="retry"></button>
+      <button id="change" class="secondary"></button>
+    </div>
+  </div>
+  <script src="connecting.js"></script>
+</body>
+</html>

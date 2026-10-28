@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">MeshCrowd</string>
+    <string name="channel_messages">Messages</string>
+    <string name="channel_service">Background message checker</string>
+    <string name="channel_downloads">Downloads</string>
+    <string name="channel_call">Voice calls</string>
+    <string name="call_title">MeshCrowd call in progress</string>
+    <string name="call_text">Tap to return to the call.</string>
+    <string name="service_title">MeshCrowd is checking for messages</string>
+    <string name="service_text">Fast mode keeps this notification. Turn it off in You, Android app.</string>
+    <string name="download_done">Download complete</string>
+    <string name="notify_encrypted">New encrypted message</string>
+    <string name="notify_attachment">Sent an attachment</string>
+    <string name="invite_switch_title">Open invite link?</string>
+    <string name="invite_switch_body">This invite is for %1$s, a different server than the one this app is set up for. Continue to connect to it?</string>
+    <string name="invite_switch_continue">Continue</string>
+    <string name="setup_title">Connect to your server</string>
+    <string name="setup_hint">Enter the address of your MeshCrowd server.</string>
+    <string name="setup_placeholder">chat.example.com or 192.168.1.44:8080</string>
+    <string name="setup_connect">Connect</string>
+    <string name="setup_invalid">That does not look like a server address.</string>
+    <string name="setup_failed">Could not reach a MeshCrowd server at that address.</string>
+    <string name="setup_untrusted_title">Untrusted certificate</string>
+    <string name="setup_untrusted_body">This server uses a certificate your phone does not recognise (for example a self-signed one).\n\nSHA-256 fingerprint:\n%1$s\n\nOnly continue if this matches the fingerprint your server administrator gave you.</string>
+    <string name="setup_trust">Trust this certificate</string>
+    <string name="setup_cleartext">This server is reached without encryption (http). Anyone on the network can read your messages. Use it only on a network you trust.</string>
+</resources>

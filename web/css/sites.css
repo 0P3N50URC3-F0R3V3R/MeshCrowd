@@ -1,0 +1,35 @@
+.site-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.site-toolbar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--border); flex: 0 0 auto; }
+.site-toolbar .spacer { flex: 1; }
+.site-php-status { color: var(--danger, #f04747); font-size: 12px; max-width: 40%; }
+.site-body { flex: 1; min-height: 0; position: relative; }
+.site-frame { width: 100%; height: 100%; border: 0; background: #fff; display: block; }
+
+.site-sidebar { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.site-sidebar-title { font-weight: 600; font-size: 15px; padding: 4px 0 8px; word-break: break-word; }
+
+.se-wrap { display: grid; grid-template-columns: 240px 1fr; height: 100%; min-height: 0; }
+.se-tree { border-right: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
+.se-tree-head { display: flex; align-items: center; gap: 4px; padding: 8px; border-bottom: 1px solid var(--border); }
+.se-tree-head .spacer { flex: 1; }
+.se-tree-list { flex: 1; overflow: auto; padding: 4px 0; }
+.se-node { display: flex; align-items: center; gap: 6px; padding: 3px 8px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.se-node:hover { background: rgba(127, 127, 127, 0.15); }
+.se-node.active { background: rgba(127, 127, 127, 0.28); }
+.se-node .se-actions { margin-left: auto; display: none; gap: 2px; }
+.se-node:hover .se-actions { display: flex; }
+.se-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.se-bar { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.se-tabs { display: flex; gap: 2px; flex: 1; overflow-x: auto; }
+.se-tab { padding: 4px 10px; font-size: 13px; cursor: pointer; border-radius: 4px; white-space: nowrap; }
+.se-tab.active { background: rgba(127, 127, 127, 0.28); }
+.se-tab .dirty { color: var(--danger, #f04747); margin-left: 4px; }
+.se-notice { font-size: 12px; padding: 4px 10px; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+.se-host { flex: 1; min-height: 0; position: relative; }
+.se-host > #se-cm, .se-host > #se-visual { position: absolute; inset: 0; }
+.se-host .CodeMirror { height: 100%; font-size: 13px; }
+.se-host .tox-tinymce { height: 100% !important; border: 0; }
+.se-empty { padding: 24px; color: var(--text-secondary); }
+.php-ph { background: #fde68a; color: #78350f; border-radius: 3px; padding: 0 4px; font: 12px monospace; }
+
+@media (max-width: 800px) { .se-wrap { grid-template-columns: 1fr; } .se-tree { max-height: 30vh; border-right: 0; border-bottom: 1px solid var(--border); } }

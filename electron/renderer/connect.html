@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>MeshCrowd</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #313338; color: #dbdee1;
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  .card {
+    width: 420px; background: #2b2d31; border-radius: 12px; padding: 32px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  h1 { margin: 0 0 4px; font-size: 22px; color: #f2f3f5; }
+  p.sub { margin: 0 0 24px; color: #949ba4; font-size: 14px; }
+  label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #b5bac1; margin-bottom: 6px; }
+  input {
+    width: 100%; padding: 10px 12px; margin-bottom: 16px; border-radius: 6px; border: none;
+    background: #1e1f22; color: #dbdee1; font-size: 15px;
+  }
+  input:focus { outline: 2px solid #0d9488; }
+  button {
+    width: 100%; padding: 11px; border: none; border-radius: 6px; background: #0d9488;
+    color: white; font-weight: 600; font-size: 15px; cursor: pointer;
+  }
+  button:hover { background: #0b7a70; }
+  .error { color: #f23f42; font-size: 13px; margin: -8px 0 16px; min-height: 16px; }
+  .hint { margin-top: 16px; font-size: 12px; color: #6d6f78; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Connect to a MeshCrowd server</h1>
+    <p class="sub">Enter the address of the server you want to connect to.</p>
+    <form id="connect-form">
+      <label for="url">Server address</label>
+      <input id="url" placeholder="https://192.168.1.10:8443" autofocus>
+      <div class="error" id="error"></div>
+      <button type="submit">Connect</button>
+    </form>
+    <p class="hint">This is the same address you'd type into a browser to reach the MeshCrowd web client on that machine. Self-signed certificates are supported — you'll be asked to confirm trust on first connect.</p>
+  </div>
+  <script src="connect.js"></script>
+</body>
+</html>
