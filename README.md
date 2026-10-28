@@ -394,6 +394,9 @@ keep a backup, an update must use the same key). `./gradlew testDebugUnitTest` r
 
 ## Portable install
 
+Go to the releases and download everything, extract and start to use... 
+
+OR: if you want to mess around:
 ```
 npm run build:portable
 ```
