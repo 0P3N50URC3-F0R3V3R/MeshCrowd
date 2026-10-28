@@ -1,4 +1,4 @@
-# MeshCrowd
+<img width="64" height="64" alt="logo" src="https://github.com/user-attachments/assets/71f3a79b-d700-4d38-b396-de1ea6bdf50d" /> # MeshCrowd 
 
 **A self-hosted chat platform you run on your own machine or network.**
 
@@ -10,6 +10,18 @@ and start it with a double-click.
 
 Not secret, that this project is partially VIBE-Coded and made with AI assisted tools, but it is 
 underwent a supervision/testing/fixing too by human beings also.
+
+## Screenshots
+<img width="640" height="400" alt="chat-dev" src="https://github.com/user-attachments/assets/2377b699-ceed-48b5-9dbe-7a47e89ec89c" />
+<img width="640" height="400" alt="chat-general" src="https://github.com/user-attachments/assets/5c4af736-0fed-4e98-9eab-66609b10e935" />
+<img width="640" height="400" alt="settings-roles" src="https://github.com/user-attachments/assets/560c49ee-d56b-4754-bc7c-0ab64993b553" />
+<img width="640" height="400" alt="theme-light" src="https://github.com/user-attachments/assets/e7fc1a14-d1b1-48ad-b8c9-016621a73040" />
+<img width="640" height="400" alt="theme-sunset" src="https://github.com/user-attachments/assets/cb564015-903b-434c-afa0-484217243d59" />
+
+## Mobile Screenshots
+
+<img width="412" height="680" alt="m-chat" src="https://github.com/user-attachments/assets/f5e847b7-987e-4e6f-b627-2b633a676085" /><img width="412" height="860" alt="m-servers" src="https://github.com/user-attachments/assets/a3a91864-238c-4a46-a261-dec97a8a6b34" /><img width="412" height="860" alt="m-answer" src="https://github.com/user-attachments/assets/1d8dc09f-4f41-454f-8313-6db8f9acdec4" />
+
 
 ## Contents
 
