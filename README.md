@@ -19,8 +19,9 @@ underwent a supervision/testing/fixing too by human beings also.
 <img width="640" height="400" alt="theme-sunset" src="https://github.com/user-attachments/assets/cb564015-903b-434c-afa0-484217243d59" />
 
 ## Mobile Screenshots
-
-<img width="412" height="680" alt="m-chat" src="https://github.com/user-attachments/assets/f5e847b7-987e-4e6f-b627-2b633a676085" /><img width="412" height="860" alt="m-servers" src="https://github.com/user-attachments/assets/a3a91864-238c-4a46-a261-dec97a8a6b34" /><img width="412" height="860" alt="m-answer" src="https://github.com/user-attachments/assets/1d8dc09f-4f41-454f-8313-6db8f9acdec4" />
+<img width="206" height="340" alt="m-chat" src="https://github.com/user-attachments/assets/f5e847b7-987e-4e6f-b627-2b633a676085" />
+<img width="206" height="340" alt="m-servers" src="https://github.com/user-attachments/assets/a3a91864-238c-4a46-a261-dec97a8a6b34" />
+<img width="206" height="340" alt="m-answer" src="https://github.com/user-attachments/assets/1d8dc09f-4f41-454f-8313-6db8f9acdec4" />
 
 
 ## Contents
