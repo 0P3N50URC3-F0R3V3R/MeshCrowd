@@ -78,6 +78,10 @@ img, video { max-width: 100%; }
 .m-placeholder .btn { display: inline-block; margin-top: 12px; text-decoration: none; }
 .m-actions { display: flex; }
 .m-chat-body { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
+.m-unread-banner { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; padding: 0 12px; font-size: 13px; font-weight: 600; color: #fff; background: var(--brand); }
+.m-unread-banner[hidden] { display: none; }
+.m-unread-banner button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; }
+.m-unread-jump { flex: 1; min-width: 0; }
 .m-msgs { padding: 8px 0 12px; }
 .m-msg { display: flex; gap: 10px; padding: 2px var(--m-pad); min-width: 0; }
 .m-msg:not(.compact) { margin-top: 10px; }

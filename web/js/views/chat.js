@@ -85,10 +85,12 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   // Snapshot of the read pointer at open time: the "new messages" line stays put while this pane is
   // open and is gone on the next open, once markRead has advanced the pointer.
   const prefs = unreadPrefs(state.uiPrefs);
-  const unreadAfterId = scope.kind === 'thread' || prefs.unreadLine === 'off' ? 0 : (state.readState.get(`${scopeType}:${scopeId}`) || 0);
+  let unreadAfterId = scope.kind === 'thread' || prefs.unreadLine === 'off' ? 0 : (state.readState.get(`${scopeType}:${scopeId}`) || 0);
+  let bannerDismissed = false;
 
   container.innerHTML = `
     <div class="message-scroll" id="msg-scroll">
+      <div class="unread-banner" id="unread-banner" hidden></div>
       <div class="top-spacer"></div>
       <div id="msg-list"></div>
     </div>
@@ -102,6 +104,32 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   const typingEl = container.querySelector('#typing-indicator');
   const composerWrap = container.querySelector('#composer-wrap');
   const bannerEl = container.querySelector('#e2ee-banner');
+  const unreadBannerEl = container.querySelector('#unread-banner');
+
+  function paintUnreadBanner() {
+    const at = bannerDismissed ? -1 : firstUnreadIndex(messages, unreadAfterId, (m) => isSelf(m.author.id));
+    if (at < 0) { unreadBannerEl.hidden = true; return; }
+    const count = messages.filter((m) => m.id > unreadAfterId && !m.pending && !m.eventType && !isSelf(m.author.id)).length;
+    const since = new Date(messages[at].createdAt);
+    const sameDay = since.toDateString() === new Date().toDateString();
+    const when = since.toLocaleString(undefined, sameDay ? { hour: '2-digit', minute: '2-digit' } : { dateStyle: 'medium', timeStyle: 'short' });
+    const label = t('chat.unreadBannerText', { count: hasMore && at === 0 ? `${count}+` : count, since: when });
+    unreadBannerEl.hidden = false;
+    unreadBannerEl.innerHTML = `<button type="button" class="unread-banner-jump">${escapeHtml(label)}</button><button type="button" class="unread-banner-read">${escapeHtml(t('chat.markAsRead'))} ${icons.check(14)}</button>`;
+  }
+
+  unreadBannerEl.addEventListener('click', (e) => {
+    if (e.target.closest('.unread-banner-jump')) {
+      listEl.querySelector('.unread-divider')?.scrollIntoView({ block: 'start' });
+      bannerDismissed = true;
+      paintUnreadBanner();
+    } else if (e.target.closest('.unread-banner-read')) {
+      bannerDismissed = true;
+      unreadAfterId = 0;
+      if (messages.length) markRead(messages[messages.length - 1].id);
+      renderKeepingPosition();
+    }
+  });
 
   const keyNotices = []; // local-only system notices, never sent or stored
   let noticedKey = null;
@@ -240,7 +268,10 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
 
   function checkEdges() {
     if (scrollEl.scrollTop < 80) maybeLoadMore();
-    else if (isNearBottom()) maybeLoadNewer();
+    else if (isNearBottom()) {
+      maybeLoadNewer();
+      if (!bannerDismissed && !unreadBannerEl.hidden) { bannerDismissed = true; paintUnreadBanner(); }
+    }
   }
 
   // Re-renders while keeping the first message visible at the top of the viewport where it was,
@@ -328,6 +359,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   }
 
   function renderAll() {
+    paintUnreadBanner();
     if (messages.length === 0) {
       listEl.innerHTML = `
         <div class="channel-intro">

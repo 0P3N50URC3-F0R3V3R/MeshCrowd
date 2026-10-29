@@ -530,6 +530,10 @@ export function openUserSettings(initialTab = 'account') {
         <span>${t('userSettings.closeToTrayCheckbox')}</span>
       </label>
       <label class="checkbox-row">
+        <input type="checkbox" id="f-start-minimized" ${settings.startMinimized ? 'checked' : ''}>
+        <span>${t('userSettings.startMinimizedCheckbox')}</span>
+      </label>
+      <label class="checkbox-row">
         <input type="checkbox" id="f-start-windows" ${settings.startWithWindows ? 'checked' : ''}>
         <span>${t('userSettings.startWithWindowsCheckbox')}</span>
       </label>
@@ -563,6 +567,9 @@ export function openUserSettings(initialTab = 'account') {
     inner.querySelector('#f-close-tray').addEventListener('change', async (e) => {
       await window.dismeshClient.setAppSettings({ closeToTray: e.target.checked });
       toast(e.target.checked ? t('userSettings.minimizeToTrayToast') : t('userSettings.quitOnCloseToast'));
+    });
+    inner.querySelector('#f-start-minimized').addEventListener('change', async (e) => {
+      await window.dismeshClient.setAppSettings({ startMinimized: e.target.checked });
     });
     inner.querySelector('#f-start-windows').addEventListener('change', async (e) => {
       await window.dismeshClient.setAppSettings({ startWithWindows: e.target.checked });

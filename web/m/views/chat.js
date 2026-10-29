@@ -45,7 +45,8 @@ export function mountChat(el, params) {
   const prefs = unreadPrefs(state.uiPrefs);
   const PAGE = prefs.initialMessages;
   // Read pointer at open time: the "new" line stays while this chat is open, gone on the next open once read.
-  const unreadAfterId = kind === 'thread' || prefs.unreadLine === 'off' ? 0 : (state.readState.get(scopeKey) || 0);
+  let unreadAfterId = kind === 'thread' || prefs.unreadLine === 'off' ? 0 : (state.readState.get(scopeKey) || 0);
+  let bannerDismissed = false;
   let firstLoad = true;
   let messages = [];
   const deleted = new Set(); // ids deleted over the websocket, so a racing create cannot bring them back
@@ -79,6 +80,7 @@ export function mountChat(el, params) {
     </div>
     <div class="m-e2ee-banner" id="m-e2ee" hidden></div>
     <div class="m-chat-body">
+      <div class="m-unread-banner" id="m-unread-banner" hidden></div>
       <div class="m-msgs m-scroll" id="m-msgs"></div>
       <button class="m-jump" id="m-jump" hidden>${icons.chevronDown(18)} ${t('m.jumpLatest')}</button>
     </div>
@@ -91,6 +93,7 @@ export function mountChat(el, params) {
   const lastChat = { kind, serverId: params.serverId, channelId: params.channelId, threadId: params.threadId, dmId: params.dmId };
   setPref('lastChat', JSON.stringify(lastChat));
   const jumpEl = el.querySelector('#m-jump');
+  const unreadBannerEl = el.querySelector('#m-unread-banner');
   el.querySelector('#m-back').addEventListener('click', () => nav.back());
 
   // ---------- context ----------
@@ -176,7 +179,35 @@ export function mountChat(el, params) {
     const next = anchorId && [...msgsEl.querySelectorAll('[data-id]')].find((n) => n.dataset.id === anchorId);
     if (next) msgsEl.scrollTop += next.getBoundingClientRect().top - viewTop - anchorOffset;
     hydrateEncryptedImages();
+    paintUnreadBanner();
   }
+  function paintUnreadBanner() {
+    const at = bannerDismissed ? -1 : firstUnreadIndex(messages, unreadAfterId, (m) => m.author.id === state.me.id);
+    if (at < 0) { unreadBannerEl.hidden = true; return; }
+    const count = messages.filter((m) => m.id > unreadAfterId && !m.pending && !m.eventType && m.author.id !== state.me.id).length;
+    const since = new Date(messages[at].createdAt);
+    const sameDay = since.toDateString() === new Date().toDateString();
+    const when = since.toLocaleString(undefined, sameDay ? { hour: '2-digit', minute: '2-digit' } : { dateStyle: 'medium', timeStyle: 'short' });
+    const label = t('chat.unreadBannerText', { count: !atStart && at === 0 ? `${count}+` : count, since: when });
+    unreadBannerEl.hidden = false;
+    unreadBannerEl.innerHTML = `<button type="button" class="m-unread-jump">${escapeHtml(label)}</button><button type="button" class="m-unread-read">${icons.check(18)}<span>${escapeHtml(t('chat.markAsRead'))}</span></button>`;
+  }
+  unreadBannerEl.addEventListener('click', (e) => {
+    if (e.target.closest('.m-unread-jump')) {
+      msgsEl.querySelector('.m-unread-divider')?.scrollIntoView({ block: 'start' });
+      bannerDismissed = true;
+      paintUnreadBanner();
+    } else if (e.target.closest('.m-unread-read')) {
+      bannerDismissed = true;
+      unreadAfterId = 0;
+      const last = messages[messages.length - 1];
+      if (last && scopeType !== 'thread') {
+        setReadState(scopeType, scopeId, last.id);
+        api.markRead(scopeType, scopeId, last.id).catch(() => {});
+      }
+      paint({ anchor: true });
+    }
+  });
   function unreadDividerHtml(m) {
     const day = new Date(m.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
     return `<div class="m-unread-divider"><span class="m-unread-date">${escapeHtml(day)}</span><span class="m-unread-badge">${escapeHtml(t('chat.newMessagesBadge'))}</span></div>`;
@@ -275,6 +306,7 @@ export function mountChat(el, params) {
     stickToBottom = nearBottom && isLatest;
     jumpEl.hidden = nearBottom && isLatest;
     if (nearBottom) markReadSoon();
+    if (nearBottom && isLatest && !bannerDismissed) { bannerDismissed = true; paintUnreadBanner(); }
     if (msgsEl.scrollTop < 120) loadOlder();
     else if (nearBottom && !isLatest) loadNewer();
   });
