@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"grep -n '\\\"test\\\"' ../package.json package.json; \"}",
-  "error": "Exit code 2\n../package.json:14:    \"test\": \"node --test \\\"server/test/*.test.js\\\" \\\"web/**/*.test.mjs\\\"\"\ngrep: package.json: No such file or directory",
-  "timestamp": "2026-10-16T06:59:55.580Z",
-  "retry_count": 1
-}

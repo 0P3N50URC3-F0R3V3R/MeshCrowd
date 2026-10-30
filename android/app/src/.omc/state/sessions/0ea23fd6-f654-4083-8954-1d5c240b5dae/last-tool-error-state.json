@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cat > main/java/com/meshcrowd/app/InviteLink.kt <<'EOF'\\npackage com.meshcrowd.app\\n\\nimport java.net.URI\\n\\n// `mcr://host[:port]/<invite code>` links (from the public /i/<code> page). Th...",
-  "error": "Exit code 2\n/usr/bin/bash: -c: line 117: unexpected EOF while looking for matching `''",
-  "timestamp": "2026-10-27T13:52:18.988Z",
-  "retry_count": 1
-}

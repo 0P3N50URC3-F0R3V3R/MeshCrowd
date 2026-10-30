@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd /e/claude/Dismesh/android && export JAVA_HOME=\\\"E:/android-tools/jdk-17.0.20.1+1\\\" && ./gradlew.bat --console=plain testDebugUnitTest > /e/android-tools/gradle-green.log 2>&1; grep -E \\...",
-  "error": "Exit code 1\n> Task :app:compileDebugUnitTestKotlin FAILED\ne: file:///E:/claude/Dismesh/android/app/src/test/java/com/meshcrowd/app/CaTrustTest.kt:4:17 Unresolved reference 'test'.\ne: file:///E:/claude/Dismesh/android/app/src/test/java/com/meshcrowd/app/CaTrustTest.kt:5:26 Unresolved reference 'data'.\ne: file:///E:/claude/Dismesh/android/app/src/test/java/com/meshcrowd/app/CaTrustTest.kt:6:26 Unresolved reference 'data'.\ne: file:///E:/claude/Dismesh/android/app/src/test/java/com/meshcrowd/app/CaT...",
-  "timestamp": "2026-10-16T08:59:09.764Z",
-  "retry_count": 1
-}

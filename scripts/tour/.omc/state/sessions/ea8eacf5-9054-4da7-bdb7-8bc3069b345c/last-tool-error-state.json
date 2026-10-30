@@ -1,7 +1,0 @@
-{
-  "tool_name": "Read",
-  "tool_input_preview": "{\"file_path\":\"C:\\\\tmp\\\\tour\\\\d0.png\"}",
-  "error": "File has an image extension but its content is not a valid PNG/JPEG/GIF/WebP. Detected: unrecognized bytes (hex: fd 50 4e 47 0d 0a 1a 0a). This usually means a download saved an error/login page instead of the image. Use `file \"C:\\tmp\\tour\\d0.png\"` to confirm, or read it as text with Bash (e.g. `head -c 500`).",
-  "timestamp": "2026-10-20T12:30:48.042Z",
-  "retry_count": 1
-}

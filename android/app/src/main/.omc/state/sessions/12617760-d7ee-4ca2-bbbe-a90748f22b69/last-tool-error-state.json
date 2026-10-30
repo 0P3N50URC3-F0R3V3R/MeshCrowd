@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cat > java/com/meshcrowd/app/CallAudio.kt <<'EOF'\\npackage com.meshcrowd.app\\n\\nimport android.content.Context\\nimport android.media.AudioDeviceInfo\\nimport android.media.AudioManager\\nimp...",
-  "error": "Exit code 2\n/usr/bin/bash: -c: line 86: unexpected EOF while looking for matching `''",
-  "timestamp": "2026-10-17T10:55:39.295Z",
-  "retry_count": 1
-}
