@@ -323,6 +323,7 @@ router.get('/:id', requireAuth, (req, res) => {
     const friendship = db.prepare("SELECT created_at, accepted_at FROM friendships WHERE status = 'accepted' AND ((user_a = ? AND user_b = ?) OR (user_a = ? AND user_b = ?))")
       .get(req.user.id, user.id, user.id, req.user.id);
     shaped.friendsSince = friendship ? (friendship.accepted_at || friendship.created_at) : null;
+    shaped.canMessage = require('./dms').canDm(req.user, user);
   }
   shaped.createdAt = user.created_at;
   res.json({ user: shaped });

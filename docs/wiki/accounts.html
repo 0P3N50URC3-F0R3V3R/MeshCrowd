@@ -25,7 +25,7 @@
       <h1>Accounts, Passport and sign-in</h1>
       <p class="summary">Registering, the Passport identity file, strengthened sign-in, two-factor authentication and recovery.</p>
 <h2 id="registering-and-signing-in">Registering and signing in</h2>
-<p>Anyone who can reach the server can register with an email address, a username and a password. <strong>The first account becomes the Owner.</strong> You can sign in with your email address or your username.</p>
+<p>Anyone who can reach the server can register with an email address, a username and a password. <strong>The first account becomes the Owner.</strong> You can sign in with your email address or your username. An administrator can restrict registration to people with an invite link or switch it off; see <code>registrationMode</code> in <a href="configuration.html">Configuration</a>.</p>
 <p>Sessions are opaque tokens kept on the server in an httpOnly cookie. They are not JWTs, so each one can be revoked, and disabling an account ends its sessions and live connections at once.</p>
 <h2 id="passport-your-portable-identity">Passport: your portable identity</h2>
 <p>When you register in the web client the browser creates a <strong>Passport</strong>: a key pair that anchors your account.</p>

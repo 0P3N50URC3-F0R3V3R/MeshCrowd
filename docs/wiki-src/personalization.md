@@ -7,7 +7,7 @@ order: 5
 
 ## Your profile
 
-Open **Settings** from the gear in the bottom left. You can set an avatar, a banner image or color, a bio and a display name. A profile card appears when someone clicks your name.
+Open **Settings** from the gear in the bottom left. You can set an avatar, a banner image or color, a bio and a display name. A profile card pops up next to a name or member when someone clicks it. Clicking your own name shows your own card with an **Edit Profile** button. On someone else's card there is a **Message** button, and a quick-message field when they can be messaged (a friend, or their privacy settings allow it): type, press Enter, and the message is sent in your existing conversation with them, or a new one if you have none yet.
 
 ![A profile card](../assets/img/profile.jpg)
 
@@ -49,6 +49,8 @@ When you open a channel or DM that has messages you have not read, a red line wi
 - **Messages loaded when opening a chat** (20 to 100): how many of the latest messages are fetched. If more messages than that are unread, the line sits at the top of the loaded page and you scroll up for the rest.
 
 The settings are saved with your account, so they apply in the browser, the desktop app and the phone interface alike.
+
+A banner at the top of the chat reads **N new messages since HH:MM** and offers **Jump** to the first unread message, **Mark as read**, or dismiss. It is there on the web client and the Android app.
 
 ## Language
 

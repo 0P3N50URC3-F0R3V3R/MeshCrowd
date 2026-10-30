@@ -4,10 +4,18 @@ import { apiErrorMessage, toast, escapeHtml } from '../utils.js';
 import { t, currentLanguage, setPreLoginLanguage } from '../i18n.js';
 import { generateSeed, deriveKeys, MIN_PASSWORD_LENGTH } from '../e2ee/crypto.mjs';
 import { ensureIdentity, cacheSeed } from '../e2ee/identity.js';
+import { parseInviteHash } from '../inviteHash.mjs';
 import { createCaptcha, captchaErrorMessage } from '../captcha.js';
 import { proveWith, passportBundle, readFileWithPassphrase, prepareLogin, splitCredential, wrapFor } from '../passport/flow.js';
 
 const PASSPORT_FILE_ERROR = /unsupported passport file|wrong passphrase|does not match|no passport file/;
+
+// Accepts a bare code or a pasted invite link (https://host/i/<code>, mcr://host/<code>).
+function inviteCodeFrom(raw) {
+  const v = String(raw || '').trim();
+  const m = /^(?:https?|mcr):\/\/[^/]+\/(?:i\/)?([^/?#]+)/i.exec(v);
+  try { return m ? decodeURIComponent(m[1]) : v; } catch { return v; }
+}
 
 // Renders the login/register screen into `root` and resolves with the logged-in user
 // once auth succeeds. Single page, toggled between login/register/totp (the 2FA challenge step).
@@ -18,7 +26,14 @@ export function renderAuth(root) {
     let languages = [];
     api.getLanguages().then((res) => { languages = res.languages; if (mode === 'login' || mode === 'register') render(); }).catch(() => {});
     let website = '';
-    api.config().then((c) => { website = c.downloads?.website || ''; if (mode === 'login' || mode === 'register') render(); }).catch(() => {});
+    let regMode = 'open';
+    const hashInvite = parseInviteHash(location.hash) || '';
+    api.config().then((c) => {
+      website = c.downloads?.website || '';
+      regMode = c.registrationMode || 'open';
+      if (regMode === 'closed' && mode === 'register') mode = 'login';
+      if (mode === 'login' || mode === 'register') render();
+    }).catch(() => {});
     let pendingCred = null;
     let pendingSeed = null;
     let cap = null;
@@ -65,7 +80,7 @@ export function renderAuth(root) {
       }
       root.querySelector('#auth-passport-login')?.addEventListener('click', (e) => { e.preventDefault(); mode = 'passportLogin'; render(); });
       root.querySelector('#auth-forgot')?.addEventListener('click', (e) => { e.preventDefault(); mode = 'recover'; render(); });
-      root.querySelector('#auth-toggle').addEventListener('click', (e) => {
+      root.querySelector('#auth-toggle')?.addEventListener('click', (e) => {
         e.preventDefault();
         mode = mode === 'login' ? 'register' : 'login';
         render();
@@ -78,6 +93,12 @@ export function renderAuth(root) {
         <h1>${mode === 'login' ? t('auth.welcomeBack') : t('auth.createAccount')}</h1>
         <p class="sub">${mode === 'login' ? t('auth.welcomeBackSub') : t('auth.createAccountSub')}</p>
         <form id="auth-form" novalidate>
+          ${mode === 'register' && regMode === 'invite' ? `
+            <div class="field">
+              <label for="f-invite">${t('auth.inviteCodeLabel')}</label>
+              <input class="input" id="f-invite" name="inviteCode" type="text" autocomplete="off" value="${escapeHtml(hashInvite)}" required>
+              <div class="hint">${t('auth.inviteCodeHint')}</div>
+            </div>` : ''}
           ${mode === 'register' ? `
             <div class="field">
               <label for="f-email">${t('auth.emailLabel')}</label>
@@ -109,10 +130,10 @@ export function renderAuth(root) {
             ${mode === 'login' ? t('auth.logIn') : t('auth.register')}
           </button>
           ${mode === 'login' ? `<div class="auth-switch"><a href="#" id="auth-passport-login">${t('auth.signInWithPassport')}</a> &middot; <a href="#" id="auth-forgot">${t('auth.forgotPassword')}</a></div>` : ''}
-          <div class="auth-switch">
+          ${mode === 'login' && regMode === 'closed' ? `<div class="auth-switch">${t('auth.registrationClosed')}</div>` : `<div class="auth-switch">
             ${mode === 'login' ? t('auth.needAccount') : t('auth.haveAccount')}
             <a href="#" id="auth-toggle">${mode === 'login' ? t('auth.register') : t('auth.logIn')}</a>
-          </div>
+          </div>`}
         </form>`;
     }
 
@@ -203,6 +224,7 @@ export function renderAuth(root) {
           // Explicit fields only: `data` also holds the password, which must never be sent.
           const account = {
             username: data.username, email: data.email, displayName: data.displayName, authKey: cred.authKey, authSalt: cred.authSalt, ...capFields,
+            ...(regMode === 'invite' ? { inviteCode: inviteCodeFrom(data.inviteCode) } : {}),
           };
           let proof = null;
           try {

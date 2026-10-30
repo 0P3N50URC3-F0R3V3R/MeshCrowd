@@ -70,7 +70,10 @@
     "captchaNeeded": "Kérlek, végezd el a biztonsági ellenőrzést.",
     "captchaWrong": "A biztonsági ellenőrzés hibás volt vagy lejárt. Próbáld az új képpel.",
     "registrationLimited": "A hálózatodról túl sok fiók készült mostanában. Próbáld később újra.",
-    "requestRejected": "A kérést elutasítottuk."
+    "requestRejected": "A kérést elutasítottuk.",
+    "inviteCodeLabel": "Meghívó link vagy kód",
+    "inviteCodeHint": "Ez a szerver csak meghívóval fogad új fiókot. Illeszd be a meghívó linkjét vagy kódját.",
+    "registrationClosed": "A regisztráció ezen a szerveren le van zárva."
   },
   "userSettings": {
     "languageLabel": "Nyelv",
@@ -167,6 +170,7 @@
     "trayStatusOffline": "Nem elérhető",
     "resetAllButton": "Összes visszaállítása",
     "minimizeToTrayToast": "Az ablak bezárása mostantól a tálcára kicsinyíti.",
+    "startMinimizedCheckbox": "Indítás kicsinyítve — a program a rendszertálcán indul (vagy kicsinyítve, ha a tálcára kicsinyítés ki van kapcsolva)",
     "quitOnCloseToast": "Az ablak bezárása mostantól kilép a MeshCrowdból.",
     "startsWithWindowsToast": "A MeshCrowd elindul a Windowsszal.",
     "noLongerStartsWithWindowsToast": "A MeshCrowd többé nem indul el a Windowsszal.",
@@ -626,7 +630,17 @@
       "clearEvents": "Eseménynapló törlése",
       "clearEventsConfirm": "Törlöd a teljes biztonsági eseménynaplót?"
     },
-    "roleCustomColor": "Egyéni szín"
+    "roleCustomColor": "Egyéni szín",
+    "registration": {
+      "heading": "Regisztráció",
+      "open": "Nyílt regisztráció",
+      "openHint": "Bárki létrehozhat fiókot, aki eléri a szervert.",
+      "invite": "Csak meghívó linkkel",
+      "inviteHint": "Új fiókhoz érvényes szerver- vagy csatornameghívó link kell.",
+      "closed": "Regisztráció kikapcsolva",
+      "closedHint": "Senki sem hozhat létre fiókot. A meglévő felhasználókat nem érinti.",
+      "saved": "Regisztrációs beállítás mentve."
+    }
   },
   "voice": {
     "goodConnection": "Jó kapcsolat",
@@ -1218,6 +1232,8 @@
     "noBioYet": "Még nincs bemutatkozás.",
     "messageButton": "Üzenet",
     "requestPendingButton": "Kérés függőben",
+    "editProfileButton": "Profil szerkesztése",
+    "messageInputPlaceholder": "Üzenet @{name} részére",
     "cantMessageError": "Nem lehet üzenetet küldeni ennek a felhasználónak.",
     "friendRequestSent": "Baráti kérés elküldve.",
     "friendRequestError": "Nem sikerült elküldeni a baráti kérést.",
@@ -1656,6 +1672,8 @@
     "tooLargeForFile": "Ez a szöveg fájlként sem küldhető el, mert túl nagy (határ: {kb} KB). Csatold inkább fájlként.",
     "seenTag": "Látta",
     "newMessagesBadge": "Új",
+    "unreadBannerText": "{count} új üzenet {since} óta",
+    "markAsRead": "Megjelölés olvasottként",
     "seenByTitle": "Látta: {names}",
     "seenBySingle": "Látta: {name}",
     "seenByMultiple": "{count} ember látta",

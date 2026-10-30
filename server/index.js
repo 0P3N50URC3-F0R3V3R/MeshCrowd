@@ -220,7 +220,7 @@ const { httpsLink } = require('./lib/httpsLink');
 app.get('/api/config', (req, res) => {
   const dl = config.downloads || {};
   const downloads = { clientDesktop: httpsLink(dl.clientDesktop), clientAndroid: httpsLink(dl.clientAndroid), website: httpsLink(dl.website) };
-  res.json({ maxUploadMb: config.maxUploadMb, maxMessageChars: require('./lib/messageLimits').maxMessageChars(), publicHost: config.publicHost, iceServers: turnManager.publicIceServers(), version: APP_VERSION, federationEnabled: !!(config.federation && config.federation.enabled), downloads });
+  res.json({ maxUploadMb: config.maxUploadMb, maxMessageChars: require('./lib/messageLimits').maxMessageChars(), publicHost: config.publicHost, iceServers: turnManager.publicIceServers(), version: APP_VERSION, federationEnabled: !!(config.federation && config.federation.enabled), registrationMode: require('./lib/registration').getMode(), downloads });
 });
 
 const WEB_DIR = path.join(__dirname, '..', 'web');

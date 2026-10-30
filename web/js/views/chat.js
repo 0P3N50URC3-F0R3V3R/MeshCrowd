@@ -741,7 +741,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     if (replyJumpTarget) return highlightMessage(Number(replyJumpTarget.dataset.replyJump));
 
     const userTarget = e.target.closest('[data-user]');
-    if (userTarget) return bus.emit('ui:openProfile', { userId: Number(userTarget.dataset.user), serverId: scope.serverId });
+    if (userTarget) return bus.emit('ui:openProfile', { userId: Number(userTarget.dataset.user), serverId: scope.serverId, anchor: userTarget });
 
     const channelRefTarget = e.target.closest('[data-channel-id]');
     if (channelRefTarget) return bus.emit('ui:navigate', { type: 'server', serverId: scope.serverId, channelId: Number(channelRefTarget.dataset.channelId) });

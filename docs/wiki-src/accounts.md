@@ -7,7 +7,7 @@ order: 1
 
 ## Registering and signing in
 
-Anyone who can reach the server can register with an email address, a username and a password. **The first account becomes the Owner.** You can sign in with your email address or your username.
+Anyone who can reach the server can register with an email address, a username and a password. **The first account becomes the Owner.** You can sign in with your email address or your username. An administrator can restrict registration to people with an invite link or switch it off; see `registrationMode` in [Configuration](configuration.html).
 
 Sessions are opaque tokens kept on the server in an httpOnly cookie. They are not JWTs, so each one can be revoked, and disabling an account ends its sessions and live connections at once.
 

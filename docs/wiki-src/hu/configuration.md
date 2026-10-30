@@ -13,6 +13,7 @@ A `data/config.json` az első indításkor jön létre, és minden indításkor 
 |---|---|---|
 | `port` | `8080` | Sima HTTP port. HTTPS mellett csak átirányít; `useHttps: false` esetén ez szolgálja ki az alkalmazást. |
 | `httpsPort` | `8443` | A fő HTTPS port. |
+| `registrationMode` | `"open"` | Ki hozhat létre fiókot: `open` (bárki), `invite` (érvényes szerver- vagy csatornameghívó link vagy kód kell) vagy `closed` (senki). Az üres példány első fiókja mindig engedélyezett. Az Admin panel Áttekintés oldalán újraindítás nélkül módosítható. |
 | `publicHost` | `"localhost"` | A név vagy IP, amelyre az **önaláírt** tanúsítvány kiállításra kerül. Állítsd arra a címre, amit az emberek begépelnek, az első indítás előtt. |
 | `useHttps` | `true` | Állítsd `false`-ra a sima HTTP-hez megbízható LAN-on vagy fejlesztéshez. A hanghoz, videóhoz és értesítésekhez a legtöbb böngészőben HTTPS kell, `localhost` kivételével. |
 | `serverCrt` | `""` | A saját PEM tanúsítványod elérési útja. Üresen az önaláírtat használja. |

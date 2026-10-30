@@ -25,7 +25,7 @@ function loadClientConfig() {
     return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
   } catch {
     return {
-      serverUrl: null, trustedFingerprints: {}, closeToTray: false, startWithWindows: false,
+      serverUrl: null, trustedFingerprints: {}, closeToTray: false, startMinimized: false, startWithWindows: false,
       trayIconColor: null, trayBadgeColors: {}, windowBounds: null, handleInviteLinks: true,
     };
   }
@@ -184,6 +184,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 560,
     backgroundColor: '#313338',
+    show: false,
     icon: appIconImage(),
     // Frameless but still a real, native-feeling window: no custom title bar to hand-roll,
     // dragging/double-click-to-maximize on the topbar's own -webkit-app-region:drag strip
@@ -199,6 +200,11 @@ function createWindow() {
       nodeIntegration: false,
       sandbox: true,
     },
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    if (!clientConfig.startMinimized) mainWindow.show();
+    else if (!clientConfig.closeToTray) { mainWindow.showInactive(); mainWindow.minimize(); }
   });
 
   let saveBoundsTimer = null;
@@ -379,6 +385,7 @@ ipcMain.handle('dismesh:forget-server', () => {
 
 ipcMain.handle('dismesh:get-app-settings', () => ({
   closeToTray: !!clientConfig.closeToTray,
+  startMinimized: !!clientConfig.startMinimized,
   startWithWindows: !!clientConfig.startWithWindows,
   handleInviteLinks: clientConfig.handleInviteLinks !== false,
   trayIconColor: clientConfig.trayIconColor || null,
@@ -391,13 +398,14 @@ const TRAY_BADGE_STATES = ['online', 'idle', 'dnd', 'offline'];
 // Whitelist of keys the renderer is allowed to touch here — anything else in the payload is
 // silently dropped rather than merged into clientConfig, so a new settings key can't be added to
 // this object without an explicit decision about whether the renderer should control it.
-const APP_SETTINGS_KEYS = ['closeToTray', 'startWithWindows', 'trayIconColor', 'trayBadgeColors', 'handleInviteLinks'];
+const APP_SETTINGS_KEYS = ['closeToTray', 'startMinimized', 'startWithWindows', 'trayIconColor', 'trayBadgeColors', 'handleInviteLinks'];
 
 ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
   if (!settings || typeof settings !== 'object') return { ok: false, error: 'invalid settings' };
   for (const key of APP_SETTINGS_KEYS) {
     if (settings[key] === undefined) continue;
     if (key === 'closeToTray') clientConfig.closeToTray = !!settings.closeToTray;
+    if (key === 'startMinimized') clientConfig.startMinimized = !!settings.startMinimized;
     if (key === 'startWithWindows') {
       clientConfig.startWithWindows = !!settings.startWithWindows;
       app.setLoginItemSettings({ openAtLogin: clientConfig.startWithWindows });
@@ -428,6 +436,7 @@ ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
   return {
     ok: true,
     closeToTray: !!clientConfig.closeToTray,
+    startMinimized: !!clientConfig.startMinimized,
     startWithWindows: !!clientConfig.startWithWindows,
     handleInviteLinks: clientConfig.handleInviteLinks !== false,
     trayIconColor: clientConfig.trayIconColor || null,

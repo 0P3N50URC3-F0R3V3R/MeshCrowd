@@ -208,7 +208,7 @@ button.m-att-file { width: 100%; border: 0; text-align: left; font: inherit; }
 .m-voice-room .voice-controls { flex-wrap: wrap; gap: 10px; padding: 12px var(--m-pad) calc(12px + env(safe-area-inset-bottom)); }
 .m-voice-room .voice-ctl { width: 52px; height: 52px; }
 .m-voice-room .voice-tile { padding: 14px 6px; }
-.m-voice-room .voice-tile-avatar, .m-voice-room .voice-tile-avatar .avatar { width: 80px; height: 80px; font-size: 28px; }
+.m-voice-room .voice-tile-avatar, .m-voice-room .voice-tile-avatar .avatar { width: 80px !important; height: 80px !important; font-size: 28px !important; }
 .m-voice-room .vc-volume-strip { width: 80px; }
 .m-voice-room .vc-volume { display: none; }
 .m-pill { background: var(--bg-active); color: var(--text-primary); border: 0; border-radius: 16px; padding: 6px 12px; font-size: 13px; }

@@ -5,6 +5,7 @@ const { db } = require('../db');
 const { createSession, destroyAllSessionsForUser, sessionCookie } = require('../lib/session');
 const { toPublicUser } = require('../lib/publicUser');
 const { requireAuth } = require('../middleware/auth');
+const registration = require('../lib/registration');
 const accounts = require('../lib/accounts');
 const pendingLogin = require('../lib/pendingLogin');
 const { checkSecondFactor } = require('../lib/secondFactor');
@@ -50,6 +51,8 @@ router.post('/challenge', (req, res) => {
 
 router.post('/register', (req, res) => {
   const b = req.body || {};
+  const blocked = registration.check(b.inviteCode);
+  if (blocked) return res.status(blocked.status).json({ error: blocked.error });
   // Web sign-ups are always split: this server must never receive the password itself.
   if (b.password !== undefined || b.authKey === undefined) return res.status(400).json({ error: 'invalid sign-in key' });
   const problem = accounts.validateNewAccount({ username: b.username, email: b.email, authKey: b.authKey, authSalt: b.authSalt });

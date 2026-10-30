@@ -564,6 +564,7 @@ function buildAdminPanel() {
   }
 
   function renderOverview(inner) {
+    const regMode = settings?.registrationMode ?? 'open';
     const ttl = settings?.sessionTtlDays ?? 30;
     const maxUploadMb = settings?.maxUploadMb ?? 25;
     const allowedExt = (settings?.allowedAttachmentExtensions || []).join(', ');
@@ -574,6 +575,17 @@ function buildAdminPanel() {
         <div class="admin-stat-card"><div class="num">${stats?.servers ?? '—'}</div><div class="lbl">${t('admin.serversStatLabel')}</div></div>
         <div class="admin-stat-card"><div class="num">${stats?.messages ?? '—'}</div><div class="lbl">${t('admin.messagesStatLabel')}</div></div>
       </div>
+      <div class="divider"></div>
+      <h2>${t('admin.registration.heading')}</h2>
+      <div class="field">
+        ${['open', 'invite', 'closed'].map((m) => `
+          <label class="check-row" style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px">
+            <input type="radio" name="ov-reg" value="${m}" ${regMode === m ? 'checked' : ''} ${state.me.isSiteAdmin ? '' : 'disabled'} style="margin-top:3px">
+            <span>${t(`admin.registration.${m}`)}<span class="hint" style="display:block">${t(`admin.registration.${m}Hint`)}</span></span>
+          </label>`).join('')}
+      </div>
+      <div class="error-text" id="ov-reg-err"></div>
+      ${state.me.isSiteAdmin ? `<button class="btn btn-primary" id="ov-reg-save">${t('common.save')}</button>` : ''}
       <div class="divider"></div>
       <h2>${t('admin.sessionSettingsHeading')}</h2>
       <div class="field">
@@ -597,6 +609,14 @@ function buildAdminPanel() {
       </div>
       <div class="error-text" id="ov-attach-err"></div>
       <button class="btn btn-primary" id="ov-attach-save">${t('common.save')}</button>`;
+
+    inner.querySelector('#ov-reg-save')?.addEventListener('click', async () => {
+      const mode = inner.querySelector('input[name="ov-reg"]:checked')?.value;
+      try {
+        settings = { ...settings, registrationMode: (await api.adminSetRegistration(mode)).mode };
+        toast(t('admin.registration.saved'));
+      } catch (err) { inner.querySelector('#ov-reg-err').textContent = apiErrorMessage(err, t('admin.couldNotSave')); }
+    });
 
     inner.querySelector('#ov-ttl-save').addEventListener('click', async () => {
       const days = Number(inner.querySelector('#ov-ttl').value);

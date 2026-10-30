@@ -7,7 +7,7 @@ order: 1
 
 ## Regisztráció és bejelentkezés
 
-Bárki regisztrálhat, aki eléri a szervert, e-mail-címmel, felhasználónévvel és jelszóval. **Az első fiók lesz a Tulajdonos.** Bejelentkezhetsz az e-mail-címeddel vagy a felhasználóneveddel is.
+Bárki regisztrálhat, aki eléri a szervert, e-mail-címmel, felhasználónévvel és jelszóval. **Az első fiók lesz a Tulajdonos.** Bejelentkezhetsz az e-mail-címeddel vagy a felhasználóneveddel is. Az adminisztrátor a regisztrációt meghívólinkhez kötheti vagy ki is kapcsolhatja; lásd a `registrationMode` beállítást a [Konfigurációban](configuration.html).
 
 A munkamenetek átlátszatlan tokenek, amelyeket a szerver tart nyilván egy httpOnly sütiben. Nem JWT-k, ezért mindegyik visszavonható, egy fiók letiltása pedig azonnal megszünteti a munkameneteit és az élő kapcsolatait.
 

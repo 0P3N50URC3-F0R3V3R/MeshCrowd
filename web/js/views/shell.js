@@ -230,7 +230,7 @@ export async function mountShell(root) {
     resyncAfterReconnect();
   });
   bus.on('ws:close', () => setWsConnected(false));
-  bus.on('ui:openProfile', ({ userId, serverId }) => openProfileModal(userId, { serverId }));
+  bus.on('ui:openProfile', ({ userId, serverId, anchor }) => openProfileModal(userId, { serverId, anchor }));
   document.getElementById('topbar-saved').addEventListener('click', () => openBookmarksModal());
   bus.on('ui:navigate', (view) => navigate(view));
   bus.on('ui:serverRemoved', async (serverId) => {

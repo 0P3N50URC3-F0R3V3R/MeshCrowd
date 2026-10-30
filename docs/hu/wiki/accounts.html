@@ -25,7 +25,7 @@
       <h1>Fiókok, Útlevél és bejelentkezés</h1>
       <p class="summary">Regisztráció, az Útlevél-azonosítófájl, megerősített bejelentkezés, kétlépcsős azonosítás és helyreállítás.</p>
 <h2 id="regisztr-ci-s-bejelentkez-s">Regisztráció és bejelentkezés</h2>
-<p>Bárki regisztrálhat, aki eléri a szervert, e-mail-címmel, felhasználónévvel és jelszóval. <strong>Az első fiók lesz a Tulajdonos.</strong> Bejelentkezhetsz az e-mail-címeddel vagy a felhasználóneveddel is.</p>
+<p>Bárki regisztrálhat, aki eléri a szervert, e-mail-címmel, felhasználónévvel és jelszóval. <strong>Az első fiók lesz a Tulajdonos.</strong> Bejelentkezhetsz az e-mail-címeddel vagy a felhasználóneveddel is. Az adminisztrátor a regisztrációt meghívólinkhez kötheti vagy ki is kapcsolhatja; lásd a <code>registrationMode</code> beállítást a <a href="configuration.html">Konfigurációban</a>.</p>
 <p>A munkamenetek átlátszatlan tokenek, amelyeket a szerver tart nyilván egy httpOnly sütiben. Nem JWT-k, ezért mindegyik visszavonható, egy fiók letiltása pedig azonnal megszünteti a munkameneteit és az élő kapcsolatait.</p>
 <h2 id="tlev-l-a-hordozhat-azonoss-god">Útlevél: a hordozható azonosságod</h2>
 <p>Amikor a webes kliensben regisztrálsz, a böngésző létrehoz egy <strong>Útlevelet</strong>: egy kulcspárt, amelyhez a fiókod kötődik.</p>

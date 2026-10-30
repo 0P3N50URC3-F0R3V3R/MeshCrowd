@@ -15,13 +15,16 @@ const { isValidBackupFor } = require('../lib/passportCrypto');
 const challenges = require('../lib/passportChallenges');
 const { authAudit } = require('../lib/authAudit');
 const hub = require('../socket/hub');
+const registration = require('../lib/registration');
 
 const router = express.Router();
 
 // Two credential shapes: { password } (legacy; the native Android app) or { authKey, authSalt }
 // (split; derived in the browser - docs/superpowers/specs/2026-10-01-split-password-design.md).
 router.post('/register', (req, res) => {
-  const { username, password, authKey, authSalt, email, displayName } = req.body || {};
+  const { username, password, authKey, authSalt, email, displayName, inviteCode } = req.body || {};
+  const blocked = registration.check(inviteCode);
+  if (blocked) return res.status(blocked.status).json({ error: blocked.error });
   const problem = accounts.validateNewAccount({ username, email, password, authKey, authSalt });
   if (problem) return res.status(400).json({ error: problem });
   if (accounts.findConflict({ username, email })) {

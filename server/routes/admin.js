@@ -22,6 +22,7 @@ const { uploadSound, createSound, deleteSound } = require('../lib/sounds');
 const prune = require('../lib/prune');
 const { logAudit } = require('../lib/auditLog');
 const turnManager = require('../lib/turn/manager');
+const registration = require('../lib/registration');
 const appConfig = require('../lib/config');
 
 const router = express.Router();
@@ -90,6 +91,7 @@ router.get('/settings', (req, res) => {
     sessionTtlDays: siteSettings.getSessionTtlDays(),
     maxUploadMb: siteSettings.getMaxUploadMb(),
     allowedAttachmentExtensions: siteSettings.getAllowedExtensions() || [],
+    registrationMode: registration.getMode(),
   });
 });
 
@@ -115,7 +117,19 @@ router.patch('/settings', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), 
     sessionTtlDays: siteSettings.getSessionTtlDays(),
     maxUploadMb: siteSettings.getMaxUploadMb(),
     allowedAttachmentExtensions: siteSettings.getAllowedExtensions() || [],
+    registrationMode: registration.getMode(),
   });
+});
+
+// ---- Registration mode (config.json: registrationMode) ----
+router.get('/registration', (req, res) => res.json({ mode: registration.getMode() }));
+
+router.patch('/registration', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), (req, res) => {
+  const mode = req.body?.mode;
+  if (!registration.MODES.includes(mode)) return res.status(400).json({ error: 'mode must be open, closed or invite' });
+  appConfig.save({ registrationMode: mode });
+  require('../lib/logger').log(`[registration] mode set to ${mode} by user ${req.user.id}`);
+  res.json({ mode: registration.getMode() });
 });
 
 // ---- Calls: built-in STUN/TURN server and external ICE servers ----

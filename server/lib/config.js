@@ -21,6 +21,10 @@ const DEFAULTS = {
   maxUploadMb: 25,
   // Max characters in one plaintext message (100-100000). Restart-only; encrypted DMs keep a fixed 4000.
   maxMessageChars: 15000,
+  // Who may create an account: "open" (anyone), "closed" (nobody; admins can still add users) or
+  // "invite" (only with a valid invite link/code). Editable in Admin Panel > Overview; the first
+  // account on an empty instance is always allowed.
+  registrationMode: 'open',
   // Empty by default: voice channels default to LAN-only, zero calls to any external service.
   // Self-hosters whose participants aren't all on the same local network/subnet (WAN access,
   // separate VLANs, restrictive NAT/firewalls) need at least a STUN entry here for WebRTC ICE

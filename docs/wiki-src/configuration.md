@@ -13,6 +13,7 @@ order: 3
 |---|---|---|
 | `port` | `8080` | Plain HTTP port. With HTTPS on it only redirects; with `useHttps: false` it serves the app. |
 | `httpsPort` | `8443` | Main HTTPS port. |
+| `registrationMode` | `"open"` | Who may create an account: `open` (anyone), `invite` (a valid server or channel invite link or code is required) or `closed` (nobody). The first account on an empty instance is always allowed. Changeable in the Admin Panel, Overview, without a restart. |
 | `publicHost` | `"localhost"` | The name or IP the **self-signed** certificate is issued for. Set it to the address people type, before the first start. |
 | `useHttps` | `true` | Set `false` for plain HTTP on a trusted LAN or for development. Voice, video and notifications need HTTPS in most browsers except on `localhost`. |
 | `serverCrt` | `""` | Path to your own PEM certificate. Empty means use the self-signed one. |

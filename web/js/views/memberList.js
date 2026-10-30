@@ -34,7 +34,7 @@ export function mountMemberList(container, { server, roles, members }, { onClose
 
   function onClick(e) {
     const target = e.target.closest('[data-user]');
-    if (target) bus.emit('ui:openProfile', { userId: Number(target.dataset.user), serverId: server?.id });
+    if (target) bus.emit('ui:openProfile', { userId: Number(target.dataset.user), serverId: server?.id, anchor: target });
   }
 
   function destroy() {

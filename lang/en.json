@@ -70,7 +70,10 @@
     "captchaNeeded": "Please complete the security check.",
     "captchaWrong": "The security check was wrong or expired. Try the new picture.",
     "registrationLimited": "Too many accounts were created from your network recently. Please try again later.",
-    "requestRejected": "The request was rejected."
+    "requestRejected": "The request was rejected.",
+    "inviteCodeLabel": "Invite link or code",
+    "inviteCodeHint": "This server only accepts new accounts with an invitation. Paste your invite link or code.",
+    "registrationClosed": "Registration is closed on this server."
   },
   "userSettings": {
     "languageLabel": "Language",
@@ -167,6 +170,7 @@
     "trayStatusOffline": "Offline",
     "resetAllButton": "Reset All",
     "minimizeToTrayToast": "Closing the window will now minimize to tray.",
+    "startMinimizedCheckbox": "Start minimized — launch hidden in the system tray (or minimized, if close to tray is off)",
     "quitOnCloseToast": "Closing the window will now quit MeshCrowd.",
     "startsWithWindowsToast": "MeshCrowd will start with Windows.",
     "noLongerStartsWithWindowsToast": "MeshCrowd will no longer start with Windows.",
@@ -626,7 +630,17 @@
       "clearEvents": "Clear event log",
       "clearEventsConfirm": "Delete the whole security event log?"
     },
-    "roleCustomColor": "Custom color"
+    "roleCustomColor": "Custom color",
+    "registration": {
+      "heading": "Registration",
+      "open": "Open registration",
+      "openHint": "Anyone who can reach this server can create an account.",
+      "invite": "Invitation links only",
+      "inviteHint": "New accounts need a valid server or channel invite link.",
+      "closed": "Registration off",
+      "closedHint": "Nobody can create an account. Existing users are unaffected.",
+      "saved": "Registration setting saved."
+    }
   },
   "voice": {
     "goodConnection": "Good connection",
@@ -1218,6 +1232,8 @@
     "noBioYet": "No bio yet.",
     "messageButton": "Message",
     "requestPendingButton": "Request Pending",
+    "editProfileButton": "Edit Profile",
+    "messageInputPlaceholder": "Message @{name}",
     "cantMessageError": "Can't message this user.",
     "friendRequestSent": "Friend request sent.",
     "friendRequestError": "Could not send friend request.",
@@ -1656,6 +1672,8 @@
     "tooLargeForFile": "This text is too large to send even as a file (limit {kb} KB). Attach it as a file instead.",
     "seenTag": "Seen",
     "newMessagesBadge": "New",
+    "unreadBannerText": "{count} new messages since {since}",
+    "markAsRead": "Mark as read",
     "seenByTitle": "Seen by {names}",
     "seenBySingle": "Seen by {name}",
     "seenByMultiple": "Seen by {count} people",
