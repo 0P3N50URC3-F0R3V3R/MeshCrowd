@@ -5,6 +5,9 @@ import { avatarHtml, escapeHtml } from '../utils.js';
 import { memberNameColor } from '../permissions.js';
 import { memberRoleIcon, roleIconHtml } from '../roleIcon.js';
 import { t } from '../i18n.js';
+import { openContextMenu } from './modal.js';
+import { userActionItems } from './userMenu.js';
+import { openReportModal } from './profile.js';
 
 // Renders the right-hand member list for the current server, grouped by highest-position
 // colored role (falls back to Online/Offline). Re-renders on presence + member-role WS events.
@@ -18,6 +21,7 @@ export function mountMemberList(container, { server, roles, members }, { onClose
   const offVoice = bus.on('state:serverVoice', render);
   const offClick = () => container.removeEventListener('click', onClick);
   container.addEventListener('click', onClick);
+  container.addEventListener('contextmenu', onContextMenu);
 
   function render() {
     const withPresence = members.map((m) => ({ ...m, user: presenceFor(m.user) }));
@@ -37,10 +41,27 @@ export function mountMemberList(container, { server, roles, members }, { onClose
     if (target) bus.emit('ui:openProfile', { userId: Number(target.dataset.user), serverId: server?.id, anchor: target });
   }
 
+  function onContextMenu(e) {
+    const target = e.target.closest('[data-user]');
+    if (!target) return;
+    const userId = Number(target.dataset.user);
+    if (userId === state.me.id) return;
+    const member = members.find((m) => m.user.id === userId);
+    if (!member) return;
+    e.preventDefault();
+    openContextMenu(e.clientX, e.clientY, userActionItems(presenceFor(member.user), {
+      openProfile: (id) => bus.emit('ui:openProfile', { userId: id, serverId: server?.id, anchor: target }),
+      withMessage: true,
+      withCall: true,
+      onReport: openReportModal,
+    }));
+  }
+
   function destroy() {
     offPresence();
     offVoice();
     offClick();
+    container.removeEventListener('contextmenu', onContextMenu);
   }
 
   return { destroy };

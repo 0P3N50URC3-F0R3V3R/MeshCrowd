@@ -160,7 +160,7 @@ export async function unmute(scopeType, scopeId) {
 
 // The block of items common to a friend row and a DM row. `openProfile` is injected so this module
 // stays free of the profile views (they import it too).
-export function userActionItems(user, { openProfile, withMessage = false, withCall = true, withClose = null } = {}) {
+export function userActionItems(user, { openProfile, withMessage = false, withCall = true, withClose = null, onReport = null } = {}) {
   const ann = annotationFor(user.id);
   const items = [
     { label: t('userMenu.profile'), onClick: () => openProfile(user.id) },
@@ -176,6 +176,7 @@ export function userActionItems(user, { openProfile, withMessage = false, withCa
     isBlocked(user.id)
       ? { label: t('userMenu.unblock'), danger: true, onClick: () => unblock(user) }
       : { label: t('userMenu.block'), danger: true, onClick: () => confirmBlock(user) },
+    ...(onReport ? [{ label: t('profile.reportUserMenuItem'), danger: true, onClick: () => onReport(user) }] : []),
   ];
   return items;
 }

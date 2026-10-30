@@ -12,6 +12,7 @@ import { inviteLinkFor } from '../inviteHash.mjs';
 import { peekPlaintext } from '../e2ee/dmCrypto.js';
 import { userActionItems, muteSubmenu, unmute } from './userMenu.js';
 import { openFullProfile } from './fullProfile.js';
+import { openReportModal } from './profile.js';
 
 const CHANNEL_ICON = { public: icons.hash, private: icons.lock, announcement: icons.megaphone, readonly: icons.eye, voice: icons.headphones, forum: icons.messageSquare, stage: icons.stage, notes: icons.book };
 
@@ -528,7 +529,7 @@ export function mountHomeSidebar(container) {
     if (!other) return;
     openContextMenu(x, y, [
       ...head,
-      ...userActionItems(other, { openProfile: (id) => openFullProfile(id), withClose: { label: t('dmMenu.closeConversation'), onClick: close } }),
+      ...userActionItems(other, { openProfile: (id) => openFullProfile(id), withClose: { label: t('dmMenu.closeConversation'), onClick: close }, onReport: openReportModal }),
       'sep',
       muteItem,
     ]);

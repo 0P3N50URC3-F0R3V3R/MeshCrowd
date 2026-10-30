@@ -4,7 +4,7 @@ import { escapeHtml, avatarHtml, toast } from '../../js/utils.js';
 import { state, setFriends, presenceFor } from '../../js/state.js';
 import { handleError } from '../lib/errors.js';
 import { openDmWith } from '../lib/dmOpen.js';
-import { openSheet } from '../components/bottomSheet.js';
+import { openSheet, actionSheet } from '../components/bottomSheet.js';
 
 function relation(userId) {
   if (state.friends.friends.some((f) => f.user.id === userId)) return 'friend';
@@ -30,12 +30,23 @@ export async function openProfileSheet(userId) {
           ${rel === 'pending-incoming' ? `<button class="btn btn-secondary" data-a="accept">${t('m.accept')}</button>` : ''}
           ${rel === 'friend' ? `<button class="btn btn-secondary" data-a="remove">${t('m.removeFriend')}</button>` : ''}
           ${rel === 'blocked' ? `<button class="btn btn-secondary" data-a="remove">${t('m.unblockUser')}</button>` : `<button class="btn btn-danger" data-a="block">${t('m.blockUser')}</button>`}
+          <button class="btn btn-danger" data-a="report">${t('m.actReport')}</button>
         </div>`}</div>`,
     onMount: (body, close) => body.addEventListener('click', async (e) => {
       const a = e.target.closest('[data-a]')?.dataset.a;
       if (!a) return;
       try {
         if (a === 'dm') { close(); await openDmWith(userId); return; }
+        if (a === 'report') {
+          close();
+          const reason = await actionSheet({ title: t('m.actReport'), items: [
+            { id: 'spam', label: t('m.reportReasonSpam') }, { id: 'harassment', label: t('m.reportReasonHarassment') }, { id: 'other', label: t('m.reportReasonOther') },
+          ] });
+          if (!reason) return;
+          await api.fileReport({ reportedUserId: userId, reason });
+          toast(t('m.reportSent'));
+          return;
+        }
         if (a === 'add') { await api.friendRequest(user.username); toast(t('m.friendRequestSent')); }
         if (a === 'accept') await api.friendAccept(userId);
         if (a === 'remove') await api.friendRemove(userId);

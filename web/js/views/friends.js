@@ -7,6 +7,7 @@ import { t } from '../i18n.js';
 import { openContextMenu } from './modal.js';
 import { userActionItems } from './userMenu.js';
 import { openFullProfile } from './fullProfile.js';
+import { openReportModal } from './profile.js';
 
 // A function (not a module-level constant) so the labels re-evaluate against the current
 // language — see userBar.js's statusOptions() for why a plain top-level array would freeze.
@@ -73,7 +74,7 @@ export function mountFriends(container, initialTab = 'online') {
       ]);
       row.addEventListener('contextmenu', (e) => {
         e.preventDefault();
-        openContextMenu(e.clientX, e.clientY, userActionItems(f.user, { openProfile: (id) => openFullProfile(id), withMessage: true, withCall: true }));
+        openContextMenu(e.clientX, e.clientY, userActionItems(f.user, { openProfile: (id) => openFullProfile(id), withMessage: true, withCall: true, onReport: openReportModal }));
       });
       row.querySelector('.fr-meta').addEventListener('click', () => openFullProfile(f.user.id));
       body.appendChild(row);
