@@ -5,6 +5,7 @@ import { state, setFriends, setDms, presenceFor } from '../../js/state.js';
 import { icons } from '../../js/icons.js';
 import { nav } from '../router.js';
 import { handleError } from '../lib/errors.js';
+import { openEditProfile } from '../lib/editProfile.js';
 import { openDmWith } from '../lib/dmOpen.js';
 import { openSheet, actionSheet } from '../components/bottomSheet.js';
 
@@ -20,7 +21,7 @@ export async function openProfileSheet(userId) {
   try { user = presenceFor((await api.getUser(userId)).user); } catch (err) { handleError(err, 'm.loadFailed'); return; }
   const self = userId === state.me.id;
   const rel = relation(userId);
-  const items = self ? [] : [
+  const items = self ? [{ id: 'edit', label: t('profile.editProfileButton') }] : [
     { id: 'dm', label: t('m.sendMessage') },
     ...(rel === 'none' ? [{ id: 'add', label: t('m.addFriend') }] : []),
     ...(rel === 'pending-incoming' ? [{ id: 'accept', label: t('m.accept') }] : []),
@@ -31,6 +32,7 @@ export async function openProfileSheet(userId) {
 
   async function run(a) {
     try {
+      if (a === 'edit') { openEditProfile(); return; }
       if (a === 'dm') { await openDmWith(userId); return; }
       if (a === 'report') {
         const reason = await actionSheet({ title: t('m.actReport'), items: [
@@ -51,7 +53,7 @@ export async function openProfileSheet(userId) {
 
   openSheet({
     html: `<div class="m-profile">
-        ${self ? '' : `<button class="btn-icon m-profile-more" data-more title="${t('profile.moreTitle')}">${icons.kebab(20)}</button>`}
+        <button class="btn-icon m-profile-more" data-more title="${t('profile.moreTitle')}">${icons.kebab(20)}</button>
         <div class="m-profile-avatar">${avatarHtml(user, 72)}</div>
         <div class="m-profile-name">${escapeHtml(user.displayName)}</div>
         <div class="m-profile-user">@${escapeHtml(user.username)}${user.customStatusText ? ` · ${escapeHtml(user.customStatusText)}` : ''}</div>

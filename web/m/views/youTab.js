@@ -5,6 +5,7 @@ import { t, currentLanguage } from '../../js/i18n.js';
 import { escapeHtml, avatarHtml, toast } from '../../js/utils.js';
 import { state } from '../../js/state.js';
 import { handleError } from '../lib/errors.js';
+import { openEditProfile } from '../lib/editProfile.js';
 import { androidBridge } from '../lib/androidBridge.js';
 import { getPref, setPref } from '../lib/prefs.js';
 import { actionSheet, openSheet } from '../components/bottomSheet.js';
@@ -63,7 +64,7 @@ export function mountYouTab(host) {
         const { languages } = await api.getLanguages();
         const v = await actionSheet({ title: t('m.language'), items: languages.map((l) => ({ id: l.code, label: l.name })) });
         if (v && v !== currentLanguage()) { await api.setMyLanguage(v); location.reload(); }
-      } else if (id === 'profile') editProfile();
+      } else if (id === 'profile') openEditProfile();
       else if (id.startsWith('tab:')) openUserSettings(id.slice(4));
       else if (id === 'saved') openBookmarksModal();
       else if (id === 'scheduled') openScheduleModal({ scope: null });
@@ -72,30 +73,6 @@ export function mountYouTab(host) {
       else if (id === 'desktop') location.href = '/?ui=desktop';
       else if (id === 'logout') { try { await api.logout(); } finally { location.href = '/m/'; } }
     } catch (err) { handleError(err); }
-  }
-
-  function editProfile() {
-    openSheet({
-      title: t('m.profile'),
-      html: `<label class="m-field">${t('m.displayName')}<input class="m-input" id="p-name" maxlength="32" value="${escapeHtml(state.me.displayName)}"></label>
-        <label class="m-field">${t('m.bio')}<textarea class="m-input" id="p-bio" rows="3" maxlength="190">${escapeHtml(state.me.bio || '')}</textarea></label>
-        <input type="file" id="p-avatar" accept="image/*" hidden>
-        <div class="m-confirm-row"><button class="btn btn-secondary" id="p-pick">${t('m.attachPhoto')}</button><button class="btn btn-primary" id="p-save">${t('m.save')}</button></div>`,
-      onMount: (body, close) => {
-        body.querySelector('#p-pick').addEventListener('click', () => body.querySelector('#p-avatar').click());
-        body.querySelector('#p-avatar').addEventListener('change', async (e) => {
-          const f = e.target.files[0];
-          if (!f) return;
-          try { const res = await api.uploadAvatar(f); Object.assign(state.me, res.user); bus.emit('state:me'); } catch (err) { handleError(err); }
-        });
-        body.querySelector('#p-save').addEventListener('click', async () => {
-          try {
-            const res = await api.updateMe({ displayName: body.querySelector('#p-name').value.trim(), bio: body.querySelector('#p-bio').value });
-            Object.assign(state.me, res.user); bus.emit('state:me'); toast(t('m.profileSaved')); close();
-          } catch (err) { handleError(err); }
-        });
-      },
-    });
   }
 
   function androidSettings() {
