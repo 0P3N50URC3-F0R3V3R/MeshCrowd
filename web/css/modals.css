@@ -114,7 +114,7 @@
   max-width: 300px; position: relative;
 }
 .profile-preview .pp-banner { height: 60px; background: linear-gradient(135deg, #0d9488, #0891b2); }
-.profile-preview .pp-icons-row { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+.profile-preview .pp-icons-row { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 1; }
 .profile-preview .pp-icon-btn { background: rgba(0,0,0,0.4); color: #fff; }
 .profile-preview .pp-icon-btn:hover { background: rgba(0,0,0,0.6); }
 .profile-preview .pp-body { padding: 0 12px 12px; position: relative; }
@@ -127,13 +127,13 @@
 
 .profile-popover {
   position: fixed; width: 340px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); overflow-y: auto;
-  background: var(--bg-modal); border-radius: var(--radius-lg); padding: 0 0 12px;
+  background: var(--bg-modal); border-radius: var(--radius-lg); padding: 0;
   box-shadow: 0 12px 40px rgba(0,0,0,0.55); animation: pop-in var(--dur-med) var(--ease-out);
 }
-.profile-popover .pp-actions { display: flex; gap: 8px; padding: 12px 12px 0; }
-.profile-popover .pp-actions .btn { display: inline-flex; align-items: center; gap: 6px; }
 .profile-popover .pp-quick-dm { display: block; width: calc(100% - 24px); margin: 10px 12px 0; box-sizing: border-box; }
-.profile-popover .error-text { padding: 0 12px; }
+.profile-popover .error-text { padding: 0 12px; margin: 0; min-height: 0; }
+.profile-popover .error-text:not(:empty) { margin: 6px 0 10px; }
+.profile-popover .pp-quick-dm { margin-bottom: 12px; }
 
 .status-picker { display: flex; flex-direction: column; gap: 2px; }
 .status-option {

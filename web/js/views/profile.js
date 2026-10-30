@@ -75,8 +75,7 @@ export async function openProfileModal(userId, { serverId, anchor } = {}) {
       <div class="profile-preview" style="max-width:none;margin-top:0">
         <div class="pp-banner" style="${bannerStyle(user)}"></div>
         <div class="pp-icons-row">
-          ${!isSelf && !isFriend && !isPending ? `<button class="btn-icon pp-icon-btn" id="pm-add-icon" title="${t('profile.addFriendTitle')}">${icons.userPlus(16)}</button>` : ''}
-          ${isSelf ? '' : `<button class="btn-icon pp-icon-btn" id="pm-more" title="${t('profile.moreTitle')}">${icons.kebab(16)}</button>`}
+          <button class="btn-icon pp-icon-btn" id="pm-more" title="${t('profile.moreTitle')}">${icons.kebab(16)}</button>
         </div>
         <div class="pp-body" style="${cardStyle(user)}">
           <div style="position:relative;width:68px">
@@ -94,21 +93,9 @@ export async function openProfileModal(userId, { serverId, anchor } = {}) {
           ${user.bio !== undefined ? `<div class="pp-bio">${escapeHtml(user.bio || t('profile.noBioYet'))}</div>` : ''}
         </div>
       </div>
-      <div class="pp-actions">
-        ${isSelf
-          ? `<button class="btn btn-primary" id="pm-edit">${icons.edit(14)} ${t('profile.editProfileButton')}</button>`
-          : `<button class="btn btn-primary" id="pm-dm">${t('profile.messageButton')}</button>`}
-        ${isPending ? `<button class="btn btn-secondary" disabled>${t('profile.requestPendingButton')}</button>` : ''}
-      </div>
       ${!isSelf && user.canMessage ? `<input class="input pp-quick-dm" id="pm-quick" maxlength="2000" placeholder="${escapeHtml(t('profile.messageInputPlaceholder', { name: user.displayName }))}">` : ''}
       <div class="error-text" id="pm-err"></div>`;
     m.place();
-
-    m.body.querySelector('#pm-edit')?.addEventListener('click', async () => {
-      m.close();
-      const { openUserSettings } = await import('./userSettings.js');
-      openUserSettings('account');
-    });
 
     m.body.querySelector('#pm-quick')?.addEventListener('keydown', async (e) => {
       if (e.key !== 'Enter' || e.isComposing) return;
@@ -130,7 +117,7 @@ export async function openProfileModal(userId, { serverId, anchor } = {}) {
       }
     });
 
-    m.body.querySelector('#pm-dm')?.addEventListener('click', async () => {
+    const openDmAction = async () => {
       try {
         const dmRes = await api.openDm(userId);
         const dmsRes = await api.listDms();
@@ -141,9 +128,9 @@ export async function openProfileModal(userId, { serverId, anchor } = {}) {
       } catch (err) {
         m.body.querySelector('#pm-err').textContent = apiErrorMessage(err, t('profile.cantMessageError'));
       }
-    });
+    };
 
-    m.body.querySelector('#pm-add-icon')?.addEventListener('click', async () => {
+    const addFriendAction = async () => {
       try {
         await api.friendRequest(user.username);
         toast(t('profile.friendRequestSent'));
@@ -151,12 +138,35 @@ export async function openProfileModal(userId, { serverId, anchor } = {}) {
       } catch (err) {
         m.body.querySelector('#pm-err').textContent = apiErrorMessage(err, t('profile.friendRequestError'));
       }
-    });
+    };
 
     m.body.querySelector('#pm-more')?.addEventListener('click', (e) => {
       const rect = e.currentTarget.getBoundingClientRect();
+      const card = m.body.getBoundingClientRect();
+      const menuX = card.right + 210 <= window.innerWidth ? card.right + 4 : Math.max(4, card.left - 214);
+      const menuY = rect.top;
+      if (isSelf) {
+        openContextMenu(menuX, menuY, [
+          {
+            label: t('profile.editProfileButton'),
+            icon: icons.edit,
+            onClick: async () => {
+              m.close();
+              const { openUserSettings } = await import('./userSettings.js');
+              openUserSettings('account');
+            },
+          },
+          { label: t('profile.viewFullProfileMenuItem'), onClick: () => { m.close(); openFullProfile(userId, { serverId }); } },
+          { label: t('profile.shareProfileMenuItem'), onClick: () => shareProfile(user) },
+        ]);
+        return;
+      }
       const ignored = !!annotationFor(userId)?.ignored;
       const items = [
+        { label: t('profile.messageButton'), onClick: openDmAction },
+        isPending
+          ? { label: t('profile.requestPendingButton'), disabled: true }
+          : !isFriend && { label: t('profile.addFriendTitle'), icon: icons.userPlus, onClick: addFriendAction },
         { label: t('profile.viewFullProfileMenuItem'), onClick: () => { m.close(); openFullProfile(userId, { serverId }); } },
         { label: t('profile.shareProfileMenuItem'), onClick: () => shareProfile(user) },
         { label: t('profile.inviteToServerMenuItem'), submenu: inviteSubmenu(user, new Set(mutualServers.map((s) => s.id))) },
@@ -165,7 +175,7 @@ export async function openProfileModal(userId, { serverId, anchor } = {}) {
         isBlocked
           ? { label: t('userMenu.unblock'), danger: true, onClick: () => unblock(user) }
           : { label: t('userMenu.block'), danger: true, onClick: () => confirmBlock(user) },
-      ];
+      ].filter(Boolean);
       if (canManageColor(serverId)) {
         items.push({
           label: t('profile.setNameColorMenuItem'),
@@ -195,7 +205,7 @@ export async function openProfileModal(userId, { serverId, anchor } = {}) {
         danger: true,
         onClick: () => openReportModal(user),
       });
-      openContextMenu(rect.right - 200, rect.bottom + 4, items);
+      openContextMenu(menuX, menuY, items);
     });
   } catch (err) {
     m.body.innerHTML = `<p style="color:var(--danger)">${escapeHtml(apiErrorMessage(err, t('profile.loadProfileError')))}</p>`;

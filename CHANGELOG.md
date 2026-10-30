@@ -5,7 +5,11 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 ## [Unreleased]
 
 ### 2026-10-30
+#### Changed
+- Profile popover: Message, Add friend and (own profile) Edit profile moved into the "..." menu; the action buttons are gone. The quick-message input stays when the user allows DMs. The menu opens beside the card instead of over it, and the card no longer has a gray strip at the bottom.
+
 #### Added
+- "Report" entry for users in the member list right-click menu, friend rows, DM rows (desktop) and the mobile profile sheet; previously only message menus and the profile card's "..." menu had it.
 - Registration mode in `data/config.json` (`registrationMode`): `open` (default), `invite` (new accounts need a valid server or channel invite link/code) or `closed`. The first account on an empty instance is always allowed.
 - Admin Panel > Overview: "Registration" setting (site admins), applied immediately without a restart.
 - Sign-in screen on web, Electron and Android: invite field in invite mode (prefilled from `#invite=` links, accepts pasted links), notice instead of the Register link in closed mode.
