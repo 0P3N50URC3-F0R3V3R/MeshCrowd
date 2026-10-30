@@ -165,11 +165,12 @@ img, video { max-width: 100%; }
 .m-status.s-online { background: #23a55a; } .m-status.s-idle { background: #f0b232; } .m-status.s-dnd { background: var(--danger); }
 .m-dm-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .m-fab { position: absolute; right: var(--m-pad); bottom: var(--m-pad); display: inline-flex; gap: 6px; align-items: center; min-height: 48px; padding: 0 18px; border: 0; border-radius: 24px; background: var(--brand); color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.45); font-weight: 600; }
-.m-profile { text-align: center; padding: 8px 8px 4px; }
+.m-profile { text-align: center; padding: 8px 8px 4px; position: relative; }
+.m-profile-more { position: absolute; top: 0; right: 0; width: var(--m-tap); height: var(--m-tap); }
+.m-profile-quick { display: block; width: 100%; box-sizing: border-box; margin-top: 12px; }
+.m-profile-avatar { display: flex; justify-content: center; }
 .m-profile-name { font-size: 1.2rem; font-weight: 700; margin-top: 8px; }
 .m-profile-user, .m-profile-bio { color: var(--text-muted); }
-.m-profile-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
-.m-profile-actions .btn { min-height: var(--m-tap); }
 .m-header .m-input { flex: 1; min-width: 0; }
 .m-filter { width: 100%; background: none; border: 0; color: var(--text-primary); text-align: left; }
 .m-check-box { width: 20px; height: 20px; border-radius: 5px; border: 2px solid var(--interactive-normal); display: inline-grid; place-items: center; flex-shrink: 0; box-sizing: border-box; }
