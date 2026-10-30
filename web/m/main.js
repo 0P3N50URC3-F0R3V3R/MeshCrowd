@@ -41,6 +41,10 @@ async function boot() {
   initRouter(document.getElementById('m-host'));
   initCallSession();
   mountCallBar(document.getElementById('m-callbar'));
+  const pushChat = (target) => {
+    if (target.kind !== 'dm') window.__mcShowTab?.('servers');
+    nav.push('chat', target);
+  };
   const openInvite = async (code) => {
     history.replaceState(history.state, '', location.pathname + location.search);
     try {
@@ -49,7 +53,7 @@ async function boot() {
       if (!(await confirmSheet(text, { danger: false, okLabel: t('serverRail.joinButton') }))) return;
       const { kind, res } = await redeemInviteCode(code);
       setServers((await api.listServers()).servers);
-      if (kind === 'channel') nav.push('chat', { kind: 'channel', serverId: res.server.id, channelId: res.channelId });
+      if (kind === 'channel') pushChat({ kind: 'channel', serverId: res.server.id, channelId: res.channelId });
     } catch { toast(t('serverRail.invalidInviteCode'), { type: 'error' }); }
   };
   const openLink = () => {
@@ -58,14 +62,14 @@ async function boot() {
     const target = parseDeepLink(location.hash);
     if (!target) return;
     history.replaceState(history.state, '', location.pathname + location.search);
-    nav.push('chat', target);
+    pushChat(target);
   };
   window.addEventListener('hashchange', openLink);
   openLink();
   if (!parseDeepLink(location.hash) && getPref('startView', 'messages') === 'last') {
     try {
       const last = JSON.parse(getPref('lastChat', 'null'));
-      if (last && (last.kind !== 'dm' || state.dms.some((d) => d.id === last.dmId))) nav.push('chat', last);
+      if (last && (last.kind !== 'dm' || state.dms.some((d) => d.id === last.dmId))) pushChat(last);
     } catch { /* stale value */ }
   }
 }

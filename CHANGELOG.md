@@ -5,6 +5,9 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 ## [Unreleased]
 
 ### 2026-10-30
+#### Fixed
+- Android/mobile web: opening a server channel via "last chat" start view, a deep link or an invite now switches the underlying tab to Servers, so Back returns to the server's channel list instead of Messages.
+
 #### Changed
 - Profile popover: Message, Add friend and (own profile) Edit profile moved into the "..." menu; the action buttons are gone. The quick-message input stays when the user allows DMs. The menu opens beside the card instead of over it, and the card no longer has a gray strip at the bottom. The mobile profile sheet got the same treatment: actions moved into a "..." menu, with a quick-message input when DMs are allowed. Your own sheet has a "..." menu with Edit profile (shared with the You tab).
 

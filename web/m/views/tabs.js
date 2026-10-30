@@ -61,10 +61,11 @@ export function mountTabs(el) {
   });
   const offs = ['state:dms', 'state:readState', 'state:friends', 'state:serverDetail', 'state:activity'].map((ev) => bus.on(ev, paintBar));
   show(active);
+  window.__mcShowTab = (id) => { if (id !== active && TABS.some((x) => x.id === id)) show(id); };
   window.__mcTabBack = () => {
     if (active === 'servers') return false;
     show('servers');
     return true;
   };
-  return { destroy: () => { delete window.__mcTabBack; offs.forEach((off) => off()); inner?.destroy?.(); }, onShow: paintBar };
+  return { destroy: () => { delete window.__mcTabBack; delete window.__mcShowTab; offs.forEach((off) => off()); inner?.destroy?.(); }, onShow: paintBar };
 }
