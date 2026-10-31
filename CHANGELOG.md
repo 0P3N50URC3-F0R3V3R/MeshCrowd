@@ -4,6 +4,10 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ## [Unreleased]
 
+### 2026-10-31
+#### Changed
+- Noise suppression: the RNNoise module (~4.8 MB) is now preloaded when the app opens (if the setting is on) and when the setting is switched on, instead of at the first call join.
+
 ### 2026-10-30
 #### Fixed
 - Android/mobile web: opening a server channel via "last chat" start view, a deep link or an invite now switches the underlying tab to Servers, so Back returns to the server's channel list instead of Messages.

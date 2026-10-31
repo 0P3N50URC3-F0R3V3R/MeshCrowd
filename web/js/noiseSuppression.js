@@ -49,6 +49,8 @@ const loadRnnoise = () => {
   return rnnoisePromise;
 };
 
+export const preloadDenoiser = () => { loadRnnoise().catch(() => {}); };
+
 // Returns { input, output, destroy } to splice between a source node and the next node of the graph.
 // The AudioContext must run at 48 kHz.
 export async function createDenoiser(audioCtx) {

@@ -36,6 +36,8 @@ import { mountActivityPanel } from './activityPanel.js';
 import { mountPinnedPanel } from './pinnedPanel.js';
 import { mountThreadsPanel } from './threadsPanel.js';
 import { openServerSettings } from './serverSettings.js';
+import { voicePrefs } from '../voicePrefs.js';
+import { preloadDenoiser } from '../noiseSuppression.js';
 import { t } from '../i18n.js';
 import { parseInviteHash } from '../inviteHash.mjs';
 import { peekInvite } from '../inviteLink.js';
@@ -80,6 +82,9 @@ export async function mountShell(root) {
   mountUserBar(document.getElementById('s-userbar'));
   mountCallBar(document.getElementById('s-callbar'));
   mountTopBar();
+
+  if (voicePrefs.get().noiseSuppression) preloadDenoiser();
+  bus.on('voiceprefs:changed', (p) => { if (p.noiseSuppression) preloadDenoiser(); });
 
   bus.on('state:connection', (connected) => {
     document.getElementById('conn-banner')?.classList.toggle('hidden', connected);
