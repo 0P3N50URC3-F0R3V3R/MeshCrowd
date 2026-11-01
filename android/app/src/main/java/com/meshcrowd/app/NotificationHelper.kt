@@ -56,6 +56,13 @@ object NotificationHelper {
         NotificationManagerCompat.from(context).notify(m.scopeKey, m.scopeKey.hashCode(), builder.build())
     }
 
+    // Opening the app is how the user sees what the background poller announced; leaving those
+    // notifications up afterwards made the shade keep showing messages that were already read.
+    fun cancelMessages(context: Context) {
+        val nm = context.getSystemService(NotificationManager::class.java)
+        nm.activeNotifications.filter { it.notification.channelId == CHANNEL_MESSAGES }.forEach { nm.cancel(it.tag, it.id) }
+    }
+
     fun serviceNotification(context: Context): Notification =
         NotificationCompat.Builder(context, CHANNEL_SERVICE)
             .setSmallIcon(R.drawable.ic_notification)

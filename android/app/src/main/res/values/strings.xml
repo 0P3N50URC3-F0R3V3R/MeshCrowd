@@ -11,6 +11,9 @@
     <string name="download_done">Download complete</string>
     <string name="notify_encrypted">New encrypted message</string>
     <string name="notify_attachment">Sent an attachment</string>
+    <string name="notify_sticker">Sent a sticker</string>
+    <string name="notify_pinned">%1$s pinned a message</string>
+    <string name="notify_thread">%1$s started a thread on your message</string>
     <string name="invite_switch_title">Open invite link?</string>
     <string name="invite_switch_body">This invite is for %1$s, a different server than the one this app is set up for. Continue to connect to it?</string>
     <string name="invite_switch_continue">Continue</string>

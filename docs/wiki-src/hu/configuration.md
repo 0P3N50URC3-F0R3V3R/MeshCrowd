@@ -27,6 +27,9 @@ A `data/config.json` az első indításkor jön létre, és minden indításkor 
 | `iceServers` | `[]` | Külső STUN- és TURN-szerverek a hálózatok közötti WebRTC-hívásokhoz. |
 | `turn` | lásd lent | A beépített STUN/TURN szerver, alapból kikapcsolva. Lásd: [STUN és TURN](#stun-s-turn). |
 | `sites` | `{"phpPath": "", "maxWorkers": 4}` | PHP futtatókörnyezet és munkafolyamat-szám az [Oldalakhoz](sites.html). |
+| `logging` | `{"level": "info", "keepDays": 30, "maxFileMb": 10}` | Naplószint (`debug`, `info`, `warn`, `error`), hány napig maradnak meg a `data/logs/` fájljai, és mekkora méret után indul új fájl. Futás közben a `log level` és a `config set` is módosíthatja. |
+| `ssh` | `{"enabled": false, "port": 2222, "listenAddress": "127.0.0.1", "maxSessions": 3, "idleTimeoutMinutes": 15, "allowPublicKeys": false}` | SSH-hozzáférés az admin konzolhoz. Alapból kikapcsolt és csak localhoston figyel. Az `allowPublicKeys` fenntartott kulcs, egyelőre nincs hatása (csak jelszavas belépés). Lásd: [Adminisztráció](administration.html#ssh-hozz-f-r-s). |
+| `backup` | `{"keep": 7, "schedule": "", "maxFileMb": 5, "includeSecrets": false, "preRestoreKeep": 3}` | Mentések a konzolról: hány maradjon meg, a napi `ÓÓ:PP` ütemezés (üres: ki), a mentésbe kerülő legnagyobb médiafájl, bekerüljenek-e a konfiguráció titkai, és hány visszaállítás előtti másolat maradjon. Lásd: [Adminisztráció](administration.html#ment-sek-a-konzolr-l). |
 
 ## Példa
 

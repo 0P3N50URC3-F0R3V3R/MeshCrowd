@@ -27,6 +27,9 @@ order: 3
 | `iceServers` | `[]` | External STUN and TURN servers for WebRTC calls across networks. |
 | `turn` | see below | The built-in STUN/TURN server, off by default. See [STUN and TURN](#stun-and-turn). |
 | `sites` | `{"phpPath": "", "maxWorkers": 4}` | PHP runtime and worker count for [Sites](sites.html). |
+| `logging` | `{"level": "info", "keepDays": 30, "maxFileMb": 10}` | Log level (`debug`, `info`, `warn`, `error`), days to keep log files in `data/logs/`, and the size after which a new file is started. Changeable at runtime with `log level` and `config set`. |
+| `ssh` | `{"enabled": false, "port": 2222, "listenAddress": "127.0.0.1", "maxSessions": 3, "idleTimeoutMinutes": 15, "allowPublicKeys": false}` | SSH access to the admin console. Off by default, localhost only. `allowPublicKeys` is reserved and has no effect yet (password sign-in only). See [Administration](administration.html#ssh-access). |
+| `backup` | `{"keep": 7, "schedule": "", "maxFileMb": 5, "includeSecrets": false, "preRestoreKeep": 3}` | Backups from the console: how many to keep, the daily `HH:MM` schedule (empty is off), the largest media file included, whether config secrets are included, and how many pre-restore copies to keep. See [Administration](administration.html#console-backups). |
 
 ## Example
 

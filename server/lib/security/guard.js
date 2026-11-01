@@ -3,8 +3,9 @@
 const { db } = require('../../db');
 const settings = require('./settings');
 const captcha = require('./captcha');
-const { normalizeIp, parseEntry, IpSet, entryCovers } = require('./ipMatch');
+const { normalizeIp, parseEntry, IpSet, entryCovers, isPrivateIp } = require('./ipMatch');
 const logger = require('../logger');
+const log = logger.scoped('security');
 
 let clock = () => Date.now();
 const iso = (ms) => new Date(ms).toISOString();
@@ -81,12 +82,15 @@ function addBan(entry, { reason = '', source = 'manual', minutes = null, userId 
      ON CONFLICT(entry) DO UPDATE SET reason = excluded.reason, source = excluded.source, expires_at = excluded.expires_at`
   ).run(parsed.entry, String(reason).slice(0, 200), source, userId, iso(clock()), expires);
   rebuild();
+  const msg = `ban added: ${parsed.entry} (${source}${minutes ? `, ${minutes} min` : ', permanent'})${reason ? `: ${String(reason).slice(0, 200).replace(/[\u0000-\u001f]/g, ' ')}` : ''}`;
+  if (source === 'auto') log.warn(msg); else log.info(msg);
   return db.prepare('SELECT * FROM ip_bans WHERE entry = ?').get(parsed.entry);
 }
 
 function removeBan(id) {
+  const row = db.prepare('SELECT entry FROM ip_bans WHERE id = ?').get(id);
   const info = db.prepare('DELETE FROM ip_bans WHERE id = ?').run(id);
-  if (info.changes) rebuild();
+  if (info.changes) { rebuild(); log.info(`ban removed: ${row && row.entry}`); }
   return info.changes > 0;
 }
 
@@ -102,6 +106,8 @@ const failures = new Map(); // ip -> [ms]
 const floods = new Map(); // ip -> { start, count, fired }
 const strikes = new Map(); // ip -> [ms]
 const registrations = new Map(); // ip -> [ms]
+const scanners = new Map(); // ip -> [ms]
+const MAX_BAN_MINUTES = 7 * 1440;
 const autoBanTimes = [];
 let underAttackUntil = 0;
 
@@ -127,6 +133,8 @@ function autoBan(ip, minutes, reason, extra) {
     return false;
   }
   if (check(ip).allowlisted || check(ip).blocked) return false;
+  const earlier = db.prepare("SELECT COUNT(*) AS n FROM security_events WHERE type = 'ban_auto' AND ip = ? AND ts > ?").get(ip, iso(clock() - 86400_000)).n;
+  minutes = Math.min(minutes * 2 ** Math.min(earlier, 12), MAX_BAN_MINUTES);
   addBan(ip, { reason, source: 'auto', minutes });
   event('ban_auto', ip, { reason, minutes, ...extra });
   const now = clock();
@@ -142,7 +150,7 @@ function autoBan(ip, minutes, reason, extra) {
 // Returns true when this call tripped the flood limit and banned the address.
 function noteRequest(ip) {
   const cfg = settings.load().protection;
-  if (cfg.mode === 'off') return false;
+  if (cfg.mode === 'off' || isPrivateIp(ip)) return false;
   const now = clock();
   const windowMs = cfg.windowSeconds * 1000;
   let f = floods.get(ip);
@@ -157,11 +165,23 @@ function noteRequest(ip) {
 
 function noteRateLimited(ip) {
   const cfg = settings.load().protection;
-  if (cfg.mode === 'off' || !ip || check(ip).allowlisted) return;
+  if (cfg.mode === 'off' || !ip || isPrivateIp(ip) || check(ip).allowlisted) return;
   const list = push(strikes, ip, cfg.strikeWindowMinutes * 60_000);
   if (list.length >= cfg.rateLimitStrikes) {
     strikes.delete(ip);
     autoBan(ip, cfg.banMinutes, 'repeated rate-limit violations', { strikes: list.length });
+  }
+}
+
+const SCANNER_PATH = /\.(php\d?|asp|aspx|jsp|cgi|env|git|sql|bak)$|^\/(\.|wp-|wordpress|phpmyadmin|xmlrpc|cgi-bin|actuator|server-status|boaform|hudson|solr|owa\/)/i;
+
+function noteScanner(ip) {
+  const cfg = settings.load().protection;
+  if (cfg.mode === 'off' || !ip || isPrivateIp(ip) || check(ip).allowlisted) return;
+  const list = push(scanners, ip, cfg.strikeWindowMinutes * 60_000);
+  if (list.length >= cfg.scannerStrikes) {
+    scanners.delete(ip);
+    autoBan(ip, cfg.banMinutes, 'probing for vulnerable paths', { hits: list.length });
   }
 }
 
@@ -237,9 +257,24 @@ function ipGuard(req, res, next) {
     recordBlocked(ip, verdict, req.path);
     return res.status(403).type('text/plain').send('Access denied');
   }
-  if (!verdict.allowlisted && !req.path.startsWith('/federation/') && noteRequest(ip)) {
-    return res.status(403).type('text/plain').send('Access denied');
-  }
+  next();
+}
+
+// Ordinary file fetches are what a page load is made of; only dynamic requests count toward a flood.
+const STATIC_FILE = /\.(js|mjs|css|map|png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|wasm|mp3|ogg|wav|webm|mp4|json|webmanifest|txt)$/i;
+const isStaticFetch = (req) => (req.method === 'GET' || req.method === 'HEAD')
+  && !req.path.startsWith('/api/') && !req.path.startsWith('/site/')
+  && (STATIC_FILE.test(req.path) || /^\/(uploads|vendor|lang)\//.test(req.path));
+
+// Runs after the session is attached: signed-in users are never flood-banned, and neither are
+// allowlisted or private addresses. Scanner-style paths are counted apart from raw volume.
+function floodGuard(req, res, next) {
+  if (req.user) return next();
+  const ip = clientIp(req);
+  if (!ip || req.path.startsWith('/federation/') || check(ip).allowlisted) return next();
+  if (!req.path.startsWith('/site/') && SCANNER_PATH.test(req.path)) noteScanner(ip);
+  if (!isStaticFetch(req) && noteRequest(ip)) return res.status(403).type('text/plain').send('Access denied');
+  if (check(ip).blocked) return res.status(403).type('text/plain').send('Access denied');
   next();
 }
 
@@ -359,7 +394,7 @@ function start() {
   setInterval(() => {
     const now = clock();
     for (const [ip, f] of floods) if (now - f.start > 300_000) floods.delete(ip);
-    for (const map of [failures, strikes, registrations]) {
+    for (const map of [failures, strikes, registrations, scanners]) {
       for (const [ip, list] of map) if (!list.length || list[list.length - 1] < now - 720 * 3600_000) map.delete(ip);
     }
   }, 60_000).unref();
@@ -370,7 +405,7 @@ const _test = {
   setClock(fn) { clock = fn; },
   resetClock() { clock = () => Date.now(); },
   reset() {
-    for (const m of [failures, floods, strikes, registrations, blockedLogged]) m.clear();
+    for (const m of [failures, floods, strikes, registrations, scanners, blockedLogged]) m.clear();
     autoBanTimes.length = 0; underAttackUntil = 0; counters.blocked = 0;
   },
 };
@@ -380,6 +415,6 @@ module.exports = {
   addBan, removeBan, sweepExpired,
   noteRequest, noteRateLimited, noteFailure, clearFailures, failureCount, noteRegistration, registrationBlocked,
   isUnderAttack, setUnderAttack, underAttackInfo, captchaRequired,
-  ipGuard, gate, clientIp, isUpgradeBlocked, upgradeIp,
+  ipGuard, floodGuard, gate, clientIp, isUpgradeBlocked, upgradeIp,
   _test,
 };

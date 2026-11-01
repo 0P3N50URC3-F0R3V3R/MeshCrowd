@@ -1,7 +1,7 @@
 'use strict';
 
 const { db } = require('../db');
-const { hasSite, SITE_PERMISSIONS } = require('./permissions');
+const { hasSite, hasSiteStrict, SITE_PERMISSIONS } = require('./permissions');
 
 function getSitePermissionBits(userId) {
   const rows = db.prepare(
@@ -21,4 +21,8 @@ function canManageSites(userId) {
   return hasSite(getSitePermissionBits(userId), SITE_PERMISSIONS.MANAGE_ANY_SERVER);
 }
 
-module.exports = { getSitePermissionBits, isSiteAdmin, canManageSites };
+function canUseConsole(userId) {
+  return hasSiteStrict(getSitePermissionBits(userId), SITE_PERMISSIONS.MANAGE_CONSOLE);
+}
+
+module.exports = { getSitePermissionBits, isSiteAdmin, canManageSites, canUseConsole };

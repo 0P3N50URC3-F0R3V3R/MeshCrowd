@@ -1,4 +1,5 @@
 import { openSheet } from './bottomSheet.js';
+import { api } from '../../js/api.js';
 import { escapeHtml } from '../../js/utils.js';
 import { t } from '../../js/i18n.js';
 import { EMOJI_CATEGORIES } from '../../js/emoji-data.js';
@@ -65,7 +66,8 @@ export function openEmojiSheet(customEmoji = []) {
 export function openStickerSheet(ctx) {
   return new Promise((resolve) => {
     let chosen = null;
-    const stickers = ctx.detail?.stickers || [];
+    let stickers = ctx.detail?.stickers || [];
+    const loadDm = ctx.kind === 'dm' ? api.listAvailableStickers().then((r) => { stickers = r.stickers; }).catch(() => {}) : Promise.resolve();
     openSheet({
       title: t('m.stickers'),
       html: `<input class="m-input" id="s-search" placeholder="${escapeHtml(t('stickerPicker.searchPlaceholder'))}" autocomplete="off"><div id="s-grid"></div>`,
@@ -75,14 +77,15 @@ export function openStickerSheet(ctx) {
           q = q.trim().toLowerCase();
           const shown = q ? stickers.filter((s) => s.name.toLowerCase().includes(q) || (s.description || '').toLowerCase().includes(q)) : stickers;
           grid.innerHTML = shown.length
-            ? `<div class="m-sticker-grid">${shown.map((s) => `<button class="m-sticker-btn" data-s="${s.id}"><img class="anim-hover" src="${escapeHtml(s.image_path)}" alt="${escapeHtml(s.name)}"><small>${escapeHtml(s.name)}</small></button>`).join('')}</div>`
+            ? `<div class="m-sticker-grid">${shown.map((s) => `<button class="m-sticker-btn" data-s="${s.id}"><img class="anim-hover" src="${escapeHtml(s.image_path)}" alt="${escapeHtml(s.name)}"><small>${escapeHtml(s.name)}${s.serverName ? ` · ${escapeHtml(s.serverName)}` : ''}</small></button>`).join('')}</div>`
             : `<div class="m-empty">${t('stickerPicker.noMatching')}</div>`;
         };
         paint('');
+        loadDm.then(() => paint(body.querySelector('#s-search').value));
         body.querySelector('#s-search').addEventListener('input', (ev) => paint(ev.target.value));
         body.addEventListener('click', (ev) => {
           const b = ev.target.closest('[data-s]');
-          if (b) { chosen = Number(b.dataset.s); close(); }
+          if (b) { chosen = stickers.find((s) => s.id === Number(b.dataset.s)) || null; close(); }
         });
       },
       onClose: () => resolve(chosen),

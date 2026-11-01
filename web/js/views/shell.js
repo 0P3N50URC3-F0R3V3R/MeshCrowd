@@ -8,8 +8,9 @@ import {
   setServerDetail, getServerDetail, upsertServer, removeServer, upsertDmPreview, upsertDm, removeDm,
   setWsConnected, setNotificationPrefs, setServerPrefs, setUserAnnotations, setDmPrefs, setDmPref, dmPrefFor, setBookmarkIds, nameFor, notificationPrefFor, setNotificationPref, setReadStateBulk, setReadState, isSelf,
   setFriendVoice, pushActivity, setServerLayout, shouldPlayNotifySound,
-  setServerVoiceBulk, applyServerVoiceState, getGlobalUnreadCount, noteChannelMessage,
+  setServerVoiceBulk, applyServerVoiceState, getGlobalUnreadCount, applyDmRead, noteChannelMessage, isUnread,
 } from '../state.js';
+import { keysToClear, notifyKey } from '../notifyClear.mjs';
 import { openContextMenu, openModal, confirmModal, confirmTypedModal } from './modal.js';
 import { notifySound } from '../notifySound.js';
 import { updateBadge as updateFaviconBadge } from '../favicon.js';
@@ -24,6 +25,8 @@ import { mountCallBar } from './callBar.js';
 import { mountChat } from './chat.js';
 import { mountRemoteServer, refreshRemoteServers, getRemoteInfo } from './remoteServer.js';
 import { mountForum } from './forum.js';
+import { canEditPost, canDeletePost } from '../threadPerms.mjs';
+import { editPost } from './postActions.js';
 import { mountNotes } from './notes.js';
 import { mountSite, mountSiteSidebar } from './site.js';
 import { mountVoiceChannel } from './voice.js';
@@ -41,9 +44,11 @@ import { preloadDenoiser } from '../noiseSuppression.js';
 import { t } from '../i18n.js';
 import { parseInviteHash } from '../inviteHash.mjs';
 import { peekInvite } from '../inviteLink.js';
+import { previewText } from '../stickers.mjs';
 import { ensureOwnKeyPublished, peekPlaintext, trustView } from '../e2ee/dmCrypto.js';
 import { openVerifyModal } from './dmVerify.js';
 import { openScreeningModal } from './onboarding.js';
+import { eventNotice, entryTarget } from '../notifyEvent.mjs';
 
 export async function mountShell(root) {
   root.innerHTML = `
@@ -129,6 +134,9 @@ export async function mountShell(root) {
   bus.on('state:friends', scheduleUnreadBadge);
   bus.on('state:serverDetail', scheduleUnreadBadge);
   bus.on('state:me', scheduleUnreadBadge);
+  bus.on('state:view', scheduleUnreadBadge);
+  window.addEventListener('focus', scheduleUnreadBadge);
+  document.addEventListener('visibilitychange', scheduleUnreadBadge);
   bus.on('ws:message_create', scheduleUnreadBadge);
   bus.on('ws:notify', onNotify);
   bus.on('ws:reminder', onReminder);
@@ -200,6 +208,7 @@ export async function mountShell(root) {
   });
   bus.on('ws:friend_request', (payload) => { refreshFriendsSilently(); onFriendEvent(t('shell.friendRequestReceivedToast', { name: payload.from.displayName }), 'pending'); });
   bus.on('ws:friend_accept', (payload) => { refreshFriendsSilently(); onFriendEvent(t('shell.friendRequestAcceptedToast', { name: payload.by.displayName }), 'all'); });
+  bus.on('ws:server_notice', ({ text }) => { if (text) toast(text, { ttl: 15000 }); });
   bus.on('ws:voice_ring', ({ dmChannelId, fromUser }) => onVoiceRing(dmChannelId, fromUser));
   bus.on('ws:dm_create', ({ dm }) => upsertDm(dm));
   bus.on('ws:dm_update', ({ dm: patch }) => {
@@ -217,16 +226,7 @@ export async function mountShell(root) {
     try { setServers((await api.listServers()).servers); } catch { /* the rail just won't show the new server until next refresh */ }
   });
   bus.on('ws:friend_voice', ({ userId, channel }) => setFriendVoice(userId, channel));
-  bus.on('ws:dm_read', ({ dmId, userId, messageId }) => {
-    if (isSelf(userId)) return;
-    const dm = state.dms.find((d) => d.id === dmId);
-    if (!dm) return;
-    dm.readStates = dm.readStates || [];
-    const existing = dm.readStates.find((r) => r.userId === userId);
-    if (existing) { if (messageId > existing.lastReadMessageId) existing.lastReadMessageId = messageId; }
-    else dm.readStates.push({ userId, lastReadMessageId: messageId });
-    bus.emit('state:dms');
-  });
+  bus.on('ws:dm_read', ({ dmId, userId, messageId }) => applyDmRead(dmId, userId, messageId));
   bus.on('dms:unknownScope', () => refreshDmsSilently());
   bus.on('ws:member_leave', ({ serverId }) => refreshServerDetailSilently(serverId));
   bus.on('ws:open', () => {
@@ -258,33 +258,38 @@ export async function mountShell(root) {
     if ((!isFocused || notifySound.get().playWhenFocused) && shouldPlayNotifySound()) notifySound.play();
     if (isFocused) return;
 
+    const noticeLabels = { sticker: t('sidebar.sentASticker'), attachment: t('sidebar.sentAnAttachment') };
     const author = payload.message.author;
-    const title = payload.scopeType === 'dm'
+    const notice = eventNotice(payload, t);
+    const title = notice ? notice.title : payload.scopeType === 'dm'
       ? author.displayName
       : `${author.displayName} in #${payload.channelName}${payload.serverName ? ` (${payload.serverName})` : ''}`;
     // The server only ever sends a generic text for encrypted DMs; a message this device already
     // decrypted can show its real text, anything else stays generic and localized.
-    const body = payload.message.isEncrypted
-      ? (peekPlaintext(state.me.id, payload.message.id)?.text || t('dmEncryption.notifyBody'))
-      : payload.message.content || (payload.message.attachments?.length ? t('sidebar.sentAnAttachment') : '');
+    const body = notice ? notice.body : payload.message.isEncrypted
+      ? (previewText(peekPlaintext(state.me.id, payload.message.id) || {}, noticeLabels) || t('dmEncryption.notifyBody'))
+      : previewText({ text: payload.message.content, sticker: payload.message.sticker, hasAttachments: !!payload.message.attachments?.length }, noticeLabels);
 
+    const target = notice ? {
+      threadId: payload.message.scopeType === 'thread' ? payload.message.scopeId : null, messageId: payload.message.id,
+    } : {};
+    trackNotification(notifyKey(payload), null);
     pushActivity({
-      kind: payload.scopeType === 'dm' ? 'dm' : (payload.mentioned ? 'mention' : 'channel'),
+      kind: notice ? payload.kind : payload.scopeType === 'dm' ? 'dm' : (payload.mentioned ? 'mention' : 'channel'),
       title, body,
-      scopeType: payload.scopeType, scopeId: payload.scopeId, serverId: payload.serverId,
+      scopeType: payload.scopeType, scopeId: payload.scopeId, serverId: payload.serverId, ...target,
     });
 
     // The Electron shell keeps its own tray "Recent" list independent of in-page Notification
     // permission — it's the only way to surface activity while the window is hidden to the tray.
-    window.dismeshClient?.pushNotification({ title, body, scopeType: payload.scopeType, scopeId: payload.scopeId, serverId: payload.serverId });
+    window.dismeshClient?.pushNotification({ title, body, scopeType: payload.scopeType, scopeId: payload.scopeId, serverId: payload.serverId, ...target });
 
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
     const n = new Notification(title, { body, tag: `${payload.scopeType}-${payload.scopeId}` });
+    trackNotification(notifyKey(payload), n);
     n.onclick = () => {
       window.focus();
-      bus.emit('ui:navigate', payload.scopeType === 'dm'
-        ? { type: 'dm', dmId: payload.scopeId }
-        : { type: 'server', serverId: payload.serverId, channelId: payload.scopeId });
+      bus.emit('ui:navigate', entryTarget({ scopeType: payload.scopeType, scopeId: payload.scopeId, serverId: payload.serverId, ...target }));
       n.close();
     };
   }
@@ -311,8 +316,10 @@ export async function mountShell(root) {
   function onFriendEvent(body, friendsTab) {
     if (shouldPlayNotifySound()) notifySound.play();
     window.dismeshClient?.pushNotification({ title: 'MeshCrowd', body, scopeType: 'friends', scopeId: friendsTab });
+    trackNotification(`friends:${friendsTab}`, null);
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
     const n = new Notification('MeshCrowd', { body, tag: 'friend-event' });
+    trackNotification(`friends:${friendsTab}`, n);
     n.onclick = () => {
       window.focus();
       bus.emit('ui:navigate', { type: 'friends', tab: friendsTab });
@@ -327,11 +334,59 @@ export async function mountShell(root) {
     });
   }
 
+  // Notifications raised but not yet seen, by scope key; dismissed (system popup closed, tray
+  // "Recent" entry dropped) as soon as the unread state says they were read.
+  const pendingNotifications = new Map();
+  function trackNotification(key, n) {
+    if (!pendingNotifications.has(key)) pendingNotifications.set(key, []);
+    if (n) pendingNotifications.get(key).push(n);
+  }
+
+  function scopeStatus(key) {
+    const [type, id] = key.split(':');
+    if (type === 'friends') return state.friends.pending.some((f) => f.direction === 'incoming') ? 'unread' : 'read';
+    if (type === 'dm') {
+      const dm = state.dms.find((d) => String(d.id) === id);
+      return dm ? (isUnread('dm', dm.id, dm.lastMessage?.id) ? 'unread' : 'read') : 'unknown';
+    }
+    if (type === 'channel') {
+      for (const detail of state.serverDetail.values()) {
+        const ch = detail.channels.find((c) => String(c.id) === id);
+        if (ch) return isUnread('channel', ch.id, ch.last_message_id) ? 'unread' : 'read';
+      }
+    }
+    return 'unknown';
+  }
+
+  function isViewingKey(key) {
+    const [type, id] = key.split(':');
+    const v = state.view;
+    if (type === 'dm') return v.type === 'dm' && String(v.dmId) === id;
+    if (type === 'channel') return v.type === 'server' && String(v.channelId) === id;
+    if (type === 'thread') return v.type === 'server' && String(v.threadId) === id;
+    if (type === 'friends') return v.type === 'friends';
+    return false;
+  }
+
+  function dismissSeenNotifications(globalCount) {
+    if (!pendingNotifications.size) return;
+    const keys = keysToClear(pendingNotifications.keys(), {
+      globalCount, focused: !document.hidden && document.hasFocus(), isViewing: isViewingKey, status: scopeStatus,
+    });
+    if (!keys.length) return;
+    for (const key of keys) {
+      for (const n of pendingNotifications.get(key)) n.close();
+      pendingNotifications.delete(key);
+    }
+    window.dismeshClient?.clearNotifications?.(keys);
+  }
+
   function pushUnreadBadge() {
     const count = getGlobalUnreadCount();
     const status = state.me?.status || 'online';
     updateFaviconBadge({ count, status });
     window.dismeshClient?.setTrayBadge({ count, status });
+    dismissSeenNotifications(count);
   }
 
   // A DM/group call just went from empty to non-empty (see server/socket/index.js voice_join) —
@@ -380,7 +435,8 @@ export async function mountShell(root) {
   // cheap to refetch and a WS reconnect is rare enough that this isn't a hot path.
   async function resyncAfterReconnect() {
     try {
-      const [serversRes, dmsRes, friendsRes] = await Promise.all([api.listServers(), api.listDms(), api.friends()]);
+      const [serversRes, dmsRes, friendsRes, readStateRes] = await Promise.all([api.listServers(), api.listDms(), api.friends(), api.getReadState()]);
+      setReadStateBulk(readStateRes.state);
       setServers(serversRes.servers);
       setDms(dmsRes.dms);
       setFriends(friendsRes);
@@ -916,7 +972,7 @@ export async function mountShell(root) {
           <div id="voice-chat-body" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>`;
         wireVoiceSplitter(document.getElementById('voice-splitter'), document.getElementById('voice-panel'));
         currentVoice = mountVoiceChannel(document.getElementById('voice-panel'), {
-          serverId: view.serverId, channelId: view.channelId, channelName: channel.name, sounds: detail.sounds, canModerateVoice, voiceQuality: channel.voice_quality,
+          serverId: view.serverId, channelId: view.channelId, channelName: channel.name, sounds: detail.sounds, canManageChannel, canModerateVoice, voiceQuality: channel.voice_quality,
         });
         currentChat = mountChat(document.getElementById('voice-chat-body'), {
           kind: 'channel', serverId: view.serverId, channelId: view.channelId, canSend, canManage, channelType: channel.type, channelName: channel.name, channels: detail.channels, customEmoji: detail.customEmoji, stickers: detail.stickers, rawHtmlEnabled: !!detail.server.raw_html_enabled,
@@ -1001,6 +1057,7 @@ export async function mountShell(root) {
         <span class="ch-icon" id="thread-icon-el">${icons.messageSquare(18)}</span>
         <span class="ch-title" id="thread-title-el">…</span>
         <button class="btn-icon" id="thread-icon-edit-btn" title="${t('shell.threadIconTitle')}" style="display:none">${icons.image(14)}</button>
+        <button class="btn-icon" id="thread-edit-btn" title="${t('forum.editPost')}" style="display:none">${icons.edit(14)}</button>
         <button class="btn-icon" id="thread-delete-btn" title="${t('shell.deleteThreadTitle')}" style="display:none;color:var(--danger)">${icons.trash(14)}</button>
         <input type="file" id="thread-icon-input" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none">
         <span class="ch-topic" id="thread-parent-el">${t('shell.inChannel', { channel: escapeHtml(channel.name) })}</span>
@@ -1053,6 +1110,11 @@ export async function mountShell(root) {
     ], restoreMemberList);
     document.getElementById('toggle-members').addEventListener('click', () => membersEl.classList.toggle('collapsed'));
 
+    const offTitle = bus.on('ws:thread_update', ({ thread }) => {
+      const titleEl = document.getElementById('thread-title-el');
+      if (!titleEl) { offTitle(); return; }
+      if (thread.id === view.threadId) titleEl.textContent = thread.title;
+    });
     let archived = false;
     const renderThreadIcon = (thread) => {
       const iconEl = document.getElementById('thread-icon-el');
@@ -1073,7 +1135,7 @@ export async function mountShell(root) {
       }
       const canEditIcon = res.thread.createdBy.id === state.me.id || canManageChannel;
       const deleteBtn = document.getElementById('thread-delete-btn');
-      if (canEditIcon && deleteBtn) {
+      if ((canEditIcon || canDeletePost(res.thread, state.me, { canManage })) && deleteBtn) {
         deleteBtn.style.display = '';
         deleteBtn.addEventListener('click', () => confirmModal({
           title: t('shell.deleteThreadTitle'),
@@ -1084,6 +1146,11 @@ export async function mountShell(root) {
             catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }
           },
         }));
+      }
+      const postEditBtn = document.getElementById('thread-edit-btn');
+      if (canEditPost(res.thread, state.me) && postEditBtn) {
+        postEditBtn.style.display = '';
+        postEditBtn.addEventListener('click', () => editPost(view.serverId, view.channelId, view.threadId));
       }
       const editBtn = document.getElementById('thread-icon-edit-btn');
       const fileInput = document.getElementById('thread-icon-input');
@@ -1336,11 +1403,7 @@ export async function mountShell(root) {
 
   if (window.dismeshClient) {
     window.dismeshClient.onNavigateTo((n) => {
-      bus.emit('ui:navigate', n.scopeType === 'dm'
-        ? { type: 'dm', dmId: n.scopeId }
-        : n.scopeType === 'friends'
-          ? { type: 'friends', tab: n.scopeId }
-          : { type: 'server', serverId: n.serverId, channelId: n.scopeId });
+      bus.emit('ui:navigate', entryTarget(n));
     });
     window.dismeshClient.onRequestLogout(async () => {
       try { await api.logout(); } catch { /* ignore */ }

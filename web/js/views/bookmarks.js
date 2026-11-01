@@ -1,6 +1,7 @@
 import { bus } from '../bus.js';
 import { api } from '../api.js';
 import { state } from '../state.js';
+import { previewText } from '../stickers.mjs';
 import { avatarHtml, escapeHtml, formatTimestamp, toast, apiErrorMessage } from '../utils.js';
 import { openModal } from './modal.js';
 import { t } from '../i18n.js';
@@ -43,7 +44,7 @@ export async function openBookmarksModal() {
       const where = b.scopeType === 'dm'
         ? t('bookmarks.inDm', { name: state.dms.find((d) => d.id === b.scopeId)?.members.map((x) => x.displayName).join(', ') || '' })
         : b.label || '';
-      const text = msg.isEncrypted && !msg.content ? t('dmEncryption.encryptedPreview') : (msg.content || (msg.attachments?.length ? t('sidebar.sentAnAttachment') : ''));
+      const text = msg.isEncrypted && !msg.content ? t('dmEncryption.encryptedPreview') : previewText({ text: msg.content, sticker: msg.sticker, hasAttachments: !!msg.attachments?.length }, { sticker: t('sidebar.sentASticker'), attachment: t('sidebar.sentAnAttachment') });
       return `
         <div class="list-row bookmark-row" data-i="${i}" style="cursor:pointer;align-items:flex-start">
           ${avatarHtml(msg.author, 36)}

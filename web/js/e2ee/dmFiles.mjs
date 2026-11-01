@@ -78,10 +78,11 @@ export function normalizeFiles(raw) {
   return out;
 }
 
-// Message plaintext: { text, embed } as before, plus `files` only when there are any, so payloads
-// without attachments stay byte-identical in shape to the original format.
-export function buildPayload(text, embed, files) {
+// Message plaintext: { text, embed } as before, plus `files` / `sticker` only when there are any, so
+// payloads without them stay byte-identical in shape to the original format.
+export function buildPayload(text, embed, files, sticker) {
   const obj = { text, embed: embed || null };
   if (files && files.length) obj.files = files;
+  if (sticker) obj.sticker = sticker;
   return obj;
 }

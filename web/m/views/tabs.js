@@ -1,7 +1,7 @@
 import { bus } from '../../js/bus.js';
 import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
-import { state, isUnread, isChannelMuted } from '../../js/state.js';
+import { state, isUnread, isChannelMuted, getUnreadDmCount } from '../../js/state.js';
 import { getPref } from '../lib/prefs.js';
 import { mountServersTab } from './serversTab.js';
 import { mountMessagesTab } from './messagesTab.js';
@@ -19,8 +19,7 @@ let seenActivity = 0;
 
 function badgeFor(id) {
   if (id === 'messages') {
-    const dms = state.dms.filter((d) => isUnread('dm', d.id, d.lastMessage?.id)).length;
-    return dms + state.friends.pending.filter((f) => f.direction === 'incoming').length;
+    return getUnreadDmCount() + state.friends.pending.filter((f) => f.direction === 'incoming').length;
   }
   if (id === 'servers') {
     let n = 0;

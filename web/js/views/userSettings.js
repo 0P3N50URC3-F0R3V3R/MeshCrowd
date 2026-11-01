@@ -8,6 +8,7 @@ import {
   currentCredential, currentCredentialField, splitCredential, legacyCredential, wrapFor,
 } from '../passport/flow.js';
 import { icons } from '../icons.js';
+import { cropImage } from '../cropEditor.js';
 import { avatarHtml, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle, navScroll, restoreNavScroll } from '../utils.js';
 import { openAdminPanel } from './admin.js';
 import { nextZIndex } from '../zstack.js';
@@ -93,23 +94,27 @@ export function openUserSettings(initialTab = 'account') {
   let cardColorTouched = false;
   let pendingBannerColor = '';
   let pendingCardColor = '';
+  let avatarBgTouched = false;
+  let pendingAvatarBg = false;
 
   function renderAccount(inner) {
     const me = state.me;
     if (!bannerColorTouched) pendingBannerColor = me.bannerColor || '';
     if (!cardColorTouched) pendingCardColor = me.cardColor || '';
-    const previewUser = { ...me, bannerColor: pendingBannerColor, cardColor: pendingCardColor };
+    if (!avatarBgTouched) pendingAvatarBg = !!me.avatarBackground;
+    const previewUser = { ...me, bannerColor: pendingBannerColor, cardColor: pendingCardColor, avatarBackground: pendingAvatarBg };
     inner.innerHTML = `
       <h2>${t('userSettings.myAccountTab')}</h2>
       <div class="settings-avatar-row">
         <div class="avatar-edit" id="avatar-edit">
-          ${avatarHtml(me, 80)}
+          ${avatarHtml(previewUser, 80)}
           <div class="overlay-hint">${t('userSettings.changeAvatar')}</div>
         </div>
         <input type="file" id="avatar-input" class="hidden" accept="image/png,image/jpeg,image/gif,image/webp">
         <div>
           <div style="font-weight:700;font-size:18px">${escapeHtml(me.displayName)}</div>
           <div style="color:var(--text-muted);font-size:14px">@${escapeHtml(me.username)}</div>
+          ${me.avatarPath ? `<label class="checkbox-row" style="margin-top:8px"><input type="checkbox" id="f-avatar-bg" ${pendingAvatarBg ? 'checked' : ''}><span>${t('userSettings.avatarBackgroundLabel')}</span></label>` : ''}
         </div>
       </div>
       <div class="field">
@@ -148,7 +153,7 @@ export function openUserSettings(initialTab = 'account') {
       <div class="profile-preview" id="acc-preview">
         <div class="pp-banner" id="pp-banner-preview" style="${bannerStyle(previewUser)}"></div>
         <div class="pp-body" id="pp-body-preview" style="${cardStyle(previewUser)}">
-          ${avatarHtml(me, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar')}
+          ${avatarHtml(previewUser, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar')}
           <div class="pp-name">${escapeHtml(me.displayName)}</div>
           <div class="pp-username">@${escapeHtml(me.username)}</div>
           <div class="pp-bio" id="pp-bio-preview">${escapeHtml(me.bio || '')}</div>
@@ -157,9 +162,12 @@ export function openUserSettings(initialTab = 'account') {
 
     inner.querySelector('#avatar-edit').addEventListener('click', () => inner.querySelector('#avatar-input').click());
     inner.querySelector('#avatar-input').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+      const picked = e.target.files[0];
+      e.target.value = '';
+      if (!picked) return;
       try {
+        const file = await cropImage(picked, 'avatar', { user: me });
+        if (!file) return;
         const res = await api.uploadAvatar(file);
         state.me.avatarPath = res.avatarPath;
         bus.emit('state:me');
@@ -167,6 +175,14 @@ export function openUserSettings(initialTab = 'account') {
       } catch (err) {
         toast(apiErrorMessage(err, t('userSettings.couldNotUploadAvatar')), { type: 'error' });
       }
+    });
+
+    inner.querySelector('#f-avatar-bg')?.addEventListener('change', (e) => {
+      avatarBgTouched = true;
+      pendingAvatarBg = e.target.checked;
+      const pv = { ...me, avatarBackground: pendingAvatarBg };
+      inner.querySelector('#avatar-edit .avatar').outerHTML = avatarHtml(pv, 80);
+      inner.querySelector('#pp-body-preview .pp-avatar').outerHTML = avatarHtml(pv, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar');
     });
 
     const bioInput = inner.querySelector('#f-bio');
@@ -185,9 +201,12 @@ export function openUserSettings(initialTab = 'account') {
 
     inner.querySelector('#banner-upload-btn').addEventListener('click', () => inner.querySelector('#banner-input').click());
     inner.querySelector('#banner-input').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+      const picked = e.target.files[0];
+      e.target.value = '';
+      if (!picked) return;
       try {
+        const file = await cropImage(picked, 'banner', { user: me });
+        if (!file) return;
         const res = await api.uploadBanner(file);
         state.me.bannerPath = res.bannerPath;
         bus.emit('state:me');
@@ -205,9 +224,12 @@ export function openUserSettings(initialTab = 'account') {
 
     inner.querySelector('#card-upload-btn').addEventListener('click', () => inner.querySelector('#card-input').click());
     inner.querySelector('#card-input').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+      const picked = e.target.files[0];
+      e.target.value = '';
+      if (!picked) return;
       try {
+        const file = await cropImage(picked, 'card', { user: me });
+        if (!file) return;
         const res = await api.uploadCard(file);
         state.me.cardPath = res.cardPath;
         bus.emit('state:me');
@@ -231,11 +253,13 @@ export function openUserSettings(initialTab = 'account') {
       const payload = { displayName, bio };
       if (bannerColorTouched) payload.bannerColor = pendingBannerColor;
       if (cardColorTouched) payload.cardColor = pendingCardColor;
+      if (avatarBgTouched) payload.avatarBackground = pendingAvatarBg;
       try {
         const res = await api.updateMe(payload);
         Object.assign(state.me, res.user);
         bannerColorTouched = false;
         cardColorTouched = false;
+        avatarBgTouched = false;
         bus.emit('state:me');
         toast(t('userSettings.profileUpdated'));
       } catch (err) {
@@ -639,6 +663,13 @@ export function openUserSettings(initialTab = 'account') {
           </select>
         </div>
         <div class="field">
+          <label>${t('userSettings.unreadAlwaysLabel')}</label>
+          <select class="input" id="f-unread-always" style="max-width:280px">
+            <option value="off" ${unreadPrefs.unreadAlways === 'off' ? 'selected' : ''}>${t('userSettings.unreadAlwaysOff')}</option>
+            <option value="on" ${unreadPrefs.unreadAlways === 'on' ? 'selected' : ''}>${t('userSettings.unreadAlwaysOn')}</option>
+          </select>
+        </div>
+        <div class="field">
           <label>${t('userSettings.unreadJumpLabel')}</label>
           <select class="input" id="f-unread-jump" style="max-width:280px">
             <option value="firstUnread" ${unreadPrefs.unreadJump === 'firstUnread' ? 'selected' : ''}>${t('userSettings.unreadJumpFirst')}</option>
@@ -747,7 +778,7 @@ export function openUserSettings(initialTab = 'account') {
         try { await api.setUiPrefs({ landingView: value }); }
         catch (err) { landingView = prev; e.target.value = prev; toast(apiErrorMessage(err), { type: 'error' }); }
       });
-      for (const [id, key, num] of [['#f-unread-line', 'unreadLine'], ['#f-unread-jump', 'unreadJump'], ['#f-unread-context', 'unreadContext', true], ['#f-initial-messages', 'initialMessages', true]]) {
+      for (const [id, key, num] of [['#f-unread-line', 'unreadLine'], ['#f-unread-always', 'unreadAlways'], ['#f-unread-jump', 'unreadJump'], ['#f-unread-context', 'unreadContext', true], ['#f-initial-messages', 'initialMessages', true]]) {
         inner.querySelector(id)?.addEventListener('change', async (e) => {
           const value = num ? Number(e.target.value) : e.target.value;
           const prev = unreadPrefs[key];

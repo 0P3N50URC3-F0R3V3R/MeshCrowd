@@ -36,6 +36,7 @@ test.before(async () => {
     }
     next();
   });
+  app.use(guard.floodGuard);
   app.use('/api/auth/captcha', require('../routes/captcha'));
   app.post('/api/auth/login', guard.gate('login'));
   app.post('/api/auth/register', guard.gate('register'));

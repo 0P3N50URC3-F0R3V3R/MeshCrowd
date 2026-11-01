@@ -5,13 +5,14 @@ import { applyTheme } from '../js/theme.js';
 import { t } from '../js/i18n.js';
 import { toast } from '../js/utils.js';
 import { notifySound } from '../js/notifySound.js';
+import { eventNotice } from '../js/notifyEvent.mjs';
 import { peekPlaintext } from '../js/e2ee/dmCrypto.js';
 import { refreshRemoteServers } from '../js/views/remoteServer.js';
 import {
   state, setServers, setDms, setFriends, setNotificationPrefs, setServerPrefs, setUserAnnotations, setDmPrefs, setBookmarkIds,
   setReadStateBulk, setServerLayout, setServerDetail, getServerDetail, upsertServer, removeServer, upsertDm, removeDm,
   upsertDmPreview, noteChannelMessage, setDmPref, dmPrefFor, upsertPresence, setWsConnected, pushActivity,
-  shouldPlayNotifySound, isSelf, setServerVoiceBulk, applyServerVoiceState,
+  shouldPlayNotifySound, isSelf, applyDmRead, setReadState, setServerVoiceBulk, applyServerVoiceState,
 } from '../js/state.js';
 
 export async function loadAll() {
@@ -56,16 +57,19 @@ export async function refreshServerDetailSilently(serverId) {
 
 async function resync() {
   try {
-    const [s, d, f] = await Promise.all([api.listServers(), api.listDms(), api.friends()]);
-    setServers(s.servers); setDms(d.dms); setFriends(f);
+    const [s, d, f, r] = await Promise.all([api.listServers(), api.listDms(), api.friends(), api.getReadState()]);
+    setServers(s.servers); setDms(d.dms); setFriends(f); setReadStateBulk(r.state);
     for (const id of [...state.serverDetail.keys()]) refreshServerDetailSilently(id);
   } catch (err) { if (err && err.status === 401) bus.emit('m:unauthorized'); }
 }
 
 function notifyBody(payload) {
   const m = payload.message;
-  if (m.isEncrypted) return peekPlaintext(state.me.id, m.id)?.text || t('m.dmPreviewEncrypted');
-  return m.content || (m.attachments?.length ? t('m.dmPreviewAttachment') : '');
+  if (m.isEncrypted) {
+    const plain = peekPlaintext(state.me.id, m.id);
+    return plain?.text || (plain?.sticker ? t('m.dmPreviewSticker') : '') || t('m.dmPreviewEncrypted');
+  }
+  return m.content || (m.sticker ? t('m.dmPreviewSticker') : '') || (m.attachments?.length ? t('m.dmPreviewAttachment') : '');
 }
 
 export function wireRealtime() {
@@ -84,6 +88,10 @@ export function wireRealtime() {
   bus.on('state:connection', (ok) => document.getElementById('m-conn')?.classList.toggle('hidden', ok));
 
   bus.on('ws:message_create', ({ message }) => {
+    if (isSelf(message.author?.id) && (message.scopeType === 'dm' || message.scopeType === 'channel')) {
+      setReadState(message.scopeType, message.scopeId, message.id);
+      api.markRead(message.scopeType, message.scopeId, message.id).catch(() => {});
+    }
     if (message.scopeType === 'dm') {
       if (dmPrefFor(message.scopeId).hidden) setDmPref({ ...dmPrefFor(message.scopeId), hidden: false });
       upsertDmPreview(message.scopeId, message);
@@ -94,12 +102,13 @@ export function wireRealtime() {
   bus.on('ws:notify', (payload) => {
     if (shouldPlayNotifySound() && (document.hidden || !state.mOpenScope || state.mOpenScope !== `${payload.scopeType}:${payload.scopeId}`)) notifySound.play();
     const author = payload.message.author;
-    const title = payload.scopeType === 'dm'
+    const notice = eventNotice(payload, t);
+    const title = notice ? notice.title : payload.scopeType === 'dm'
       ? author.displayName
       : `${author.displayName} #${payload.channelName}${payload.serverName ? ` (${payload.serverName})` : ''}`;
     pushActivity({
-      kind: payload.scopeType === 'dm' ? 'dm' : (payload.mentioned ? 'mention' : 'channel'),
-      title, body: notifyBody(payload),
+      kind: notice ? payload.kind : payload.scopeType === 'dm' ? 'dm' : (payload.mentioned ? 'mention' : 'channel'),
+      title, body: notice ? notice.body : notifyBody(payload),
       scopeType: payload.scopeType, scopeId: payload.scopeId, serverId: payload.serverId,
       threadId: payload.message.scopeType === 'thread' ? payload.message.scopeId : null, messageId: payload.message.id,
     });
@@ -134,15 +143,9 @@ export function wireRealtime() {
     bus.emit('state:dms');
   });
   bus.on('ws:dm_delete', ({ dmId }) => removeDm(dmId));
-  bus.on('ws:dm_read', ({ dmId, userId, messageId }) => {
-    if (isSelf(userId)) return;
-    const dm = state.dms.find((d) => d.id === dmId);
-    if (!dm) return;
-    dm.readStates = dm.readStates || [];
-    const existing = dm.readStates.find((r) => r.userId === userId);
-    if (existing) { if (messageId > existing.lastReadMessageId) existing.lastReadMessageId = messageId; }
-    else dm.readStates.push({ userId, lastReadMessageId: messageId });
-    bus.emit('state:dms');
+  bus.on('ws:dm_read', ({ dmId, userId, messageId }) => applyDmRead(dmId, userId, messageId));
+  bus.on('ws:message_delete', ({ messageId, scopeType, scopeId }) => {
+    if (scopeType === 'dm' && state.dms.find((d) => d.id === scopeId)?.lastMessage?.id === messageId) bus.emit('dms:unknownScope', scopeId);
   });
   bus.on('dms:unknownScope', async () => { try { setDms((await api.listDms()).dms); } catch { /* ignore */ } });
   bus.on('ws:channel_invite_received', async () => { try { setServers((await api.listServers()).servers); } catch { /* ignore */ } });

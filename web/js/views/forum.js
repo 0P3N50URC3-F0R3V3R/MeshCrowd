@@ -7,6 +7,9 @@ import { mountChat } from './chat.js';
 import { forumCardHtml, matchesPost, sortPosts } from '../forumCard.js';
 import { t } from '../i18n.js';
 import { memberNameColor } from '../permissions.js';
+import { state } from '../state.js';
+import { canEditPost, canDeletePost } from '../threadPerms.mjs';
+import { editPost, deletePost } from './postActions.js';
 
 // Discord-style forum channel: a list of titled posts (each its own thread) instead of one flat
 // message log. Posting = creating a thread with a title + opening message.
@@ -39,7 +42,11 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
   container.querySelector('#forum-new-post')?.addEventListener('click', openNewPostModal);
 
   const offCreate = bus.on('ws:thread_create', ({ channelId: cid, thread }) => { if (cid === channelId) { upsert(thread); } });
-  const offUpdate = bus.on('ws:thread_update', ({ channelId: cid, thread }) => { if (cid === channelId) { upsert(thread); } });
+  const offUpdate = bus.on('ws:thread_update', ({ channelId: cid, thread }) => {
+    if (cid !== channelId) return;
+    upsert(thread);
+    if (openId === thread.id) container.querySelector('.fpane-title').textContent = thread.title;
+  });
   const offDelete = bus.on('ws:thread_delete', ({ channelId: cid, threadId }) => {
     if (cid !== channelId) return;
     posts = posts.filter((p) => p.id !== threadId);
@@ -123,10 +130,14 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
     pane.hidden = false;
     pane.innerHTML = `
       <div class="forum-pane-head"><span class="fpane-title">${escapeHtml(post.title)}</span>
+        ${canEditPost(post, state.me) ? `<button class="btn-icon" id="forum-pane-edit" title="${escapeHtml(t('forum.editPost'))}" aria-label="${escapeHtml(t('forum.editPost'))}">${icons.edit(16)}</button>` : ''}
+        ${canDeletePost(post, state.me, { canManage }) ? `<button class="btn-icon" id="forum-pane-delete" title="${escapeHtml(t('forum.deletePost'))}" aria-label="${escapeHtml(t('forum.deletePost'))}" style="color:var(--danger)">${icons.trash(16)}</button>` : ''}
         <button class="btn-icon" id="forum-pane-close" aria-label="${t('common.close')}">${icons.x(18)}</button></div>
       ${post.archived ? `<div class="forum-locked">${t('forum.lockedNotice')}</div>` : ''}
       <div class="forum-pane-body" id="forum-pane-body"></div>`;
     pane.querySelector('#forum-pane-close').addEventListener('click', closePost);
+    pane.querySelector('#forum-pane-edit')?.addEventListener('click', () => editPost(serverId, channelId, post.id));
+    pane.querySelector('#forum-pane-delete')?.addEventListener('click', () => deletePost(serverId, channelId, post));
     openChat = mountChat(pane.querySelector('#forum-pane-body'), {
       kind: 'thread', serverId, channelId, threadId: post.id,
       canSend: canSend && !post.archived, canManage, channels, customEmoji, stickers, rawHtmlEnabled,

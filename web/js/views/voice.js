@@ -8,6 +8,7 @@ import { voicePrefs, keyLabel } from '../voicePrefs.js';
 import { createDenoiser } from '../noiseSuppression.js';
 import { openSoundboardPicker } from './soundboardPicker.js';
 import { t } from '../i18n.js';
+import { createWhiteboard } from '../whiteboard.js';
 import { tuneOpusSdp, voiceQualityPreset, DEFAULT_VOICE_QUALITY } from '../voiceQuality.js';
 
 // A function (not a module-level constant) so labels re-evaluate against the current language —
@@ -63,6 +64,20 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   let speakerIds = new Set();
   let raisedHandIds = new Set();
   const amSpeaker = (userId) => !isStage || speakerIds.has(userId);
+  // Shared whiteboard (server/lib/whiteboard.js): same draw/clear rules enforced server-side. Hiding
+  // it is a purely local view choice; strokes keep arriving and are drawn into the hidden board.
+  const wb = isDm ? null : createWhiteboard({
+    send: (m) => ws.send({ ...m, channelId }),
+    canDraw: () => joined && (!isStage || amSpeaker(state.me.id) || !!canManageChannel),
+    canClear: () => joined && (!!canManageChannel || (isStage && amSpeaker(state.me.id))),
+  });
+  let wbVisible = isStage;
+  let wbChosen = false;
+  function showWbIfActive() {
+    if (wbChosen || wbVisible || !wb.hasContent()) return;
+    wbVisible = true;
+    render();
+  }
   // Every outbound ws message and every inbound ws:voice_state/ws:voice_signal filter needs to
   // agree on which room this mount is — scopePayload() is the single source of truth for that.
   function scopePayload() {
@@ -143,6 +158,20 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     updateSendEnabled();
     render();
   });
+  const offWbStroke = bus.on('ws:wb_stroke', (payload) => {
+    if (!wb || payload.channelId !== channelId || !joined) return;
+    wb.applyStroke(payload);
+    showWbIfActive();
+  });
+  const offWbClear = bus.on('ws:wb_clear', (payload) => {
+    if (!wb || payload.channelId !== channelId) return;
+    wb.applyClear();
+  });
+  const offWbState = bus.on('ws:wb_state', (payload) => {
+    if (!wb || payload.channelId !== channelId || !joined) return;
+    wb.applyState(payload.strokes);
+    showWbIfActive();
+  });
   // A WS drop closes our server-side voice membership (voice.leaveAll on socket close) and every
   // other participant tears down their peer connection to us — so on reconnect we're a ghost:
   // still marked joined locally with peer connections nobody else recognizes. Tear ours down too
@@ -198,6 +227,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
                ${!isStage || amSpeaker(state.me.id) ? `
                  <button class="btn-icon voice-ctl ${cameraTrack ? 'active' : ''}" id="vc-camera" title="${cameraTrack ? t('voice.turnOffCameraTitle') : t('voice.turnOnCameraTitle')}">${cameraTrack ? icons.camera(20) : icons.videoOff(20)}</button>
                  ${mobile || window.dismeshClient?.isAndroidWebView ? (cameraTrack ? `<button class="btn-icon voice-ctl" id="vc-flip-camera" title="${t('voice.flipCameraTitle')}">${icons.refresh(20)}</button>` : '') : `<button class="btn-icon voice-ctl ${screenTrack ? 'active' : ''}" id="vc-screenshare" title="${screenTrack ? t('voice.stopScreenShareTitle') : t('voice.shareScreenTitle')}">${icons.monitor(20)}</button>`}` : ''}
+               ${wb ? `<button class="btn-icon voice-ctl ${wbVisible ? 'active' : ''}" id="vc-whiteboard" aria-pressed="${wbVisible}" title="${wbVisible ? t('voice.wbHideTitle') : t('voice.wbShowTitle')}" aria-label="${wbVisible ? t('voice.wbHideTitle') : t('voice.wbShowTitle')}">${icons.edit(20)}</button>` : ''}
                ${!isDm ? `<button class="btn-icon voice-ctl" id="vc-soundboard" title="${t('voice.soundboardTitle')}">${icons.music(20)}</button>` : ''}
                ${isStage && amSpeaker(state.me.id) ? `<button class="btn btn-secondary" id="vc-step-down">${icons.hand(16)} ${t('voice.stepDownButton')}</button>` : ''}
                <button class="btn btn-danger" id="vc-leave">${icons.phoneOff(16)} ${t('voice.leaveButton')}</button>`
@@ -206,7 +236,17 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
       </div>`;
 
     renderGrid();
+    if (wb && joined && wbVisible) {
+      container.querySelector('.voice-controls').before(wb.el);
+      wb.refresh();
+      wb.fit();
+    }
 
+    container.querySelector('#vc-whiteboard')?.addEventListener('click', () => {
+      wbVisible = !wbVisible;
+      wbChosen = true;
+      render();
+    });
     container.querySelector('#vc-join')?.addEventListener('click', join);
     container.querySelector('#vc-leave')?.addEventListener('click', leave);
     container.querySelector('#vc-mute')?.addEventListener('click', toggleMute);
@@ -931,6 +971,9 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   }
 
   function cleanupAll() {
+    wb?.reset();
+    wbVisible = isStage;
+    wbChosen = false;
     for (const id of [...peers.keys()]) closePeer(id);
     teardownInputGraph();
     unregisterPtt();
@@ -957,6 +1000,10 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     offVoiceSignal();
     offSoundboard();
     offStageState();
+    offWbStroke();
+    offWbClear();
+    offWbState();
+    wb?.destroy();
     offWsOpen();
     offJoinDenied();
     offPrefsChanged();

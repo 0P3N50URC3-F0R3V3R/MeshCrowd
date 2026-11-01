@@ -6,12 +6,12 @@ const crypto = require('node:crypto');
 const multer = require('multer');
 const { db, DATA_DIR } = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { PERMISSIONS, has } = require('../lib/permissions');
+const { PERMISSIONS, SITE_PERMISSIONS, has, hasSite } = require('../lib/permissions');
 const { getChannelPermissionBits } = require('../lib/channelAccess');
 const { listMessages, serializeMessage } = require('../lib/messages');
 const { toPublicUser } = require('../lib/publicUser');
 const { broadcastToChannel } = require('../socket/hub');
-const { parseMentions, notifyChannelMessage } = require('../lib/notifications');
+const { parseMentions, notifyChannelMessage, notifyThreadStarted } = require('../lib/notifications');
 const { onMessageCreated } = require('../lib/bots/events');
 const automod = require('../lib/automod');
 const voiceMessages = require('../lib/voiceMessages');
@@ -88,6 +88,11 @@ function canManageThread(req) {
   return req.thread.created_by === req.user.id || has(getChannelPermissionBits(req.channel, req.user.id), PERMISSIONS.MANAGE_CHANNELS);
 }
 
+function canDeleteThread(req) {
+  if (canManageThread(req) || hasSite(req.sitePermissions || 0, SITE_PERMISSIONS.DELETE_ANY_MESSAGE)) return true;
+  return has(getChannelPermissionBits(req.channel, req.user.id), PERMISSIONS.MANAGE_MESSAGES);
+}
+
 router.use(requireAuth, loadChannel, requireChannelPerm(PERMISSIONS.VIEW_CHANNEL));
 
 router.get('/', (req, res) => {
@@ -110,12 +115,12 @@ router.post('/', requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfTimedOut,
   if (!title) return res.status(400).json({ error: 'title required' });
   if (!content) return res.status(400).json({ error: 'the first message cannot be empty' });
 
-  let parentMessageId = null;
+  let parentMessageId = null; let parentMessage = null;
   if (req.body?.parentMessageId !== undefined && req.body?.parentMessageId !== null) {
     const parent = db.prepare('SELECT * FROM messages WHERE id = ? AND scope_type = ? AND scope_id = ?')
       .get(Number(req.body.parentMessageId), 'channel', req.channel.id);
     if (!parent) return res.status(404).json({ error: 'parent message not found in this channel' });
-    parentMessageId = parent.id;
+    parentMessageId = parent.id; parentMessage = parent;
   }
 
   const info = db.prepare('INSERT INTO threads (channel_id, parent_message_id, title, created_by) VALUES (?, ?, ?, ?)')
@@ -127,34 +132,61 @@ router.post('/', requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfTimedOut,
   const message = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(msgInfo.lastInsertRowid));
 
   const thread = shapeThread(db.prepare('SELECT * FROM threads WHERE id = ?').get(threadId));
-  broadcastToChannel(req.channel, { type: 'thread_create', channelId: req.channel.id, thread });
+  // message first: viewers bump a listed post's count on message_create, so thread_create (which
+  // already counts the opening message) must land after it or the count shows 2.
   broadcastToChannel(req.channel, { type: 'message_create', message });
+  broadcastToChannel(req.channel, { type: 'thread_create', channelId: req.channel.id, thread });
   maybeFetchAndAttachEmbed(message, (payload) => broadcastToChannel(req.channel, payload)).catch(() => {});
+  if (parentMessage) notifyThreadStarted(req.channel, thread, parentMessage, message, { id: req.user.id, displayName: req.user.display_name });
   res.status(201).json({ thread, message });
 });
 
 router.patch('/:threadId', loadThread, (req, res) => {
   const wantsPin = req.body?.pinned !== undefined;
-  const onlyPin = wantsPin && req.body.title === undefined && req.body.archived === undefined;
+  const wantsRewrite = req.body?.title !== undefined || req.body?.content !== undefined;
+  const wantsArchive = req.body?.archived !== undefined;
   if (wantsPin && !has(getChannelPermissionBits(req.channel, req.user.id), PERMISSIONS.MANAGE_MESSAGES)) {
     return res.status(403).json({ error: 'missing permission' });
   }
-  if (!onlyPin && !canManageThread(req)) return res.status(403).json({ error: 'missing permission' });
+  if (wantsRewrite && req.thread.created_by !== req.user.id) {
+    return res.status(403).json({ error: 'only the author can edit this post' });
+  }
+  if (wantsArchive && !canManageThread(req)) return res.status(403).json({ error: 'missing permission' });
+
+  let title = null; let content = null;
+  if (req.body?.title !== undefined) {
+    title = String(req.body.title).trim().slice(0, 100);
+    if (!title) return res.status(400).json({ error: 'title required' });
+  }
+  if (req.body?.content !== undefined) {
+    content = String(req.body.content).trim().slice(0, maxMessageChars());
+    if (!content) return res.status(400).json({ error: 'the first message cannot be empty' });
+  }
 
   const updates = []; const params = [];
   if (wantsPin) { updates.push('pinned = ?'); params.push(req.body.pinned ? 1 : 0); }
-  if (req.body?.title !== undefined) { updates.push('title = ?'); params.push(String(req.body.title).trim().slice(0, 100)); }
-  if (req.body?.archived !== undefined) { updates.push('archived = ?'); params.push(req.body.archived ? 1 : 0); }
+  if (title !== null) { updates.push('title = ?'); params.push(title); }
+  if (wantsArchive) { updates.push('archived = ?'); params.push(req.body.archived ? 1 : 0); }
   if (updates.length) {
     params.push(req.thread.id);
     db.prepare(`UPDATE threads SET ${updates.join(', ')} WHERE id = ?`).run(...params);
   }
+  let edited = null;
+  if (content !== null) {
+    const first = db.prepare('SELECT id FROM messages WHERE scope_type = ? AND scope_id = ? ORDER BY id ASC LIMIT 1').get('thread', req.thread.id);
+    if (first) {
+      db.prepare("UPDATE messages SET content = ?, edited_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?").run(content, first.id);
+      edited = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(first.id));
+    }
+  }
   const thread = shapeThread(db.prepare('SELECT * FROM threads WHERE id = ?').get(req.thread.id));
+  if (edited) broadcastToChannel(req.channel, { type: 'message_update', message: edited });
   broadcastToChannel(req.channel, { type: 'thread_update', channelId: req.channel.id, thread });
   res.json({ thread });
 });
 
-router.delete('/:threadId', loadThread, requireThreadManage, (req, res) => {
+router.delete('/:threadId', loadThread, (req, res) => {
+  if (!canDeleteThread(req)) return res.status(403).json({ error: 'missing permission' });
   wipeScope('thread', req.thread.id);
   if (req.thread.icon_path) {
     try { require('node:fs').unlinkSync(path.join(DATA_DIR, 'threadicons', path.basename(req.thread.icon_path))); } catch { /* already gone */ }
@@ -166,7 +198,8 @@ router.delete('/:threadId', loadThread, requireThreadManage, (req, res) => {
 });
 
 router.get('/:threadId', loadThread, (req, res) => {
-  res.json({ thread: shapeThread(req.thread) });
+  const first = db.prepare('SELECT content FROM messages WHERE scope_type = ? AND scope_id = ? ORDER BY id ASC LIMIT 1').get('thread', req.thread.id);
+  res.json({ thread: shapeThread(req.thread), openingContent: first ? first.content : '' });
 });
 
 const ICON_ALLOWED = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);

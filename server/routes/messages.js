@@ -17,6 +17,7 @@ const automod = require('../lib/automod');
 const { enqueueEvent } = require('../lib/federationOutbox');
 const { serializeRemoteMessage, relayRemoteChannelEvent } = require('../lib/remoteChannelEvents');
 const { maxMessageChars } = require('../lib/messageLimits');
+const { notifyPin } = require('../lib/notifications');
 
 const router = express.Router();
 
@@ -160,7 +161,7 @@ router.patch('/:id', requireAuth, (req, res) => {
   if (inEncryptedDm(message)) return res.status(400).json({ error: 'encrypted messages cannot be edited' });
 
   const content = String(req.body?.content || '').slice(0, maxMessageChars());
-  if (!content.trim()) return res.status(400).json({ error: 'content cannot be empty' });
+  if (!content.trim() && !message.sticker_id) return res.status(400).json({ error: 'content cannot be empty' });
   if (message.scope_type === 'channel' || message.scope_type === 'thread') {
     const ctx = resolveScope(message.scope_type, message.scope_id);
     const blocked = ctx && automod.evaluate({ channel: ctx.channel, user: req.user, content, track: false });
@@ -187,6 +188,11 @@ router.delete('/:id', requireAuth, (req, res) => {
   deleteAttachmentFiles(message.id);
   db.prepare('DELETE FROM messages WHERE id = ?').run(message.id);
   broadcast(message, { type: 'message_delete', messageId: message.id, scopeType: message.scope_type, scopeId: message.scope_id });
+  if (message.scope_type === 'thread') {
+    const thread = db.prepare('SELECT * FROM threads WHERE id = ?').get(message.scope_id);
+    const channel = thread && getChannel(thread.channel_id);
+    if (channel) broadcastToChannel(channel, { type: 'thread_update', channelId: channel.id, thread: require('./threads').shapeThread(thread) });
+  }
   relayMessageMutation(message, 'message_delete', {});
   res.json({ ok: true });
 });
@@ -265,6 +271,7 @@ router.put('/:id/pin', requireAuth, (req, res) => {
   if (!message) return res.status(404).json({ error: 'message not found' });
   if (message.event_type) return res.status(403).json({ error: 'system messages cannot be pinned' });
   if (!canPin(message, req)) return res.status(403).json({ error: 'not allowed to pin messages here' });
+  let newlyPinned = false;
   if (!message.pinned_at) {
     const { c: pinCount } = db.prepare(
       'SELECT COUNT(*) AS c FROM messages WHERE scope_type = ? AND scope_id = ? AND pinned_at IS NOT NULL'
@@ -272,9 +279,11 @@ router.put('/:id/pin', requireAuth, (req, res) => {
     if (pinCount >= MAX_PINS_PER_SCOPE) return res.status(400).json({ error: `pin limit reached (${MAX_PINS_PER_SCOPE})` });
     db.prepare("UPDATE messages SET pinned_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), pinned_by = ? WHERE id = ?")
       .run(req.user.id, message.id);
+    newlyPinned = true;
   }
   const updated = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(message.id));
   broadcast(message, { type: 'message_update', message: updated });
+  if (newlyPinned) notifyPin(updated, { id: req.user.id, displayName: req.user.display_name });
   res.json({ message: updated });
 });
 

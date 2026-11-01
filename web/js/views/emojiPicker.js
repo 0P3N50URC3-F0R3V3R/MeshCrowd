@@ -17,7 +17,7 @@ function getSupportedCategories() {
 // unicode character for a built-in emoji, or a ":name:" shortcode for a server custom emoji.
 // `customEmoji` (optional, [{id, name, image_path}]) adds a "This Server" tab of uploaded images —
 // self-hosted (data/emoji/), no third-party emoji service involved.
-export function openEmojiPicker(anchorEl, onPick, customEmoji = []) {
+export function openEmojiPicker(anchorEl, onPick, customEmoji = [], onClose) {
   document.querySelectorAll('.emoji-picker').forEach((n) => n.remove());
 
   const picker = document.createElement('div');
@@ -111,6 +111,7 @@ export function openEmojiPicker(anchorEl, onPick, customEmoji = []) {
     picker.remove();
     document.removeEventListener('mousedown', onDocClick);
     document.removeEventListener('keydown', onKey);
+    onClose?.();
   }
   function onDocClick(e) {
     if (!picker.contains(e.target) && e.target !== anchorEl && !anchorEl.contains(e.target)) remove();

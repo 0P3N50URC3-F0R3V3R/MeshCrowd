@@ -10,7 +10,7 @@ const pendingLogin = require('../lib/pendingLogin');
 const { authAudit } = require('../lib/authAudit');
 const { db, DATA_DIR } = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { SITE_PERMISSIONS, hasSite } = require('../lib/permissions');
+const { SITE_PERMISSIONS, hasSite, hasSiteStrict } = require('../lib/permissions');
 const { getSitePermissionBits } = require('../lib/siteAuth');
 const { destroyAllSessionsForUser } = require('../lib/session');
 const { toPublicUser } = require('../lib/publicUser');
@@ -24,6 +24,9 @@ const { logAudit } = require('../lib/auditLog');
 const turnManager = require('../lib/turn/manager');
 const registration = require('../lib/registration');
 const appConfig = require('../lib/config');
+const log = require('../lib/logger').scoped('admin');
+
+const who = (u) => `${String(u.username).replace(/[\u0000-\u001f]/g, ' ')} (id ${u.id})`;
 
 const router = express.Router();
 
@@ -62,9 +65,10 @@ function requireSitePerm(flag) {
 
 // A staffer can never grant/hold-via-role permission bits they don't already have themselves
 // (unless they're a full SITE_ADMINISTRATOR) — otherwise MANAGE_SITE_ROLES alone is a path to
-// full instance takeover.
+// full instance takeover. MANAGE_CONSOLE (shell access) is exempt from that bypass.
 function assertCanGrant(req, permissionBits) {
   const mine = req.sitePermissions || 0;
+  if ((permissionBits & SITE_PERMISSIONS.MANAGE_CONSOLE) && !hasSiteStrict(mine, SITE_PERMISSIONS.MANAGE_CONSOLE)) return false;
   if (hasSite(mine, SITE_PERMISSIONS.SITE_ADMINISTRATOR)) return true;
   return (permissionBits & ~mine) === 0;
 }
@@ -272,6 +276,7 @@ router.patch('/users/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_USERS), (req,
     pendingLogin.removeForUser(target.id);
     hub.disconnectUser(target.id);
     authAudit(target.id, target.passport_id, 'admin_reset', true, req, req.user.id);
+    log.warn(`${who(req.user)} reset the password of ${who(target)}`);
   }
   if (isDisabled !== undefined) {
     const disabled = isDisabled ? 1 : 0;
@@ -280,6 +285,7 @@ router.patch('/users/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_USERS), (req,
       destroyAllSessionsForUser(target.id);
       hub.disconnectUser(target.id);
     }
+    log.info(`${who(req.user)} ${disabled ? 'disabled' : 'enabled'} account ${who(target)}`);
   }
   syncTargetUser(target.id);
   res.json({ ok: true });
@@ -506,6 +512,7 @@ router.post('/site-roles', requireSitePerm(SITE_PERMISSIONS.MANAGE_SITE_ROLES), 
   const maxPos = db.prepare('SELECT MAX(position) AS m FROM site_roles').get().m || 0;
   const info = db.prepare('INSERT INTO site_roles (name, color, position) VALUES (?, ?, ?)')
     .run(cleanName, color || '#99aab5', maxPos + 1);
+  log.info(`${who(req.user)} created site role "${cleanName}" (id ${info.lastInsertRowid})`);
   res.status(201).json({ role: db.prepare('SELECT * FROM site_roles WHERE id = ?').get(info.lastInsertRowid) });
 });
 
@@ -535,6 +542,7 @@ router.patch('/site-roles/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_SITE_ROL
   if (updates.length) {
     params.push(role.id);
     db.prepare(`UPDATE site_roles SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+    log.info(`${who(req.user)} edited site role "${role.name}" (id ${role.id}): ${[name !== undefined && 'name', color !== undefined && 'color', permissions !== undefined && 'permissions', position !== undefined && 'position'].filter(Boolean).join(', ')}`);
   }
   res.json({ role: db.prepare('SELECT * FROM site_roles WHERE id = ?').get(role.id) });
 });
@@ -550,6 +558,7 @@ router.delete('/site-roles/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_SITE_RO
     return res.status(409).json({ error: 'unassign this role from every user before deleting it (prevents accidental admin lockout)' });
   }
   db.prepare('DELETE FROM site_roles WHERE id = ?').run(role.id);
+  log.info(`${who(req.user)} deleted site role "${role.name}" (id ${role.id})`);
   res.json({ ok: true });
 });
 
@@ -561,6 +570,7 @@ router.put('/users/:id/site-roles/:roleId', requireSitePerm(SITE_PERMISSIONS.MAN
   }
   db.prepare('INSERT OR IGNORE INTO user_site_roles (user_id, role_id) VALUES (?, ?)')
     .run(req.params.id, req.params.roleId);
+  log.info(`${who(req.user)} gave site role "${role.name}" to user id ${req.params.id}`);
   res.json({ ok: true });
 });
 
@@ -571,6 +581,7 @@ router.delete('/users/:id/site-roles/:roleId', requireSitePerm(SITE_PERMISSIONS.
     return res.status(403).json({ error: 'cannot remove a site role with permissions you do not hold' });
   }
   db.prepare('DELETE FROM user_site_roles WHERE user_id = ? AND role_id = ?').run(req.params.id, req.params.roleId);
+  log.info(`${who(req.user)} removed site role "${role.name}" from user id ${req.params.id}`);
   res.json({ ok: true });
 });
 

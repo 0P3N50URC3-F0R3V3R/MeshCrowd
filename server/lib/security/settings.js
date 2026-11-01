@@ -21,18 +21,23 @@ const DEFAULTS = {
   },
   protection: {
     mode: 'protect', // off | detect | protect
-    requestsPerWindow: 900,
+    requestsPerWindow: 1500,
     windowSeconds: 10,
-    banMinutes: 15,
-    rateLimitStrikes: 20,
+    banMinutes: 5, // first automatic ban; doubles for each earlier auto-ban of the same address in 24 h
+    rateLimitStrikes: 50,
     strikeWindowMinutes: 5,
-    failedLoginBan: { threshold: 30, windowMinutes: 10, banMinutes: 60 },
+    scannerStrikes: 10,
+    failedLoginBan: { threshold: 30, windowMinutes: 10, banMinutes: 15 },
     registrationLimit: { enabled: true, max: 5, windowHours: 24 },
     honeypot: true,
     underAttack: { auto: true, trigger: 10, windowMinutes: 5, durationMinutes: 30 },
   },
   allowlist: ['127.0.0.1', '::1'],
 };
+
+// Values an admin may have saved while they were the shipped defaults; they follow the new defaults.
+const LEGACY_PROTECTION = { requestsPerWindow: 900, banMinutes: 15, rateLimitStrikes: 20 };
+const LEGACY_FAILED_BAN_MINUTES = 60;
 
 const MAX_CUSTOM_WORDS = 2000;
 
@@ -115,6 +120,7 @@ function mergeProtection(cur, p) {
   if (p.windowSeconds !== undefined) next.windowSeconds = int(p.windowSeconds, 1, 300, 'protection.windowSeconds');
   if (p.banMinutes !== undefined) next.banMinutes = int(p.banMinutes, 1, 525600, 'protection.banMinutes');
   if (p.rateLimitStrikes !== undefined) next.rateLimitStrikes = int(p.rateLimitStrikes, 3, 10000, 'protection.rateLimitStrikes');
+  if (p.scannerStrikes !== undefined) next.scannerStrikes = int(p.scannerStrikes, 3, 10000, 'protection.scannerStrikes');
   if (p.strikeWindowMinutes !== undefined) next.strikeWindowMinutes = int(p.strikeWindowMinutes, 1, 1440, 'protection.strikeWindowMinutes');
   if (p.honeypot !== undefined) next.honeypot = bool(p.honeypot, 'protection.honeypot');
   if (p.failedLoginBan !== undefined) {
@@ -158,7 +164,15 @@ function load() {
   try { stored = JSON.parse(siteSettings.get(KEY) || '{}'); } catch { stored = {}; }
   let merged = { captcha: DEFAULTS.captcha, protection: DEFAULTS.protection, allowlist: DEFAULTS.allowlist };
   try { merged = { ...merged, captcha: mergeCaptcha(DEFAULTS.captcha, stored.captcha || {}) }; } catch { /* keep defaults */ }
-  try { merged = { ...merged, protection: mergeProtection(DEFAULTS.protection, stored.protection || {}) }; } catch { /* keep defaults */ }
+  try {
+    const sp = { ...(stored.protection || {}) };
+    for (const [k, old] of Object.entries(LEGACY_PROTECTION)) if (sp[k] === old) delete sp[k];
+    if (sp.failedLoginBan && sp.failedLoginBan.banMinutes === LEGACY_FAILED_BAN_MINUTES) {
+      const { banMinutes, ...rest } = sp.failedLoginBan;
+      sp.failedLoginBan = rest;
+    }
+    merged = { ...merged, protection: mergeProtection(DEFAULTS.protection, sp) };
+  } catch { /* keep defaults */ }
   if (Array.isArray(stored.allowlist)) { try { merged.allowlist = normalizeAllowlist(stored.allowlist); } catch { /* keep defaults */ } }
   cached = merged;
   return cached;

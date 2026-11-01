@@ -21,6 +21,7 @@ function toPublicUser(user, { viewerIsSelf = false, areFriends = false } = {}) {
     username: user.username,
     displayName: user.display_name,
     avatarPath: user.avatar_path || null,
+    avatarBackground: !!user.avatar_bg,
     bannerColor: user.banner_color || '',
     bannerPath: user.banner_path || null,
     cardColor: user.card_color || '',

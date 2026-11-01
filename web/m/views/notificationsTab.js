@@ -5,7 +5,7 @@ import { escapeHtml, formatShortTime } from '../../js/utils.js';
 import { state } from '../../js/state.js';
 import { nav } from '../router.js';
 
-const ICON = { mention: 'atSign', dm: 'messageSquare', channel: 'hash' };
+const ICON = { mention: 'atSign', dm: 'messageSquare', channel: 'hash', pin: 'pin', thread: 'messageSquare' };
 
 export function mountNotificationsTab(host) {
   host.innerHTML = `<div class="m-page-title">${t('m.notificationsTitle')}</div><div class="m-scroll" id="m-feed"></div>`;

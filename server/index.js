@@ -18,8 +18,11 @@ const socket = require('./socket');
 const logger = require('./lib/logger');
 const { buildCsp } = require('./lib/csp');
 const guard = require('./lib/security/guard');
+const lifecycle = require('./lib/lifecycle');
+const metrics = require('./lib/metrics');
 
 guard.start();
+metrics.start();
 require('./lib/security/blocklists').startWorker();
 
 startPruneWorker();
@@ -44,6 +47,7 @@ app.set('trust proxy', config.trustProxy);
 const CSP = buildCsp(fs.readFileSync(path.join(__dirname, '..', 'web', 'index.html'), 'utf8'));
 
 app.disable('x-powered-by');
+app.use(metrics.middleware);
 app.use(guard.ipGuard);
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -61,6 +65,7 @@ app.use('/federation/api/inbox', express.json({ limit: '12mb' }));
 app.use('/federation/api/rpc', express.json({ limit: '12mb' }));
 app.use(express.json({ limit: '1mb' }));
 app.use(attachUser);
+app.use(guard.floodGuard);
 
 // Only the upload subfolders are served publicly, never the whole data/ dir (db, certs, config live there too).
 app.use('/uploads/avatars', express.static(path.join(DATA_DIR, 'avatars')));
@@ -231,6 +236,7 @@ app.get(/^(?!\/api|\/uploads|\/ws|\/federation|\/site).*/, require('./lib/uiRout
 app.use(errorHandler);
 
 let server;
+let redirectServer;
 if (config.useHttps) {
   let key, cert;
   try {
@@ -250,7 +256,7 @@ if (config.useHttps) {
   });
 
   // Plain HTTP server too, purely to redirect to HTTPS (LAN clients typing http://).
-  const redirectServer = http.createServer((req, res) => {
+  redirectServer = http.createServer((req, res) => {
     const host = (req.headers.host || config.publicHost).split(':')[0];
     res.writeHead(301, { Location: `https://${host}:${config.httpsPort}${req.url}` });
     res.end();
@@ -267,16 +273,63 @@ if (config.useHttps) {
   });
 }
 
-socket.attach(server);
+const wss = socket.attach(server);
+logger.scoped('app').info(`MeshCrowd ${require('../package.json').version} starting: ${config.useHttps ? `https ${config.httpsPort}, http redirect ${config.port}` : `http ${config.port}`}, log level ${logger.getLevel()}, ssh ${config.ssh && config.ssh.enabled ? 'on' : 'off'}`);
 turnManager.start(logger);
+
+const closeServer = (s) => new Promise((resolve) => { s.close(() => resolve()); s.closeAllConnections?.(); });
+lifecycle.registerCloser('http', () => closeServer(server), { resume: () => server.listen(config.useHttps ? config.httpsPort : config.port) });
+if (redirectServer) lifecycle.registerCloser('http-redirect', () => closeServer(redirectServer), { resume: () => redirectServer.listen(config.port) });
+// Upgraded sockets are detached from the HTTP server, so server.close() alone would wait on them forever.
+lifecycle.registerCloser('websockets', () => { for (const ws of wss.clients) ws.terminate(); });
+lifecycle.registerCloser('turn', () => turnManager.stop(), { resume: () => turnManager.start(logger) });
+lifecycle.registerCloser('sites', () => require('./lib/siteProcesses').stopAll());
+let stopBackupScheduler = require('./lib/backup').startScheduler();
+lifecycle.registerCloser('backup-scheduler', () => stopBackupScheduler(), { resume: () => { stopBackupScheduler = require('./lib/backup').startScheduler(); } });
 
 if (config.federation && config.federation.enabled) {
   require('./lib/federationOutboxWorker').startOutboxWorker();
   require('./lib/federationHeartbeat').startHeartbeat();
+  lifecycle.registerCloser('federation', () => {
+    require('./lib/federationOutboxWorker').stopOutboxWorker();
+    require('./lib/federationHeartbeat').stopHeartbeat();
+  }, { resume: () => {
+    require('./lib/federationOutboxWorker').startOutboxWorker();
+    require('./lib/federationHeartbeat').startHeartbeat();
+  } });
 }
 
 // Closing the last connection checkpoints and deletes the -wal/-shm files; a bare process.exit leaves them behind.
 process.on('exit', () => { try { db.close(); } catch {} });
 for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) {
-  process.on(signal, () => process.exit(0));
+  process.on(signal, () => {
+    lifecycle.shutdown({ restart: false, announce: false });
+  });
+}
+
+// One registry for every console front end: registerAll throws on a second registration.
+const localConsoleWanted = process.stdin.isTTY && !process.env.MESHCROWD_NO_CONSOLE;
+const sshWanted = !!(config.ssh && config.ssh.enabled);
+const consoleRegistry = localConsoleWanted || sshWanted ? require('./console/registry') : null;
+if (consoleRegistry) require('./console/bootstrap').registerAll(consoleRegistry);
+
+if (localConsoleWanted) {
+  const startConsole = () => require('./console/local').start({
+    stdin: process.stdin,
+    stdout: process.stdout,
+    registry: consoleRegistry,
+    onExit: () => { lifecycle.shutdown({ restart: false, announce: false }); },
+  });
+  let localConsole = startConsole();
+  lifecycle.registerCloser('console', () => localConsole.stop(), { resume: () => { localConsole = startConsole(); } });
+}
+
+if (sshWanted) {
+  const sshConsole = require('./console/ssh');
+  let sshHandle = null;
+  const startSsh = () => sshConsole.start(config, { registry: consoleRegistry })
+    .then((h) => { sshHandle = h; })
+    .catch((e) => logger.error('[ssh] failed to start:', e));
+  startSsh();
+  lifecycle.registerCloser('ssh', () => (sshHandle ? sshHandle.stop() : undefined), { resume: startSsh });
 }

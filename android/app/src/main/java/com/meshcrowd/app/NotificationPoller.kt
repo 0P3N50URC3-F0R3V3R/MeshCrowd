@@ -25,7 +25,7 @@ object NotificationPoller {
         val json = try { JSONObject(res.body) } catch (_: Exception) { return 0 }
         val latest = json.optLong("latestId", since)
         val items = json.optJSONArray("notifications")
-        val labels = NotificationMapper.Labels(context.getString(R.string.notify_encrypted), context.getString(R.string.notify_attachment))
+        val labels = NotificationMapper.Labels(context.getString(R.string.notify_encrypted), context.getString(R.string.notify_attachment), context.getString(R.string.notify_pinned), context.getString(R.string.notify_thread), context.getString(R.string.notify_sticker))
         var shown = 0
         if (since > 0 && items != null && !appVisible) {
             NotificationHelper.createChannels(context)

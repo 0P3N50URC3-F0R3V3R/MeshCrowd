@@ -16,6 +16,9 @@ const challenges = require('../lib/passportChallenges');
 const { authAudit } = require('../lib/authAudit');
 const hub = require('../socket/hub');
 const registration = require('../lib/registration');
+const log = require('../lib/logger').scoped('auth');
+
+const safeName = (v) => String(v).replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 64);
 
 const router = express.Router();
 
@@ -42,6 +45,7 @@ router.post('/register', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   accounts.announceJoins(userId, autoJoinServers);
   res.setHeader('Set-Cookie', sessionCookie(req, token));
+  log.info(`registered ${safeName(user.username)} (id ${userId}) from ${req.ip}`);
   res.status(201).json({ user: toPublicUser(user, { viewerIsSelf: true }) });
 });
 
@@ -66,9 +70,11 @@ router.post('/login', (req, res) => {
   const user = splitAuth.findLoginUser(username);
   const outcome = splitAuth.checkLogin(user, { password, authKey });
   if (outcome !== 'ok') {
+    log.warn(`login failed for ${safeName(username)} from ${req.ip}: ${outcome === 'plain_refused' ? 'plain password refused' : 'invalid credentials'}`);
     return res.status(401).json({ error: outcome === 'plain_refused' ? splitAuth.PLAIN_REFUSED : 'invalid credentials' });
   }
   if (user.is_disabled) {
+    log.warn(`login refused for ${safeName(user.username)} from ${req.ip}: account disabled`);
     return res.status(403).json({ error: 'account disabled' });
   }
   if (user.totp_enabled) {
@@ -76,6 +82,7 @@ router.post('/login', (req, res) => {
   }
   const { token } = createSession(user.id, req.headers['user-agent']);
   res.setHeader('Set-Cookie', sessionCookie(req, token));
+  log.info(`login ${safeName(user.username)} (id ${user.id}) from ${req.ip}`);
   res.json({ user: toPublicUser(user, { viewerIsSelf: true }) });
 });
 
@@ -90,11 +97,15 @@ router.post('/login/2fa', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   if (!user || !user.totp_enabled) return res.status(401).json({ error: 'login expired, please sign in again' });
 
-  if (!checkSecondFactor(user, code)) return res.status(401).json({ error: 'invalid code' });
+  if (!checkSecondFactor(user, code)) {
+    log.warn(`2FA failed for ${safeName(user.username)} from ${req.ip}`);
+    return res.status(401).json({ error: 'invalid code' });
+  }
 
   pendingLogin.remove(pendingToken); // only now — the code is confirmed correct, so the pending login is used up
   const { token } = createSession(user.id, req.headers['user-agent']);
   res.setHeader('Set-Cookie', sessionCookie(req, token));
+  log.info(`login ${safeName(user.username)} (id ${user.id}) from ${req.ip} (2FA)`);
   res.json({ user: toPublicUser(user, { viewerIsSelf: true }) });
 });
 
@@ -187,6 +198,7 @@ router.post('/change-password', requireAuth, (req, res) => {
   pendingLogin.removeForUser(user.id);
   hub.disconnectUser(user.id, 4002, 'password changed');
   challenges.clearFailures(lockKey);
+  log.info(`password changed for ${safeName(user.username)} (id ${user.id}) from ${req.ip}`);
   res.json({ ok: true });
 });
 

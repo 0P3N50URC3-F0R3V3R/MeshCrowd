@@ -39,6 +39,7 @@ export function mountYouTab(host) {
       ${row('startView', icons.home(20), t('m.startView'), t(START_VIEWS.find(([v]) => v === getPref('startView', 'messages'))?.[1] || 'm.tabMessages'))}
       ${bridge ? row('chatStyle', icons.messageSquare(20), t('m.chatStyle'), t(getPref('chatStyle', 'plain') === 'bubbles' ? 'm.chatStyleBubbles' : 'm.chatStylePlain')) : ''}
       ${row('sound', icons.bell(20), t('m.notificationSound'), t(SOUNDS[me.notifySoundMode || 'auto']))}
+      ${row('unreadAlways', icons.messageSquare(20), t('userSettings.unreadAlwaysLabel'), t(state.uiPrefs.unreadAlways === 'on' ? 'userSettings.unreadAlwaysOn' : 'userSettings.unreadAlwaysOff'))}
       ${row('language', icons.menu(20), t('m.language'), currentLanguage())}
       ${bridge ? row('android', icons.bell(20), t('m.androidSection')) : ''}
       ${row('desktop', icons.link(20), t('m.openDesktop'))}
@@ -54,6 +55,9 @@ export function mountYouTab(host) {
       } else if (id === 'sound') {
         const v = await actionSheet({ title: t('m.notificationSound'), items: Object.entries(SOUNDS).map(([value, key]) => ({ id: value, label: t(key) })) });
         if (v) { await api.setStatus({ notifySoundMode: v }); state.me.notifySoundMode = v; bus.emit('state:me'); }
+      } else if (id === 'unreadAlways') {
+        const v = await actionSheet({ title: t('userSettings.unreadAlwaysLabel'), items: [{ id: 'off', label: t('userSettings.unreadAlwaysOff') }, { id: 'on', label: t('userSettings.unreadAlwaysOn') }] });
+        if (v) { Object.assign(state.uiPrefs, (await api.setUiPrefs({ unreadAlways: v })).uiPrefs); paint(); }
       } else if (id === 'startView') {
         const v = await actionSheet({ title: t('m.startView'), items: START_VIEWS.map(([value, key]) => ({ id: value, label: t(key) })) });
         if (v) { setPref('startView', v); paint(); }

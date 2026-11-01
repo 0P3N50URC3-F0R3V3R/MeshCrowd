@@ -46,6 +46,7 @@ const SITE_PERMISSIONS = {
   MANAGE_REPORTS:       1 << 6,  // view/resolve the user-report moderation queue
   PRUNE_DATA:           1 << 7,  // bulk-delete any server's channel history, or any DM/group by date (never message content)
   MANAGE_AI:            1 << 8,  // configure AI providers, manage AI bots on any server
+  MANAGE_CONSOLE:       1 << 9,  // use the admin SSH console; deliberately NOT implied by SITE_ADMINISTRATOR (see hasSiteStrict)
 };
 
 const OWNER_SITE_PERMISSIONS = Object.values(SITE_PERMISSIONS).reduce((a, b) => a | b, 0);
@@ -55,7 +56,11 @@ function hasSite(permissionBits, flag) {
   return (permissionBits & flag) === flag;
 }
 
+function hasSiteStrict(permissionBits, flag) {
+  return (permissionBits & flag) === flag;
+}
+
 module.exports = {
   PERMISSIONS, DEFAULT_EVERYONE_PERMISSIONS, OWNER_PERMISSIONS, has,
-  SITE_PERMISSIONS, OWNER_SITE_PERMISSIONS, hasSite,
+  SITE_PERMISSIONS, OWNER_SITE_PERMISSIONS, hasSite, hasSiteStrict,
 };

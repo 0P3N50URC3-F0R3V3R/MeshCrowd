@@ -23,6 +23,7 @@ export const icons = {
   forward: (s) => svg(`<path d="M15 17l5-5-5-5" ${stroke}/><path d="M4 18v-2a4 4 0 0 1 4-4h12" ${stroke}/>`, s),
   paperclip: (s) => svg(`<path d="M21.44 11.05l-9.19 9.19a5.5 5.5 0 0 1-7.78-7.78l9.2-9.19a3.5 3.5 0 1 1 4.95 4.95L9.41 17.41a1.5 1.5 0 0 1-2.12-2.12l8.49-8.49" ${stroke}/>`, s),
   smile: (s) => svg(`<circle cx="12" cy="12" r="10" ${stroke}/><path d="M8 14s1.5 2 4 2 4-2 4-2" ${stroke}/><path d="M9 9h.01M15 9h.01" ${stroke}/>`, s),
+  eraser: (s) => svg(`<path d="m7 21-4.3-4.3a1 1 0 0 1 0-1.4l10-10a1 1 0 0 1 1.4 0l5.6 5.6a1 1 0 0 1 0 1.4L11 21" ${stroke}/><path d="M22 21H7M5 11l9 9" ${stroke}/>`, s),
   edit: (s) => svg(`<path d="M12 20h9" ${stroke}/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" ${stroke}/>`, s),
   trash: (s) => svg(`<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z" ${stroke}/>`, s),
   reply: (s) => svg(`<path d="M9 17l-5-5 5-5" ${stroke}/><path d="M4 12h10a6 6 0 0 1 6 6v1" ${stroke}/>`, s),

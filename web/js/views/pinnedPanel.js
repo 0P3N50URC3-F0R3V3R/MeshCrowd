@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { icons } from '../icons.js';
-import { avatarHtml, escapeHtml, formatTimestamp, renderMessageContent, toast, apiErrorMessage, renderCompactAttachments, renderCompactPoll } from '../utils.js';
+import { avatarHtml, escapeHtml, formatTimestamp, renderMessageContent, toast, apiErrorMessage, renderCompactAttachments, renderCompactPoll, renderCompactSticker } from '../utils.js';
 import { confirmModal } from './modal.js';
 import { t } from '../i18n.js';
 import { state } from '../state.js';
@@ -78,6 +78,7 @@ export function mountPinnedPanel(container, scopeType, scopeId, { canManage = fa
           </div>
           ${msg.content ? `<div class="pi-content">${renderMessageContent(msg.content)}</div>` : ''}
           ${renderCompactPoll(msg.poll)}
+          ${renderCompactSticker(msg.sticker, 'pi-attachments')}
           ${renderCompactAttachments(msg.attachments, 'pi-attachments')}
         </div>
         ${canManage ? `<button class="btn-icon" data-unpin title="${t('pinnedPanel.unpinButton')}">${icons.x(14)}</button>` : ''}

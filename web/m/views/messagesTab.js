@@ -40,7 +40,7 @@ export function mountMessagesTab(host) {
       return `<button class="m-row m-dm${unread ? ' unread' : ''}" data-dm="${d.id}">
         <span class="m-dm-avatar">${avatarHtml(d.isGroup ? { id: d.id, displayName: dmTitle(d, nameFor) } : who, 44)}${status}</span>
         <span class="m-grow"><b>${escapeHtml(dmTitle(d, nameFor))}</b>
-          <small>${d.e2eeEnabled ? `${icons.lock(11)} ` : ''}${escapeHtml(dmPreview(d, { peek: (id) => peekPlaintext(state.me.id, id), encryptedLabel: t('m.dmPreviewEncrypted'), attachmentLabel: t('m.dmPreviewAttachment') }))}</small></span>
+          <small>${d.e2eeEnabled ? `${icons.lock(11)} ` : ''}${escapeHtml(dmPreview(d, { peek: (id) => peekPlaintext(state.me.id, id), encryptedLabel: t('m.dmPreviewEncrypted'), attachmentLabel: t('m.dmPreviewAttachment'), stickerLabel: t('m.dmPreviewSticker') }))}</small></span>
         <span class="m-dm-meta">${d.lastMessage ? `<small>${formatShortTime(d.lastMessage.createdAt)}</small>` : ''}${unread ? '<i class="m-dot"></i>' : ''}</span></button>`;
     }).join('') : `<div class="m-empty">${t('m.noDms')}</div>`;
   }

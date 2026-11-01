@@ -87,15 +87,13 @@ const DIGIT_FONT = {
   '+': ['000', '010', '111', '010', '000'],
 };
 const GLYPH_SCALE = 2;
-const GLYPH_W = 3 * GLYPH_SCALE;
-const GLYPH_H = 5 * GLYPH_SCALE;
 const GLYPH_GAP = 1;
 
-function textWidth(text) {
-  return text.length * GLYPH_W + (text.length - 1) * GLYPH_GAP;
+function textWidth(text, scale = GLYPH_SCALE) {
+  return text.length * 3 * scale + (text.length - 1) * GLYPH_GAP;
 }
 
-function drawText(buf, size, text, left, top, [r, g, b]) {
+function drawText(buf, size, text, left, top, [r, g, b], scale = GLYPH_SCALE) {
   let x = left;
   for (const ch of text) {
     const glyph = DIGIT_FONT[ch];
@@ -103,15 +101,15 @@ function drawText(buf, size, text, left, top, [r, g, b]) {
       for (let gy = 0; gy < 5; gy++) {
         for (let gx = 0; gx < 3; gx++) {
           if (glyph[gy][gx] !== '1') continue;
-          for (let sy = 0; sy < GLYPH_SCALE; sy++) {
-            for (let sx = 0; sx < GLYPH_SCALE; sx++) {
-              setPx(buf, size, x + gx * GLYPH_SCALE + sx, top + gy * GLYPH_SCALE + sy, r, g, b, 255);
+          for (let sy = 0; sy < scale; sy++) {
+            for (let sx = 0; sx < scale; sx++) {
+              setPx(buf, size, x + gx * scale + sx, top + gy * scale + sy, r, g, b, 255);
             }
           }
         }
       }
     }
-    x += GLYPH_W + GLYPH_GAP;
+    x += 3 * scale + GLYPH_GAP;
   }
 }
 
@@ -160,6 +158,26 @@ function hexToRgb(hex, fallback) {
   return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
 }
 
+// The tray is only 16-24 px, so the unread badge has to be big: a fixed tall pill (over half the
+// icon) with the largest digit scale that still fits the label, ringed in white for contrast.
+const BADGE_PILL_H = 28;
+const BADGE_PAD_X = 4;
+const BADGE_RING = 2;
+
+function unreadBadgeLayout(count, iconSize = ICON_SIZE) {
+  const label = count > 99 ? '99+' : String(count);
+  const glyphScale = label.length === 1 ? 4 : label.length === 2 ? 3 : 2;
+  const pillH = BADGE_PILL_H;
+  const pillW = Math.max(pillH, textWidth(label, glyphScale) + BADGE_PAD_X * 2);
+  const pillX = iconSize - pillW - BADGE_RING - 1;
+  const pillY = iconSize - pillH - BADGE_RING - 1;
+  return {
+    label, glyphScale, pillW, pillH, pillX, pillY, ring: BADGE_RING,
+    textX: pillX + (pillW - textWidth(label, glyphScale)) / 2,
+    textY: pillY + (pillH - 5 * glyphScale) / 2,
+  };
+}
+
 let cachedPlainIconPNG = null;
 let cachedPlainIconTheme = null;
 
@@ -192,16 +210,12 @@ function buildTrayIconPNG({ status, count }, theme) {
   fillCircle(buf, ICON_SIZE, ICON_SIZE / 2, ICON_SIZE / 2, ICON_SIZE / 2 - 1, baseColor);
   drawGhost(buf, ICON_SIZE, baseColor);
 
-  const label = count > 99 ? '99+' : String(count);
-  const padX = 5;
-  const pillH = GLYPH_H + 8;
-  const pillW = Math.max(pillH, textWidth(label) + padX * 2);
-  const pillX = ICON_SIZE - pillW - 1;
-  const pillY = ICON_SIZE - pillH - 1;
-  fillRoundedRect(buf, ICON_SIZE, pillX, pillY, pillW, pillH, pillH / 2, badgeColor);
-  drawText(buf, ICON_SIZE, label, pillX + (pillW - textWidth(label)) / 2, pillY + (pillH - GLYPH_H) / 2, [255, 255, 255]);
+  const L = unreadBadgeLayout(count);
+  fillRoundedRect(buf, ICON_SIZE, L.pillX - L.ring, L.pillY - L.ring, L.pillW + L.ring * 2, L.pillH + L.ring * 2, L.pillH / 2 + L.ring, [255, 255, 255]);
+  fillRoundedRect(buf, ICON_SIZE, L.pillX, L.pillY, L.pillW, L.pillH, L.pillH / 2, badgeColor);
+  drawText(buf, ICON_SIZE, L.label, L.textX, L.textY, [255, 255, 255], L.glyphScale);
 
   return encodePNG(ICON_SIZE, buf);
 }
 
-module.exports = { ICON_SIZE, buildTrayIconPNG, encodePNG, newCanvas, fillCircle, fillRoundedRect, drawText, textWidth };
+module.exports = { ICON_SIZE, unreadBadgeLayout, buildTrayIconPNG, encodePNG, newCanvas, fillCircle, fillRoundedRect, drawText, textWidth };

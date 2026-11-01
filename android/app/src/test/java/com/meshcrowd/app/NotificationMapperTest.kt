@@ -37,6 +37,11 @@ class NotificationMapperTest {
         assertFalse(m.body.contains("CIPHER"))
     }
 
+    @Test fun stickerOnlyMessageSaysSticker() {
+        val m = NotificationMapper.map(item("""{"id":1,"scopeType":"dm","scopeId":1,"message":{"id":2,"content":"","author":{"displayName":"A"},"attachments":[],"sticker":{"id":4,"name":"wave"}}}"""), labels)!!
+        assertEquals("Sent a sticker", m.body)
+    }
+
     @Test fun attachmentOnlyAndLongContent() {
         val a = NotificationMapper.map(item("""{"id":1,"scopeType":"dm","scopeId":1,"message":{"id":2,"content":"","author":{"displayName":"A"},"attachments":[{"id":1}]}}"""), labels)!!
         assertEquals("Sent an attachment", a.body)

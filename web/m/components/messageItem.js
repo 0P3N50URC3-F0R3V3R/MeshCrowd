@@ -15,7 +15,7 @@ import { voiceMessageHtml } from '../../js/voiceMessage.js';
 
 function replyHtml(r) {
   if (!r) return '';
-  const body = r.isEncrypted ? t('m.dmPreviewEncrypted') : (r.content || t('m.dmPreviewAttachment'));
+  const body = r.isEncrypted ? t('m.dmPreviewEncrypted') : (r.content || (r.sticker ? t('m.dmPreviewSticker') : t('m.dmPreviewAttachment')));
   return `<div class="m-reply" data-goto="${r.id}">${icons.reply(12)}<b>${escapeHtml(r.author?.displayName || '')}</b><span>${escapeHtml(String(body).slice(0, 120))}</span></div>`;
 }
 
@@ -92,7 +92,8 @@ export function messageHtml(msg, ctx) {
 export function pendingHtml(p, me) {
   return `<div class="m-msg mine pending${p.failed ? ' failed' : ''}" data-pending="${p.key}">
     <div class="m-msg-avatar">${avatarHtml(me, 36)}</div>
-    <div class="m-msg-body"><div class="m-text">${escapeHtml(p.text)}</div>
+    <div class="m-msg-body">${p.text ? `<div class="m-text">${escapeHtml(p.text)}</div>` : ''}
+      ${p.sticker ? `<img class="m-sticker" src="${escapeHtml(p.sticker.imagePath)}" alt="${escapeHtml(p.sticker.name)}">` : ''}
       ${p.files?.length ? `<div class="m-atts">${p.files.map((f) => `<div class="m-att-file">${icons.file(16)}<span class="m-grow"><b>${escapeHtml(f.name)}</b></span></div>`).join('')}</div>` : ''}
       ${p.failed ? `<div class="m-failed"><span>${escapeHtml(p.error || t('m.sendFailed'))}. ${t('m.tapToRetry')}</span>
         <button class="btn btn-secondary" data-retry="${p.key}">${t('m.retry')}</button>

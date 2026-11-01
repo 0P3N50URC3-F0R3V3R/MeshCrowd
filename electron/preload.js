@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('dismeshClient', {
   getAppSettings: () => ipcRenderer.invoke('dismesh:get-app-settings'),
   setAppSettings: (settings) => ipcRenderer.invoke('dismesh:set-app-settings', settings),
   pushNotification: (n) => ipcRenderer.send('dismesh:push-notification', n),
+  clearNotifications: (keys) => ipcRenderer.send('dismesh:clear-notifications', keys),
   setTrayLabels: (labels) => ipcRenderer.send('dismesh:set-tray-labels', labels),
   setTrayBadge: (badge) => ipcRenderer.send('dismesh:set-tray-badge', badge),
   onNavigateTo: (cb) => ipcRenderer.on('dismesh:navigate-to', (event, n) => cb(n)),

@@ -9,4 +9,10 @@ function authAudit(userId, passportId, action, ok, req, actorUserId) {
     .run(userId || null, passportId || null, action, ok ? 1 : 0, req.ip || null, actorUserId || null);
 }
 
-module.exports = { authAudit };
+// Request-less variant for the admin console; actorUserId is null for the local console.
+function authAuditConsole(userId, action, ok, actorUserId) {
+  const user = userId ? db.prepare('SELECT passport_id FROM users WHERE id = ?').get(userId) : null;
+  authAudit(userId, user && user.passport_id, action, ok, {}, actorUserId);
+}
+
+module.exports = { authAudit, authAuditConsole };

@@ -4,7 +4,7 @@ import { t } from '../i18n.js';
 // Sticker picker anchored above the composer's sticker button. Unlike the emoji picker, picking
 // a sticker doesn't insert text — `onPick(sticker)` sends it immediately, same as Discord (a
 // sticker is its own thing attached to a message, not typed inline).
-export function openStickerPicker(anchorEl, stickers, onPick) {
+export function openStickerPicker(anchorEl, stickers, onPick, onClose) {
   document.querySelectorAll('.sticker-picker').forEach((n) => n.remove());
 
   const picker = document.createElement('div');
@@ -15,13 +15,21 @@ export function openStickerPicker(anchorEl, stickers, onPick) {
     const list = picker.querySelector('.ep-list');
     const q = query.trim().toLowerCase();
     const matches = q ? stickers.filter((s) => s.name.toLowerCase().includes(q) || (s.description || '').toLowerCase().includes(q)) : stickers;
-    list.innerHTML = matches.length
-      ? `<div class="ep-cat-label">${t('stickerPicker.thisServer')}</div>
-         <div class="sticker-grid">${matches.map((s) => `
+    const stickerBtnHtml = (s) => `
            <button class="sticker-item" type="button" data-sticker-id="${s.id}" title="${escapeHtml(s.name)}${s.description ? ` — ${escapeHtml(s.description)}` : ''}">
              <img class="anim-hover" src="${escapeHtml(s.image_path)}" alt="${escapeHtml(s.name)}">
              <span>${escapeHtml(s.name)}</span>
-           </button>`).join('')}</div>`
+           </button>`;
+    // A DM has no server of its own: the list spans every server the user is in, grouped by name.
+    const groups = new Map();
+    for (const s of matches) {
+      const label = s.serverName || t('stickerPicker.thisServer');
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label).push(s);
+    }
+    list.innerHTML = matches.length
+      ? [...groups].map(([label, items]) => `<div class="ep-cat-label">${escapeHtml(label)}</div>
+         <div class="sticker-grid">${items.map(stickerBtnHtml).join('')}</div>`).join('')
       : `<div class="ep-cat-label">${stickers.length ? t('stickerPicker.noMatching') : t('stickerPicker.noneUploaded')}</div>`;
     list.querySelectorAll('.sticker-item').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -63,6 +71,7 @@ export function openStickerPicker(anchorEl, stickers, onPick) {
     picker.remove();
     document.removeEventListener('mousedown', onDocClick);
     document.removeEventListener('keydown', onKey);
+    onClose?.();
   }
   function onDocClick(e) {
     if (!picker.contains(e.target) && e.target !== anchorEl && !anchorEl.contains(e.target)) remove();

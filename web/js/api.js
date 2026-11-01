@@ -384,8 +384,9 @@ export const api = {
   openDm: (userId) => post('/api/dms', { userId }),
   openGroupDm: (userIds, name) => post('/api/dms/group', { userIds, name }),
   listDmMessages: (dmId, { before, after, limit, around } = {}) => get(`/api/dms/${dmId}/messages`, { before, after, limit, around }),
-  sendDmMessage: (dmId, { content, files, onProgress, replyToMessageId, voiceDurationMs }) =>
-    uploadMessage(`/api/dms/${dmId}/messages`, content, files, onProgress, replyToMessageId, undefined, voiceDurationMs),
+  listAvailableStickers: () => get('/api/dms/stickers'),
+  sendDmMessage: (dmId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs }) =>
+    uploadMessage(`/api/dms/${dmId}/messages`, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs),
   sendEncryptedDmMessage: (dmId, { content, replyToMessageId, fileIds }) => post(`/api/dms/${dmId}/messages`, { content, replyToMessageId, fileIds }),
   uploadDmFile: async (dmId, blobId, bytes) => {
     const res = await fetch(`/api/dms/${dmId}/e2ee-files/${blobId}`, {

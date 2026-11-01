@@ -31,3 +31,11 @@ test('messageText never returns ciphertext: encrypted messages need decryptFaile
   assert.equal(messageText({ isEncrypted: true, decryptFailed: true, content: 'v1:CIPHER' }, fail), fail);
   assert.equal(messageText({ isEncrypted: true, decryptFailed: undefined, content: 'v1:CIPHER' }, fail), fail);
 });
+
+test('sticker-only messages show the sticker label, encrypted ones via the cached plaintext', () => {
+  const stickerLabels = { ...labels, stickerLabel: 'Sent a sticker' };
+  assert.equal(dmPreview({ lastMessage: { id: 1, content: '', sticker: { id: 3 }, attachments: [] } }, { peek: () => null, ...stickerLabels }), 'Sent a sticker');
+  const enc = { lastMessage: { id: 7, isEncrypted: true, content: 'v1:AAAA' } };
+  assert.equal(dmPreview(enc, { peek: () => ({ text: '', sticker: { id: 3 } }), ...stickerLabels }), 'Sent a sticker');
+  assert.equal(dmPreview(enc, { peek: () => null, ...stickerLabels }), 'Encrypted message');
+});

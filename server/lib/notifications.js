@@ -15,11 +15,11 @@ const OUTBOX_KEEP_PER_USER = 200;
 // lets a client with no open WebSocket (the Android background poller) catch up via
 // pollOutbox() instead of re-deriving unread state itself. Pruned per-user on every insert so
 // the table can't grow unbounded for a chatty server.
-function recordOutbox(userId, { scopeType, scopeId, serverId = null, serverName = null, channelName = null, message, mentioned }) {
+function recordOutbox(userId, { scopeType, scopeId, serverId = null, serverName = null, channelName = null, message, mentioned, kind = null, extra = null }) {
   db.prepare(
-    `INSERT INTO notifications_outbox (user_id, scope_type, scope_id, server_id, server_name, channel_name, message_json, mentioned)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(userId, scopeType, scopeId, serverId, serverName, channelName, JSON.stringify(message), mentioned ? 1 : 0);
+    `INSERT INTO notifications_outbox (user_id, scope_type, scope_id, server_id, server_name, channel_name, message_json, mentioned, kind, extra_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(userId, scopeType, scopeId, serverId, serverName, channelName, JSON.stringify(message), mentioned ? 1 : 0, kind, extra ? JSON.stringify(extra) : null);
   db.prepare(
     `DELETE FROM notifications_outbox WHERE user_id = ? AND id NOT IN (
        SELECT id FROM notifications_outbox WHERE user_id = ? ORDER BY id DESC LIMIT ?
@@ -33,11 +33,12 @@ function recordOutbox(userId, { scopeType, scopeId, serverId = null, serverName 
 // `limit` rows (so an empty page still moves the cursor to "caught up", not stuck at 0 forever).
 function pollOutbox(userId, sinceId = 0, limit = 50) {
   const rows = db.prepare(
-    'SELECT id, scope_type, scope_id, server_id, server_name, channel_name, message_json, mentioned, created_at FROM notifications_outbox WHERE user_id = ? AND id > ? ORDER BY id ASC LIMIT ?'
+    'SELECT id, scope_type, scope_id, server_id, server_name, channel_name, message_json, mentioned, kind, extra_json, created_at FROM notifications_outbox WHERE user_id = ? AND id > ? ORDER BY id ASC LIMIT ?'
   ).all(userId, sinceId, limit);
   const notifications = rows.map((r) => ({
     id: r.id, scopeType: r.scope_type, scopeId: r.scope_id, serverId: r.server_id, serverName: r.server_name,
     channelName: r.channel_name, message: JSON.parse(r.message_json), mentioned: !!r.mentioned, createdAt: r.created_at,
+    ...(r.kind ? { kind: r.kind, ...JSON.parse(r.extra_json || '{}') } : {}),
   }));
   const maxRow = db.prepare('SELECT MAX(id) AS maxId FROM notifications_outbox WHERE user_id = ?').get(userId);
   const latestId = maxRow.maxId || sinceId;
@@ -146,4 +147,59 @@ function notifyDmMessage(dm, rawMessage) {
   }
 }
 
-module.exports = { recordOutbox, getPref, setPref, parseMentions, notifyChannelMessage, notifyDmMessage, pollOutbox, VALID_PREFS };
+// Pins and thread starts are events about an existing message, not new messages: the payload is the
+// usual notify shape plus kind/actor (and threadId/threadTitle) so each client can word it itself.
+function deliverEvent(userId, kind, base, extra) {
+  const payload = { type: 'notify', kind, ...base, ...extra };
+  hub.notifyUser(userId, payload);
+  recordOutbox(userId, { ...base, kind, extra });
+}
+
+function eventTarget(message) {
+  if (message.scopeType === 'dm') return { dm: db.prepare('SELECT * FROM dm_channels WHERE id = ?').get(message.scopeId) };
+  const threadId = message.scopeType === 'thread' ? message.scopeId : null;
+  const channelId = threadId ? db.prepare('SELECT channel_id FROM threads WHERE id = ?').get(threadId)?.channel_id : message.scopeId;
+  const channel = channelId && db.prepare('SELECT * FROM channels WHERE id = ?').get(channelId);
+  return channel ? { channel, threadId } : {};
+}
+
+// Everyone who can see the pinned message and has the scope on "all messages" hears about it;
+// "mentions only" and muted scopes do not.
+function notifyPin(rawMessage, actor) {
+  const { channel, dm, threadId } = eventTarget(rawMessage);
+  const extra = { actor: { id: actor.id, displayName: actor.displayName }, ...(threadId ? { threadId } : {}) };
+  if (dm) {
+    const message = dm.e2ee_enabled || rawMessage.isEncrypted ? redactEncrypted(rawMessage) : rawMessage;
+    for (const m of db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(dm.id)) {
+      if (m.user_id === actor.id || isIgnoring(m.user_id, actor.id) || getPref(m.user_id, 'dm', dm.id) !== 'all') continue;
+      deliverEvent(m.user_id, 'pin', { scopeType: 'dm', scopeId: dm.id, message, mentioned: false }, extra);
+    }
+    return;
+  }
+  if (!channel) return;
+  const server = db.prepare('SELECT name FROM servers WHERE id = ?').get(channel.server_id);
+  for (const m of db.prepare('SELECT user_id FROM server_members WHERE server_id = ?').all(channel.server_id)) {
+    if (m.user_id === actor.id || isIgnoring(m.user_id, actor.id)) continue;
+    if (!has(getChannelPermissionBits(channel, m.user_id), PERMISSIONS.VIEW_CHANNEL)) continue;
+    if (getPref(m.user_id, 'channel', channel.id) !== 'all') continue;
+    deliverEvent(m.user_id, 'pin', {
+      scopeType: 'channel', scopeId: channel.id, serverId: channel.server_id, serverName: server?.name,
+      channelName: channel.name, message: rawMessage, mentioned: false,
+    }, extra);
+  }
+}
+
+// `firstMessage` is the serialized opening message of the new thread, which the link opens.
+function notifyThreadStarted(channel, thread, parentMessage, firstMessage, actor) {
+  const recipient = parentMessage.author_id;
+  if (!recipient || recipient === actor.id || isIgnoring(recipient, actor.id)) return;
+  if (!has(getChannelPermissionBits(channel, recipient), PERMISSIONS.VIEW_CHANNEL)) return;
+  if (getPref(recipient, 'channel', channel.id) === 'mute') return;
+  const server = db.prepare('SELECT name FROM servers WHERE id = ?').get(channel.server_id);
+  deliverEvent(recipient, 'thread', {
+    scopeType: 'channel', scopeId: channel.id, serverId: channel.server_id, serverName: server?.name,
+    channelName: channel.name, message: firstMessage, mentioned: true,
+  }, { actor: { id: actor.id, displayName: actor.displayName }, threadId: thread.id, threadTitle: thread.title });
+}
+
+module.exports = { notifyPin, notifyThreadStarted, recordOutbox, getPref, setPref, parseMentions, notifyChannelMessage, notifyDmMessage, pollOutbox, VALID_PREFS };

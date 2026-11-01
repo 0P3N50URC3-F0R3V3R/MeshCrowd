@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { icons } from '../icons.js';
 import { state } from '../state.js';
-import { escapeHtml, formatTimestamp, apiErrorMessage, toast } from '../utils.js';
+import { escapeHtml, formatTimestamp, apiErrorMessage, toast, refocusInput } from '../utils.js';
 import { confirmModal, promptModal } from './modal.js';
 import { getNotesKey, encryptNote, decryptNote, encryptBytes, decryptBytes, newFileTag, packNote, unpackNote } from '../e2ee/notes.js';
 import { t } from '../i18n.js';
@@ -258,7 +258,7 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
       }
     } catch (err) {
       toast(apiErrorMessage(err, t('notes.saveError')), { type: 'error' });
-    } finally { sendBtn.disabled = false; }
+    } finally { sendBtn.disabled = false; refocusInput(input); }
   }
 
   sendBtn.addEventListener('click', submit);

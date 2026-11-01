@@ -180,6 +180,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         NotificationPoller.appVisible = true
+        NotificationHelper.cancelMessages(this)
     }
 
     override fun onStop() {

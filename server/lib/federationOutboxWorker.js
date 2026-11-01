@@ -1,6 +1,7 @@
 'use strict';
 
 const { db } = require('../db');
+const log = require('./logger').scoped('federation');
 const { signPayload } = require('./federationCrypto');
 const { safeFetch } = require('./federationSsrf');
 const { CONTROL_EVENT_TYPES } = require('./federationOutbox');
@@ -114,17 +115,17 @@ let housekeepingTimer = null;
 
 function startOutboxWorker(intervalMs = 5000) {
   if (timer) return;
-  try { purgeHousekeeping(); } catch (err) { console.error('[federation-outbox] purge', err); }
-  housekeepingTimer = setInterval(() => { try { purgeHousekeeping(); } catch (err) { console.error('[federation-outbox] purge', err); } }, 60 * 60 * 1000);
+  try { purgeHousekeeping(); } catch (err) { log.error('[federation-outbox] purge', err); }
+  housekeepingTimer = setInterval(() => { try { purgeHousekeeping(); } catch (err) { log.error('[federation-outbox] purge', err); } }, 60 * 60 * 1000);
   housekeepingTimer.unref();
-  timer = setInterval(() => { tick().catch((err) => console.error('[federation-outbox]', err)); }, intervalMs);
+  timer = setInterval(() => { tick().catch((err) => log.error('[federation-outbox]', err)); }, intervalMs);
   timer.unref();
 }
 
 // Lets a freshly queued live event go out now instead of waiting for the next interval. No-op unless
 // the worker is actually running (so unit tests that only inspect the outbox never touch the network).
 function kickOutboxWorker() {
-  if (timer) tick().catch((err) => console.error('[federation-outbox]', err));
+  if (timer) tick().catch((err) => log.error('[federation-outbox]', err));
 }
 function stopOutboxWorker() {
   if (timer) clearInterval(timer);

@@ -13,7 +13,7 @@ const { db } = require('../db');
 const presence = require('../lib/presence');
 const hub = require('../socket/hub');
 const { parseMentions, notifyChannelMessage, notifyDmMessage, setPref, pollOutbox } = require('../lib/notifications');
-const { DEFAULT_EVERYONE_PERMISSIONS } = require('../lib/permissions');
+const { DEFAULT_EVERYONE_PERMISSIONS, PERMISSIONS } = require('../lib/permissions');
 
 function makeEveryoneRole(serverId) {
   db.prepare('INSERT INTO roles (server_id, name, permissions, position, is_default) VALUES (?, ?, ?, 0, 1)')
@@ -199,4 +199,113 @@ test('the outbox is pruned to the newest rows per user, oldest first dropped', (
 
   const oldest = db.prepare('SELECT message_json FROM notifications_outbox WHERE user_id = ? ORDER BY id ASC LIMIT 1').get(otherId);
   assert.equal(JSON.parse(oldest.message_json).content, 'msg 5', 'the oldest 5 rows should have been pruned away');
+});
+
+function pinFixture(tag) {
+  const pinner = makeUser(`pinner_${tag}`);
+  const author = makeUser(`author_${tag}`);
+  const watcher = makeUser(`watcher_${tag}`);
+  const muted = makeUser(`muted_${tag}`);
+  const outsider = makeUser(`outsider_${tag}`);
+  const serverId = db.prepare('INSERT INTO servers (name, owner_id, invite_code) VALUES (?, ?, ?)').run(`PS_${tag}`, pinner, `pinv_${tag}`).lastInsertRowid;
+  makeEveryoneRole(serverId);
+  const channelId = db.prepare('INSERT INTO channels (server_id, name, type) VALUES (?, ?, ?)').run(serverId, 'general', 'public').lastInsertRowid;
+  db.prepare('INSERT INTO server_members (server_id, user_id) VALUES (?, ?), (?, ?), (?, ?), (?, ?)')
+    .run(serverId, pinner, serverId, author, serverId, watcher, serverId, muted);
+  setPref(muted, 'channel', channelId, 'mute');
+  setPref(author, 'channel', channelId, 'all');
+  setPref(watcher, 'channel', channelId, 'all');
+  const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(channelId);
+  return { pinner, author, watcher, muted, outsider, serverId, channel };
+}
+
+test('a pinned channel message notifies viewers except the pinner and muted members', () => {
+  const { notifyPin } = require('../lib/notifications');
+  const f = pinFixture('p1');
+  const message = { id: 90, scopeType: 'channel', scopeId: f.channel.id, author: { id: f.author, displayName: 'Author' }, content: 'pin me' };
+  notifyPin(message, { id: f.pinner, displayName: 'Pinner' });
+  const ids = sent.map((s) => s.userId).sort();
+  assert.deepEqual(ids, [f.author, f.watcher].sort());
+  const p = sent[0].payload;
+  assert.equal(p.type, 'notify');
+  assert.equal(p.kind, 'pin');
+  assert.equal(p.actor.displayName, 'Pinner');
+  assert.equal(p.scopeType, 'channel');
+  assert.equal(p.scopeId, f.channel.id);
+  assert.equal(p.channelName, 'general');
+  assert.equal(p.message.id, 90);
+  const polled = pollOutbox(f.watcher, 0).notifications;
+  assert.equal(polled.length, 1);
+  assert.equal(polled[0].kind, 'pin');
+  assert.equal(polled[0].actor.displayName, 'Pinner');
+});
+
+test('pin notifications honour channel visibility and ignore lists', () => {
+  const { notifyPin } = require('../lib/notifications');
+  const f = pinFixture('p2');
+  db.prepare('INSERT INTO channel_user_overrides (channel_id, user_id, allow, deny) VALUES (?, ?, 0, ?)')
+    .run(f.channel.id, f.watcher, PERMISSIONS.VIEW_CHANNEL);
+  const message = { id: 91, scopeType: 'channel', scopeId: f.channel.id, author: { id: f.author, displayName: 'A' }, content: 'x' };
+  notifyPin(message, { id: f.pinner, displayName: 'Pinner' });
+  assert.deepEqual(sent.map((s) => s.userId), [f.author], 'a member who cannot view the channel is not told');
+});
+
+test('a pinned thread message notifies via its parent channel; a pinned DM message notifies the other members', () => {
+  const { notifyPin } = require('../lib/notifications');
+  const f = pinFixture('p3');
+  const threadId = db.prepare('INSERT INTO threads (channel_id, title, created_by) VALUES (?, ?, ?)').run(f.channel.id, 'T', f.author).lastInsertRowid;
+  notifyPin({ id: 92, scopeType: 'thread', scopeId: threadId, author: { id: f.author, displayName: 'A' }, content: 'x' }, { id: f.pinner, displayName: 'Pinner' });
+  assert.deepEqual(sent.map((s) => s.userId).sort(), [f.author, f.watcher].sort());
+  assert.equal(sent[0].payload.scopeType, 'channel');
+  assert.equal(sent[0].payload.threadId, threadId);
+
+  sent = [];
+  const dmId = db.prepare('INSERT INTO dm_channels (is_group, created_by) VALUES (0, ?)').run(f.pinner).lastInsertRowid;
+  db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?), (?, ?)').run(dmId, f.pinner, dmId, f.author);
+  setPref(f.author, 'dm', dmId, 'all');
+  notifyPin({ id: 93, scopeType: 'dm', scopeId: dmId, author: { id: f.author, displayName: 'A' }, content: 'secret' }, { id: f.pinner, displayName: 'Pinner' });
+  assert.deepEqual(sent.map((s) => s.userId), [f.author]);
+  assert.equal(sent[0].payload.scopeType, 'dm');
+  setPref(f.author, 'dm', dmId, 'mute');
+  sent = [];
+  notifyPin({ id: 93, scopeType: 'dm', scopeId: dmId, author: { id: f.author, displayName: 'A' }, content: 'secret' }, { id: f.pinner, displayName: 'Pinner' });
+  assert.equal(sent.length, 0);
+});
+
+test('starting a thread from a message notifies that message\'s author only', () => {
+  const { notifyThreadStarted } = require('../lib/notifications');
+  const f = pinFixture('t1');
+  const first = { id: 95, scopeType: 'thread', scopeId: 7, author: { id: f.pinner, displayName: 'Pinner' }, content: 'opening' };
+  const parent = { id: 94, author_id: f.author };
+  notifyThreadStarted(f.channel, { id: 7, title: 'Talk' }, parent, first, { id: f.pinner, displayName: 'Pinner' });
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].userId, f.author);
+  assert.equal(sent[0].payload.kind, 'thread');
+  assert.equal(sent[0].payload.threadId, 7);
+  assert.equal(sent[0].payload.threadTitle, 'Talk');
+  assert.equal(sent[0].payload.actor.displayName, 'Pinner');
+  assert.equal(sent[0].payload.mentioned, true);
+
+  sent = [];
+  notifyThreadStarted(f.channel, { id: 8, title: 'Mine' }, { id: 96, author_id: f.pinner }, first, { id: f.pinner, displayName: 'Pinner' });
+  assert.equal(sent.length, 0, 'own message');
+
+  setPref(f.author, 'channel', f.channel.id, 'mute');
+  notifyThreadStarted(f.channel, { id: 9, title: 'Muted' }, parent, first, { id: f.pinner, displayName: 'Pinner' });
+  assert.equal(sent.length, 0, 'muted channel');
+});
+
+test('pin notifications skip mentions-only and muted members and the pinner', () => {
+  const { notifyPin } = require('../lib/notifications');
+  const f = pinFixture('p4');
+  const mentionsOnly = makeUser('mentionsonly_p4');
+  db.prepare('INSERT INTO server_members (server_id, user_id) VALUES (?, ?)').run(f.serverId, mentionsOnly);
+  setPref(mentionsOnly, 'channel', f.channel.id, 'mentions');
+  setPref(f.pinner, 'channel', f.channel.id, 'all');
+  notifyPin({ id: 97, scopeType: 'channel', scopeId: f.channel.id, author: { id: f.author, displayName: 'A' }, content: 'x' }, { id: f.pinner, displayName: 'Pinner' });
+  const ids = sent.map((s) => s.userId);
+  assert.ok(ids.includes(f.watcher), 'all-messages member is notified');
+  assert.ok(!ids.includes(mentionsOnly), 'mentions-only member is not');
+  assert.ok(!ids.includes(f.muted), 'muted member is not');
+  assert.ok(!ids.includes(f.pinner), 'pinner is not');
 });

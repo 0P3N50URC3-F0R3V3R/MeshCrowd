@@ -1,6 +1,6 @@
 import { api } from '../api.js';
 import { icons } from '../icons.js';
-import { avatarHtml, formatTimestamp, renderMessageContent, escapeHtml, debounce, apiErrorMessage, renderCompactAttachments, renderCompactPoll } from '../utils.js';
+import { avatarHtml, formatTimestamp, renderMessageContent, escapeHtml, debounce, apiErrorMessage, renderCompactAttachments, renderCompactPoll, renderCompactSticker } from '../utils.js';
 
 import { t } from '../i18n.js';
 
@@ -181,6 +181,7 @@ export function mountSearchPanel(container, scope, { onJump, onClose } = {}) {
           ${m.channelName ? `<div class="sr-channel">${icons.hash(11)} ${escapeHtml(m.channelName)}</div>` : ''}
           ${m.content ? `<div class="sr-content">${renderMessageContent(m.content)}</div>` : ''}
           ${renderCompactPoll(m.poll)}
+          ${renderCompactSticker(m.sticker, 'sr-attachments')}
           ${renderCompactAttachments(m.attachments, 'sr-attachments')}
         </div>
       </div>`).join('');

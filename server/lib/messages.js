@@ -27,7 +27,7 @@ function getReplyTo(replyToId) {
   const row = db.prepare('SELECT * FROM messages WHERE id = ?').get(replyToId);
   if (!row) return null;
   const author = db.prepare('SELECT * FROM users WHERE id = ?').get(row.author_id);
-  return { id: row.id, author: toPublicUser(author, {}), content: row.content, isEncrypted: !!row.is_encrypted };
+  return { id: row.id, author: toPublicUser(author, {}), content: row.content, isEncrypted: !!row.is_encrypted, sticker: getSticker(row.sticker_id) };
 }
 
 // Raw per-option voter id aggregates, same "let the client compute did-I-vote" pattern as
@@ -59,7 +59,7 @@ function getForwardedFrom(id) {
   const attachments = db.prepare('SELECT * FROM attachments WHERE message_id = ?').all(row.id).map((a) => ({
     id: a.id, url: a.file_path, fileName: a.file_name, mimeType: a.mime_type, sizeBytes: a.size_bytes,
   }));
-  return { id: row.id, author: toPublicUser(author, {}), content: row.content, createdAt: row.created_at, attachments };
+  return { id: row.id, author: toPublicUser(author, {}), content: row.content, createdAt: row.created_at, attachments, sticker: getSticker(row.sticker_id) };
 }
 
 // A webhook-posted message's author_id always points at the reserved system user (see
@@ -81,7 +81,7 @@ function serializeMessage(row) {
   const author = db.prepare('SELECT * FROM users WHERE id = ?').get(row.author_id);
   const webhook = webhookAuthorOverride(row.webhook_id);
   const authorPublic = webhook
-    ? { ...toPublicUser(author, {}), displayName: webhook.name, username: webhook.name, avatarPath: webhook.avatarPath }
+    ? { ...toPublicUser(author, {}), displayName: webhook.name, username: webhook.name, avatarPath: webhook.avatarPath, avatarBackground: false }
     : toPublicUser(author, {});
   const attachments = db.prepare('SELECT * FROM attachments WHERE message_id = ?').all(row.id).map((a) => ({
     id: a.id,

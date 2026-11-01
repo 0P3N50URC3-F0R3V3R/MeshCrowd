@@ -2,10 +2,11 @@ import { bus } from '../bus.js';
 import { api } from '../api.js';
 import { state, setFriendVoiceBulk } from '../state.js';
 import { icons } from '../icons.js';
-import { avatarHtml, escapeHtml, formatShortTime, formatTimestamp, renderMessageContent, debounce, apiErrorMessage } from '../utils.js';
+import { avatarHtml, escapeHtml, formatShortTime, formatTimestamp, renderMessageContent, renderCompactSticker, debounce, apiErrorMessage } from '../utils.js';
 import { t } from '../i18n.js';
+import { entryTarget } from '../notifyEvent.mjs';
 
-const KIND_ICON = { mention: icons.reply, dm: icons.messageSquare, channel: icons.hash };
+const KIND_ICON = { mention: icons.reply, dm: icons.messageSquare, channel: icons.hash, pin: icons.pin, thread: icons.messageSquare };
 
 // Discord's "Active Now" panel, shown on the Home/Friends view: which friends are currently in
 // a voice channel, plus a recent-activity feed built from the same events that already drive
@@ -77,11 +78,13 @@ export function mountActivityPanel(container) {
     container.querySelectorAll('.activity-feed-item').forEach((node) => {
       node.addEventListener('click', () => {
         const scopeType = node.dataset.scopeType;
-        const scopeId = Number(node.dataset.scopeId);
-        if (scopeType === 'dm') bus.emit('ui:navigate', { type: 'dm', dmId: scopeId });
-        else if (scopeType === 'channel' && node.dataset.serverId) {
-          bus.emit('ui:navigate', { type: 'server', serverId: Number(node.dataset.serverId), channelId: scopeId });
-        }
+        if (scopeType === 'channel' && !node.dataset.serverId) return;
+        bus.emit('ui:navigate', entryTarget({
+          scopeType, scopeId: Number(node.dataset.scopeId),
+          serverId: Number(node.dataset.serverId) || undefined,
+          threadId: Number(node.dataset.threadId) || undefined,
+          messageId: Number(node.dataset.messageId) || undefined,
+        }));
       });
     });
     container.querySelectorAll('.search-result').forEach((node) => {
@@ -110,7 +113,7 @@ export function mountActivityPanel(container) {
         <div class="activity-section-label">${t('activityPanel.recentLabel')}</div>
         <div class="activity-feed-list">
           ${state.activityFeed.map((item) => `
-            <div class="activity-feed-item" data-scope-type="${item.scopeType}" data-scope-id="${item.scopeId}" data-server-id="${item.serverId || ''}">
+            <div class="activity-feed-item" data-scope-type="${item.scopeType}" data-scope-id="${item.scopeId}" data-server-id="${item.serverId || ''}" data-thread-id="${item.threadId || ''}" data-message-id="${item.messageId || ''}">
               <span class="afi-icon">${(KIND_ICON[item.kind] || icons.info)(14)}</span>
               <div class="afi-body">
                 <div class="afi-title">${escapeHtml(item.title)}</div>
@@ -141,6 +144,7 @@ export function mountActivityPanel(container) {
               <div class="sr-head"><span class="sr-name">${escapeHtml(m.author.displayName)}</span><span class="sr-time">${formatTimestamp(m.createdAt)}</span></div>
               ${m.channelName ? `<div class="sr-channel">${icons.hash(11)} ${escapeHtml(m.channelName)}</div>` : ''}
               <div class="sr-content">${renderMessageContent(m.content)}</div>
+              ${renderCompactSticker(m.sticker, 'sr-attachments')}
             </div>
           </div>`).join('')}
       </div>`;

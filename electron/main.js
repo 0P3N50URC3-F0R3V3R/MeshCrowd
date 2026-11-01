@@ -5,6 +5,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
 const { buildTrayIconPNG } = require('./trayIcon');
+const { pruneRecent, clearRecentOnFocus } = require('./trayState');
 const { findMcrLink, inviteTarget } = require('./inviteUrl');
 
 // `-dev`/`--dev` is the one supported "show debugging stuff" switch: gates the DevTools shortcut
@@ -209,6 +210,11 @@ function createWindow() {
 
   let saveBoundsTimer = null;
   const scheduleSaveBounds = () => { clearTimeout(saveBoundsTimer); saveBoundsTimer = setTimeout(saveWindowBounds, 500); };
+  mainWindow.on('focus', () => {
+    if (!clearRecentOnFocus(trayBadge.count) || !recentNotifications.length) return;
+    recentNotifications.length = 0;
+    rebuildTrayMenu();
+  });
   mainWindow.on('resize', scheduleSaveBounds);
   mainWindow.on('move', scheduleSaveBounds);
 
@@ -511,6 +517,13 @@ ipcMain.on('dismesh:set-tray-labels', (event, labels) => {
 ipcMain.on('dismesh:set-tray-badge', (event, { status, count } = {}) => {
   trayBadge = { status: status || 'online', count: Number(count) || 0 };
   applyTrayBadge();
+});
+
+// The renderer saw (or read elsewhere) these scopes' notifications - drop them from the tray's "Recent" list.
+ipcMain.on('dismesh:clear-notifications', (event, keys) => {
+  if (!Array.isArray(keys)) return;
+  recentNotifications.splice(0, recentNotifications.length, ...pruneRecent(recentNotifications, keys));
+  rebuildTrayMenu();
 });
 
 // Screen sharing (web/js/views/voice.js's getDisplayMedia() call) is a no-op in Electron's

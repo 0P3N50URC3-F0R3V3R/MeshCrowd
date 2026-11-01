@@ -192,6 +192,7 @@ svg { display: block; flex-shrink: 0; }
 
 /* ---- compact message previews (pinned messages, search results) ---- */
 .pi-attachments, .sr-attachments { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.compact-sticker { width: 64px; height: 64px; object-fit: contain; }
 .compact-attachment-thumb { width: 64px; height: 64px; object-fit: cover; border-radius: var(--radius-sm); }
 .compact-attachment-file {
   display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);
@@ -212,7 +213,7 @@ svg { display: block; flex-shrink: 0; }
 .avatar {
   border-radius: var(--radius-round);
   object-fit: cover;
-  background: var(--brand);
+  background: transparent;
   flex-shrink: 0;
 }
 .avatar-fallback {

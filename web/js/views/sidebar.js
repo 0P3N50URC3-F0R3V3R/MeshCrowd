@@ -10,6 +10,7 @@ import { openEventsModal } from './events.js';
 import { t } from '../i18n.js';
 import { inviteLinkFor } from '../inviteHash.mjs';
 import { peekPlaintext } from '../e2ee/dmCrypto.js';
+import { previewText } from '../stickers.mjs';
 import { userActionItems, muteSubmenu, unmute } from './userMenu.js';
 import { openFullProfile } from './fullProfile.js';
 import { openReportModal } from './profile.js';
@@ -535,6 +536,11 @@ export function mountHomeSidebar(container) {
     ]);
   }
 
+  function stickerAwarePreview(plain) {
+    if (!plain) return '';
+    return previewText({ text: plain.text, sticker: plain.sticker, hasAttachments: false }, { sticker: t('sidebar.sentASticker'), attachment: '' });
+  }
+
   function renderDmRow(dm) {
     const active = state.view.type === 'dm' && state.view.dmId === dm.id;
     const other = dm.members[0];
@@ -543,8 +549,8 @@ export function mountHomeSidebar(container) {
     const avatarUser = dm.isGroup ? null : presenceFor(other);
     const preview = dm.lastMessage
       ? (dm.lastMessage.isEncrypted
-        ? (peekPlaintext(state.me.id, dm.lastMessage.id)?.text || t('dmEncryption.encryptedPreview'))
-        : dm.lastMessage.content || (dm.lastMessage.attachments?.length ? t('sidebar.sentAnAttachment') : ''))
+        ? (stickerAwarePreview(peekPlaintext(state.me.id, dm.lastMessage.id)) || t('dmEncryption.encryptedPreview'))
+        : previewText({ text: dm.lastMessage.content, sticker: dm.lastMessage.sticker, hasAttachments: !!dm.lastMessage.attachments?.length }, { sticker: t('sidebar.sentASticker'), attachment: t('sidebar.sentAnAttachment') }))
       : t('sidebar.noMessagesYetPreview');
     const status = avatarUser?.status === 'invisible' ? 'offline' : (avatarUser?.status || 'offline');
     const unread = !active && isUnread('dm', dm.id, dm.lastMessage?.id);

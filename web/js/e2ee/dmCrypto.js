@@ -10,6 +10,7 @@ import { deriveRootSecret, initChains, sealMessage, openMessage, serializeState,
 import { getVerifiedSeed } from './identity.js';
 import { safetyNumber } from './safety.mjs';
 import * as trust from './trust.mjs';
+import { normalizeSticker } from '../stickers.mjs';
 import { newBlobId, encryptFile, decryptFile, fileMeta, normalizeFiles, buildPayload } from './dmFiles.mjs';
 
 export const NO_IDENTITY = 'no local identity';
@@ -213,8 +214,8 @@ export async function ensureOwnKeyPublished(me) {
   return true;
 }
 
-export function encryptForSend(dm, me, text, embed, files) {
-  const plaintextObj = buildPayload(text, embed, files);
+export function encryptForSend(dm, me, text, embed, files, sticker) {
+  const plaintextObj = buildPayload(text, embed, files, sticker);
   return withLock(dm.id, async () => {
     const view = await refreshTrust(dm, me);
     if (view.status === 'changed') throw new Error(KEY_CHANGED);
@@ -232,6 +233,7 @@ function applyPlaintext(message, plaintextObj) {
   message.content = typeof plaintextObj.text === 'string' ? plaintextObj.text : '';
   message.embed = plaintextObj.embed || null;
   message.e2eeFiles = normalizeFiles(plaintextObj.files);
+  message.sticker = normalizeSticker(plaintextObj.sticker);
   message.decryptFailed = false;
 }
 
@@ -239,6 +241,7 @@ function applyFailure(message) {
   message.content = '';
   message.embed = null;
   message.e2eeFiles = [];
+  message.sticker = null;
   message.decryptFailed = true;
 }
 
@@ -285,6 +288,7 @@ export async function decryptMessages(dm, me, messages) {
     if (m.replyTo?.isEncrypted) {
       const plain = peekPlaintext(me.id, m.replyTo.id) || await cachedPlaintext(me.id, m.replyTo.id);
       m.replyTo.content = plain?.text || '';
+      m.replyTo.sticker = normalizeSticker(plain?.sticker);
     }
   }
   return messages;

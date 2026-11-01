@@ -55,13 +55,17 @@ const uploadCard = makeCardImageUpload('cards');
 const uploadFolderIcon = makeCardImageUpload('foldericons');
 
 router.patch('/me', requireAuth, (req, res) => {
-  const { displayName, bio, dmPrivacy, profilePrivacy, discoverable, bannerColor, cardColor } = req.body || {};
+  const { displayName, bio, dmPrivacy, profilePrivacy, discoverable, bannerColor, cardColor, avatarBackground } = req.body || {};
   const updates = [];
   const params = [];
 
   if (bannerColor !== undefined) {
     if (bannerColor !== '' && !HEX_COLOR_RE.test(String(bannerColor))) return res.status(400).json({ error: 'bannerColor must be #rrggbb or empty' });
     updates.push('banner_color = ?'); params.push(String(bannerColor));
+  }
+  if (avatarBackground !== undefined) {
+    if (typeof avatarBackground !== 'boolean') return res.status(400).json({ error: 'avatarBackground must be a boolean' });
+    updates.push('avatar_bg = ?'); params.push(avatarBackground ? 1 : 0);
   }
   if (cardColor !== undefined) {
     if (cardColor !== '' && !HEX_COLOR_RE.test(String(cardColor))) return res.status(400).json({ error: 'cardColor must be #rrggbb or empty' });
@@ -91,6 +95,7 @@ router.patch('/me', requireAuth, (req, res) => {
   params.push(req.user.id);
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  if (avatarBackground !== undefined) broadcastPresence(req.user.id);
   res.json({ user: toPublicUser(user, { viewerIsSelf: true }) });
 });
 
@@ -157,7 +162,7 @@ router.put('/me/theme', requireAuth, (req, res) => {
 // the way in" treatment rather than a bespoke table for two numbers.
 const UI_PREF_BOUNDS = { sidebarWidth: [180, 400], membersWidth: [180, 400], unreadContext: [0, 50], initialMessages: [20, 100] };
 const LANDING_VIEWS = new Set(['home', 'lastLocation']);
-const UI_PREF_ENUMS = { unreadLine: new Set(['on', 'off']), unreadJump: new Set(['firstUnread', 'bottom']) };
+const UI_PREF_ENUMS = { unreadLine: new Set(['on', 'off']), unreadAlways: new Set(['on', 'off']), unreadJump: new Set(['firstUnread', 'bottom']) };
 function sanitizeUiPrefs(raw) {
   const cleaned = {};
   for (const [key, [min, max]] of Object.entries(UI_PREF_BOUNDS)) {

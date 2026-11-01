@@ -3,6 +3,7 @@ import { bus } from '../js/bus.js';
 import { setMe, state, setServers } from '../js/state.js';
 import { initI18n, applyStaticI18n, t } from '../js/i18n.js';
 import '../js/animatedImages.js';
+import '../js/autoRefocus.js';
 import { renderAuth } from '../js/views/auth.js';
 import { loadAll, wireRealtime } from './data.js';
 import { initRouter, nav } from './router.js';

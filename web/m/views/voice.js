@@ -52,7 +52,7 @@ export function mountVoice(el, params) {
       const chBits = channelPermissionBits(channel, detail.roles, me, memberBits, isOwner);
       room = {
         serverId: params.serverId, channelId: channel.id, channelName: channel.name, channelType: channel.type,
-        sounds: detail.sounds, canModerateVoice: has(chBits, PERMISSIONS.MODERATE_MEMBERS), voiceQuality: channel.voice_quality,
+        sounds: detail.sounds, canModerateVoice: has(chBits, PERMISSIONS.MODERATE_MEMBERS), canManageChannel: has(chBits, PERMISSIONS.MANAGE_CHANNELS), voiceQuality: channel.voice_quality,
       };
     }
     if (destroyed) return;

@@ -317,14 +317,34 @@ export function isUnread(scopeType, scopeId, lastMessageId) {
   return (state.readState.get(`${scopeType}:${scopeId}`) || 0) < lastMessageId;
 }
 
+// A closed conversation is out of the list, so an unread flag on it could never be cleared by
+// opening it — it must not count towards any badge.
+export function getUnreadDmCount() {
+  let count = 0;
+  for (const dm of state.dms) {
+    if (!dmPrefFor(dm.id).hidden && isUnread('dm', dm.id, dm.lastMessage?.id)) count++;
+  }
+  return count;
+}
+
+// dm_read is broadcast to every member including the reader's own other devices: our own read
+// moves our read pointer (clearing the badge there too), anyone else's feeds the "Seen" markers.
+export function applyDmRead(dmId, userId, messageId) {
+  if (isSelf(userId)) { setReadState('dm', dmId, messageId); return; }
+  const dm = state.dms.find((d) => d.id === dmId);
+  if (!dm) return;
+  dm.readStates = dm.readStates || [];
+  const existing = dm.readStates.find((r) => r.userId === userId);
+  if (existing) { if (messageId > existing.lastReadMessageId) existing.lastReadMessageId = messageId; }
+  else dm.readStates.push({ userId, lastReadMessageId: messageId });
+  bus.emit('state:dms');
+}
+
 // Feeds the tray/favicon badge (see shell.js pushUnreadBadge). Approximate in the same way the
 // server-rail unread dot already is (serverRail.js): a channel only counts once its server's
 // detail has been fetched this session (no upfront fetch-every-joined-server just for a badge).
 export function getGlobalUnreadCount() {
-  let count = 0;
-  for (const dm of state.dms) {
-    if (isUnread('dm', dm.id, dm.lastMessage?.id)) count++;
-  }
+  let count = getUnreadDmCount();
   for (const detail of state.serverDetail.values()) {
     for (const ch of detail.channels) {
       if (isUnread('channel', ch.id, ch.last_message_id)) count++;

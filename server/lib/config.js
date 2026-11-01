@@ -80,6 +80,9 @@ const DEFAULTS = {
     maxAllocationsPerUser: 20,
     maxKbps: 0, // per allocation, 0 = unlimited
   },
+  logging: { level: 'info', keepDays: 30, maxFileMb: 10 },
+  ssh: { enabled: false, port: 2222, listenAddress: '127.0.0.1', maxSessions: 3, idleTimeoutMinutes: 15, allowPublicKeys: false },
+  backup: { keep: 7, schedule: '', maxFileMb: 5, includeSecrets: false, preRestoreKeep: 3 },
 };
 
 function load() {
@@ -87,7 +90,7 @@ function load() {
   if (fs.existsSync(CONFIG_PATH)) {
     try {
       const file = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-      cfg = { ...cfg, ...file, turn: { ...DEFAULTS.turn, ...(file.turn || {}) }, downloads: { ...DEFAULTS.downloads, ...(file.downloads || {}) } };
+      cfg = { ...cfg, ...file, turn: { ...DEFAULTS.turn, ...(file.turn || {}) }, downloads: { ...DEFAULTS.downloads, ...(file.downloads || {}) }, logging: { ...DEFAULTS.logging, ...(file.logging || {}) }, ssh: { ...DEFAULTS.ssh, ...(file.ssh || {}) }, backup: { ...DEFAULTS.backup, ...(file.backup || {}) } };
     } catch (err) {
       console.error('[config] failed to parse data/config.json, using defaults:', err.message);
     }

@@ -1,6 +1,7 @@
 'use strict';
 
 const { db } = require('../db');
+const log = require('./logger').scoped('federation');
 const { signPayload } = require('./federationCrypto');
 const { safeFetch } = require('./federationSsrf');
 const { ownDomain } = require('./federationOutboxWorker');
@@ -43,7 +44,7 @@ async function pingOnceInner(fetchImpl) {
 let timer = null;
 function startHeartbeat(intervalMs = 60_000) {
   if (timer) return;
-  timer = setInterval(() => { pingOnce().catch((err) => console.error('[federation-heartbeat]', err)); }, intervalMs);
+  timer = setInterval(() => { pingOnce().catch((err) => log.error('[federation-heartbeat]', err)); }, intervalMs);
   timer.unref();
 }
 function stopHeartbeat() {

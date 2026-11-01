@@ -26,6 +26,7 @@ const prune = require('../lib/prune');
 const { enqueueEvent } = require('../lib/federationOutbox');
 const { ownDomain } = require('../lib/federationOutboxWorker');
 const { maxMessageChars } = require('../lib/messageLimits');
+const { stickersForUser, userCanUseSticker } = require('../lib/stickers');
 
 const router = express.Router();
 const config = loadConfig();
@@ -78,6 +79,17 @@ function relayDmMessageCreate(dm, author, message, files) {
       mimeType: f.mimetype,
       dataBase64: fs.readFileSync(path.join(DATA_DIR, 'attachments', `dm-${dm.id}`, f.filename)).toString('base64'),
     });
+  }
+  // Federated peers have no sticker concept: it crosses as an ordinary image attachment.
+  if (message.sticker) {
+    try {
+      const file = path.join(DATA_DIR, 'stickers', path.basename(message.sticker.imagePath));
+      const ext = path.extname(file).slice(1).toLowerCase();
+      const data = fs.readFileSync(file);
+      if (data.length <= budget) {
+        attachments.push({ fileName: `${message.sticker.name}.${ext}`, mimeType: `image/${ext === 'jpg' ? 'jpeg' : ext}`, dataBase64: data.toString('base64') });
+      }
+    } catch { /* sticker file gone: the text part still goes through */ }
   }
   const content = omitted ? `${message.content}
 [${omitted} attachment(s) too large to send across instances]`.trim() : message.content;
@@ -260,6 +272,10 @@ router.post('/:dmId/encryption/enable', loadDm, (req, res) => {
   res.json({ ok: true, e2eeEnabled: true });
 });
 
+router.get('/stickers', (req, res) => {
+  res.json({ stickers: stickersForUser(req.user.id) });
+});
+
 router.get('/:dmId/messages', loadDm, (req, res) => {
   const messages = listMessages('dm', req.dm.id, { before: req.query.before, after: req.query.after, limit: req.query.limit, around: req.query.around });
   res.json({ messages });
@@ -373,8 +389,14 @@ router.post('/:dmId/messages', loadDm, rejectEncryptedUpload, upload.array('file
   const e2eeFileIds = encrypted ? cleanE2eeFileIds(req) : [];
   if (!e2eeFileIds) return res.status(400).json({ error: 'invalid encrypted attachments' });
   const content = encrypted ? req.body.content : String(req.body?.content || '').slice(0, maxMessageChars());
-  if (!content.trim() && (!req.files || req.files.length === 0)) {
-    return res.status(400).json({ error: 'message must have content or an attachment' });
+  let stickerId = null;
+  if (req.body?.stickerId) {
+    if (encrypted) return res.status(400).json({ error: 'in encrypted conversations a sticker travels inside the encrypted message' });
+    if (!userCanUseSticker(req.user.id, req.body.stickerId)) return res.status(400).json({ error: 'sticker not available' });
+    stickerId = Number(req.body.stickerId);
+  }
+  if (!content.trim() && (!req.files || req.files.length === 0) && !stickerId) {
+    return res.status(400).json({ error: 'message must have content, an attachment, or a sticker' });
   }
   let voiceMs = null;
   if (!encrypted) {
@@ -389,8 +411,8 @@ router.post('/:dmId/messages', loadDm, rejectEncryptedUpload, upload.array('file
       .get(Number(req.body.replyToMessageId), 'dm', req.dm.id);
     if (parent) replyToId = parent.id;
   }
-  const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, reply_to_message_id, is_encrypted) VALUES (?, ?, ?, ?, ?, ?)')
-    .run('dm', req.dm.id, req.user.id, content, replyToId, encrypted ? 1 : 0);
+  const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, reply_to_message_id, is_encrypted, sticker_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run('dm', req.dm.id, req.user.id, content, replyToId, encrypted ? 1 : 0, stickerId);
 
   for (const f of req.files || []) {
     const rel = `/uploads/attachments/dm-${req.dm.id}/${f.filename}`;

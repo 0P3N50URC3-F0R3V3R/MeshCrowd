@@ -70,6 +70,12 @@ function broadcastToFriends(userId, payload) {
   for (const f of friendRows) notifyUser(f.user_a === userId ? f.user_b : f.user_a, payload);
 }
 
+function broadcastAll(payload) {
+  const ids = presence.onlineUserIds();
+  for (const uid of ids) notifyUser(uid, payload);
+  return ids.length;
+}
+
 function notifySiteAdmins(payload) {
   for (const uid of presence.onlineUserIds()) {
     if (isSiteAdmin(uid)) notifyUser(uid, payload);
@@ -78,5 +84,5 @@ function notifySiteAdmins(payload) {
 
 module.exports = {
   registerConnection, unregisterConnection, notifyUser, isOnline, disconnectUser, notifyUserIds,
-  broadcastToChannel, broadcastToDm, broadcastToServer, broadcastPresence, broadcastToFriends, notifySiteAdmins,
+  broadcastToChannel, broadcastToDm, broadcastToServer, broadcastPresence, broadcastToFriends, broadcastAll, notifySiteAdmins,
 };

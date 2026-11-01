@@ -61,7 +61,7 @@ export function mountSearch(el, params) {
     body.innerHTML = results.map((m, i) => `<button class="m-row m-result" data-r="${i}">${avatarHtml(m.author, 36)}
       <span class="m-grow"><b>${escapeHtml(m.author.displayName)} <small>${formatShortTime(m.createdAt)}</small></b>
         ${m.channelName ? `<small>#${escapeHtml(m.channelName)}</small>` : ''}
-        <span class="m-result-text">${m.content ? renderMessageContent(m.content, {}) : ''}</span></span></button>`).join('');
+        <span class="m-result-text">${m.content ? renderMessageContent(m.content, {}) : ''}${m.sticker ? `<img class="m-sticker-thumb" src="${escapeHtml(m.sticker.imagePath)}" alt="${escapeHtml(m.sticker.name)}">` : ''}</span></span></button>`).join('');
   }
 
   async function run() {

@@ -88,6 +88,13 @@
 .rail-item:hover .rail-pill { opacity: 1; height: 20px; }
 .rail-item.active .rail-pill { opacity: 1; height: 40px; }
 .rail-item.unread .rail-pill { opacity: 1; height: 8px; }
+.rail-count {
+  position: absolute; right: -4px; bottom: -2px;
+  min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box;
+  border-radius: 9px; background: var(--danger, #ed4245); color: #fff;
+  font-size: 11px; font-weight: 700; line-height: 18px; text-align: center;
+  border: 2px solid var(--bg-tertiary, #1e1f22); pointer-events: none;
+}
 
 .rail-icon {
   width: 48px; height: 48px;

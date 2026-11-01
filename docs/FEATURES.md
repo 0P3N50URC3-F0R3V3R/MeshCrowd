@@ -291,6 +291,12 @@ themselves `ADMINISTRATOR`).
   name label stays visible).
 - **Stage channels**: the same voice room, but split into Speakers (can transmit audio) and
   Audience (muted until invited) — raise-hand, invite-to-speak, move-to-audience.
+- **Shared whiteboard** in server voice and stage rooms (not DM calls): a pen with 8 colors, 3 line
+  widths, an eraser and clear-all, drawn with mouse, touch or pen on web, desktop and Android. In a
+  stage only speakers (and Manage Channels holders) can draw; in a voice channel every participant can.
+  Clear-all needs Manage Channels (or being a stage speaker). Everyone in the room sees strokes live and
+  late joiners get the current board; each person can hide it locally (button in the call controls).
+  Kept in server memory only (bounded: 400 strokes / 60000 points) and dropped when the last person leaves.
 - **Camera** and **screen sharing** work in any voice/stage room and in DM calls; each is its own
   tile (your camera feed and your screen share render as two separate video tiles, matching how
   other chat apps shows them).
@@ -679,3 +685,32 @@ anyone with a role are never held back. Everything is local: no email, phone or 
 
 Roles can carry an emoji or an uploaded image (Server Settings > Roles). The icon of a member's highest role that has one is
 shown next to their name in chat and in the member list, on the web, in the desktop app and on the phone.
+
+## Admin console, SSH, backups and logging
+
+A text console for the person running the server. It runs in the server window when the server
+starts in a terminal, and optionally over SSH (`ssh.enabled`). Type `help` for the command list, `help <command>`
+for details. Commands: `account` (list, info, create, passwd, delete, disable, enable, roles, grant,
+revoke, and `roleperm`, local window only), `ban`/`unban`/`kick` (accounts), `ipban`/`ipunban`, `config` (list, get, set, reset, path),
+`backup` (create, list, delete, verify, keep, auto, restore), `server stop|restart|cancel [seconds]`,
+`status`, `list`, `stats` (also `stats watch`), `announce`, `log` (tail, show, level, files) and `ssh`
+(status, kick). Destructive commands ask for confirmation unless `--yes` is given.
+
+- **Permission**: the SSH console needs the Owner rank or the site permission **Manage Console**. The
+  Site Administrator permission alone does not grant it. The server window is local and needs no login.
+  If nobody holds the permission (an upgraded install), run `account roleperm Owner +console` in the server window.
+- **SSH**: off by default; listens on `127.0.0.1:2222`. Host key `data/ssh_host_ed25519` is generated once;
+  its fingerprint is logged and shown by `ssh status`. Password login (plus a TOTP code through the
+  keyboard-interactive prompt for 2FA accounts). Failures are rate limited, locked per address and fed to
+  the IP guard.
+- **Restart**: `server restart` exits with code 42; `npm start`, `start-server.bat` and `start-server.sh`
+  run a supervisor that starts the server again. Without it the server only stops.
+- **Backups**: `data/backups/backup-<UTC time>-<manual|scheduled|pre-restore>.zip` with a database
+  snapshot, `config.json` (secrets redacted unless `backup.includeSecrets`) and small media. Chat
+  attachments, Sites, certificates and the SSH host key are not included. `backup.keep` generations are
+  kept (plus `backup.preRestoreKeep` pre-restore copies); `backup auto HH:MM` schedules a daily backup.
+  `backup restore` works only in the local console and restarts the server.
+- **Logging**: leveled (`debug`, `info`, `warn`, `error`) lines in `data/logs/dismesh-YYYY-MM-DD.log`,
+  rotated by size (`logging.maxFileMb`) and deleted after `logging.keepDays`. Logins, failed logins, account and
+  role changes, bans, console commands and server lifecycle are logged; passwords, tokens, keys and
+  message content never are.

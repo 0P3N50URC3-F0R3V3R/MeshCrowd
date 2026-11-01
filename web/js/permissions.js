@@ -51,6 +51,7 @@ export const SITE_PERMISSIONS = {
   MANAGE_REPORTS: 1 << 6,
   PRUNE_DATA: 1 << 7,
   MANAGE_AI: 1 << 8,
+  MANAGE_CONSOLE: 1 << 9,
 };
 
 export const SITE_PERMISSION_INFO = [
@@ -63,6 +64,7 @@ export const SITE_PERMISSION_INFO = [
   { flag: SITE_PERMISSIONS.MANAGE_REPORTS, key: 'manageReports', name: 'Manage Reports', desc: 'View and resolve the user-report moderation queue.' },
   { flag: SITE_PERMISSIONS.PRUNE_DATA, key: 'pruneData', name: 'Prune Data', desc: 'Bulk-delete any server’s channel history, or any DM/group by date, to free up space. Never exposes DM/group content.' },
   { flag: SITE_PERMISSIONS.MANAGE_AI, key: 'manageAI', name: 'Manage AI', desc: 'Configure AI providers and manage AI bots on any server.' },
+  { flag: SITE_PERMISSIONS.MANAGE_CONSOLE, key: 'manageConsole', name: 'Manage Console', desc: 'Use the server admin console. Not granted by Site Administrator; only holders can hand it out.' },
 ];
 
 export function has(bits, flag) {

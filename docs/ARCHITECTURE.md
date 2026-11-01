@@ -636,3 +636,23 @@ A second, phone-first front-end lives in `web/m/` and is served at `/m/`. It sha
 - **Verification level.** `lib/verification.js` (`servers.verification_level`, rules by account age from `users.created_at` and
   membership age from `server_members.joined_at`), checked next to the timeout and slowmode checks when posting.
 - **Role icons.** `roles.icon_emoji` / `roles.icon_path` (uploads in `data/roleicons`), shown through `web/js/roleIcon.js`.
+
+## Admin console, SSH, backups and logging
+
+- `server/lib/logger.js`: `scoped(category)` loggers, level filter, daily files with size rotation and
+  age pruning in `data/logs/`, `subscribe` for live feeds, `mask` for secret-looking `key=value` text.
+- `server/console/`: `registry.js` (command registry: name and alias resolution, `local`-only filtering,
+  history masking for secret arguments, audit logging as category `console`; the permission re-check
+  before every command runs in `ssh.js`), `parser.js`, `bootstrap.js` (registers every module in
+  `commands/`), `local.js` (server window, live log, no login), `ssh.js` + `sshAuth.js` (ssh2 server,
+  password and keyboard-interactive, lockout, pre-auth limits, host key `data/ssh_host_ed25519`).
+- `server/lib/backup.js`: own zip writer and reader (no dependency), manifest with sha256 per entry,
+  whitelist of what is archived, path validation on read, scheduler, retention. Restore stages and
+  verifies first, takes a `pre-restore` backup, swaps the database and then restarts.
+- `server/lib/lifecycle.js` + `server/supervisor.js`: ordered closers with timeouts, countdown with
+  announcements, exit code 42 means "restart me"; `start-server.bat/.sh` loop on that code.
+- `server/lib/configSchema.js`: validation and live/restart-required flags for `config set`.
+- Console permission (`server/lib/permissions.js`): Owner or `MANAGE_CONSOLE`, deliberately not implied by
+  `SITE_ADMINISTRATOR`, and not grantable through site roles by someone who does not hold it.
+- Event logging: `auth` (login, failed login, 2FA failure, registration, password change), `admin`
+  (account disable/enable, password reset, site roles), `security` (bans), `federation`, `lifecycle`, `backup`, `ssh`.

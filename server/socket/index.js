@@ -12,6 +12,7 @@ const hub = require('./hub');
 const guard = require('../lib/security/guard');
 const voice = require('./voice');
 const stage = require('./stage');
+const whiteboard = require('../lib/whiteboard');
 const { isAllowedWsOrigin } = require('../lib/wsOrigin');
 
 function getChannel(id) {
@@ -63,6 +64,25 @@ function broadcastFriendVoiceActivity(userId, channel) {
     channelInfo = { id: channel.id, name: channel.name, serverId: server?.id, serverName: server?.name };
   }
   hub.broadcastToFriends(userId, { type: 'friend_voice', userId, channel: channelInfo });
+}
+
+function whiteboardCtx(channel, userId) {
+  const isStage = channel.type === 'stage';
+  const flags = {
+    isStage,
+    isSpeaker: isStage && stage.isSpeaker(channel.id, userId),
+    canManage: has(getChannelPermissionBits(channel, userId), PERMISSIONS.MANAGE_CHANNELS),
+  };
+  return { participant: voice.isParticipant(channel.id, userId), canDraw: whiteboard.canDraw(flags), canClear: whiteboard.canClear(flags) };
+}
+
+function sendWhiteboardState(channel, userId) {
+  const strokes = whiteboard.snapshot(channel.id, whiteboardCtx(channel, userId));
+  if (strokes) hub.notifyUser(userId, { type: 'wb_state', channelId: channel.id, strokes });
+}
+
+function dropWhiteboardIfEmpty(channelId) {
+  if (voice.participants(channelId).length === 0) whiteboard.dropBoard(channelId);
 }
 
 function attach(httpServer) {
@@ -135,6 +155,12 @@ function attach(httpServer) {
           if (channel && canAccessChannel(channel, user.id, PERMISSIONS.SEND_MESSAGES)) {
             hub.broadcastToChannel(channel, payload);
           }
+        } else if (msg.scopeType === 'thread') {
+          const thread = db.prepare('SELECT channel_id FROM threads WHERE id = ?').get(msg.scopeId);
+          const channel = thread && getChannel(thread.channel_id);
+          if (channel && canAccessChannel(channel, user.id, PERMISSIONS.SEND_MESSAGES)) {
+            hub.broadcastToChannel(channel, payload);
+          }
         }
         return;
       }
@@ -171,6 +197,7 @@ function attach(httpServer) {
           broadcastStageState(channel);
         }
         broadcastVoiceState(channel);
+        sendWhiteboardState(channel, user.id);
         broadcastFriendVoiceActivity(user.id, channel);
         return;
       }
@@ -191,7 +218,28 @@ function attach(httpServer) {
           broadcastStageState(channel);
         }
         broadcastVoiceState(channel);
+        dropWhiteboardIfEmpty(channel.id);
         broadcastFriendVoiceActivity(user.id, null);
+        return;
+      }
+
+      // Shared whiteboard for voice/stage rooms (server/lib/whiteboard.js owns validation, limits
+      // and the in-memory board). Permissions are recomputed from live voice/stage state on every
+      // message; only people currently in the room ever receive strokes.
+      if ((msg.type === 'wb_stroke' || msg.type === 'wb_clear' || msg.type === 'wb_sync') && msg.channelId) {
+        const channel = getChannel(msg.channelId);
+        if (!channel || (channel.type !== 'voice' && channel.type !== 'stage')) return;
+        const ctx = whiteboardCtx(channel, user.id);
+        if (msg.type === 'wb_sync') { sendWhiteboardState(channel, user.id); return; }
+        const others = voice.participants(channel.id).filter((id) => id !== user.id);
+        if (msg.type === 'wb_stroke') {
+          const res = whiteboard.applyStroke(channel.id, user.id, msg, ctx);
+          if (res.ok) hub.notifyUserIds(others, { type: 'wb_stroke', channelId: channel.id, ...res.payload });
+          else if (res.reason === 'forbidden') sendWhiteboardState(channel, user.id);
+          return;
+        }
+        const res = whiteboard.applyClear(channel.id, user.id, ctx);
+        if (res.ok) hub.notifyUserIds(voice.participants(channel.id), { type: 'wb_clear', channelId: channel.id, userId: user.id });
         return;
       }
 
@@ -298,7 +346,7 @@ function attach(httpServer) {
           continue;
         }
         const channel = getChannel(roomKey);
-        if (channel) { broadcastVoiceState(channel); leftServerVoiceChannel = true; }
+        if (channel) { broadcastVoiceState(channel); dropWhiteboardIfEmpty(channel.id); leftServerVoiceChannel = true; }
       }
       if (leftServerVoiceChannel) broadcastFriendVoiceActivity(user.id, null);
     });

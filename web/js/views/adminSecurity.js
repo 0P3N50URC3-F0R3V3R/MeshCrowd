@@ -174,7 +174,8 @@ export function renderSecurityTab(inner) {
       <div class="field"><label>${L('floodLimit')}</label>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${num('p-req', p.requestsPerWindow, 20, 1000000, 110)} <span>${L('requestsIn')}</span> ${num('p-win', p.windowSeconds, 1, 300, 90)} <span>${L('seconds')}</span></div>
         <div class="hint">${L('floodHint')}</div></div>
-      <div class="field"><label>${L('banLength')}</label>${num('p-ban', p.banMinutes, 1, 525600, 110)} <span class="hint">${L('minutes')}</span></div>
+      <div class="field"><label>${L('banLength')}</label>${num('p-ban', p.banMinutes, 1, 525600, 110)} <span class="hint">${L('minutes')}</span><div class="hint">${L('banLengthHint')}</div></div>
+      <div class="field"><label>${L('scanners')}</label>${num('p-scan', p.scannerStrikes, 3, 10000, 90)}<div class="hint">${L('scannersHint')}</div></div>
       <div class="field"><label>${L('strikes')}</label>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${num('p-strikes', p.rateLimitStrikes, 3, 10000, 90)} <span>${L('strikesIn')}</span> ${num('p-swin', p.strikeWindowMinutes, 1, 1440, 90)} <span>${L('minutes')}</span></div>
         <div class="hint">${L('strikesHint')}</div></div>
@@ -202,7 +203,7 @@ export function renderSecurityTab(inner) {
         await api.adminSecUpdateSettings({
           protection: {
             mode: $('#p-mode').value, requestsPerWindow: v('#p-req'), windowSeconds: v('#p-win'), banMinutes: v('#p-ban'),
-            rateLimitStrikes: v('#p-strikes'), strikeWindowMinutes: v('#p-swin'), honeypot: $('#p-honey').checked,
+            rateLimitStrikes: v('#p-strikes'), scannerStrikes: v('#p-scan'), strikeWindowMinutes: v('#p-swin'), honeypot: $('#p-honey').checked,
             failedLoginBan: { threshold: v('#p-fthr'), windowMinutes: v('#p-fwin'), banMinutes: v('#p-fban') },
             registrationLimit: { enabled: $('#p-reg-on').checked, max: v('#p-reg-max'), windowHours: v('#p-reg-h') },
             underAttack: { auto: $('#p-ua-auto').checked, trigger: v('#p-ua-trig'), windowMinutes: v('#p-ua-win'), durationMinutes: v('#p-ua-dur') },

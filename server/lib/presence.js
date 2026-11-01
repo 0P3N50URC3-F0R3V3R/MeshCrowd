@@ -33,6 +33,17 @@ function isOnline(userId) {
   return connections.has(userId);
 }
 
+function connectionCount(userId) {
+  const set = connections.get(userId);
+  return set ? set.size : 0;
+}
+
+function totalConnections() {
+  let n = 0;
+  for (const set of connections.values()) n += set.size;
+  return n;
+}
+
 function onlineUserIds() {
   return [...connections.keys()];
 }
@@ -46,4 +57,4 @@ function disconnectUser(userId, code = 4001, reason = 'account disabled') {
   }
 }
 
-module.exports = { registerConnection, unregisterConnection, notifyUser, isOnline, onlineUserIds, disconnectUser };
+module.exports = { registerConnection, unregisterConnection, notifyUser, isOnline, onlineUserIds, connectionCount, totalConnections, disconnectUser };

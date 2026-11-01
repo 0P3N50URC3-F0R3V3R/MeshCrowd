@@ -1,5 +1,7 @@
 import { icons } from './icons.js';
 import { EMOJI_SHORTCODES } from './emojiShortcodes.js';
+import { linkChannelRefs } from './channelRefs.mjs';
+import { t } from './i18n.js';
 
 export function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, (c) => ({
@@ -60,17 +62,10 @@ const HTML_FORBID_TAGS = ['iframe', 'object', 'embed', 'script', 'style', 'link'
 // does for a raw, non-autocompleted "@word".
 const URL_RE = /(https?:\/\/[^\s<]+)/g;
 const MENTION_RE = /@([a-zA-Z0-9_.]{2,32})/g;
-const CHANNEL_REF_RE = /#([a-zA-Z0-9_-]{1,80})/g;
 
 function linkifyMentionsAndChannels(text, channels, styleMentions = true) {
   let out = styleMentions ? text.replace(MENTION_RE, (m, name) => `<span class="mention">@${name}</span>`) : text;
-  if (channels && channels.length) {
-    out = out.replace(CHANNEL_REF_RE, (m, name) => {
-      const ch = channels.find((c) => c.name.toLowerCase() === name.toLowerCase());
-      return ch ? `<span class="channel-ref" data-channel-id="${ch.id}">#${escapeHtml(ch.name)}</span>` : m;
-    });
-  }
-  return out;
+  return linkChannelRefs(out, channels, (name) => t('chat.channelRefLabel', { name }));
 }
 
 // :name: -> an inline <img> for a server's own uploaded custom emoji (self-hosted, data/emoji/ —
@@ -230,7 +225,8 @@ export function colorForId(id) {
 export function avatarHtml(user, size = 40) {
   const style = `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.4)}px`;
   if (user?.avatarPath) {
-    return `<img class="avatar" style="${style}" src="${escapeHtml(user.avatarPath)}" alt="" draggable="false">`;
+    const bgStyle = user.avatarBackground ? `;background:${colorForId(user.id)}` : '';
+    return `<img class="avatar" style="${style}${bgStyle}" src="${escapeHtml(user.avatarPath)}" alt="" draggable="false">`;
   }
   const bg = colorForId(user?.id);
   return `<div class="avatar avatar-fallback" style="${style};background:${bg}">${escapeHtml(initials(user?.displayName || user?.username))}</div>`;
@@ -331,6 +327,11 @@ export function renderCompactAttachments(attachments, wrapperClass) {
   )).join('')}</div>`;
 }
 
+export function renderCompactSticker(sticker, wrapperClass) {
+  if (!sticker) return '';
+  return `<div class="${wrapperClass}"><img class="compact-sticker" src="${escapeHtml(sticker.imagePath)}" alt="${escapeHtml(sticker.name)}" title="${escapeHtml(sticker.name)}" loading="lazy"></div>`;
+}
+
 // Same idea for a poll — too small a space for the real interactive card, so just the question
 // with a chart glyph.
 export function renderCompactPoll(poll) {
@@ -374,6 +375,17 @@ export function toast(message, { type = 'info', ttl = 4000, action } = {}) {
   }
   toastHost.appendChild(node);
   setTimeout(() => node.remove(), ttl);
+}
+
+// Hands focus back to a composer after send/pick/close so the user keeps typing — but never takes
+// it from another text field or an open dialog the user has meanwhile moved into.
+export function refocusInput(input) {
+  if (!input || !input.isConnected) return;
+  const dialog = document.querySelector('.overlay, .m-sheet-back');
+  if (dialog && !dialog.contains(input)) return;
+  const a = document.activeElement;
+  if (a && a !== input && a !== document.body && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+  input.focus({ preventScroll: true });
 }
 
 export function apiErrorMessage(err, fallback = 'something went wrong') {

@@ -79,4 +79,14 @@ function entryCovers(parsed, ip) {
   return new IpSet([parsed]).has(ip);
 }
 
-module.exports = { normalizeIp, parseEntry, IpSet, entryCovers };
+function isPrivateIp(ip) {
+  const n = normalizeIp(ip);
+  if (!n) return false;
+  if (net.isIPv4(n)) {
+    const [a, b] = n.split('.').map(Number);
+    return a === 127 || a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 169 && b === 254);
+  }
+  return n === '::1' || /^f[cd]/.test(n) || /^fe[89ab]/.test(n);
+}
+
+module.exports = { isPrivateIp, normalizeIp, parseEntry, IpSet, entryCovers };

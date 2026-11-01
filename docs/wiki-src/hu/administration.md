@@ -51,6 +51,50 @@ A felület angolul és magyarul érkezik. Az adminisztrátorok nyelvi fájlokat 
 
 Ütemezd az általad választott eszközzel. Ha nem tudod leállítani a szervert, másolj egy csendes pillanatban, és tarts meg több generációt. Egyszer próbáld ki a visszaállítást.
 
+## Az admin konzol
+
+A konzol egy szöveges felület annak, aki a szervert üzemelteti. Elindul a szerver ablakában, ha a szervert terminálból indítod (ott nincs bejelentkezés, hiszen már te irányítod a gépet), és igény szerint SSH-n keresztül is elérhető. A `help` kiírja a parancsokat, a `help <parancs>` a részleteket. A veszélyes parancsok megerősítést kérnek; a `--yes` kihagyja ezt.
+
+| Parancs | Mit csinál |
+|---|---|
+| `account list/info/create/passwd/delete/disable/enable/roles/grant/revoke/roleperm` | Fiókok és oldalszintű rangok kezelése (a `roleperm` a konzoljogosultságot adja a rangnak vagy veszi el tőle, csak a szerver ablakában) |
+| `ban`, `unban`, `kick` | Fiók letiltása vagy visszaengedése, felhasználó lekapcsolása |
+| `ipban`, `ipunban` | IP-cím, tartomány vagy CIDR tiltása, kívánság szerint néhány percre |
+| `config list/get/set/reset/path` | A `data/config.json` olvasása és módosítása ellenőrzéssel |
+| `backup create/list/delete/verify/keep/auto/restore` | Mentések (lásd lent) |
+| `server stop`, `server restart`, `server cancel` | Leállítás vagy újraindítás, opcionális másodperces visszaszámlálással |
+| `status`, `list`, `stats`, `stats watch` | Verzió, üzemidő, bejelentkezett felhasználók, terhelés, statisztika |
+| `announce <szöveg>` | Értesítés minden bejelentkezett felhasználónak |
+| `log tail/show/level/files` | Élő napló, legutóbbi bejegyzések, naplószint, naplófájlok |
+| `ssh status`, `ssh kick <n>` | SSH ujjlenyomat, cím és munkamenetek |
+
+A `server restart` a felügyelő folyamatot igényli: indítsd a szervert `npm start`, `start-server.bat` vagy `start-server.sh` paranccsal. Ezek újraindítják, ha a szerver 42-es kilépési kóddal áll le. Nélkülük a `server restart` csak leállítja a szervert.
+
+### SSH-hozzáférés
+
+1. Állítsd az `ssh.enabled` értékét `true`-ra (`config set ssh.enabled true`, vagy szerkeszd a `data/config.json` fájlt), majd indítsd újra a szervert. Alapból a `127.0.0.1` cím `2222`-es portján figyel, vagyis csak maga a gép érheti el.
+2. Add meg a jogosultságot: a **Tulajdonos** mindig használhatja a konzolt, a stábtagoknak az oldalszintű **Manage Console** jogosultság kell. A Site Administrator ezt nem tartalmazza. Ha még senkinek nincs meg (például frissítés után), futtasd a szerver ablakában: `account roleperm Owner +console`.
+3. PuTTY-ban add meg a gépet és a portot, a kapcsolat típusa SSH, majd nyisd meg. Az első kapcsolódáskor a PuTTY megmutatja a gazdakulcs ujjlenyomatát. Mielőtt az Accept gombra kattintasz, hasonlítsd össze a szerver ablakában kiadott `ssh status` eredményével (vagy a naplóban az `[ssh] listening` sorral). Ha később más ujjlenyomatot látsz, az másik szervert vagy támadást jelent.
+4. Jelentkezz be a MeshCrowd felhasználóneveddel és jelszavaddal. Kétlépcsős azonosítású fióknál a jelszó után a kódot is kéri. Az a kliens, amely csak jelszót tud küldeni (billentyűzet-interaktív kérdés nélkül), nem tud belépni kétlépcsős fiókkal.
+
+Más gépről való eléréshez állítsd be az `ssh.listenAddress` értékét (például `0.0.0.0`), és nyisd meg a portot a tűzfalon. Ha tudod, inkább VPN-t vagy SSH-alagutat használj, és hagyd localhoston; a szerver figyelmeztetést naplóz, ha nem visszacsatolási címen figyel.
+
+::: warn Biztonsági megjegyzések
+Az erősített bejelentkezésű fiókok jelszava a weben sosem jut el a szerverig, de SSH-nál nincs böngésző, amely a kulcsot levezetné. Ezért SSH-n a szerver a jelszót nyers szövegként kapja meg a titkosított SSH-csatornán belül, a memóriában levezeti belőle a kulcsot, ellenőrzi, majd eldobja. Sosem tárolja és nem naplózza. Öt sikertelen belépés után egy címet 10 percre zárol (egy NAT mögötti hálózat közös zárat kap, így egy támadó egy időre kizárhat; ilyenkor a szerver ablakából tudsz dolgozni). A munkamenet `ssh.idleTimeoutMinutes` tétlenség után megszakad, és egyszerre legfeljebb `ssh.maxSessions` fut.
+:::
+
+### Mentések a konzolról
+
+A `backup create` a `data/backups/backup-<UTC idő>-<manual|scheduled|pre-restore>.zip` fájlt írja, benne egy konzisztens adatbázis-pillanatkép, a `config.json` és a kis méretű média (avatarok, bannerek, emojik, matricák, hangok, ikonok; a `backup.maxFileMb` fölötti fájlok kimaradnak). Nem kerül bele: a csevegés mellékletei, a Sites, a tanúsítványok és az SSH gazdakulcs. A titkok (például a TURN titok) helyőrzőre cserélődnek, hacsak a `backup.includeSecrets` értéke nem igaz. A `backup verify` az archívumot a hash-eihez képest ellenőrzi.
+
+A legfrissebb `backup.keep` mentés marad meg (alapból 7), a régebbieket minden mentés után törli. A visszaállítás előtti másolatokat külön tartja (`backup.preRestoreKeep`). A `backup auto 03:30` naponta ütemez mentést a szerver helyi idejében, a `backup auto off` kikapcsolja.
+
+A `backup restore <név>` csak a szerver ablakában működik, SSH-n soha. Ellenőrzi az archívumot, a jelenlegi adatbázisról pre-restore mentést készít, lecseréli az adatbázist, a médiát és a konfigurációt, majd újraindítja a szervert. Az élő titkok és a tanúsítványok megmaradnak.
+
+### Naplók
+
+A naplók a `data/logs/dismesh-ÉÉÉÉ-HH-NN.log` fájlokba kerülnek, naponta egy, és új sorszámozott fájl indul, ha az egyik túlnő a `logging.maxFileMb` méreten; a `logging.keepDays` napnál régebbi fájlok törlődnek. A szintek: `debug`, `info`, `warn`, `error`; a `log level warn` azonnal átállítja és el is menti. Naplózódik a bejelentkezés és a sikertelen bejelentkezés (IP-címmel), a fiók- és rangmódosítás, a tiltás, a konzolparancsok és a szerver életciklusa. Jelszó, token, kulcs és üzenettartalom soha.
+
 ## Frissítés
 
 Készíts mentést, állítsd le a szervert, cseréld le a programfájlokat (a `data/` megtartásával) és indítsd újra. Az adatbázis-módosítások automatikusan lefutnak. Lásd: [Telepítés](installation.html).

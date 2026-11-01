@@ -1,8 +1,11 @@
-export function dmPreview(dm, { peek, encryptedLabel, attachmentLabel }) {
+export function dmPreview(dm, { peek, encryptedLabel, attachmentLabel, stickerLabel }) {
   const m = dm.lastMessage;
   if (!m) return '';
-  if (m.isEncrypted) return peek(m.id)?.text || encryptedLabel;
-  return m.content || (m.attachments?.length ? attachmentLabel : '');
+  if (m.isEncrypted) {
+    const plain = peek(m.id);
+    return plain?.text || (plain?.sticker ? stickerLabel : '') || encryptedLabel;
+  }
+  return m.content || (m.sticker ? stickerLabel : '') || (m.attachments?.length ? attachmentLabel : '');
 }
 
 export function dmTitle(dm, nameFor) {

@@ -21,7 +21,10 @@ import { mountComposer } from '../components/composer.js';
 import { openMessageSheet } from '../components/messageSheet.js';
 import { onPollClick, openPollSheet } from '../components/pollCard.js';
 import { openEmojiSheet, openStickerSheet } from '../components/emojiSheet.js';
-import { openImageViewer, openSheet, promptSheet } from '../components/bottomSheet.js';
+import { stickerRef } from '../../js/stickers.mjs';
+import { openImageViewer, openSheet, promptSheet, actionSheet, confirmSheet } from '../components/bottomSheet.js';
+import { editPostSheet } from '../components/postSheets.js';
+import { canEditPost, canDeletePost } from '../../js/threadPerms.mjs';
 import { MAX_TEXT_FILE_BYTES, textByteLength, textToFile } from '../../js/longText.js';
 import { openProfileSheet } from './profileSheet.js';
 import { pickSendTime } from '../components/scheduleSheet.js';
@@ -33,7 +36,8 @@ import { usageOf, parseInvocation, missingRequired } from '../../js/slashCommand
 import { builtinSlashCommands, SHRUG } from '../../js/builtinSlash.js';
 import { openDmWith } from '../lib/dmOpen.js';
 import { copyText } from './serversTab.js';
-import { unreadPrefs, firstUnreadIndex, anchorIndex } from '../../js/unreadLine.mjs';
+import { unreadPrefs, firstUnreadIndex, anchorIndex, unreadEligible, unreadCount } from '../../js/unreadLine.mjs';
+import { offlineWindows } from '../../js/offlineTracker.js';
 
 const MAX_WINDOW = 400;
 
@@ -47,6 +51,11 @@ export function mountChat(el, params) {
   // Read pointer at open time: the "new" line stays while this chat is open, gone on the next open once read.
   let unreadAfterId = kind === 'thread' || prefs.unreadLine === 'off' ? 0 : (state.readState.get(scopeKey) || 0);
   let bannerDismissed = false;
+  // Only messages already there when the chat opened can get the line; later arrivals are seen live.
+  let unreadUpTo = 0;
+  let unreadUpToSet = false;
+  const offlineAtOpen = offlineWindows();
+  const unreadOk = (m) => unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen })(m);
   let firstLoad = true;
   let messages = [];
   const deleted = new Set(); // ids deleted over the websocket, so a racing create cannot bring them back
@@ -170,7 +179,7 @@ export function mountChat(el, params) {
     const anchorEl = anchor ? [...msgsEl.querySelectorAll('[data-id]')].find((n) => n.getBoundingClientRect().bottom > viewTop) : null;
     const anchorId = anchorEl?.dataset.id;
     const anchorOffset = anchorEl ? anchorEl.getBoundingClientRect().top - viewTop : 0;
-    const dividerAt = firstUnreadIndex(messages, unreadAfterId, (m) => m.author.id === state.me.id);
+    const dividerAt = firstUnreadIndex(messages, unreadAfterId, (m) => m.author.id === state.me.id, unreadOk);
     msgsEl.innerHTML = (atStart ? `<div class="m-empty">${t('m.chatStart')}</div>` : '')
       + messages.map((m, i) => (i === dividerAt ? unreadDividerHtml(m) : '') + messageHtml(m, ctxFor(i === dividerAt ? null : messages[i - 1]))).join('')
       + pending.map((p) => pendingHtml(p, state.me)).join('')
@@ -182,9 +191,9 @@ export function mountChat(el, params) {
     paintUnreadBanner();
   }
   function paintUnreadBanner() {
-    const at = bannerDismissed ? -1 : firstUnreadIndex(messages, unreadAfterId, (m) => m.author.id === state.me.id);
+    const at = bannerDismissed ? -1 : firstUnreadIndex(messages, unreadAfterId, (m) => m.author.id === state.me.id, unreadOk);
     if (at < 0) { unreadBannerEl.hidden = true; return; }
-    const count = messages.filter((m) => m.id > unreadAfterId && !m.pending && !m.eventType && m.author.id !== state.me.id).length;
+    const count = unreadCount(messages, unreadAfterId, (m) => m.author.id === state.me.id, unreadOk);
     const since = new Date(messages[at].createdAt);
     const sameDay = since.toDateString() === new Date().toDateString();
     const when = since.toLocaleString(undefined, sameDay ? { hour: '2-digit', minute: '2-digit' } : { dateStyle: 'medium', timeStyle: 'short' });
@@ -213,7 +222,7 @@ export function mountChat(el, params) {
     return `<div class="m-unread-divider"><span class="m-unread-date">${escapeHtml(day)}</span><span class="m-unread-badge">${escapeHtml(t('chat.newMessagesBadge'))}</span></div>`;
   }
   function scrollToFirstUnread() {
-    const at = prefs.unreadJump === 'firstUnread' ? firstUnreadIndex(messages, unreadAfterId, (m) => m.author.id === state.me.id) : -1;
+    const at = prefs.unreadJump === 'firstUnread' ? firstUnreadIndex(messages, unreadAfterId, (m) => m.author.id === state.me.id, unreadOk) : -1;
     if (at < 0) return false;
     const anchorAt = anchorIndex(at, prefs.unreadContext);
     const node = anchorAt === at ? msgsEl.querySelector('.m-unread-divider') : msgsEl.querySelector(`[data-id="${messages[anchorAt].id}"]`);
@@ -247,6 +256,7 @@ export function mountChat(el, params) {
   async function loadInitial() {
     const res = await scope.list({ limit: PAGE, around: params.jumpToMessageId });
     const list = await decryptList(res.messages);
+    if (!unreadUpToSet) { unreadUpTo = list.reduce((mx, m) => Math.max(mx, m.id), 0); unreadUpToSet = true; }
     isLatest = !params.jumpToMessageId || windowReachesLatest(list, params.jumpToMessageId, PAGE);
     messages = mergeMessages(isLatest ? messages : [], list, deleted);
     atStart = list.length < PAGE && !params.jumpToMessageId;
@@ -306,7 +316,7 @@ export function mountChat(el, params) {
     stickToBottom = nearBottom && isLatest;
     jumpEl.hidden = nearBottom && isLatest;
     if (nearBottom) markReadSoon();
-    if (nearBottom && isLatest && !bannerDismissed) { bannerDismissed = true; paintUnreadBanner(); }
+    if (nearBottom && isLatest && msgsEl.querySelector('.m-unread-divider')) { bannerDismissed = true; unreadAfterId = 0; paint({ anchor: true }); }
     if (msgsEl.scrollTop < 120) loadOlder();
     else if (nearBottom && !isLatest) loadNewer();
   });
@@ -364,6 +374,11 @@ export function mountChat(el, params) {
     paintTyping();
     setTimeout(paintTyping, 6100);
   }));
+  offs.push(bus.on('ws:thread_update', (p) => {
+    if (kind !== 'thread' || p.thread.id !== params.threadId) return;
+    thread = p.thread;
+    el.querySelector('#m-title').textContent = thread.title;
+  }));
   offs.push(bus.on('ws:thread_delete', ({ threadId }) => { if (kind === 'thread' && threadId === params.threadId) nav.back(); }));
   offs.push(bus.on('state:connection', (ok) => {
     if (!ok) return;
@@ -383,15 +398,15 @@ export function mountChat(el, params) {
   }
 
   // ---------- sending ----------
-  async function sendEncrypted(text, replyToMessageId, files = []) {
+  async function sendEncrypted(text, replyToMessageId, files = [], sticker = null) {
     const d = dm();
     const metas = [];
     try {
       for (const f of files) metas.push(await uploadDmFile(d.id, f));
-      const { content, plaintextObj } = await encryptForSend(d, state.me, text, null, metas);
+      const { content, plaintextObj } = await encryptForSend(d, state.me, text, null, metas, sticker);
       const res = await api.sendEncryptedDmMessage(d.id, { content, replyToMessageId, fileIds: metas.length ? metas.map((m) => m.id) : undefined });
       await cacheSentPlaintext(state.me.id, res.message.id, plaintextObj);
-      Object.assign(res.message, { content: plaintextObj.text, embed: plaintextObj.embed, e2eeFiles: metas, decryptFailed: false });
+      Object.assign(res.message, { content: plaintextObj.text, embed: plaintextObj.embed, e2eeFiles: metas, sticker, decryptFailed: false });
       files.forEach((file, i) => { if (e2eeFileKind(metas[i]) === 'image') e2eeUrls.set(metas[i].id, Promise.resolve(URL.createObjectURL(file))); });
       return res;
     } catch (err) {
@@ -402,8 +417,8 @@ export function mountChat(el, params) {
 
   async function deliver(p) {
     try {
-      const res = encrypted() ? await sendEncrypted(p.text, p.replyToMessageId, p.files)
-        : await scope.send({ content: p.text, files: p.files, replyToMessageId: p.replyToMessageId, voiceDurationMs: p.voiceDurationMs });
+      const res = encrypted() ? await sendEncrypted(p.text, p.replyToMessageId, p.files, p.sticker)
+        : await scope.send({ content: p.text, files: p.files, replyToMessageId: p.replyToMessageId, stickerId: p.sticker?.id, voiceDurationMs: p.voiceDurationMs });
       pending = pending.filter((x) => x.key !== p.key);
       if (!isLatest) { params = { ...params, jumpToMessageId: undefined }; await loadInitial(); return; }
       if (!messages.some((m) => m.id === res.message.id)) messages = mergeMessages(messages, [res.message], deleted);
@@ -451,7 +466,7 @@ export function mountChat(el, params) {
         pending.push(p); paint(); scrollBottom();
         deliver(p);
       },
-      onTyping: kind === 'thread' ? null : () => ws.sendTyping(scopeType, scopeId),
+      onTyping: () => ws.sendTyping(scopeType, scopeId),
       onSchedule: encrypted() ? null : async ({ text, replyToMessageId }) => {
         const at = await pickSendTime();
         if (!at) return false;
@@ -462,10 +477,14 @@ export function mountChat(el, params) {
         } catch (err) { handleError(err, 'm.scheduleFailed'); return false; }
       },
       onPoll: encrypted() ? null : () => openPollSheet(ctxForSheets()),
-      onSticker: kind === 'channel' && detail?.stickers?.length ? async () => {
-        const id = await openStickerSheet(ctxForSheets());
-        if (id) { try { await api.sendChannelMessage(params.serverId, params.channelId, { content: '', stickerId: id }); } catch (err) { handleError(err); } }
-      } : null,
+      onSticker: async () => {
+        const sticker = await openStickerSheet(ctxForSheets());
+        if (!sticker) return;
+        composer.focus();
+        const p = { key: `${Date.now()}${Math.random().toString(36).slice(2, 6)}`, text: '', files: [], sticker: stickerRef(sticker) };
+        pending.push(p); paint(); scrollBottom();
+        deliver(p);
+      },
     });
     paintHeaderActions();
     if (kind === 'channel') api.listServerCommands(params.serverId).then((r) => { botCommands = r.commands || []; }).catch(() => {});
@@ -633,12 +652,25 @@ export function mountChat(el, params) {
       + (kind === 'dm' ? `<button class="m-icon-btn" id="m-call" aria-label="${t('m.callAction')}">${icons.phone(20)}</button>` : '')
       + (kind === 'channel' ? `<button class="m-icon-btn" id="m-threads" aria-label="${t('m.threads')}">${icons.messageSquare(20)}</button>` : '')
       + (kind === 'dm' && encrypted() && !dm().isGroup ? `<button class="m-icon-btn" id="m-verify" aria-label="${t('dmVerify.title')}">${icons.lock(20)}</button>` : '')
+      + (kind === 'thread' && thread && (canEditPost(thread, state.me) || canDeletePost(thread, state.me, { canManage })) ? `<button class="m-icon-btn" id="m-post-menu" aria-label="${t('forum.postActions')}">${icons.more(20)}</button>` : '')
       + `<button class="m-icon-btn" id="m-info" aria-label="${t('m.infoMembers')}">${icons.users(20)}</button>`;
     box.querySelector('#m-call')?.addEventListener('click', () => nav.push('voice', { kind: 'dm', dmId: params.dmId }));
     box.querySelector('#m-verify')?.addEventListener('click', () => openVerifySheet(dm()));
     box.querySelector('#m-search').addEventListener('click', () => nav.push('search', { serverId: params.serverId, channelId: params.channelId, dmId: params.dmId }));
+    box.querySelector('#m-post-menu')?.addEventListener('click', openPostMenu);
     box.querySelector('#m-threads')?.addEventListener('click', () => nav.push('threads', { serverId: params.serverId, channelId: params.channelId }));
     box.querySelector('#m-info').addEventListener('click', () => nav.push('info', { kind, serverId: params.serverId, channelId: params.channelId, dmId: params.dmId, threadId: params.threadId }));
+  }
+
+  async function openPostMenu() {
+    const id = await actionSheet({ items: [
+      canEditPost(thread, state.me) && { id: 'edit', icon: icons.edit(20), label: t('forum.editPost') },
+      canDeletePost(thread, state.me, { canManage }) && { id: 'delete', icon: icons.trash(20), label: t('forum.deletePost'), danger: true },
+    ].filter(Boolean) });
+    if (id === 'edit') editPostSheet(params.serverId, params.channelId, params.threadId);
+    else if (id === 'delete' && await confirmSheet(t('forum.deleteConfirm', { title: thread.title }))) {
+      try { await api.deleteThread(params.serverId, params.channelId, params.threadId); } catch (err) { handleError(err, 'forum.deleteError'); }
+    }
   }
 
   // ---------- interaction ----------
@@ -648,6 +680,15 @@ export function mountChat(el, params) {
     if (img) return openImageViewer(img.dataset.viewer);
     const goto = e.target.closest('[data-goto]');
     if (goto) { const id = Number(goto.dataset.goto); if (!scrollToMessage(id)) { params = { ...params, jumpToMessageId: id }; await loadInitial(); } return; }
+    const ref = e.target.closest('.channel-ref[data-channel-id]');
+    if (ref) {
+      const c = state.serverDetail.get(params.serverId)?.channels.find((x) => x.id === Number(ref.dataset.channelId));
+      if (!c) return;
+      if (c.type === 'voice' || c.type === 'stage') return nav.push('voice', { kind: 'channel', serverId: params.serverId, channelId: c.id });
+      if (c.type === 'forum') return nav.push('forum', { serverId: params.serverId, channelId: c.id });
+      if (c.type === 'notes') return nav.push('notes', { serverId: params.serverId, channelId: c.id });
+      return nav.push('chat', { kind: 'channel', serverId: params.serverId, channelId: c.id });
+    }
     const user = e.target.closest('[data-user]');
     if (user) return openProfileSheet(Number(user.dataset.user), { serverId: params.serverId });
     const eph = e.target.closest('[data-eph-dismiss]');

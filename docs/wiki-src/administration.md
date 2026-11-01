@@ -51,6 +51,50 @@ Stop the server and copy the whole `data/` folder: the database, the configurati
 
 Schedule it with the tool of your choice. If you cannot stop the server, copy at a quiet moment and keep several generations. Test a restore once.
 
+## The admin console
+
+The console is a text interface for the person who runs the server. It starts in the server window when the server is launched from a terminal (no login is needed there, you already control the machine), and optionally over SSH. Type `help` for the list and `help <command>` for details. Destructive commands ask for confirmation; add `--yes` to skip it.
+
+| Command | Does |
+|---|---|
+| `account list/info/create/passwd/delete/disable/enable/roles/grant/revoke/roleperm` | Manage accounts and site roles (`roleperm` adds or removes the console permission on a role, server window only) |
+| `ban`, `unban`, `kick` | Disable or re-enable an account, or disconnect a user |
+| `ipban`, `ipunban` | Ban an IP, range or CIDR, optionally for some minutes |
+| `config list/get/set/reset/path` | Read and change `data/config.json` with validation |
+| `backup create/list/delete/verify/keep/auto/restore` | Backups (see below) |
+| `server stop`, `server restart`, `server cancel` | Stop or restart with an optional countdown in seconds |
+| `status`, `list`, `stats`, `stats watch` | Version, uptime, online users, load and statistics |
+| `announce <text>` | Show a notice to every online user |
+| `log tail/show/level/files` | Live log, recent entries, log level, log files |
+| `ssh status`, `ssh kick <n>` | SSH fingerprint, address and sessions |
+
+`server restart` needs the supervisor: start the server with `npm start`, `start-server.bat` or `start-server.sh`. These restart it when it exits with code 42. Without them `server restart` only stops the server.
+
+### SSH access
+
+1. Set `ssh.enabled` to `true` (`config set ssh.enabled true`, or edit `data/config.json`) and restart. By default it listens on `127.0.0.1` port `2222`, so only the machine itself can connect.
+2. Give the account access: the **Owner** can always use the console; staff need the site permission **Manage Console**. Site Administrator does not include it. If nobody has it yet (for example after an upgrade), run `account roleperm Owner +console` in the server window.
+3. In PuTTY enter the host and port, choose connection type SSH and open it. On the first connection PuTTY shows the host key fingerprint. Compare it with `ssh status` in the server window (or the `[ssh] listening` line in the log) before pressing Accept. A different fingerprint later means a different server or an attack.
+4. Log in with your MeshCrowd username and password. If the account uses two-factor authentication you are asked for the code after the password. Clients that can only send a password (no keyboard-interactive prompt) cannot sign in to 2FA accounts.
+
+To reach it from other machines set `ssh.listenAddress` (for example `0.0.0.0`) and open the port in your firewall. Prefer a VPN or an SSH tunnel and leave it on localhost if you can; the server logs a warning when it listens on a non-loopback address.
+
+::: warn Security notes
+Accounts with strengthened sign-in never send their password to the web server, but SSH has no browser to derive the key. Over SSH the server therefore receives the plaintext password inside the encrypted SSH channel, derives the key in memory, checks it and discards it. It is never stored or logged. Five failed logins from one address lock that address for 10 minutes (one network behind a NAT shares that lock, so an attacker can lock you out for a while; use the server window to recover). Sessions end after `ssh.idleTimeoutMinutes` of inactivity and at most `ssh.maxSessions` run at once.
+:::
+
+### Console backups
+
+`backup create` writes `data/backups/backup-<UTC time>-<manual|scheduled|pre-restore>.zip` containing a consistent database snapshot, `config.json` and small media (avatars, banners, emoji, stickers, sounds and icons; files above `backup.maxFileMb` are skipped). Not included: chat attachments, Sites, certificates and the SSH host key. Secrets such as the TURN secret are replaced by a placeholder unless `backup.includeSecrets` is true. `backup verify` checks the archive against its hashes.
+
+The newest `backup.keep` backups are kept (default 7), older ones are deleted after each backup. Copies made right before a restore are kept separately (`backup.preRestoreKeep`). `backup auto 03:30` schedules a daily backup at that server-local time, `backup auto off` stops it.
+
+`backup restore <name>` only works in the server window, never over SSH. It verifies the archive, saves the current database as a pre-restore backup, replaces the database, media and configuration and restarts the server. Live secrets and certificates are kept.
+
+### Logs
+
+Logs go to `data/logs/dismesh-YYYY-MM-DD.log`, one file per day, a new numbered file when one grows past `logging.maxFileMb`, and files older than `logging.keepDays` are deleted. Levels are `debug`, `info`, `warn` and `error`; `log level warn` changes it immediately and saves it. Logins and failed logins (with the IP), account and role changes, bans, console commands and the server lifecycle are logged. Passwords, tokens, keys and message content never are.
+
 ## Updating
 
 Take a backup, stop the server, replace the program files (keeping `data/`) and start again. Database changes are applied automatically. See [Installation](installation.html).

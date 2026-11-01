@@ -1,6 +1,6 @@
 import { bus } from '../bus.js';
 import { api } from '../api.js';
-import { state, getServerDetail, isUnread, upsertServer, setReadState, setServerLayout, serverPrefFor, setServerPref, isServerMuted } from '../state.js';
+import { state, getServerDetail, isUnread, getUnreadDmCount, upsertServer, setReadState, setServerLayout, serverPrefFor, setServerPref, isServerMuted } from '../state.js';
 import { icons, FOLDER_BUILTIN_ICONS } from '../icons.js';
 import { serverIconHtml, escapeHtml, apiErrorMessage, toast } from '../utils.js';
 import { openModal, openContextMenu } from './modal.js';
@@ -47,6 +47,7 @@ export function mountServerRail(container) {
   const offServers = bus.on('state:servers', render);
   const offView = bus.on('state:view', render);
   const offRead = bus.on('state:readState', render);
+  const offDms = bus.on('state:dms', render);
   const offDetail = bus.on('state:serverDetail', render);
   const offLayout = bus.on('state:serverLayout', render);
   const offRemote = bus.on('state:remoteServers', render);
@@ -146,10 +147,12 @@ export function mountServerRail(container) {
   function render() {
     const activeType = state.view.type;
     const layout = resolveLayout();
+    const dmUnread = getUnreadDmCount();
     container.innerHTML = `
-      <div class="rail-item home ${activeType === 'home' || activeType === 'friends' ? 'active' : ''}" data-action="home">
+      <div class="rail-item home ${activeType === 'home' || activeType === 'friends' ? 'active' : ''} ${dmUnread > 0 ? 'unread' : ''}" data-action="home">
         <div class="rail-pill"></div>
         <div class="rail-icon">${icons.dismesh(26)}</div>
+        ${dmUnread > 0 ? `<div class="rail-count">${dmUnread > 99 ? '99+' : dmUnread}</div>` : ''}
       </div>
       <div class="rail-sep"></div>
       ${layout.map((entry) => (entry.type === 'folder' ? renderFolderItem(entry) : renderServerItem(state.servers.find((s) => s.id === entry.id))))
@@ -866,7 +869,7 @@ export function mountServerRail(container) {
   }
 
   function destroy() {
-    offServers(); offView(); offRead(); offDetail(); offLayout(); offRemote(); offMsg(); hideTooltip();
+    offServers(); offView(); offRead(); offDms(); offDetail(); offLayout(); offRemote(); offMsg(); hideTooltip();
   }
 
   return { destroy };

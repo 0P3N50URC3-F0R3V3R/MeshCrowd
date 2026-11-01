@@ -34,6 +34,7 @@ const COLUMN_MIGRATIONS = [
   { table: 'servers', column: 'visibility', ddl: "ALTER TABLE servers ADD COLUMN visibility TEXT NOT NULL DEFAULT 'private'" },
   { table: 'servers', column: 'auto_join', ddl: 'ALTER TABLE servers ADD COLUMN auto_join INTEGER NOT NULL DEFAULT 0' },
   { table: 'users', column: 'banner_color', ddl: "ALTER TABLE users ADD COLUMN banner_color TEXT NOT NULL DEFAULT ''" },
+  { table: 'users', column: 'avatar_bg', ddl: 'ALTER TABLE users ADD COLUMN avatar_bg INTEGER NOT NULL DEFAULT 0' },
   { table: 'users', column: 'banner_path', ddl: 'ALTER TABLE users ADD COLUMN banner_path TEXT' },
   { table: 'users', column: 'card_color', ddl: "ALTER TABLE users ADD COLUMN card_color TEXT NOT NULL DEFAULT ''" },
   { table: 'users', column: 'card_path', ddl: 'ALTER TABLE users ADD COLUMN card_path TEXT' },
@@ -102,6 +103,8 @@ const COLUMN_MIGRATIONS = [
   { table: 'channels', column: 'nsfw', ddl: 'ALTER TABLE channels ADD COLUMN nsfw INTEGER NOT NULL DEFAULT 0' },
   { table: 'users', column: 'nsfw_ack_at', ddl: 'ALTER TABLE users ADD COLUMN nsfw_ack_at TEXT' },
   { table: 'servers', column: 'verification_level', ddl: 'ALTER TABLE servers ADD COLUMN verification_level INTEGER NOT NULL DEFAULT 0' },
+  { table: 'notifications_outbox', column: 'kind', ddl: 'ALTER TABLE notifications_outbox ADD COLUMN kind TEXT' },
+  { table: 'notifications_outbox', column: 'extra_json', ddl: 'ALTER TABLE notifications_outbox ADD COLUMN extra_json TEXT' },
   { table: 'roles', column: 'icon_emoji', ddl: 'ALTER TABLE roles ADD COLUMN icon_emoji TEXT' },
   { table: 'roles', column: 'icon_path', ddl: 'ALTER TABLE roles ADD COLUMN icon_path TEXT' },
   { table: 'messages', column: 'interaction_command', ddl: 'ALTER TABLE messages ADD COLUMN interaction_command TEXT' },
@@ -144,6 +147,28 @@ for (const { table, column, ddl } of COLUMN_MIGRATIONS) {
     }
   }
 }
+// MANAGE_CONSOLE joined the Owner role after installs already existed, and older Owner roles also
+// miss later flags (PRUNE_DATA, MANAGE_AI), so an exact 511 match skips real installs. The role is
+// recognised by how setup creates it: named Owner, holding SITE_ADMINISTRATOR, and assigned to the
+// lowest-id real account. Gated on a meta marker (fresh DBs just set it) because matching by role
+// name on every boot would let anyone able to name/edit a role escalate to console access; a second
+// role an admin names Owner is never the first account's role, so it is not touched.
+function migrateOwnerConsoleBit() {
+  if (db.prepare("SELECT 1 FROM meta WHERE key = 'owner_console_bit_migrated'").get()) return;
+  const { SITE_PERMISSIONS, OWNER_SITE_PERMISSIONS } = require('../lib/permissions');
+  const first = db.prepare("SELECT id FROM users WHERE username != '__webhook__' AND is_bot = 0 ORDER BY id LIMIT 1").get();
+  let changes = 0;
+  if (first) {
+    changes = db.prepare(
+      `UPDATE site_roles SET permissions = permissions | ?
+        WHERE name = 'Owner' AND (permissions & ?) != 0
+          AND id IN (SELECT role_id FROM user_site_roles WHERE user_id = ?)`,
+    ).run(OWNER_SITE_PERMISSIONS, SITE_PERMISSIONS.SITE_ADMINISTRATOR, first.id).changes;
+  }
+  db.prepare("INSERT INTO meta (key, value) VALUES ('owner_console_bit_migrated', '1')").run();
+  if (changes) console.log('[db] migrated: Owner site role gained MANAGE_CONSOLE');
+}
+migrateOwnerConsoleBit();
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_servers_vanity ON servers(vanity_code) WHERE vanity_code IS NOT NULL');
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_bots_api_token ON bots(api_token_hash) WHERE api_token_hash IS NOT NULL');
 // Created after the column migration above so it also works on a DB that predates passport_id.
@@ -198,4 +223,4 @@ if (isNewDb) {
   console.log('[db] fresh database created at', DB_PATH);
 }
 
-module.exports = { db, isNewDb, DATA_DIR, WEBHOOK_SYSTEM_USER_ID };
+module.exports = { db, isNewDb, DATA_DIR, WEBHOOK_SYSTEM_USER_ID, migrateOwnerConsoleBit };

@@ -48,4 +48,22 @@ function deleteSticker(serverId, stickerId) {
   return sticker;
 }
 
-module.exports = { uploadSticker, createSticker, deleteSticker };
+// A DM has no server, so the stickers usable there are those of every server the sender is a member
+// of (the same set the per-server picker would offer them, merged). There are no global stickers.
+function stickersForUser(userId) {
+  return db.prepare(
+    `SELECT st.*, s.name AS serverName FROM stickers st
+       JOIN servers s ON s.id = st.server_id
+       JOIN server_members sm ON sm.server_id = st.server_id AND sm.user_id = ?
+      ORDER BY s.name COLLATE NOCASE ASC, st.name COLLATE NOCASE ASC`
+  ).all(userId).map(({ serverName, ...st }) => ({ ...st, serverName }));
+}
+
+function userCanUseSticker(userId, stickerId) {
+  return !!db.prepare(
+    `SELECT 1 FROM stickers st JOIN server_members sm ON sm.server_id = st.server_id AND sm.user_id = ?
+      WHERE st.id = ?`
+  ).get(userId, Number(stickerId));
+}
+
+module.exports = { uploadSticker, createSticker, deleteSticker, stickersForUser, userCanUseSticker };
