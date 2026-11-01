@@ -22,6 +22,15 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Shutdown is ordered with per-component timeouts and a watchdog; signals during a countdown take effect immediately.
 - Federation heartbeat and outbox worker errors go to the log files instead of only the console.
 
+#### Known issues (found in QA, fixes pending)
+- Over SSH, `ban`, `account disable` and `account delete` can still target your own account or the last console-capable Owner (the local console is unaffected and can always recover).
+- Local-only commands (`account roleperm`, `backup restore`) refused over SSH print "unknown command ... did you mean ...?" instead of a "local console only" message.
+- Android (`/m/`): the channel unread marker and the Servers-tab badge update only after switching tabs, not live.
+- The unread line and "N new messages" ribbon clear on scroll but not when the whole backlog already fits on screen.
+- Console command audit lines are written at INFO, so they disappear at `logging.level warn`; `config set` is logged with masked arguments even for non-secret keys.
+- SSH clients that offer both password and keyboard-interactive count two failures per wrong password, so the 5-attempt IP lockout trips after 3 tries.
+- Not yet verified by hand: Electron client, Android emulator/device, TOTP and public-key login over SSH, the local terminal console, and the `start-server.bat` restart loop on Windows (supervisor restart was verified over SSH).
+
 ### 2026-10-31
 #### Build
 - Android APK 3.14 (versionCode 17) built (AndroidReleases/MeshCrowd-3.14.apk); portable desktop client rebuilt from electron/ (package version 0.9.0, no change to the shipped files).
