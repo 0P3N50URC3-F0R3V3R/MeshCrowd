@@ -3,6 +3,10 @@
 
 Visit the Project's Webpage: https://0p3n50urc3-f0r3v3r.github.io/MeshCrowd/index.html
 
+Do you like my work? 
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%23FFDD00.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/meshcrowd)
+
 **A self-hosted chat platform you run on your own machine or network.**
 
 MeshCrowd gives a group of people servers, channels, roles, DMs, voice/video calls and screen
