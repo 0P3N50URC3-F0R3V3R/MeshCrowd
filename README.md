@@ -15,7 +15,7 @@ with AI assisted tools, but it is underwent a supervision/testing/fixing too by 
 ## Do you like my work? 
 You can support this server development if you want to.
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%23FFDD00.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/meshcrowd)
+<a href="https://buymeacoffee.com/meshcrowd" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="160"></a>
 
 ## Screenshots
 <img width="320" height="200" alt="chat-dev" src="https://github.com/user-attachments/assets/2377b699-ceed-48b5-9dbe-7a47e89ec89c" />
