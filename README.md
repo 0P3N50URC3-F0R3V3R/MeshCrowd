@@ -3,21 +3,19 @@
 
 Visit the Project's Webpage: https://0p3n50urc3-f0r3v3r.github.io/MeshCrowd/index.html
 
-Do you like my work? 
-
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%23FFDD00.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/meshcrowd)
-
 **A self-hosted chat platform you run on your own machine or network.**
 
 MeshCrowd gives a group of people servers, channels, roles, DMs, voice/video calls and screen
 sharing without any third-party service. One Node.js process serves everything: the API, the
 realtime WebSocket, and the web client. Data lives in a single SQLite file. The server has no
 native npm addons and ships with its own Node runtime, so you can copy it to an offline machine
-and start it with a double-click.
+and start it with a double-click. Not secret, that this project is partially VIBE-Coded and made 
+with AI assisted tools, but it is underwent a supervision/testing/fixing too by human beings also.
 
+## Do you like my work? 
+You can support this server development if you want to.
 
-Not secret, that this project is partially VIBE-Coded and made with AI assisted tools, but it is 
-underwent a supervision/testing/fixing too by human beings also.
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%23FFDD00.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/meshcrowd)
 
 ## Screenshots
 <img width="320" height="200" alt="chat-dev" src="https://github.com/user-attachments/assets/2377b699-ceed-48b5-9dbe-7a47e89ec89c" />
@@ -607,3 +605,9 @@ Full detail: [docs/ARCHITECTURE.md#security-model](docs/ARCHITECTURE.md#security
 - **[docs/API.md](docs/API.md)**: complete REST and WebSocket API reference
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**: data model, permission engine, realtime layer,
   voice mesh, security model
+
+## Do you like my work? 
+You can support this server development if you want to.
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%23FFDD00.svg?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/meshcrowd)
+
