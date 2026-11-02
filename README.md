@@ -1,5 +1,13 @@
-# MeshCrowd 
-<img width="64" height="64" alt="logo" src="https://github.com/user-attachments/assets/71f3a79b-d700-4d38-b396-de1ea6bdf50d" /> 
+## MeshCrowd 
+<div align="center"><img width="960" height="333" alt="MeshCrowd-Logo-960" src="https://github.com/user-attachments/assets/52f4e9ac-1f9f-477b-88be-70f5d428da46" />
+
+
+<!-- Fő technológiai és projekt jelvények -->
+[![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge&logo=gnu&logoColor=white)](https://www.gnu.org/licenses/gpl-3.0)
+[![Status](https://img.shields.io/badge/Status-Development-orange?style=for-the-badge)](https://github.com/0p3n50urc3-f0r3v3r/MeshCrowd)
+</div>
 
 Visit the Project's Webpage: https://0p3n50urc3-f0r3v3r.github.io/MeshCrowd/index.html
 
