@@ -20,11 +20,9 @@ and start it with a double-click. Not secret, that this project is partially VIB
 with AI assisted tools, but it is underwent a supervision/testing/fixing too by human beings also.
 
 ## Do you like my work? 
-You can support this server development if you want to.
+You can support this server development if you want to.<br><a href="https://buymeacoffee.com/meshcrowd" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="160"></a>
 
-<a href="https://buymeacoffee.com/meshcrowd" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="160"></a>
-
-Check the webpage too: [![Webpage](https://img.shields.io/badge/Webpage-Visit%20MeshCrowd-10b981?style=for-the-badge&logo=google-chrome&logoColor=white)](https://0p3n50urc3-f0r3v3r.github.io/MeshCrowd/index.html)
+Check the webpage too:<br>[![Webpage](https://img.shields.io/badge/Webpage-Visit%20MeshCrowd-10b981?style=for-the-badge&logo=google-chrome&logoColor=white)](https://0p3n50urc3-f0r3v3r.github.io/MeshCrowd/index.html)
 
 ## Screenshots
 <img width="320" height="200" alt="chat-dev" src="https://github.com/user-attachments/assets/2377b699-ceed-48b5-9dbe-7a47e89ec89c" />
