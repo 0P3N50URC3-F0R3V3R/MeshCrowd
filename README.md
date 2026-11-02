@@ -3,13 +3,12 @@
 
 
 <!-- Fő technológiai és projekt jelvények -->
+[![Webpage](https://img.shields.io/badge/Webpage-Visit%20MeshCrowd-10b981?style=for-the-badge&logo=google-chrome&logoColor=white)](https://0p3n50urc3-f0r3v3r.github.io/MeshCrowd/index.html)
 [![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![SQLite](https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge&logo=gnu&logoColor=white)](https://www.gnu.org/licenses/gpl-3.0)
 [![Status](https://img.shields.io/badge/Status-Development-orange?style=for-the-badge)](https://github.com/0p3n50urc3-f0r3v3r/MeshCrowd)
 </div>
-
-Visit the Project's Webpage: https://0p3n50urc3-f0r3v3r.github.io/MeshCrowd/index.html
 
 **A self-hosted chat platform you run on your own machine or network.**
 
@@ -24,6 +23,8 @@ with AI assisted tools, but it is underwent a supervision/testing/fixing too by 
 You can support this server development if you want to.
 
 <a href="https://buymeacoffee.com/meshcrowd" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="160"></a>
+
+Check the webpage too: [![Webpage](https://img.shields.io/badge/Webpage-Visit%20MeshCrowd-10b981?style=for-the-badge&logo=google-chrome&logoColor=white)](https://0p3n50urc3-f0r3v3r.github.io/MeshCrowd/index.html)
 
 ## Screenshots
 <img width="320" height="200" alt="chat-dev" src="https://github.com/user-attachments/assets/2377b699-ceed-48b5-9dbe-7a47e89ec89c" />
