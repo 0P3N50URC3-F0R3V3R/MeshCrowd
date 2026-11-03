@@ -385,6 +385,7 @@ export function mountServerRail(container) {
       const forever = Date.parse(pref.mutedUntil) > Date.now() + 365 * 24 * 3600 * 1000;
       return {
         label: t('serverRail.unmuteServerMenuItem'),
+        icon: icons.bell,
         sub: forever ? t('serverRail.mutedForeverSub') : t('serverRail.mutedUntilSub', { time: new Date(pref.mutedUntil).toLocaleString() }),
         onClick: () => updateServerPref(serverId, { mute: null }),
       };
@@ -392,6 +393,7 @@ export function mountServerRail(container) {
     const durations = [['mute15m', 15], ['mute1h', 60], ['mute3h', 180], ['mute8h', 480], ['mute24h', 1440]];
     return {
       label: t('serverRail.muteServerMenuItem'),
+      icon: icons.bellOff,
       submenu: [
         ...durations.map(([key, minutes]) => ({ label: t(`serverRail.${key}`), onClick: () => updateServerPref(serverId, { mute: { minutes } }) })),
         { label: t('serverRail.muteForever'), onClick: () => updateServerPref(serverId, { mute: { forever: true } }) },

@@ -25,6 +25,11 @@ class AndroidBridge(private val activity: MainActivity) {
         .toString()
 
     @JavascriptInterface
+    fun setServerName(name: String) {
+        settings.serverName = name.trim().take(80).ifEmpty { null }
+    }
+
+    @JavascriptInterface
     fun setPollMinutes(minutes: Int) {
         settings.pollMinutes = minutes
         PollControl.apply(activity)

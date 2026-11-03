@@ -1,9 +1,10 @@
+import { translateError } from './i18n.js';
 // Thin fetch wrappers over the Dismesh REST API. All calls are same-origin,
 // credentials always included so the httpOnly session cookie is sent.
 
 class ApiError extends Error {
   constructor(status, body) {
-    super((body && body.error) || `request failed (${status})`);
+    super(translateError((body && body.error) || `request failed (${status})`));
     this.status = status;
     this.body = body;
   }

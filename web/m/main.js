@@ -21,6 +21,13 @@ import './views/index.js';
 
 const root = document.getElementById('app');
 
+function rememberServerName() {
+  const name = (state.servers.find((s) => s.kind === 'site') || {}).name;
+  if (!name) return;
+  try { localStorage.setItem('mc_server_name', name); } catch { /* storage unavailable */ }
+  try { window.MeshCrowdAndroid?.setServerName?.(name); } catch { /* not in the app */ }
+}
+
 async function boot() {
   installKeyboardSupport();
   installReauthGate();
@@ -36,6 +43,7 @@ async function boot() {
   applyStaticI18n();
   setMe(user);
   await loadAll();
+  rememberServerName();
   root.innerHTML = '<div id="m-conn" class="m-conn hidden"></div><div id="m-callbar" class="m-callbar" hidden></div><div id="m-host" class="m-host"></div>';
   document.getElementById('m-conn').textContent = t('m.offline');
   wireRealtime();

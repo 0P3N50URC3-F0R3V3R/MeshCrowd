@@ -79,6 +79,14 @@ export function mountChannelSidebar(container, detail) {
         if (e.target.closest('[data-gear]')) return;
         bus.emit('ui:navigate', { type: 'server', serverId: server.id, channelId });
       });
+      node.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const ch = channels.find((c) => c.id === channelId);
+        if (!ch) return;
+        const items = [channelMuteItem(ch)];
+        if (canManageChannels) items.push('sep', { label: t('sidebar.channelSettingsMenuItem'), icon: icons.gear, onClick: () => openServerSettings(server.id, { tab: 'channels', focusChannelId: channelId }) });
+        openContextMenu(e.clientX, e.clientY, items);
+      });
       if (!canManageChannels) return;
       node.addEventListener('dragstart', (e) => {
         draggingChannelId = channelId;
@@ -218,6 +226,20 @@ export function mountChannelSidebar(container, detail) {
     });
   }
 
+  function channelMuteItem(ch) {
+    if (isScopeMuted('channel', ch.id)) {
+      const until = state.notificationMuteUntil.get(`channel:${ch.id}`);
+      const forever = !until || Date.parse(until) > Date.now() + 365 * 24 * 3600 * 1000;
+      return {
+        label: t('sidebar.unmuteChannelMenuItem'),
+        icon: icons.bell,
+        sub: forever ? t('serverRail.mutedForeverSub') : t('serverRail.mutedUntilSub', { time: new Date(until).toLocaleString() }),
+        onClick: () => unmute('channel', ch.id),
+      };
+    }
+    return { label: t('sidebar.muteChannelMenuItem'), icon: icons.bellOff, submenu: muteSubmenu('channel', ch.id) };
+  }
+
   function groupByCategory(chs, cats) {
     const byCat = new Map();
     for (const ch of chs) {
@@ -253,7 +275,7 @@ export function mountChannelSidebar(container, detail) {
         <span class="ch-icon">${ch.icon_path
           ? `<img src="${escapeHtml(ch.icon_path)}" style="width:16px;height:16px;border-radius:4px;object-fit:cover">`
           : (CHANNEL_ICON[ch.type] || icons.hash)(16)}</span>
-        <span class="ch-name">${escapeHtml(ch.name)}</span>${ch.nsfw ? `<span class="nsfw-badge" title="${escapeHtml(t('ageGate.badgeTitle'))}">18+</span>` : ''}
+        <span class="ch-name">${escapeHtml(ch.name)}</span>${isChannelMuted(server.id, ch.id) ? `<span class="ch-muted" title="${escapeHtml(t('dmMenu.muted'))}">${icons.bellOff(12)}</span>` : ''}${ch.nsfw ? `<span class="nsfw-badge" title="${escapeHtml(t('ageGate.badgeTitle'))}">18+</span>` : ''}
         ${(ch.type === 'voice' || ch.type === 'stage') ? voiceCountBadge(ch) : ''}
         ${canManageChannels ? `<span class="ch-gear" data-gear="${ch.id}">${icons.gear(16)}</span>` : ''}
       </div>${(ch.type === 'voice' || ch.type === 'stage') ? voiceRoster(ch) : ''}`;

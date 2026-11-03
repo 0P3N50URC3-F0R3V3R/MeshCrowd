@@ -161,7 +161,7 @@ export function openContextMenu(x, y, items) {
     menu.innerHTML = list.map((it, idx) => {
       if (it === 'sep') return '<div class="cm-sep"></div>';
       if (it.emojiRow) return `<div class="cm-emoji-row" data-idx="${idx}">${it.emojiRow.map((e) => `<button type="button" class="cm-emoji" data-emoji="${escapeHtml(e)}">${escapeHtml(e)}</button>`).join('')}</div>`;
-      const trailing = it.submenu ? icons.chevronRight(16)
+      const trailing = it.submenu ? (it.icon ? `<span style="display:inline-flex;align-items:center;gap:6px">${it.icon(16)}${icons.chevronRight(16)}</span>` : icons.chevronRight(16))
         : typeof it.checked === 'boolean' ? `<span class="cm-check ${it.checked ? 'on' : ''}">${it.checked ? icons.check(14) : ''}</span>`
           : it.icon ? it.icon(16) : '';
       return `<div class="cm-item ${it.danger ? 'danger' : ''} ${it.disabled ? 'disabled' : ''}" data-idx="${idx}">

@@ -1,7 +1,7 @@
 import { icons } from './icons.js';
 import { EMOJI_SHORTCODES } from './emojiShortcodes.js';
 import { linkChannelRefs } from './channelRefs.mjs';
-import { t } from './i18n.js';
+import { t, translateError } from './i18n.js';
 
 export function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, (c) => ({
@@ -410,7 +410,7 @@ export function refocusInput(input) {
 }
 
 export function apiErrorMessage(err, fallback = 'something went wrong') {
-  if (err && err.body && err.body.error) return err.body.error;
-  if (err && err.message) return err.message;
+  if (err && err.body && err.body.error) return translateError(err.body.error);
+  if (err && err.message) return translateError(err.message);
   return fallback;
 }

@@ -95,6 +95,29 @@ export function t(key, vars) {
   return str.replace(/\{(\w+)\}/g, (_, name) => (Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : `{${name}}`));
 }
 
+// Server error strings are English and stable; lang files map each one (apiErrors) to the
+// active language. Entries holding {placeholders} match as patterns. Unknown text passes through.
+let errorPatterns = null;
+let errorPatternsFor = null;
+export function translateError(message) {
+  const map = dict && dict.apiErrors;
+  if (!map || typeof message !== 'string') return message;
+  if (Object.prototype.hasOwnProperty.call(map, message)) return map[message];
+  if (errorPatternsFor !== map) {
+    errorPatternsFor = map;
+    errorPatterns = Object.keys(map).filter((k) => k.includes('{')).map((k) => {
+      const names = [];
+      const src = k.replace(/[.*+?^$()|[\]\\]/g, '\\$&').replace(/\{(\w+)\}/g, (_, n) => { names.push(n); return '(.+?)'; });
+      return { re: new RegExp(`^${src}$`), names, tpl: map[k] };
+    });
+  }
+  for (const { re, names, tpl } of errorPatterns) {
+    const m = re.exec(message);
+    if (m) return tpl.replace(/\{(\w+)\}/g, (_, n) => { const i = names.indexOf(n); return i >= 0 ? m[i + 1] : `{${n}}`; });
+  }
+  return message;
+}
+
 // Fills any `data-i18n="key"` static markup once the language has resolved.
 export function applyStaticI18n(root = document) {
   root.querySelectorAll('[data-i18n]').forEach((el) => {

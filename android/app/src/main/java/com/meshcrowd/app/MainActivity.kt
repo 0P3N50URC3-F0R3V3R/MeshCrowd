@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var settings: SettingsStore
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     private var offlineShown = false
+    private var pendingAppUrl: String? = null
 
     private val pickFiles = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val data = result.data
@@ -157,7 +158,10 @@ class MainActivity : AppCompatActivity() {
         val origin = settings.origin ?: return
         offlineShown = false
         // The server picks the mobile UI from the user agent; /m/ is requested directly to skip a redirect.
-        webView.loadUrl(origin + "/m/" + (deepLink ?: ""))
+        // A local loading screen shows instantly while the (possibly slow) network request is in flight.
+        pendingAppUrl = origin + "/m/" + (deepLink ?: "")
+        val q = "name=" + Uri.encode(settings.serverName ?: "") + "&host=" + Uri.encode(Uri.parse(origin).authority ?: origin)
+        webView.loadUrl("$SPLASH_URL?$q")
         webView.requestFocus()
     }
 
@@ -289,6 +293,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onPageFinished(view: WebView, url: String) {
+            if (url.startsWith(SPLASH_URL)) {
+                val next = pendingAppUrl ?: return
+                pendingAppUrl = null
+                view.loadUrl(next)
+                return
+            }
             CookieManager.getInstance().flush()
         }
     }
@@ -310,5 +320,9 @@ class MainActivity : AppCompatActivity() {
         override fun onPermissionRequest(request: PermissionRequest) { runOnUiThread { handleMediaRequest(request) } }
 
         override fun onPermissionRequestCanceled(request: PermissionRequest) { if (mediaRequest === request) mediaRequest = null }
+    }
+
+    private companion object {
+        const val SPLASH_URL = "file:///android_asset/splash.html"
     }
 }

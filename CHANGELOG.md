@@ -6,6 +6,10 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ### 2026-11-03
 #### Added
+- Mute and unmute from the right-click menu: right-click a channel in the sidebar for Mute Channel (15 min to forever) / Unmute Channel, with a bell icon and the time left; muted channels show a small muted bell. The server menu's Mute / Unmute Server items got the same icons.
+- Server error messages (wrong password, invalid invite, permissions, limits and more, about 330 of them) are now translated: the app maps each server message to the chosen language through a new `apiErrors` section in `lang/*.json` (English and Hungarian); unknown messages still show as sent. Covers web, desktop and Android.
+- Android: the app icon, adaptive/themed icon and notification icon are now the ghost.
+- Android: loading screen. A local splash (ghost, "MeshCrowd - Loading <server name>" and the 3D ring loader from the desktop client) shows at once while the server answers, instead of a gray screen; the same loader is shown while the page starts. A system splash with the ghost covers cold start.
 - Site settings: upload a picture as the Site's icon (or remove it), switch the icon background off and pick its color. A Site without a picture shows the globe, on the chosen color if one is set.
 - Server icon background: in Server Settings > Overview you can switch the plate behind the server icon off (transparent icons then show alone, also on hover and when selected) and pick its color. A server without an icon always shows its initials on the plate, in the chosen color. Existing servers keep their current look (background on). Works on web, desktop and Android.
 - Calls (STUN/TURN) with a dynamic public IP: Admin Panel > Calls can re-read the WAN address on a schedule (default every 5 minutes) from the router via UPnP, from a STUN server you name, or from a URL you name, so no third party is needed. When it changes, the new address is stored in `externalIp`, the old one kept as `previousIp`, and the built-in server restarts; private/CGNAT results are rejected. New `turn.autoIp*` settings, a "Save and check now" button and a status line.

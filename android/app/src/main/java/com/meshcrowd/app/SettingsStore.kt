@@ -36,9 +36,14 @@ class SettingsStore(context: Context) {
         get() = prefs.getLong("lastNotificationId", 0L)
         set(value) = prefs.edit().putLong("lastNotificationId", value).apply()
 
+    // Display name of the server, reported by the page once it knows it; only used to word the loading screen.
+    var serverName: String?
+        get() = prefs.getString("serverName", null)
+        set(value) = prefs.edit().putString("serverName", value).apply()
+
     val configured: Boolean get() = !origin.isNullOrEmpty()
 
     fun clearServer() {
-        prefs.edit().remove("origin").remove("pin").remove("lastNotificationId").apply()
+        prefs.edit().remove("origin").remove("pin").remove("serverName").remove("lastNotificationId").apply()
     }
 }
