@@ -480,6 +480,8 @@ export async function mountShell(root) {
   const screeningShown = new Set(); // servers whose rules prompt was already offered this session
 
   async function navigate(view) {
+    // The empty "no conversation selected" page is never shown: Home means the Friends tab.
+    if (view.type === 'home') view = { type: 'friends', tab: 'online' };
     setView(view);
     saveLastLocation(view);
     if (view.type === 'server') {

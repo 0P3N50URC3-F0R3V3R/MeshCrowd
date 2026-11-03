@@ -18,7 +18,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Direct messages can now be deleted: "Delete Conversation" (web, desktop, Android) removes a 1:1 for you. The other person is told the conversation was closed and asked whether to delete it too (Cancel keeps the history as a read-only archive; the prompt also reappears as a banner), and sending into a closed conversation is refused. Once both sides delete, the history is wiped, so messaging again starts a fresh conversation (it can be unencrypted again). "Close Conversation" still only hides it.
 - Invisible mode: no typing indicator, read receipts ("Seen") stop advancing while invisible and stay hidden afterwards, no custom status shown, cannot be rung by DM calls, and cannot join any voice or stage channel or DM call (switching to invisible leaves the current call). Messages still arrive normally. Admin Panel still shows real online state.
 - The global notification bell in the top bar and the Android Notifications tab now use an inbox icon, so it no longer looks like the per-channel notification settings bell.
-- Clicking the MeshCrowd logo at the top of the server rail (web and desktop) opens the Friends tab instead of the empty "no conversation selected" page.
+- Clicking the MeshCrowd logo at the top of the server rail (web and desktop) selects the Friends tab; the empty "no conversation selected" page is gone everywhere (also on startup and after leaving a server or group).
 - Profile edits (name, avatar, avatar background, banner, card, status) now reach other users and your own other devices live; already rendered messages update in place without a re-render, so scroll position and drafts stay put. DM partners also receive profile updates.
 
 ### 2026-11-01
