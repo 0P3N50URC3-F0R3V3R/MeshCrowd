@@ -1,7 +1,7 @@
 // Pure DM ratchet: two one-way symmetric chains per conversation (one per sender direction), seeded
 // from the X25519 shared secret. No DOM, network or storage - callers persist the returned state.
 // A state value is invalidated by the call that consumes it (its superseded keys are wiped).
-import sodium from 'libsodium-wrappers-sumo';
+import sodium from './sodium.mjs';
 
 export const MAX_SKIPPED = 1000;
 export const MAX_CHAIN_INDEX = 2 ** 31 - 1;

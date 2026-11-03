@@ -1,7 +1,7 @@
 // Safety numbers: a short numeric fingerprint of the two identity keys of a conversation, shown
 // to both people so they can compare it over a channel the server does not control. Pure: no DOM,
 // network or storage.
-import sodium from 'libsodium-wrappers-sumo';
+import sodium from './sodium.mjs';
 
 const LABEL = 'meshcrowd-safety-v1';
 const ITERATIONS = 5200;

@@ -1,7 +1,7 @@
 // Pure crypto primitives for E2EE identity keys — no DOM, no network, no storage. Every exported
 // function is safe to call from a browser or under plain `node --test`; libsodium-wrappers-sumo resolves
 // via the import map in web/index.html in the browser, and via normal node_modules in tests.
-import sodium from 'libsodium-wrappers-sumo';
+import sodium from './sodium.mjs';
 
 export async function generateIdentityKeypair() {
   await sodium.ready;

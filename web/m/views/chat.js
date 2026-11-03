@@ -12,6 +12,7 @@ import { ensureServerDetail } from '../data.js';
 import { handleError } from '../lib/errors.js';
 import { onLongPress } from '../lib/longPress.js';
 import { getPref, setPref } from '../lib/prefs.js';
+import { readMessages, writeMessages, deleteMessages } from '../lib/stateCache.js';
 import { androidBridge } from '../lib/androidBridge.js';
 import { mergeMessages, applyUpdate, applyDelete, reconcileLatest, dropMatchingPending, windowReachesLatest } from '../lib/messageList.mjs';
 import { dmTitle } from '../lib/dmPreview.mjs';
@@ -253,9 +254,34 @@ export function mountChat(el, params) {
     return list;
   }
 
+  const cacheKey = () => `${state.me.id}:${scopeKey}`;
+  // Last visit's newest messages, drawn before the network answers. Encrypted chats are never stored.
+  let paintedFromCache = false;
+  async function paintCached() {
+    if (encrypted() || params.jumpToMessageId) return;
+    const cached = await readMessages(cacheKey());
+    if (!cached || !cached.length || destroyed || messages.length) return;
+    messages = cached;
+    paintedFromCache = true;
+    paint();
+    scrollBottom();
+  }
+  function saveCached() {
+    if (encrypted() || !isLatest || params.jumpToMessageId || messages.some((m) => m.isEncrypted)) return;
+    writeMessages(cacheKey(), messages);
+  }
+
   async function loadInitial() {
-    const res = await scope.list({ limit: PAGE, around: params.jumpToMessageId });
+    if (firstLoad) await paintCached();
+    let res;
+    try {
+      res = await scope.list({ limit: PAGE, around: params.jumpToMessageId });
+    } catch (err) {
+      if (err && (err.status === 403 || err.status === 404)) { deleteMessages(cacheKey()); if (paintedFromCache) { messages = []; paint(); } }
+      throw err;
+    }
     const list = await decryptList(res.messages);
+    if (paintedFromCache) { messages = []; paintedFromCache = false; }
     if (!unreadUpToSet) { unreadUpTo = list.reduce((mx, m) => Math.max(mx, m.id), 0); unreadUpToSet = true; }
     isLatest = !params.jumpToMessageId || windowReachesLatest(list, params.jumpToMessageId, PAGE);
     messages = mergeMessages(isLatest ? messages : [], list, deleted);
@@ -265,6 +291,7 @@ export function mountChat(el, params) {
     else if (firstLoad && !params.jumpToMessageId && scrollToFirstUnread()) { /* positioned at the new-messages line */ }
     else scrollBottom();
     firstLoad = false;
+    saveCached();
     markReadSoon();
     if (!isLatest) requestAnimationFrame(() => msgsEl.dispatchEvent(new Event('scroll'))); // short window: no scroll will ever fire to pull the next page
   }
@@ -738,7 +765,7 @@ export function mountChat(el, params) {
   state.mOpenScope = scopeKey;
   boot().then(() => { if (kind === 'dm' && encrypted()) refreshTrust(dm(), state.me).then(paintBanner).catch(() => {}); });
   return {
-    destroy() { destroyed = true; clearTimeout(readTimer); for (const p of e2eeUrls.values()) p.then((url) => url && URL.revokeObjectURL(url)); offs.forEach((off) => off()); if (state.mOpenScope === scopeKey) state.mOpenScope = null; },
+    destroy() { destroyed = true; saveCached(); clearTimeout(readTimer); for (const p of e2eeUrls.values()) p.then((url) => url && URL.revokeObjectURL(url)); offs.forEach((off) => off()); if (state.mOpenScope === scopeKey) state.mOpenScope = null; },
     onShow() { state.mOpenScope = scopeKey; markReadSoon(); },
     onHide() { if (state.mOpenScope === scopeKey) state.mOpenScope = null; },
   };
