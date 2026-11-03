@@ -6,6 +6,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ### 2026-11-03
 #### Added
+- Faster start on the mobile page and the Android app, especially on mobile networks: (1) a service worker (`web/sw.js`) answers static files (scripts, styles, fonts, language files, icons, emoji) from a cache and refreshes them in the background; API calls, the websocket and private attachments are never cached; it needs https (or localhost), so plain-http servers skip it. (2) The session check, all lists and the language files are now requested together instead of one after another. (3) The last known servers, conversations, friends and settings are kept on the device and drawn at once on the next launch, then replaced with fresh data; going offline keeps the cached view, and signing out or an expired session deletes it. Messages are not cached yet.
 - Mute and unmute from the right-click menu: right-click a channel in the sidebar for Mute Channel (15 min to forever) / Unmute Channel, with a bell icon and the time left; muted channels show a small muted bell. The server menu's Mute / Unmute Server items got the same icons.
 - Server error messages (wrong password, invalid invite, permissions, limits and more, about 330 of them) are now translated: the app maps each server message to the chosen language through a new `apiErrors` section in `lang/*.json` (English and Hungarian); unknown messages still show as sent. Covers web, desktop and Android.
 - Android: the app icon, adaptive/themed icon and notification icon are now the ghost.

@@ -31,15 +31,7 @@
 </head>
 <body>
 <div id="app"><div class="mc-boot"><svg class="ghost" viewBox="0 0 24 24"><path fill="#fff" fill-rule="evenodd" d="M6 8c0-2.2 2.7-4 6-4s6 1.8 6 4v6.5c0 3.6-3.1 5.5-6 5.5s-6-1.9-6-5.5zM9.5 12m-1.3 0a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0-2.6 0M14.5 12m-1.3 0a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0-2.6 0"/></svg><h1>MeshCrowd</h1><p id="mc-boot-sub"></p><div class="stage"><div class="tilt"><div class="ring back"></div><div class="ring mid"></div><div class="ring front"></div></div></div></div></div>
-<script>
-(function () {
-  var name = '';
-  try { name = localStorage.getItem('mc_server_name') || ''; } catch (e) {}
-  name = name || location.host;
-  var hu = (navigator.language || '').slice(0, 2).toLowerCase() === 'hu';
-  document.getElementById('mc-boot-sub').textContent = hu ? name + ' betöltése…' : 'Loading ' + name + '…';
-})();
-</script>
+<script src="/m/boot.js"></script>
 <script type="importmap">
 {
   "imports": {

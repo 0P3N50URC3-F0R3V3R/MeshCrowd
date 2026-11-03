@@ -5,7 +5,8 @@ import { initI18n, applyStaticI18n, t } from '../js/i18n.js';
 import '../js/animatedImages.js';
 import '../js/autoRefocus.js';
 import { renderAuth } from '../js/views/auth.js';
-import { loadAll, wireRealtime } from './data.js';
+import { loadAll, fetchAll, applyAll, wireRealtime } from './data.js';
+import { readSnapshot, writeSnapshot, clearSnapshot } from './lib/stateCache.js';
 import { initRouter, nav } from './router.js';
 import { parseDeepLink } from './lib/deepLink.mjs';
 import { parseInviteHash } from '../js/inviteHash.mjs';
@@ -28,21 +29,60 @@ function rememberServerName() {
   try { window.MeshCrowdAndroid?.setServerName?.(name); } catch { /* not in the app */ }
 }
 
+function saveSnapshot(user, data) {
+  if (user && data) writeSnapshot({ user, data, savedAt: Date.now() });
+}
+
+// After the cached screen is up: confirm the session and swap in fresh data. Going offline keeps the
+// cached view; a dead session clears it and returns to sign-in.
+async function revalidate(mePromise, dataPromise) {
+  try {
+    const { user } = await mePromise;
+    setMe(user);
+    const data = await dataPromise;
+    applyAll(data);
+    rememberServerName();
+    saveSnapshot(user, data);
+  } catch (err) {
+    if (err && err.status === 401) bus.emit('m:unauthorized');
+  }
+}
+
 async function boot() {
   installKeyboardSupport();
   installReauthGate();
+  const snapshot = await readSnapshot();
+  // Session check and the lists go out together; a signed-out visitor just gets two 401s that are ignored here.
+  const mePromise = api.me();
+  const dataPromise = fetchAll();
+  mePromise.catch(() => {});
+  dataPromise.catch(() => {});
   let user;
-  try {
-    ({ user } = await api.me());
+  let data = null;
+  let revalidating = false;
+  if (snapshot) {
+    user = snapshot.user;
     await initI18n(user);
-  } catch {
-    await initI18n(null);
     applyStaticI18n();
-    user = await renderAuth(root);
+    setMe(user);
+    applyAll(snapshot.data);
+    revalidating = true;
+  } else {
+    let signedIn = true;
+    try {
+      ({ user } = await mePromise);
+      await initI18n(user);
+    } catch {
+      signedIn = false;
+      await initI18n(null);
+      applyStaticI18n();
+      user = await renderAuth(root);
+    }
+    applyStaticI18n();
+    setMe(user);
+    data = await loadAll(signedIn ? dataPromise : undefined);
+    saveSnapshot(user, data);
   }
-  applyStaticI18n();
-  setMe(user);
-  await loadAll();
   rememberServerName();
   root.innerHTML = '<div id="m-conn" class="m-conn hidden"></div><div id="m-callbar" class="m-callbar" hidden></div><div id="m-host" class="m-host"></div>';
   document.getElementById('m-conn').textContent = t('m.offline');
@@ -81,9 +121,28 @@ async function boot() {
       if (last && (last.kind !== 'dm' || state.dms.some((d) => d.id === last.dmId))) pushChat(last);
     } catch { /* stale value */ }
   }
+  if (revalidating) revalidate(mePromise, dataPromise);
+}
+
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  window.addEventListener('load', async () => {
+    try {
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      const reg = await navigator.serviceWorker.ready;
+      const urls = performance.getEntriesByType('resource').map((e) => e.name).filter((n) => n.startsWith(location.origin));
+      reg.active?.postMessage({ precache: urls });
+    } catch { /* no secure context, or the certificate is not accepted for workers */ }
+  });
 }
 
 let reloading = false;
-bus.on('m:unauthorized', () => { if (!reloading) { reloading = true; location.reload(); } });
+bus.on('m:unauthorized', async () => {
+  if (reloading) return;
+  reloading = true;
+  await clearSnapshot();
+  location.reload();
+});
 
+registerServiceWorker();
 boot();

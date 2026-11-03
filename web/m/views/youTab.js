@@ -13,6 +13,7 @@ import { openUserSettings } from '../../js/views/userSettings.js';
 import { openBookmarksModal } from '../../js/views/bookmarks.js';
 import { openAdminPanel } from '../../js/views/admin.js';
 import { openScheduleModal } from '../../js/views/scheduled.js';
+import { clearSnapshot } from '../lib/stateCache.js';
 
 const STATUSES = [['online', 'm.statusOnline'], ['idle', 'm.statusIdle'], ['dnd', 'm.statusDnd'], ['invisible', 'm.statusInvisible']];
 const START_VIEWS = [['servers', 'm.tabServers'], ['messages', 'm.tabMessages'], ['notifications', 'm.tabNotifications'], ['you', 'm.tabYou'], ['last', 'm.startViewLast']];
@@ -84,7 +85,7 @@ export function mountYouTab(host) {
       else if (id === 'admin') openAdminPanel();
       else if (id === 'android') androidSettings();
       else if (id === 'desktop') location.href = '/?ui=desktop';
-      else if (id === 'logout') { try { await api.logout(); } finally { location.href = '/m/'; } }
+      else if (id === 'logout') { try { await Promise.allSettled([api.logout(), clearSnapshot()]); } finally { location.href = '/m/'; } }
     } catch (err) { handleError(err); }
   }
 

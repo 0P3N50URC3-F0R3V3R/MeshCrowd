@@ -16,29 +16,44 @@ import {
   shouldPlayNotifySound, isSelf, applyDmRead, setReadState, setServerVoiceBulk, applyServerVoiceState,
 } from '../js/state.js';
 
-export async function loadAll() {
+// The lists the app needs before it can draw anything. Fetched together, and also kept as a snapshot
+// (lib/stateCache.js) so the next launch can draw them before the network answers.
+export function fetchAll() {
+  return Promise.all([
+    api.listServers(), api.listDms(), api.friends(), api.getNotificationPrefs(), api.config(), api.getReadState(), api.getServerLayout(), api.getTheme(),
+    api.getServerPrefs(), api.getUserAnnotations(), api.getDmPrefs(), api.getBookmarkIds(), api.getUiPrefs(),
+  ]);
+}
+
+export function applyAll(data) {
+  const [serversRes, dmsRes, friendsRes, prefsRes, config, readStateRes, layoutRes, themeRes, serverPrefsRes, annotationsRes, dmPrefsRes, bookmarkIdsRes, uiPrefsRes] = data;
+  state.uiPrefs = uiPrefsRes.uiPrefs;
+  setServers(serversRes.servers);
+  setDms(dmsRes.dms);
+  setFriends(friendsRes);
+  setNotificationPrefs(prefsRes.prefs);
+  setServerPrefs(serverPrefsRes.prefs);
+  setUserAnnotations(annotationsRes.annotations);
+  setDmPrefs(dmPrefsRes.prefs);
+  setBookmarkIds(bookmarkIdsRes.ids);
+  Object.assign(state.config, config);
+  setReadStateBulk(readStateRes.state, readStateRes.pinsUnseen, readStateRes.threadsUnread);
+  setServerLayout(layoutRes.layout);
+  applyTheme(themeRes.theme);
+  if (config.federationEnabled) refreshRemoteServers();
+}
+
+// `prefetched` is a fetchAll() already in flight (started alongside api.me()); otherwise fetch now.
+// Resolves to the raw data, or null when it could not be loaded.
+export async function loadAll(prefetched) {
   try {
-    const [serversRes, dmsRes, friendsRes, prefsRes, config, readStateRes, layoutRes, themeRes, serverPrefsRes, annotationsRes, dmPrefsRes, bookmarkIdsRes, uiPrefsRes] = await Promise.all([
-      api.listServers(), api.listDms(), api.friends(), api.getNotificationPrefs(), api.config(), api.getReadState(), api.getServerLayout(), api.getTheme(),
-      api.getServerPrefs(), api.getUserAnnotations(), api.getDmPrefs(), api.getBookmarkIds(), api.getUiPrefs(),
-    ]);
-    state.uiPrefs = uiPrefsRes.uiPrefs;
-    setServers(serversRes.servers);
-    setDms(dmsRes.dms);
-    setFriends(friendsRes);
-    setNotificationPrefs(prefsRes.prefs);
-    setServerPrefs(serverPrefsRes.prefs);
-    setUserAnnotations(annotationsRes.annotations);
-    setDmPrefs(dmPrefsRes.prefs);
-    setBookmarkIds(bookmarkIdsRes.ids);
-    Object.assign(state.config, config);
-    setReadStateBulk(readStateRes.state, readStateRes.pinsUnseen, readStateRes.threadsUnread);
-    setServerLayout(layoutRes.layout);
-    applyTheme(themeRes.theme);
-    if (config.federationEnabled) refreshRemoteServers();
+    const data = await (prefetched || fetchAll());
+    applyAll(data);
+    return data;
   } catch (err) {
-    if (err && err.status === 401) { bus.emit('m:unauthorized'); return; }
+    if (err && err.status === 401) { bus.emit('m:unauthorized'); return null; }
     toast(t('m.loadFailed'), { type: 'error' });
+    return null;
   }
 }
 

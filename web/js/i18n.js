@@ -40,9 +40,13 @@ function guessBrowserCode(available) {
 // null pre-login). English is always loaded first as the fallback floor, then the chosen
 // language is merged over it so a partial translation never breaks the UI.
 export async function initI18n(user) {
+  const knownCode = user?.language;
+  // English floor and the user's language are independent files: fetch them together.
+  const earlyOverride = knownCode && knownCode !== FALLBACK_CODE ? fetchLangFile(knownCode) : null;
+  earlyOverride?.catch(() => {});
   baseDict = await fetchLangFile(FALLBACK_CODE).catch(() => ({}));
 
-  let code = user?.language;
+  let code = knownCode;
   if (!code) {
     try { code = window.localStorage.getItem(STORAGE_KEY) || undefined; } catch { /* ignore */ }
   }
@@ -62,7 +66,7 @@ export async function initI18n(user) {
   }
 
   try {
-    const override = await fetchLangFile(code);
+    const override = await (code === knownCode && earlyOverride ? earlyOverride : fetchLangFile(code));
     dict = deepMerge(baseDict, override);
     activeCode = code;
   } catch {
