@@ -6,6 +6,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ### 2026-11-03
 #### Added
+- Server icon background: in Server Settings > Overview you can switch the plate behind the server icon off (transparent icons then show alone, also on hover and when selected) and pick its color. A server without an icon always shows its initials on the plate, in the chosen color. Existing servers keep their current look (background on). Works on web, desktop and Android.
 - Calls (STUN/TURN) with a dynamic public IP: Admin Panel > Calls can re-read the WAN address on a schedule (default every 5 minutes) from the router via UPnP, from a STUN server you name, or from a URL you name, so no third party is needed. When it changes, the new address is stored in `externalIp`, the old one kept as `previousIp`, and the built-in server restarts; private/CGNAT results are rejected. New `turn.autoIp*` settings, a "Save and check now" button and a status line.
 - Devices (settings > Devices, Android You tab): lists every browser and app signed in to your account (device, IP, last active, signed in) and lets you sign any of them out, or all others; the revoked device is logged out and its live connection closed at once.
 - Admin Panel > Servers: every server with owner, members and creation date; delete now (type the name to confirm) or schedule a timed deletion in hours or days, cancellable until it runs. A background worker executes due deletions.

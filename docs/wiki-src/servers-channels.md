@@ -11,6 +11,8 @@ A **server** is a community: members, channels, roles and settings. People join 
 
 Open **Server Settings** from the server name at the top of the channel list.
 
+The server **icon** is set under **Overview**. An icon with transparent parts normally sits on a colored plate; untick **Show icon background** to show the icon alone, or pick the plate's color. A server without an icon always shows its initials on the plate, in the color you choose.
+
 ![Server Settings, Overview](../assets/img/settings-overview.jpg)
 
 ### Invite links

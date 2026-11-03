@@ -1542,6 +1542,8 @@
     "couldNotJoinServer": "Could not join server."
   },
   "serverSettings": {
+    "iconBackgroundLabel": "Show icon background",
+    "iconBackgroundColor": "Icon background color",
     "navWelcomeScreen": "Welcome Screen",
     "navEmoji": "Emoji",
     "auditLogLabel": "Audit Log",

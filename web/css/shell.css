@@ -110,6 +110,8 @@
               color var(--dur-med) var(--ease-standard);
 }
 .rail-icon img { width: 100%; height: 100%; object-fit: cover; }
+/* A server icon with its background switched off: no plate behind it, not even on hover or when active. */
+.rail-icon:has(> .srv-nobg), .rail-item:hover .rail-icon:has(> .srv-nobg), .rail-item.active .rail-icon:has(> .srv-nobg), .avatar-edit:has(> .srv-nobg) { background: transparent !important; }
 .rail-item:hover .rail-icon, .rail-item.active .rail-icon {
   border-radius: 34%;
   background: var(--brand);

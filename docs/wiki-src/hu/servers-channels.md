@@ -11,6 +11,8 @@ A **szerver** egy közösség: tagok, csatornák, szerepkörök és beállítás
 
 A **Szerverbeállításokat** a csatornalista tetején lévő szervernévből nyithatod meg.
 
+A szerver **ikonját** az **Áttekintés** oldalon állíthatod be. Az átlátszó részeket tartalmazó ikon általában színes alapon áll; az **Ikon háttérének megjelenítése** jelölőnégyzet kikapcsolásával csak az ikon látszik, és az alap színét is kiválaszthatod. Az ikon nélküli szerver mindig a monogramját mutatja az alapon, az általad választott színnel.
+
 ![Szerverbeállítások, Áttekintés](../assets/img/settings-overview.jpg)
 
 ### Meghívólinkek

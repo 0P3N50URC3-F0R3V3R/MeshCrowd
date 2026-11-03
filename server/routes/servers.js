@@ -380,7 +380,8 @@ router.get('/:id/voice-activity', requireMember, (req, res) => {
 });
 
 router.patch('/:id', requireMember, requirePerm(PERMISSIONS.MANAGE_SERVER), (req, res) => {
-  const { name, description, visibility, autoJoin, welcomeEnabled, welcomeMessage, rawHtmlEnabled, verificationLevel } = req.body || {};
+  const { name, description, visibility, autoJoin, welcomeEnabled, welcomeMessage, rawHtmlEnabled, verificationLevel, iconBackground, iconBgColor } = req.body || {};
+  if (iconBgColor !== undefined && iconBgColor !== '' && !/^#[0-9a-fA-F]{6}$/.test(String(iconBgColor))) return res.status(400).json({ error: 'iconBgColor must be #rrggbb or empty' });
   if (verificationLevel !== undefined && !isLevel(verificationLevel)) return res.status(400).json({ error: 'verificationLevel must be 0, 1, 2 or 3' });
   if (typeof name === 'string' && name.trim()) {
     db.prepare('UPDATE servers SET name = ? WHERE id = ?').run(name.trim().slice(0, 100), req.server.id);
@@ -410,6 +411,12 @@ router.patch('/:id', requireMember, requirePerm(PERMISSIONS.MANAGE_SERVER), (req
   }
   if (verificationLevel !== undefined) {
     db.prepare('UPDATE servers SET verification_level = ? WHERE id = ?').run(verificationLevel, req.server.id);
+  }
+  if (iconBackground !== undefined) {
+    db.prepare('UPDATE servers SET icon_bg = ? WHERE id = ?').run(iconBackground ? 1 : 0, req.server.id);
+  }
+  if (iconBgColor !== undefined) {
+    db.prepare('UPDATE servers SET icon_bg_color = ? WHERE id = ?').run(String(iconBgColor), req.server.id);
   }
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.server.id);
   logAudit(req.server.id, req.user.id, 'server_update', 'server', req.server.id, { name, description, visibility, autoJoin, welcomeEnabled, welcomeMessage, rawHtmlEnabled, verificationLevel });

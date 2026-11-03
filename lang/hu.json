@@ -1542,6 +1542,8 @@
     "couldNotJoinServer": "Nem sikerült csatlakozni a szerverhez."
   },
   "serverSettings": {
+    "iconBackgroundLabel": "Ikon háttérének megjelenítése",
+    "iconBackgroundColor": "Az ikon háttérszíne",
     "navWelcomeScreen": "Üdvözlőképernyő",
     "navEmoji": "Emodzsi",
     "auditLogLabel": "Naplózás",

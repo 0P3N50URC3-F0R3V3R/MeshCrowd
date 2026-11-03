@@ -266,10 +266,17 @@ export function serverIconHtml(server, size = 48) {
   const style = `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.4)}px`;
   const iconPath = server?.icon_path || server?.iconPath;
   if (server?.kind === 'site' && !iconPath) return icons.globe(Math.round(size * 0.5));
+  const color = server?.icon_bg_color ?? server?.iconBgColor ?? '';
+  const bgOn = (server?.icon_bg ?? server?.iconBackground ?? 1) !== 0 && (server?.icon_bg ?? server?.iconBackground) !== false;
   if (iconPath) {
-    return `<img style="${style};width:100%;height:100%;object-fit:cover" src="${escapeHtml(iconPath)}" alt="" draggable="false">`;
+    // Without a background the transparent parts of the image show the rail, so the .srv-nobg marker
+    // lets CSS clear the wrapper's own background too.
+    if (!bgOn) return `<img class="srv-nobg" style="${style};width:100%;height:100%;object-fit:cover" src="${escapeHtml(iconPath)}" alt="" draggable="false">`;
+    const bg = color ? `;background:${escapeHtml(color)}` : '';
+    return `<img style="${style};width:100%;height:100%;object-fit:cover${bg}" src="${escapeHtml(iconPath)}" alt="" draggable="false">`;
   }
-  return `<span>${escapeHtml(serverInitials(server?.name))}</span>`;
+  const fill = color ? `;background:${escapeHtml(color)};color:#fff` : '';
+  return `<span style="width:100%;height:100%;display:flex;align-items:center;justify-content:center${fill}">${escapeHtml(serverInitials(server?.name))}</span>`;
 }
 
 function serverInitials(name) {

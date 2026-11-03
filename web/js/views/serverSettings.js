@@ -344,15 +344,23 @@ function buildServerSettings(serverId, opts) {
 
   // ---------------- overview ----------------
   let pendingVisibility = null;
+  let pendingIconBg = null;
+  let pendingIconBgColor = null;
+  const previewIcon = (srv) => ({ ...srv, icon_bg: pendingIconBg ? 1 : 0, icon_bg_color: pendingIconBgColor || '' });
   function renderOverview(inner, d, isOwner) {
     if (pendingVisibility === null) pendingVisibility = d.server.visibility;
+    if (pendingIconBg === null) { pendingIconBg = d.server.icon_bg !== 0; pendingIconBgColor = d.server.icon_bg_color || ''; }
     const previewServer = { ...d.server, visibility: pendingVisibility };
     inner.innerHTML = `
       <h2>${t('serverSettings.serverOverviewTitle')}</h2>
       <div class="settings-avatar-row">
         <div class="avatar-edit" id="icon-edit" style="border-radius:50%;overflow:hidden;background:var(--bg-active);display:flex;align-items:center;justify-content:center;width:80px;height:80px">
-          ${serverIconHtml(d.server, 80)}
+          ${serverIconHtml(previewIcon(d.server), 80)}
           <div class="overlay-hint">${t('serverSettings.changeIconHint')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${d.server.icon_path ? `<label class="checkbox-row"><input type="checkbox" id="f-icon-bg" ${pendingIconBg ? 'checked' : ''}><span>${t('serverSettings.iconBackgroundLabel')}</span></label>` : ''}
+          <input type="color" class="theme-color-input" id="f-icon-bg-color" style="${d.server.icon_path && !pendingIconBg ? 'display:none' : ''}" value="${pendingIconBgColor || '#2b2d31'}" title="${t('serverSettings.iconBackgroundColor')}">
         </div>
         <input type="file" id="icon-input" class="hidden" accept="image/png,image/jpeg,image/gif,image/webp">
         <div style="font-weight:700;font-size:18px">${escapeHtml(d.server.name)}</div>
@@ -412,6 +420,17 @@ function buildServerSettings(serverId, opts) {
       } catch (err) { toast(apiErrorMessage(err, t('serverSettings.couldNotUploadIconError')), { type: 'error' }); }
     });
 
+    const repaintIcon = () => {
+      const box = inner.querySelector('#icon-edit');
+      box.querySelector('img, span').outerHTML = serverIconHtml(previewIcon(d.server), 80);
+    };
+    inner.querySelector('#f-icon-bg')?.addEventListener('change', (e) => {
+      pendingIconBg = e.target.checked;
+      inner.querySelector('#f-icon-bg-color').style.display = pendingIconBg ? '' : 'none';
+      repaintIcon();
+    });
+    inner.querySelector('#f-icon-bg-color').addEventListener('input', (e) => { pendingIconBgColor = e.target.value; repaintIcon(); });
+
     inner.querySelector('#vis-private').addEventListener('click', () => { pendingVisibility = 'private'; renderOverview(inner, d, isOwner); });
     inner.querySelector('#vis-public').addEventListener('click', () => { pendingVisibility = 'public'; renderOverview(inner, d, isOwner); });
 
@@ -423,8 +442,10 @@ function buildServerSettings(serverId, opts) {
       const rawHtmlEnabled = inner.querySelector('#f-raw-html').checked;
       try {
         const verificationLevel = Number(inner.querySelector('#f-verification').value);
-        await api.updateServer(serverId, { name, description, visibility: pendingVisibility, autoJoin, rawHtmlEnabled, verificationLevel });
+        await api.updateServer(serverId, { name, description, visibility: pendingVisibility, autoJoin, rawHtmlEnabled, verificationLevel, iconBackground: pendingIconBg, iconBgColor: pendingIconBgColor || '' });
         pendingVisibility = null;
+        pendingIconBg = null;
+        pendingIconBgColor = null;
         await refresh();
         toast(t('serverSettings.serverUpdatedToast'));
       } catch (err) { inner.querySelector('#ov-err').textContent = apiErrorMessage(err, t('serverSettings.couldNotUpdateServerError')); }

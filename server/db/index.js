@@ -58,6 +58,8 @@ const COLUMN_MIGRATIONS = [
   { table: 'servers', column: 'rules_text', ddl: "ALTER TABLE servers ADD COLUMN rules_text TEXT NOT NULL DEFAULT ''" },
   { table: 'server_members', column: 'screened_at', ddl: 'ALTER TABLE server_members ADD COLUMN screened_at TEXT' },
   { table: 'servers', column: 'vanity_code', ddl: 'ALTER TABLE servers ADD COLUMN vanity_code TEXT' },
+  { table: 'servers', column: 'icon_bg', ddl: 'ALTER TABLE servers ADD COLUMN icon_bg INTEGER NOT NULL DEFAULT 1' },
+  { table: 'servers', column: 'icon_bg_color', ddl: "ALTER TABLE servers ADD COLUMN icon_bg_color TEXT NOT NULL DEFAULT ''" },
   { table: 'servers', column: 'delete_at', ddl: 'ALTER TABLE servers ADD COLUMN delete_at TEXT' },
   { table: 'sessions', column: 'ip', ddl: 'ALTER TABLE sessions ADD COLUMN ip TEXT' },
   { table: 'sessions', column: 'last_used_at', ddl: 'ALTER TABLE sessions ADD COLUMN last_used_at TEXT' },
