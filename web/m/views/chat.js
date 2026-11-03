@@ -379,6 +379,12 @@ export function mountChat(el, params) {
     el.querySelector('#m-title').textContent = thread.title;
   }));
   offs.push(bus.on('ws:thread_delete', ({ threadId }) => { if (kind === 'thread' && threadId === params.threadId) nav.back(); }));
+  // Header dots follow the unread-thread / new-pin state live without repainting the whole header.
+  const paintHeaderDots = () => {
+    el.querySelector('#m-threads')?.classList.toggle('m-pin-dot', channelHasUnreadThreads(params.channelId));
+    el.querySelector('#m-info')?.classList.toggle('m-pin-dot', pinUnseen(kind, kind === 'dm' ? params.dmId : kind === 'thread' ? params.threadId : params.channelId));
+  };
+  offs.push(bus.on('state:threads', paintHeaderDots), bus.on('state:pins', paintHeaderDots));
   offs.push(bus.on('state:connection', (ok) => {
     if (!ok) return;
     enqueue(async () => {
