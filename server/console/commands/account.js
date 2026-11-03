@@ -5,12 +5,12 @@ const accounts = require('../../lib/accounts');
 const splitAuth = require('../../lib/splitAuth');
 const pendingLogin = require('../../lib/pendingLogin');
 const { destroyAllSessionsForUser } = require('../../lib/session');
-const { getSitePermissionBits } = require('../../lib/siteAuth');
-const { SITE_PERMISSIONS } = require('../../lib/permissions');
+const { getSitePermissionBits, canUseConsole } = require('../../lib/siteAuth');
+const { SITE_PERMISSIONS, hasSiteStrict } = require('../../lib/permissions');
 const presence = require('../../lib/presence');
 const hub = require('../../socket/hub');
 const {
-  findUser, actorId, canGrant, assertCanModify, logAdmin, setDisabled, authAuditConsole,
+  findUser, actorId, canGrant, assertCanModify, assertSafeToRemove, assertNotLastConsole, logAdmin, setDisabled, authAuditConsole,
 } = require('../userOps');
 
 const PERMISSION_NAMES = Object.entries(SITE_PERMISSIONS);
@@ -85,6 +85,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'account create',
     area: 'account',
+    audit: true,
     summary: 'Create a password-mode account (prompts for the password when omitted)',
     usage: 'account create <username> <email> [password]',
     examples: ['account create alice alice@example.com'],
@@ -107,6 +108,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'account passwd',
     area: 'account',
+    audit: true,
     summary: 'Reset an account password; ends its sessions and live connections',
     usage: 'account passwd <user> [password]',
     examples: ['account passwd alice'],
@@ -133,6 +135,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'account delete',
     area: 'account',
+    audit: true,
     summary: 'Permanently delete an account',
     usage: 'account delete <user> [--yes]',
     examples: ['account delete alice', 'account delete alice --yes'],
@@ -140,6 +143,7 @@ module.exports = function register(registry) {
       const yes = args.includes('--yes');
       const target = findUser(args.filter((a) => a !== '--yes')[0]);
       assertCanModify(ctx, target);
+      assertSafeToRemove(ctx, target, 'delete');
       if (!yes && !(await ctx.confirm(`Permanently delete account ${target.username}?`))) return 'cancelled';
       try {
         db.prepare('DELETE FROM users WHERE id = ?').run(target.id);
@@ -159,6 +163,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'account disable',
     area: 'account',
+    audit: true,
     summary: 'Disable an account and end its sessions',
     usage: 'account disable <user>',
     examples: ['account disable alice'],
@@ -172,6 +177,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'account enable',
     area: 'account',
+    audit: true,
     summary: 'Re-enable a disabled account',
     usage: 'account enable <user>',
     examples: ['account enable alice'],
@@ -200,6 +206,7 @@ module.exports = function register(registry) {
       name: `account ${verb}`,
       aliases: [grant ? 'account grant' : 'account revoke'],
       area: 'account',
+      audit: true,
       summary: grant ? 'Give an account a site role' : 'Remove a site role from an account',
       usage: `account ${verb} <user> <role>`,
       examples: [`account ${verb} alice Moderator`],
@@ -210,6 +217,17 @@ module.exports = function register(registry) {
           throw new Error('cannot change a role with permissions you do not hold');
         }
         assertCanModify(ctx, target);
+        if (!grant && (role.permissions & SITE_PERMISSIONS.MANAGE_CONSOLE) && canUseConsole(target.id)) {
+          const left = db.prepare(
+            'SELECT sr.permissions FROM user_site_roles usr JOIN site_roles sr ON sr.id = usr.role_id WHERE usr.user_id = ? AND usr.role_id != ?',
+          ).all(target.id, role.id).reduce((acc, r) => acc | r.permissions, 0);
+          if (!hasSiteStrict(left, SITE_PERMISSIONS.MANAGE_CONSOLE)) {
+            if (ctx.session.kind === 'ssh' && target.id === ctx.session.userId) {
+              throw new Error('you cannot remove your own console permission; use the local console');
+            }
+            assertNotLastConsole(ctx, target, 'remove the console permission from');
+          }
+        }
         if (grant) db.prepare('INSERT OR IGNORE INTO user_site_roles (user_id, role_id) VALUES (?, ?)').run(target.id, role.id);
         else db.prepare('DELETE FROM user_site_roles WHERE user_id = ? AND role_id = ?').run(target.id, role.id);
         authAuditConsole(target.id, `console_${verb}`, true, actorId(ctx));
@@ -224,6 +242,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'account roleperm',
     area: 'account',
+    audit: true,
     local: true,
     summary: 'Add or remove the console permission (MANAGE_CONSOLE) on a site role; local window only',
     usage: 'account roleperm <role> +console|-console [--yes]',

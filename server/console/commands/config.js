@@ -34,7 +34,7 @@ function change(ctx, key, value, verb) {
   const cfg = config.save(patchFor(key, value));
   if (!spec.restart) applyLive(key, cfg);
   const after = show(key, value);
-  log.info(`${ctx.session.username} ${verb} ${key}: ${before} -> ${after}`);
+  log.warn(`${ctx.session.username} ${verb} ${key}: ${before} -> ${after}`);
   return `${key}: ${before} -> ${after} (${spec.restart ? 'restart required' : 'applied live'})`;
 }
 
@@ -69,6 +69,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'config set',
     area: 'config',
+    audit: true,
     summary: 'Validate and save a configuration value',
     usage: 'config set <key> <value>',
     examples: ['config set logging.level warn', 'config set registrationMode invite'],
@@ -84,6 +85,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'config reset',
     area: 'config',
+    audit: true,
     summary: 'Restore a configuration value to its default',
     usage: 'config reset <key>',
     examples: ['config reset logging.level'],

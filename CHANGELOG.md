@@ -21,6 +21,15 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Desktop client tray: with unread items the whole tray icon fades (350 ms each way) between the normal ghost and a full-size colored disc showing the count (9+ above nine), with a dark outline for contrast; it returns to the normal icon once everything is read. Portable client in `Client/` rebuilt with this.
 - Making a channel private or changing its permission overrides now hides or shows it for affected members immediately; custom emoji, stickers, kicks and bans were checked and already update live.
 
+#### Fixed (console QA findings from 2026-11-01)
+- Over SSH, `ban`, `account disable`, `account delete` and removing your own console permission are refused for your own account, and nobody but the local console can remove the last enabled account that has console access.
+- Local-only commands (`account roleperm`, `backup restore`, `ssh ...`) refused over SSH now say "only available in the local server console"; unknown commands still get a "did you mean" hint, never a hidden command.
+- Console command audit lines (bans, unbans, IP bans, announcements, config changes, backups) are written at warn so they survive `logging.level warn`; read-only commands are not audited, `config set` logs the key and values and masks only secret keys.
+- SSH clients that offer both password and keyboard-interactive no longer count one wrong password twice towards the lockout.
+- `ipban` no longer stores `--yes` as the reason; `backup delete` validates the name before asking; pressing `q` in `stats watch` and `log tail` no longer echoes onto the prompt.
+- Android (`/m/`): the channel unread marker and the Servers-tab badge now update live.
+- The unread line and "N new messages" ribbon now clear by themselves when the whole backlog is already on screen.
+
 #### Changed
 - Direct messages can now be deleted: "Delete Conversation" (web, desktop, Android) removes a 1:1 for you. The other person is told the conversation was closed and asked whether to delete it too (Cancel keeps the history as a read-only archive; the prompt also reappears as a banner), and sending into a closed conversation is refused. Once both sides delete, the history is wiped, so messaging again starts a fresh conversation (it can be unencrypted again). "Close Conversation" still only hides it.
 - Invisible mode: no typing indicator, read receipts ("Seen") stop advancing while invisible and stay hidden afterwards, no custom status shown, cannot be rung by DM calls, and cannot join any voice or stage channel or DM call (switching to invisible leaves the current call). Messages still arrive normally. Admin Panel still shows real online state.
@@ -46,14 +55,9 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Shutdown is ordered with per-component timeouts and a watchdog; signals during a countdown take effect immediately.
 - Federation heartbeat and outbox worker errors go to the log files instead of only the console.
 
-#### Known issues (found in QA, fixes pending)
-- Over SSH, `ban`, `account disable` and `account delete` can still target your own account or the last console-capable Owner (the local console is unaffected and can always recover).
-- Local-only commands (`account roleperm`, `backup restore`) refused over SSH print "unknown command ... did you mean ...?" instead of a "local console only" message.
-- Android (`/m/`): the channel unread marker and the Servers-tab badge update only after switching tabs, not live.
-- The unread line and "N new messages" ribbon clear on scroll but not when the whole backlog already fits on screen.
-- Console command audit lines are written at INFO, so they disappear at `logging.level warn`; `config set` is logged with masked arguments even for non-secret keys.
-- SSH clients that offer both password and keyboard-interactive count two failures per wrong password, so the 5-attempt IP lockout trips after 3 tries.
-- Not yet verified by hand: Electron client, Android emulator/device, TOTP and public-key login over SSH, the local terminal console, and the `start-server.bat` restart loop on Windows (supervisor restart was verified over SSH).
+#### Known issues
+- Not yet verified by hand: public-key login over SSH, the local terminal console, and the `start-server.bat` restart loop on Windows (supervisor restart was verified over SSH). TOTP over SSH is covered by tests.
+- Open decision: SSH login for accounts with strengthened (split) sign-in sends the plaintext password inside the encrypted SSH channel; a separate console-only password is the alternative.
 
 ### 2026-10-31
 #### Build

@@ -108,7 +108,10 @@ test('login, help, exit', async () => {
   assert.ok(sh.text().includes('\r\n'));
   sh.clear();
   sh.stream.write('ssh status\r');
-  await sh.waitFor(/unknown command/);
+  await sh.waitFor(/`ssh status` is only available in the local server console/);
+  sh.clear();
+  sh.stream.write('frobnicate\r');
+  await sh.waitFor(/unknown command: frobnicate/);
   sh.stream.write('exit\r');
   await new Promise((r) => c.on('close', r));
 });

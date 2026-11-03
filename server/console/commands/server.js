@@ -43,6 +43,7 @@ function lifecycleCommand(restart) {
   return {
     name: `server ${verb}`,
     area: 'server',
+    audit: true,
     summary: restart ? 'Restart the server (needs the supervisor: npm start or start-server)' : 'Stop the server',
     usage,
     examples: [`server ${verb}`, `server ${verb} 60`, `server ${verb} --yes`],
@@ -118,6 +119,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'server cancel',
     area: 'server',
+    audit: true,
     summary: 'Abort a pending stop or restart countdown',
     usage: 'server cancel',
     examples: ['server cancel'],
@@ -160,6 +162,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'announce',
     area: 'server',
+    audit: true,
     summary: 'Show a notice to every online user',
     usage: 'announce <text>',
     examples: ['announce "Maintenance in 10 minutes"'],

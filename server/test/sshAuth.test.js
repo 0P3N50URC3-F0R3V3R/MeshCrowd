@@ -269,3 +269,17 @@ test('cleanName strips bidi controls, zero-width characters and lone surrogates'
   assert.equal(sshAuth.cleanName(dirty), 'a?b?c?d?e?f?g');
   assert.equal(sshAuth.cleanName('plain-User_1'), 'plain-User_1');
 });
+
+test('password plus keyboard-interactive for one wrong password counts as one failure', async () => {
+  const conn = {};
+  const bad = { username: 'owner1', password: 'wrong-wrong-wrong', ip: '10.6.6.6', conn };
+  for (let i = 0; i < 3; i++) {
+    await sshAuth.authenticate(bad);
+    await sshAuth.authenticate(bad);
+    now += 3000;
+  }
+  assert.equal((await sshAuth.authenticate({ username: 'owner1', password: PW, ip: '10.6.6.6' })).ok, true);
+  const other = { ...bad, ip: '10.6.6.5', conn: {} };
+  for (let i = 0; i < 5; i++) { await sshAuth.authenticate(other); now += 3000; }
+  assert.deepEqual(await sshAuth.authenticate({ username: 'owner1', password: PW, ip: '10.6.6.5' }), { ok: false });
+});

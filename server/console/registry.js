@@ -28,6 +28,14 @@ function distance(a, b) {
   return prev[b.length];
 }
 
+function isSecret(def, args) {
+  try {
+    return !!(typeof def.secretArgs === 'function' ? def.secretArgs(args) : def.secretArgs);
+  } catch {
+    return true;
+  }
+}
+
 function maskArgs(args, secretArgs) {
   if (secretArgs) return args.map(() => '***');
   const out = [];
@@ -101,9 +109,7 @@ function createRegistry() {
     let found;
     try { found = resolve(parseLine(line)); } catch { return null; }
     if (!found || !found.args.length) return null;
-    const flag = found.def.secretArgs;
-    const secret = typeof flag === 'function' ? flag(found.args) : flag;
-    return secret ? `${found.def.name} ***` : null;
+    return isSecret(found.def, found.args) ? `${found.def.name} ***` : null;
   }
 
   async function execute(line, ctx) {
@@ -116,13 +122,19 @@ function createRegistry() {
     }
     if (!tokens.length) return;
     const found = resolve(tokens);
-    if (!found || !allowed(found.def, ctx.session)) {
+    if (found && !allowed(found.def, ctx.session)) {
+      ctx.writeln(`\`${found.def.name}\` is only available in the local server console`);
+      return;
+    }
+    if (!found) {
       const hint = suggest(tokens[0], ctx.session);
       ctx.writeln(`unknown command: ${tokens[0]}${hint ? `, did you mean ${hint}?` : ''} try help`);
       return;
     }
     const { def, args } = found;
-    log.info(`${ctx.session.username} ran: ${[def.name, ...maskArgs(args, def.secretArgs)].join(' ')}`);
+    const record = `${ctx.session.username} ran: ${[def.name, ...maskArgs(args, isSecret(def, args))].join(' ')}`;
+    if (def.audit) log.warn(record);
+    else log.info(record);
     try {
       const result = await def.run(args, ctx);
       if (typeof result === 'string') ctx.writeln(result);

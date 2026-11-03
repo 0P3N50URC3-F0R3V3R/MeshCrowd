@@ -490,6 +490,6 @@ function startScheduler(opts = {}) {
 function schedulerActive() { return timer !== null; }
 
 module.exports = {
-  createBackup, listBackups, deleteBackup, pruneBackups, verifyBackup, restoreBackup,
+  checkName, createBackup, listBackups, deleteBackup, pruneBackups, verifyBackup, restoreBackup,
   startScheduler, schedulerActive, nextRunDelay, MEDIA_DIRS, _test: { redactConfig, mergeConfig },
 };

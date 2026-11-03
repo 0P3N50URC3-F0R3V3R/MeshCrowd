@@ -140,7 +140,7 @@ export function getServerDetail(serverId) {
 export function noteChannelMessage(channelId, messageId) {
   for (const detail of state.serverDetail.values()) {
     const ch = detail.channels.find((c) => c.id === channelId);
-    if (ch) { ch.last_message_id = messageId; return; }
+    if (ch) { ch.last_message_id = messageId; bus.emit('state:channelActivity', channelId); return; }
   }
 }
 

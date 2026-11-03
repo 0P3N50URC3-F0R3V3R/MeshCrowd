@@ -32,6 +32,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'ssh kick',
     area: 'ssh',
+    audit: true,
     local: true,
     summary: 'Disconnect an ssh session by its number from ssh status',
     usage: 'ssh kick <n>',

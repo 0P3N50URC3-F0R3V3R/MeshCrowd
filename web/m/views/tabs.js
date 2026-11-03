@@ -58,7 +58,7 @@ export function mountTabs(el) {
     const b = e.target.closest('[data-tab]');
     if (b && b.dataset.tab !== active) show(b.dataset.tab);
   });
-  const offs = ['state:dms', 'state:readState', 'state:friends', 'state:serverDetail', 'state:activity'].map((ev) => bus.on(ev, paintBar));
+  const offs = ['state:dms', 'state:readState', 'state:friends', 'state:serverDetail', 'state:activity', 'state:channelActivity'].map((ev) => bus.on(ev, paintBar));
   show(active);
   window.__mcShowTab = (id) => { if (id !== active && TABS.some((x) => x.id === id)) show(id); };
   window.__mcTabBack = () => {

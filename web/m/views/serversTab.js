@@ -272,6 +272,7 @@ export function mountServersTab(host) {
     bus.on('state:remoteServers', paintRail),
     bus.on('state:servers', () => { if (!state.servers.some((s) => s.id === sid)) sid = state.servers[0]?.id ?? null; refreshAll(); }),
     bus.on('state:serverVoice', () => { const d = state.serverDetail.get(sid); if (d) paintChannels(d); }),
+    bus.on('state:channelActivity', () => { paintRail(); const d = state.serverDetail.get(sid); if (d) paintChannels(d); }),
     bus.on('state:readState', () => { paintRail(); const d = state.serverDetail.get(sid); if (d) paintChannels(d); }),
     bus.on('state:serverDetail', (id) => { paintRail(); if (id === sid) { const d = state.serverDetail.get(sid); if (d) paintChannels(d); } }),
     bus.on('state:notificationPrefs', () => { const d = state.serverDetail.get(sid); if (d) paintChannels(d); }),

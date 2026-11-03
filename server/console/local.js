@@ -36,6 +36,7 @@ function start({ stdin, stdout, registry, onExit, color, terminal, session = SES
   // Readline echoes every keystroke through _writeToOutput; while muted only the prompt itself may be redrawn.
   const writeToOutput = rl._writeToOutput.bind(rl);
   rl._writeToOutput = (s) => {
+    if (interrupts.size) return;
     if (!muted) return writeToOutput(s);
     const prompt = rl.getPrompt();
     if (s.length >= prompt.length && s.startsWith(prompt)) writeToOutput(prompt);
@@ -129,8 +130,8 @@ function start({ stdin, stdout, registry, onExit, color, terminal, session = SES
   if (rl.terminal) {
     stdin.on('keypress', (ch) => {
       if (ch === 'q' && interrupts.size) {
-        fireInterrupts();
         clearTyped();
+        fireInterrupts();
       }
     });
   }
@@ -147,8 +148,8 @@ function start({ stdin, stdout, registry, onExit, color, terminal, session = SES
       return;
     }
     if (interrupts.size) {
-      fireInterrupts();
       clearTyped();
+      fireInterrupts();
       return;
     }
     const now = Date.now();

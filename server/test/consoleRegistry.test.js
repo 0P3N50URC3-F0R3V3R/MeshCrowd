@@ -97,7 +97,7 @@ test('local command refused for ssh sessions', async () => {
   const r = makeRegistry();
   const ssh = makeCtx('ssh');
   await r.execute('backup now', ssh);
-  assert.ok(ssh.text().includes('unknown command'));
+  assert.match(ssh.text(), /`backup now` is only available in the local server console/);
 });
 
 test('handler errors are written, never rejected; string results are written', async () => {

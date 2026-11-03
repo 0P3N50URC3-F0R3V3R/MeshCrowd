@@ -3,7 +3,7 @@
 const { db } = require('../db');
 const logger = require('../lib/logger');
 const { SITE_PERMISSIONS, hasSite, hasSiteStrict } = require('../lib/permissions');
-const { getSitePermissionBits } = require('../lib/siteAuth');
+const { getSitePermissionBits, canUseConsole } = require('../lib/siteAuth');
 const { destroyAllSessionsForUser } = require('../lib/session');
 const { authAuditConsole } = require('../lib/authAudit');
 const hub = require('../socket/hub');
@@ -37,12 +37,37 @@ function assertCanModify(ctx, target) {
   }
 }
 
+function otherEnabledConsoleUser(excludeId) {
+  const rows = db.prepare("SELECT id FROM users WHERE is_disabled = 0 AND is_bot = 0 AND username != '__webhook__' AND id != ?").all(excludeId);
+  return rows.some((r) => canUseConsole(r.id));
+}
+
+// Over ssh an operator must not be able to lock the console out by accident; the local console is the recovery path
+// and stays unrestricted.
+function assertNotSelf(ctx, target, verb) {
+  if (ctx.session.kind === 'ssh' && target.id === ctx.session.userId) {
+    throw new Error(`you cannot ${verb} yourself; use the local console`);
+  }
+}
+
+function assertNotLastConsole(ctx, target, verb) {
+  if (ctx.session.kind !== 'ssh') return;
+  if (target.is_disabled || !canUseConsole(target.id) || otherEnabledConsoleUser(target.id)) return;
+  throw new Error(`you cannot ${verb} ${target.username}: it is the last enabled account with console access; use the local console`);
+}
+
+function assertSafeToRemove(ctx, target, verb) {
+  assertNotSelf(ctx, target, verb);
+  assertNotLastConsole(ctx, target, verb);
+}
+
 function logAdmin(ctx, message) {
   log.info(`${ctx.session.username} ${message}`);
 }
 
 function setDisabled(ctx, target, disabled, verb) {
   assertCanModify(ctx, target);
+  if (disabled) assertSafeToRemove(ctx, target, verb);
   db.prepare('UPDATE users SET is_disabled = ? WHERE id = ?').run(disabled ? 1 : 0, target.id);
   if (disabled) {
     destroyAllSessionsForUser(target.id);
@@ -52,4 +77,4 @@ function setDisabled(ctx, target, disabled, verb) {
   logAdmin(ctx, `${verb} account ${target.username}`);
 }
 
-module.exports = { findUser, actorId, canGrant, assertCanModify, logAdmin, setDisabled, authAuditConsole };
+module.exports = { findUser, actorId, canGrant, assertCanModify, assertNotSelf, assertNotLastConsole, assertSafeToRemove, logAdmin, setDisabled, authAuditConsole };

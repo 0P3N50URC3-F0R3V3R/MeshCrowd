@@ -378,5 +378,5 @@ test('backup commands', async () => {
 
   const sshCtx = makeCtx();
   sshCtx.session = { kind: 'ssh', userId: 1, username: 'root' };
-  assert.match(await run('backup restore x', sshCtx), /unknown command/);
+  assert.match(await run('backup restore x', sshCtx), /only available in the local server console/);
 });

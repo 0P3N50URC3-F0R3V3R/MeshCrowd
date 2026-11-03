@@ -86,6 +86,7 @@ function startShell({ channel, session, registry, closeSession, touch, cols: ini
 
   const writeToOutput = rl._writeToOutput.bind(rl);
   rl._writeToOutput = (s) => {
+    if (interrupts.size) return;
     if (!muted) return writeToOutput(s);
     const prompt = rl.getPrompt();
     if (s.length >= prompt.length && s.startsWith(prompt)) writeToOutput(prompt);
@@ -175,8 +176,8 @@ function startShell({ channel, session, registry, closeSession, touch, cols: ini
   channel.on('data', touch);
   rl.input.on('keypress', (ch) => {
     if (ch === 'q' && interrupts.size) {
-      fireInterrupts();
       clearTyped();
+      fireInterrupts();
     }
   });
 
@@ -193,8 +194,8 @@ function startShell({ channel, session, registry, closeSession, touch, cols: ini
       return;
     }
     if (interrupts.size) {
-      fireInterrupts();
       clearTyped();
+      fireInterrupts();
       return;
     }
     clearTyped();
@@ -319,19 +320,19 @@ async function start(config, opts = {}) {
       }
       const run = async () => {
         if (ctx.method === 'password') {
-          finish(ctx, await sshAuth.authenticate({ username: ctx.username, password: ctx.password, ip }));
+          finish(ctx, await sshAuth.authenticate({ username: ctx.username, password: ctx.password, ip, conn: client }));
           return;
         }
         ctx.prompt([{ prompt: 'Password: ', echo: false }], async (answers) => {
           if (!Array.isArray(answers)) return;
           try {
             const password = answers[0];
-            const first = await sshAuth.authenticate({ username: ctx.username, password, ip });
+            const first = await sshAuth.authenticate({ username: ctx.username, password, ip, conn: client });
             if (!first.needTotp) return finish(ctx, first);
             ctx.prompt([{ prompt: 'Verification code: ', echo: true }], async (codes) => {
               if (!Array.isArray(codes)) return;
               try {
-                finish(ctx, await sshAuth.authenticate({ username: ctx.username, password, totp: codes[0], ip }));
+                finish(ctx, await sshAuth.authenticate({ username: ctx.username, password, totp: codes[0], ip, conn: client }));
               } catch (e) {
                 log.error('[ssh] auth error:', e);
                 ctx.reject(AUTH_METHODS);

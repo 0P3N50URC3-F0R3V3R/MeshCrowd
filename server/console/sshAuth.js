@@ -22,12 +22,15 @@ const MAX_USERNAME = 254;
 // everyone else; the burst of 3 is a single ~1 s stall.
 const DEFAULT_LIMITER = Object.freeze({ capacity: 3, refillPerSec: 1 });
 const DENIED = Object.freeze({ ok: false });
+// Clients that offer password and keyboard-interactive send the same wrong password twice; that is one guess.
+const DUPLICATE_FAIL_MS = 2000;
 
 let clock = () => Date.now();
 let limits = { ips: 10_000, users: 10_000 };
 let limiter = { ...DEFAULT_LIMITER };
 let tokens = limiter.capacity;
 let tokenAt = null;
+const recentFails = new WeakMap();
 
 // key -> { fails: number[], lockedUntil: number }. Insertion order is recency order, locked entries are never evicted.
 class Tracker {
@@ -118,8 +121,23 @@ function isLoopback(addr) {
 // (otherwise they are a free way to lock an admin out).
 const UNCOUNTED = new Set(['malformed', 'busy']);
 
-function fail(name, addr, bucket, reason) {
+function duplicateFailure(conn, name) {
+  if (!conn || typeof conn !== 'object') return false;
+  const now = clock();
+  const key = cleanName(name).toLowerCase();
+  let seen = recentFails.get(conn);
+  if (!seen) { seen = new Map(); recentFails.set(conn, seen); }
+  const last = seen.get(key);
+  seen.set(key, now);
+  return last !== undefined && now - last < DUPLICATE_FAIL_MS;
+}
+
+function fail(name, addr, bucket, reason, conn) {
   if (UNCOUNTED.has(reason)) {
+    log.warn(`[ssh] login failed user=${cleanName(name)} ip=${addr} reason=${reason}`);
+    return DENIED;
+  }
+  if (duplicateFailure(conn, name)) {
     log.warn(`[ssh] login failed user=${cleanName(name)} ip=${addr} reason=${reason}`);
     return DENIED;
   }
@@ -138,7 +156,7 @@ function fail(name, addr, bucket, reason) {
 // Every path that reaches the password check runs exactly one bcrypt compare (splitAuth.checkLogin), and
 // unknown names also run the argon2 derivation against a stable fake salt, so timing does not tell
 // unknown, split and legacy accounts apart beyond what /api/auth/login-params already publishes.
-async function authenticate({ username, password, totp, ip }) {
+async function authenticate({ username, password, totp, ip, conn }) {
   const addr = String(ip || 'unknown');
   const bucket = ipBucket(addr);
   const verdict = guard.check(addr);
@@ -153,7 +171,7 @@ async function authenticate({ username, password, totp, ip }) {
   }
   if (typeof username !== 'string' || username.length < 1 || username.length > MAX_USERNAME
     || typeof password !== 'string' || password.length > MAX_PASSWORD) {
-    return fail(username, addr, bucket, 'malformed');
+    return fail(username, addr, bucket, 'malformed', conn);
   }
   if (!exempt && names.isLocked(cleanName(username).toLowerCase())) {
     log.debug(`[ssh] login refused user=${cleanName(username)} ip=${addr} reason=user_locked`);
@@ -163,7 +181,7 @@ async function authenticate({ username, password, totp, ip }) {
     log.warn(`[ssh] login refused ip=${addr}: lockout table is full of active lockouts`);
     return DENIED;
   }
-  if (!takeToken(clock())) return fail(username, addr, bucket, 'busy');
+  if (!takeToken(clock())) return fail(username, addr, bucket, 'busy', conn);
 
   const user = splitAuth.findLoginUser(username);
   let outcome;
@@ -186,13 +204,13 @@ async function authenticate({ username, password, totp, ip }) {
     outcome = splitAuth.checkLogin(null, { password });
   }
 
-  if (outcome !== 'ok') return fail(username, addr, bucket, 'bad_credentials');
-  if (user.is_disabled) return fail(username, addr, bucket, 'disabled');
-  if (!canUseConsole(user.id)) return fail(username, addr, bucket, 'no_permission');
+  if (outcome !== 'ok') return fail(username, addr, bucket, 'bad_credentials', conn);
+  if (user.is_disabled) return fail(username, addr, bucket, 'disabled', conn);
+  if (!canUseConsole(user.id)) return fail(username, addr, bucket, 'no_permission', conn);
 
   if (user.totp_enabled) {
     if (totp === undefined || totp === null || totp === '') return { ok: false, needTotp: true };
-    if (typeof totp !== 'string' || totp.length > 64 || !checkSecondFactor(user, totp)) return fail(username, addr, bucket, 'bad_totp');
+    if (typeof totp !== 'string' || totp.length > 64 || !checkSecondFactor(user, totp)) return fail(username, addr, bucket, 'bad_totp', conn);
   }
 
   ips.map.delete(bucket);

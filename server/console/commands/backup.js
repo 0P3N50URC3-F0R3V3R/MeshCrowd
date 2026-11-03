@@ -20,6 +20,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'backup create',
     area: 'backup',
+    audit: true,
     summary: 'Create a backup now (database, config, small media)',
     usage: 'backup create',
     examples: ['backup create'],
@@ -46,12 +47,14 @@ module.exports = function register(registry) {
   registry.register({
     name: 'backup delete',
     area: 'backup',
+    audit: true,
     summary: 'Delete a backup',
     usage: 'backup delete <name> [--yes]',
     examples: ['backup delete backup-20261031-120000-000-manual.zip'],
     async run(args, ctx) {
       const { yes, rest } = takeYes(args);
       const name = needName(rest, 'backup delete <name> [--yes]');
+      backup.checkName(name);
       if (!yes && !(await ctx.confirm(`Delete ${name}?`))) return 'cancelled';
       backup.deleteBackup(name);
       return `deleted ${name}`;
@@ -74,6 +77,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'backup keep',
     area: 'backup',
+    audit: true,
     summary: 'Set how many normal backups to keep (1-100) and prune',
     usage: 'backup keep <n>',
     examples: ['backup keep 14'],
@@ -89,6 +93,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'backup auto',
     area: 'backup',
+    audit: true,
     summary: 'Schedule a daily backup at HH:MM (server local time), or turn it off',
     usage: 'backup auto <HH:MM|off>',
     examples: ['backup auto 03:30', 'backup auto off'],
@@ -104,6 +109,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'backup restore',
     area: 'backup',
+    audit: true,
     summary: 'Replace the database, media and config from a backup, then restart the server',
     usage: 'backup restore <name> [--yes]',
     examples: ['backup restore backup-20261031-120000-000-manual.zip'],

@@ -81,7 +81,7 @@ test('account roleperm adds and removes the console permission, locally, with co
 
 test('account roleperm is refused and hidden over ssh', async () => {
   const id = mkRole('SshTry', 0);
-  assert.match(await run('account roleperm SshTry +console --yes', SSH), /unknown command/);
+  assert.match(await run('account roleperm SshTry +console --yes', SSH), /only available in the local server console/);
   assert.equal(perms(id), 0);
   assert.doesNotMatch(await run('help account', SSH), /roleperm/);
   assert.match(await run('help account', LOCAL), /roleperm/);

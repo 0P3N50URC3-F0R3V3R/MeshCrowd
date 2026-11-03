@@ -4,7 +4,7 @@ const { db } = require('../../db');
 const guard = require('../../lib/security/guard');
 const { parseEntry } = require('../../lib/security/ipMatch');
 const hub = require('../../socket/hub');
-const { findUser, actorId, assertCanModify, logAdmin, setDisabled } = require('../userOps');
+const { findUser, actorId, assertCanModify, assertSafeToRemove, logAdmin, setDisabled } = require('../userOps');
 
 function parseMinutes(text) {
   if (text === undefined) return null;
@@ -17,6 +17,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'kick',
     area: 'moderation',
+    audit: true,
     summary: 'Disconnect a user\'s live connections (the account stays enabled)',
     usage: 'kick <user>',
     examples: ['kick alice'],
@@ -32,6 +33,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'ban',
     area: 'moderation',
+    audit: true,
     summary: 'Disable an account and end its sessions',
     usage: 'ban <user> [reason] [--yes]',
     examples: ['ban alice spamming', 'ban alice --yes'],
@@ -40,6 +42,7 @@ module.exports = function register(registry) {
       const args = rawArgs.filter((a) => a !== '--yes');
       const target = findUser(args[0]);
       assertCanModify(ctx, target);
+      assertSafeToRemove(ctx, target, 'ban');
       if (!yes && !(await ctx.confirm(`Ban account ${target.username}?`))) return 'cancelled';
       setDisabled(ctx, target, true, 'ban');
       logAdmin(ctx, `ban reason for ${target.username}: ${args.slice(1).join(' ') || '(none)'}`);
@@ -50,6 +53,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'unban',
     area: 'moderation',
+    audit: true,
     summary: 'Re-enable a banned account',
     usage: 'unban <user>',
     examples: ['unban alice'],
@@ -66,7 +70,9 @@ module.exports = function register(registry) {
     summary: 'Ban an IP, range or CIDR, optionally for a number of minutes',
     usage: 'ipban <ip|cidr> [minutes] [reason]',
     examples: ['ipban 10.0.0.0/24 5 scanning', 'ipban 192.0.2.7'],
-    run(args, ctx) {
+    audit: true,
+    run(rawArgs, ctx) {
+      const args = rawArgs.filter((a) => a !== '--yes');
       if (!args[0]) throw new Error('usage: ipban <ip|cidr> [minutes] [reason]');
       const minutes = parseMinutes(args[1]);
       const ban = guard.addBan(args[0], { reason: args.slice(2).join(' '), minutes, userId: actorId(ctx) });
@@ -78,6 +84,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'ipunban',
     area: 'moderation',
+    audit: true,
     summary: 'Remove an IP ban',
     usage: 'ipunban <ip|cidr>',
     examples: ['ipunban 10.0.0.0/24'],

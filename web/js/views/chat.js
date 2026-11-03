@@ -264,6 +264,12 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
           const anchor = anchorAt === unreadAt ? listEl.querySelector('.unread-divider') : listEl.querySelector(`[data-id="${messages[anchorAt].id}"]`);
           (anchor || listEl.lastElementChild)?.scrollIntoView({ block: 'start' });
         } else scrollToBottom();
+        // Short backlog: everything is already (nearly) on screen, so the unread line has been "reached".
+        requestAnimationFrame(() => {
+          if (isNearBottom() && !hasNewer && listEl.querySelector('.unread-divider')) {
+            bannerDismissed = true; unreadAfterId = 0; renderKeepingPosition();
+          }
+        });
         if (messages.length) markRead(messages[messages.length - 1].id);
       }
     } catch (err) {
