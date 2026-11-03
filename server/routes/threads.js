@@ -134,7 +134,7 @@ router.post('/', requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfTimedOut,
   const thread = shapeThread(db.prepare('SELECT * FROM threads WHERE id = ?').get(threadId));
   // message first: viewers bump a listed post's count on message_create, so thread_create (which
   // already counts the opening message) must land after it or the count shows 2.
-  broadcastToChannel(req.channel, { type: 'message_create', message });
+  broadcastToChannel(req.channel, { type: 'message_create', message, channelId: req.channel.id });
   broadcastToChannel(req.channel, { type: 'thread_create', channelId: req.channel.id, thread });
   maybeFetchAndAttachEmbed(message, (payload) => broadcastToChannel(req.channel, payload)).catch(() => {});
   if (parentMessage) notifyThreadStarted(req.channel, thread, parentMessage, message, { id: req.user.id, displayName: req.user.display_name });
@@ -295,7 +295,7 @@ router.post('/:threadId/messages', loadThread, requireChannelPerm(PERMISSIONS.SE
   }
 
   const message = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(info.lastInsertRowid));
-  broadcastToChannel(req.channel, { type: 'message_create', message });
+  broadcastToChannel(req.channel, { type: 'message_create', message, channelId: req.channel.id });
   maybeFetchAndAttachEmbed(message, (payload) => broadcastToChannel(req.channel, payload)).catch(() => {});
 
   const candidateUsers = db.prepare(

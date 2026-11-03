@@ -17,6 +17,7 @@ const { toPublicUser } = require('../lib/publicUser');
 const siteSettings = require('../lib/siteSettings');
 const hub = require('../socket/hub');
 const { isOnline } = require('../lib/presence');
+const { clipBio } = require('../lib/bio');
 const { singleLine } = require('../lib/textSanitize');
 const { uploadSticker, createSticker, deleteSticker } = require('../lib/stickers');
 const { uploadSound, createSound, deleteSound } = require('../lib/sounds');
@@ -266,7 +267,7 @@ router.patch('/users/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_USERS), (req,
   }
   if (bio !== undefined) {
     if (typeof bio !== 'string') return res.status(400).json({ error: 'bio must be a string' });
-    db.prepare('UPDATE users SET bio = ? WHERE id = ?').run(bio.slice(0, 500), target.id);
+    db.prepare('UPDATE users SET bio = ? WHERE id = ?').run(clipBio(bio), target.id);
     log.info(`${who(req.user)} edited the bio of ${who(target)}`);
   }
   if (email !== undefined) {

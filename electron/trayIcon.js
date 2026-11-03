@@ -218,4 +218,53 @@ function buildTrayIconPNG({ status, count }, theme) {
   return encodePNG(ICON_SIZE, buf);
 }
 
-module.exports = { ICON_SIZE, unreadBadgeLayout, buildTrayIconPNG, encodePNG, newCanvas, fillCircle, fillRoundedRect, drawText, textWidth };
+// ---- blinking alert icon -------------------------------------------------------------------
+// With unread items the whole tray icon becomes a full-size colored disc with the count filling it,
+// and fades in and out over the normal icon (the tray cannot animate, so the fade is a short
+// sequence of pre-blended frames that main.js steps through).
+
+function normalCanvas(theme) {
+  const baseColor = hexToRgb(theme?.baseColor, BRAND);
+  const buf = newCanvas(ICON_SIZE);
+  fillCircle(buf, ICON_SIZE, ICON_SIZE / 2, ICON_SIZE / 2, ICON_SIZE / 2 - 1, baseColor);
+  drawGhost(buf, ICON_SIZE, baseColor);
+  return buf;
+}
+
+function alertLayout(count) {
+  const label = count > 9 ? '9+' : String(count);
+  const scale = label.length === 1 ? 8 : 6;
+  const w = textWidth(label, scale);
+  return { label, scale, x: Math.round((ICON_SIZE - w) / 2), y: Math.round((ICON_SIZE - 5 * scale) / 2) };
+}
+
+function alertCanvas({ status, count }, theme) {
+  const badgeColor = hexToRgb(theme?.badgeColors?.[status], STATUS_COLORS[status] || STATUS_COLORS.online);
+  const buf = newCanvas(ICON_SIZE);
+  fillCircle(buf, ICON_SIZE, ICON_SIZE / 2, ICON_SIZE / 2, ICON_SIZE / 2 - 1, [255, 255, 255]);
+  fillCircle(buf, ICON_SIZE, ICON_SIZE / 2, ICON_SIZE / 2, ICON_SIZE / 2 - 3, badgeColor);
+  const L = alertLayout(count);
+  const o = L.scale >= 6 ? 2 : 1; // dark outline keeps the digits readable on a light status color
+  for (const [dx, dy] of [[-o, 0], [o, 0], [0, -o], [0, o], [-o, -o], [o, o], [-o, o], [o, -o]]) {
+    drawText(buf, ICON_SIZE, L.label, L.x + dx, L.y + dy, [0x1e, 0x1f, 0x22], L.scale);
+  }
+  drawText(buf, ICON_SIZE, L.label, L.x, L.y, [255, 255, 255], L.scale);
+  return buf;
+}
+
+function blend(a, b, f) {
+  const out = Buffer.alloc(a.length);
+  for (let i = 0; i < a.length; i++) out[i] = Math.round(a[i] * (1 - f) + b[i] * f);
+  return out;
+}
+
+// steps + 1 PNG frames going from the plain icon (index 0) to the full alert icon (index steps).
+function buildBlinkFrames(badge, theme, steps = 8) {
+  const normal = normalCanvas(theme);
+  const alert = alertCanvas(badge, theme);
+  const frames = [];
+  for (let i = 0; i <= steps; i++) frames.push(encodePNG(ICON_SIZE, blend(normal, alert, i / steps)));
+  return frames;
+}
+
+module.exports = { buildBlinkFrames, alertLayout, ICON_SIZE, unreadBadgeLayout, buildTrayIconPNG, encodePNG, newCanvas, fillCircle, fillRoundedRect, drawText, textWidth };

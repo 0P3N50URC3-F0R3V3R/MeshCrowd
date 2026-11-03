@@ -32,7 +32,7 @@ export async function loadAll() {
     setDmPrefs(dmPrefsRes.prefs);
     setBookmarkIds(bookmarkIdsRes.ids);
     Object.assign(state.config, config);
-    setReadStateBulk(readStateRes.state, readStateRes.pinsUnseen);
+    setReadStateBulk(readStateRes.state, readStateRes.pinsUnseen, readStateRes.threadsUnread);
     setServerLayout(layoutRes.layout);
     applyTheme(themeRes.theme);
     if (config.federationEnabled) refreshRemoteServers();
@@ -59,7 +59,7 @@ export async function refreshServerDetailSilently(serverId) {
 async function resync() {
   try {
     const [s, d, f, r] = await Promise.all([api.listServers(), api.listDms(), api.friends(), api.getReadState()]);
-    setServers(s.servers); setDms(d.dms); setFriends(f); setReadStateBulk(r.state, r.pinsUnseen);
+    setServers(s.servers); setDms(d.dms); setFriends(f); setReadStateBulk(r.state, r.pinsUnseen, r.threadsUnread);
     for (const id of [...state.serverDetail.keys()]) refreshServerDetailSilently(id);
   } catch (err) { if (err && err.status === 401) bus.emit('m:unauthorized'); }
 }

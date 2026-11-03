@@ -4,7 +4,7 @@ import { ws } from '../../js/ws.js';
 import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
 import { avatarHtml, escapeHtml, toast } from '../../js/utils.js';
-import { state, pinUnseen, setReadState, nameFor, getKnownUser } from '../../js/state.js';
+import { state, pinUnseen, channelHasUnreadThreads, setReadState, nameFor, getKnownUser } from '../../js/state.js';
 import { PERMISSIONS, has, memberPermissionBits, channelPermissionBits } from '../../js/permissions.js';
 import { decryptMessages, encryptForSend, cacheSentPlaintext, uploadDmFile, fetchDmFile, trustView, refreshTrust, NO_IDENTITY, KEY_CHANGED } from '../../js/e2ee/dmCrypto.js';
 import { nav } from '../router.js';
@@ -210,7 +210,7 @@ export function mountChat(el, params) {
       bannerDismissed = true;
       unreadAfterId = 0;
       const last = messages[messages.length - 1];
-      if (last && scopeType !== 'thread') {
+      if (last) {
         setReadState(scopeType, scopeId, last.id);
         api.markRead(scopeType, scopeId, last.id).catch(() => {});
       }
@@ -301,7 +301,6 @@ export function mountChat(el, params) {
   }
 
   function markReadSoon() {
-    if (scopeType === 'thread') return;
     clearTimeout(readTimer);
     readTimer = setTimeout(() => {
       const last = messages[messages.length - 1];
@@ -650,7 +649,7 @@ export function mountChat(el, params) {
     const box = el.querySelector('#m-actions');
     box.innerHTML = `<button class="m-icon-btn" id="m-search" aria-label="${t('m.searchAction')}">${icons.search(20)}</button>`
       + (kind === 'dm' ? `<button class="m-icon-btn" id="m-call" aria-label="${t('m.callAction')}">${icons.phone(20)}</button>` : '')
-      + (kind === 'channel' ? `<button class="m-icon-btn" id="m-threads" aria-label="${t('m.threads')}">${icons.messageSquare(20)}</button>` : '')
+      + (kind === 'channel' ? `<button class="m-icon-btn${channelHasUnreadThreads(params.channelId) ? ' m-pin-dot' : ''}" id="m-threads" aria-label="${t('m.threads')}">${icons.messageSquare(20)}</button>` : '')
       + (kind === 'dm' && encrypted() && !dm().isGroup ? `<button class="m-icon-btn" id="m-verify" aria-label="${t('dmVerify.title')}">${icons.lock(20)}</button>` : '')
       + (kind === 'thread' && thread && (canEditPost(thread, state.me) || canDeletePost(thread, state.me, { canManage })) ? `<button class="m-icon-btn" id="m-post-menu" aria-label="${t('forum.postActions')}">${icons.more(20)}</button>` : '')
       + `<button class="m-icon-btn${pinUnseen(kind, kind === 'dm' ? params.dmId : kind === 'thread' ? params.threadId : params.channelId) ? ' m-pin-dot' : ''}" id="m-info" aria-label="${t('m.infoMembers')}">${icons.users(20)}</button>`;

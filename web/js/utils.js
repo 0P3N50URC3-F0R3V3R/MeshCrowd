@@ -222,6 +222,8 @@ export function colorForId(id) {
   return AVATAR_PALETTE[n % AVATAR_PALETTE.length];
 }
 
+export const BIO_MAX = 200;
+
 export function statusEmojiBadge(user) {
   return user?.customStatusEmoji ? `<span class="status-emoji-badge" title="${escapeHtml(user.customStatusText || '')}">${escapeHtml(user.customStatusEmoji)}</span>` : '';
 }

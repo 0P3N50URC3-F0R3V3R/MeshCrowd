@@ -5,6 +5,7 @@ import { t } from '../../js/i18n.js';
 import { avatarHtml, escapeHtml, formatTimestamp } from '../../js/utils.js';
 import { nav } from '../router.js';
 import { handleError } from '../lib/errors.js';
+import { threadUnread } from '../../js/state.js';
 import { promptSheet } from '../components/bottomSheet.js';
 
 export function mountThreads(el, params) {
@@ -20,7 +21,7 @@ export function mountThreads(el, params) {
       <button class="m-row m-thread${th.archived ? ' archived' : ''}" data-tid="${th.id}">
         <span class="m-chan-icon">${th.iconPath ? `<img class="m-chan-img" src="${escapeHtml(th.iconPath)}" alt="">` : avatarHtml(th.createdBy, 28)}</span>
         <span class="m-grow"><b>${escapeHtml(th.title)}</b><small>${th.archived ? `${t('m.threadArchived')} · ` : ''}${th.messageCount} · ${escapeHtml(formatTimestamp(th.lastMessageAt))}</small></span>
-        ${icons.chevronRight(18)}</button>`).join('') : `<div class="m-empty">${t('m.noThreads')}</div>`;
+        ${threadUnread(th.id) ? '<i class="m-dot"></i>' : ''}${icons.chevronRight(18)}</button>`).join('') : `<div class="m-empty">${t('m.noThreads')}</div>`;
   }
   async function load() {
     try { threads = (await api.listThreads(params.serverId, params.channelId)).threads; paint(); } catch (err) { handleError(err, 'm.loadFailed'); }
@@ -38,6 +39,7 @@ export function mountThreads(el, params) {
     } catch (err) { handleError(err); }
   });
   const offs = ['thread_create', 'thread_update'].map((ev) => bus.on(`ws:${ev}`, (p) => { if (p.channelId === params.channelId) load(); }));
+  offs.push(bus.on('state:threads', paint));
   offs.push(bus.on('ws:thread_delete', (p) => { if (p.channelId === params.channelId) load(); }));
   load();
   return { destroy: () => offs.forEach((off) => off()), onShow: load };

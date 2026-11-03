@@ -186,6 +186,13 @@ db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_messages_federation ON messages(f
 // meta flag rather than "is messages_fts empty" so it can't re-scan every boot on a server that
 // legitimately has zero messages, and can't mistake a genuinely-synced-but-currently-empty index
 // (all messages deleted) for one that was never backfilled.
+// Bios used to allow 500 characters; clip the long ones once (SQLite substr counts characters, not bytes).
+{
+  const { BIO_MAX } = require('../lib/bio');
+  const clipped = db.prepare('UPDATE users SET bio = substr(bio, 1, ?) WHERE length(bio) > ?').run(BIO_MAX, BIO_MAX).changes;
+  if (clipped) console.log(`[db] shortened ${clipped} bio(s) to ${BIO_MAX} characters`);
+}
+
 if (!db.prepare("SELECT 1 FROM meta WHERE key = 'messages_fts_backfilled'").get()) {
   db.exec("INSERT INTO messages_fts(rowid, content) SELECT id, content FROM messages");
   db.prepare("INSERT INTO meta (key, value) VALUES ('messages_fts_backfilled', '1')").run();

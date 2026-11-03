@@ -23,6 +23,7 @@ export const state = {
   dmPrefs: new Map(), // dmId -> { pinned, favorite, hidden }
   bookmarkIds: new Set(), // message ids this user saved
   serverPrefs: new Map(), // serverId -> { notifLevel, mutedUntil, hideMutedChannels, showAllChannels, allowDms }
+  threadsUnread: new Map(), // threadId -> { channelId, lastId } for threads with messages this user has not read
   pinsUnseen: new Map(), // "channel:1" -> newest pin time the user has not looked at yet
   pinSeenAt: new Map(), // "channel:1" -> when this session last opened that pin list
   readState: new Map(), // "channel:1" | "dm:2" -> last message id this user has read there
@@ -295,16 +296,40 @@ export function isChannelMuted(serverId, channelId) {
 }
 
 // Unlike setReadState this may move the pointer backwards ("mark as unread from here").
+// Unread-thread dot: a thread stops counting once the user's read pointer reaches its newest message.
+export function threadUnread(threadId) { return state.threadsUnread.has(threadId); }
+export function channelHasUnreadThreads(channelId) {
+  for (const th of state.threadsUnread.values()) if (th.channelId === channelId) return true;
+  return false;
+}
+function settleThread(scopeType, scopeId, messageId) {
+  if (scopeType !== 'thread') return;
+  const th = state.threadsUnread.get(scopeId);
+  if (th && th.lastId <= messageId && state.threadsUnread.delete(scopeId)) bus.emit('state:threads', scopeId);
+}
+
+bus.on('ws:message_create', ({ message, channelId }) => {
+  if (message?.scopeType !== 'thread' || !state.me || message.author?.id === state.me.id || !channelId) return;
+  if (state.view.threadId === message.scopeId && !document.hidden) return; // being read right now
+  if ((state.readState.get(`thread:${message.scopeId}`) || 0) >= message.id) return;
+  state.threadsUnread.set(message.scopeId, { channelId, lastId: message.id });
+  bus.emit('state:threads', message.scopeId);
+});
+bus.on('ws:thread_delete', ({ threadId }) => { if (state.threadsUnread.delete(threadId)) bus.emit('state:threads', threadId); });
+
 export function forceReadState(scopeType, scopeId, messageId) {
   const key = `${scopeType}:${scopeId}`;
   state.readState.set(key, messageId);
+  settleThread(scopeType, scopeId, messageId);
   bus.emit('state:readState', key);
 }
 
-export function setReadStateBulk(rows, pinsUnseen = []) {
+export function setReadStateBulk(rows, pinsUnseen = [], threadsUnread = []) {
   state.readState = new Map(rows.map((r) => [`${r.scopeType}:${r.scopeId}`, r.lastReadMessageId]));
   state.pinsUnseen = new Map(pinsUnseen.map((p) => [`${p.scopeType}:${p.scopeId}`, p.latest]));
+  state.threadsUnread = new Map(threadsUnread.map((th) => [th.threadId, { channelId: th.channelId, lastId: th.lastMessageId }]));
   bus.emit('state:pins');
+  bus.emit('state:threads');
 }
 
 // Per-user "new pin" dot: a pin by someone else newer than the last time this user opened the list.
@@ -333,6 +358,7 @@ export function setReadState(scopeType, scopeId, messageId) {
   const key = `${scopeType}:${scopeId}`;
   if ((state.readState.get(key) || 0) >= messageId) return;
   state.readState.set(key, messageId);
+  settleThread(scopeType, scopeId, messageId);
   bus.emit('state:readState', key);
 }
 

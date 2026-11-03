@@ -30,6 +30,7 @@ app.use('/api/users', require('../routes/users'));
 app.use('/api/read-state', require('../routes/readState'));
 app.use('/api/messages', require('../routes/messages'));
 app.use('/api/dms', require('../routes/dms'));
+app.use('/api/servers', require('../routes/servers'));
 app.use('/api/admin', require('../routes/admin'));
 app.use(require('../middleware/errorHandler').errorHandler);
 let server; let base;
@@ -132,4 +133,30 @@ test('closing a 1:1 DM marks it closed for the other side, blocks sends, and a n
   assert.notEqual(fresh.body.dmId, dmId);
   assert.equal((await call('DELETE', `/api/dms/${dmId}/members/me`, null, 'pf_b')).status, 200);
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM messages WHERE scope_type = ? AND scope_id = ?').get('dm', dmId).n, 0);
+});
+
+test('bios are clipped to 200 characters by users and by admins', async () => {
+  const long = 'x'.repeat(450) + '\u{1F600}';
+  const r = await call('PATCH', '/api/users/me', { bio: long }, 'pf_a');
+  assert.equal(Array.from(r.body.user.bio).length, 200);
+  await call('PATCH', `/api/admin/users/${ids.pf_b}`, { bio: long }, 'pf_a');
+  assert.equal(Array.from(db.prepare('SELECT bio FROM users WHERE id = ?').get(ids.pf_b).bio).length, 200);
+});
+
+test('thread unread: other people\'s messages count until the thread is read', async () => {
+  const { unreadThreads } = require('../lib/threadUnread');
+  const created = await call('POST', '/api/servers', { name: 'T' }, 'pf_a');
+  const sid = (created.body.server || created.body).id;
+  const detail = await call('GET', `/api/servers/${sid}`, null, 'pf_a');
+  await call('POST', '/api/servers/join', { inviteCode: detail.body.server.invite_code }, 'pf_b');
+  const ch = detail.body.channels[0].id;
+  const th = db.prepare("INSERT INTO threads (channel_id, title, created_by) VALUES (?, 'topic', ?)").run(ch, ids.pf_a).lastInsertRowid;
+  const m = db.prepare("INSERT INTO messages (scope_type, scope_id, author_id, content, created_at) VALUES ('thread', ?, ?, 'hey', ?)").run(th, ids.pf_a, new Date().toISOString()).lastInsertRowid;
+  assert.deepEqual(unreadThreads(ids.pf_b).map((r) => r.threadId), [Number(th)]);
+  assert.equal(unreadThreads(ids.pf_a).length, 0);
+  const rs = await call('GET', '/api/read-state', null, 'pf_b');
+  assert.equal(rs.body.threadsUnread.length, 1);
+  assert.equal((await call('PUT', `/api/read-state/thread/${th}`, { messageId: Number(m) }, 'pf_b')).status, 200);
+  assert.equal(unreadThreads(ids.pf_b).length, 0);
+  assert.equal((await call('PUT', '/api/read-state/thread/999999', { messageId: 1 }, 'pf_b')).status, 403);
 });

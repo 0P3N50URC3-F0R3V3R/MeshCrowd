@@ -4,7 +4,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, ses
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
-const { buildTrayIconPNG } = require('./trayIcon');
+const { buildTrayIconPNG, buildBlinkFrames } = require('./trayIcon');
 const { pruneRecent, clearRecentOnFocus } = require('./trayState');
 const { findMcrLink, inviteTarget } = require('./inviteUrl');
 
@@ -81,9 +81,44 @@ function trayTheme() {
   return { baseColor: clientConfig.trayIconColor, badgeColors: clientConfig.trayBadgeColors || {} };
 }
 
+// Unread state: the whole icon fades between the plain ghost and a full-size count disc, each way taking
+// BLINK_HALF_MS, until everything is read and the plain icon returns.
+const BLINK_STEPS = 8;
+const BLINK_HALF_MS = 350;
+let blinkTimer = null;
+let blinkKey = '';
+
+function stopBlink() {
+  clearInterval(blinkTimer);
+  blinkTimer = null;
+  blinkKey = '';
+}
+
+function startBlink() {
+  const key = JSON.stringify([trayBadge.status, trayBadge.count > 9 ? 10 : trayBadge.count, trayTheme()]);
+  if (blinkTimer && key === blinkKey) return;
+  stopBlink();
+  blinkKey = key;
+  const frames = buildBlinkFrames(trayBadge, trayTheme(), BLINK_STEPS).map((png) => nativeImage.createFromBuffer(png));
+  const started = Date.now();
+  let shown = -1;
+  tray.setImage(frames[0]);
+  // Frame chosen from elapsed time, not from tick count, so timer jitter never stretches the blink.
+  blinkTimer = setInterval(() => {
+    if (!tray || tray.isDestroyed?.()) { stopBlink(); return; }
+    const phase = ((Date.now() - started) % (2 * BLINK_HALF_MS)) / BLINK_HALF_MS; // 0..2
+    const idx = Math.round((phase <= 1 ? phase : 2 - phase) * BLINK_STEPS);
+    if (idx !== shown) { shown = idx; tray.setImage(frames[idx]); }
+  }, 25);
+}
+
 function applyTrayBadge() {
   if (!tray) return;
-  tray.setImage(nativeImage.createFromBuffer(buildTrayIconPNG(trayBadge, trayTheme())));
+  if (trayBadge.count > 0) startBlink();
+  else {
+    stopBlink();
+    tray.setImage(nativeImage.createFromBuffer(buildTrayIconPNG({ status: trayBadge.status, count: 0 }, trayTheme())));
+  }
   tray.setToolTip(trayBadge.count > 0 ? `MeshCrowd (${trayLabels.unread.replace('{count}', trayBadge.count > 99 ? '99+' : trayBadge.count)})` : 'MeshCrowd');
 }
 
@@ -583,6 +618,7 @@ app.on('window-all-closed', () => {
 // Windows only removes a tray icon when its owner deletes it (or the user hovers over a dead one),
 // so every way this process can end has to run this: quit, signals, logoff/shutdown, crashes.
 function destroyTray() {
+  stopBlink();
   if (!tray) return;
   try { tray.destroy(); } catch { /* already gone */ }
   tray = null;

@@ -1,7 +1,7 @@
 import { api } from '../api.js';
 import { state } from '../state.js';
 import { icons } from '../icons.js';
-import { avatarHtml, escapeHtml, toast, apiErrorMessage, el, formatBytes, navScroll, restoreNavScroll } from '../utils.js';
+import { avatarHtml, BIO_MAX, escapeHtml, toast, apiErrorMessage, el, formatBytes, navScroll, restoreNavScroll } from '../utils.js';
 import { passReauth } from '../reauth.js';
 import { SITE_PERMISSION_INFO, has } from '../permissions.js';
 import { confirmModal, confirmTypedModal, openContextMenu, openModal } from './modal.js';
@@ -720,11 +720,14 @@ function buildAdminPanel() {
             </div>
           </div>
           <div class="field"><label>${t('admin.displayNameLabel')}</label><input class="input" id="eu-name" value="${escapeHtml(u.displayName)}"></div>
-          <div class="field"><label>${t('admin.bioLabel')}</label><textarea class="textarea" id="eu-bio" maxlength="500">${escapeHtml(u.bio || '')}</textarea></div>
+          <div class="field"><label style="display:flex;justify-content:space-between;align-items:baseline">${t('admin.bioLabel')}<span class="hint" id="eu-bio-count" style="margin:0"></span></label><textarea class="textarea" id="eu-bio" maxlength="${BIO_MAX}">${escapeHtml(u.bio || '')}</textarea></div>
           <div class="field"><label>${t('admin.emailLabel')}</label><input class="input" id="eu-email" type="email" value="${escapeHtml(u.email || '')}"></div>
           <div class="field"><label>${t('admin.newPasswordLabel')} <span class="hint">${t('admin.leaveBlankHint')}</span></label><input class="input" id="eu-password" type="password" autocomplete="new-password"><div class="hint">${t('admin.passportResetWarning')}</div>${u.authMode === 'split' ? `<div class="hint">${t('admin.splitResetNote')}</div>` : ''}</div>
           <div class="error-text" id="eu-err"></div>`;
 
+        const bioBox = body.querySelector('#eu-bio'); const bioCount = body.querySelector('#eu-bio-count');
+        const paintBioCount = () => { bioCount.textContent = `${[...bioBox.value].length}/${BIO_MAX}`; };
+        paintBioCount(); bioBox.addEventListener('input', paintBioCount);
         body.querySelector('#eu-avatar-btn').addEventListener('click', () => body.querySelector('#eu-avatar-file').click());
         body.querySelector('#eu-avatar-file').addEventListener('change', (e) => { avatarFile = e.target.files[0] || null; });
       },

@@ -36,7 +36,7 @@ export async function applyUserSync(what, { refreshServerDetail } = {}) {
   const [servers, dms, readState] = await Promise.all([api.listServers(), api.listDms(), api.getReadState()]);
   setServers(servers.servers);
   setDms(dms.dms);
-  setReadStateBulk(readState.state, readState.pinsUnseen);
+  setReadStateBulk(readState.state, readState.pinsUnseen, readState.threadsUnread);
   await Promise.all(Object.entries(READERS).filter(([k]) => k !== 'language').map(([, fn]) => fn().catch(() => {})));
   if (refreshServerDetail) for (const id of [...state.serverDetail.keys()]) refreshServerDetail(id);
 }

@@ -367,7 +367,6 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   // Marking read follows "this scope is open" rather than window focus — matches how the rest
   // of the app already opens a conversation (no separate "acknowledge" step).
   async function markRead(messageId) {
-    if (scope.kind === 'thread') return; // threads don't have their own unread tracking (yet) — read state only covers channel/dm scopes
     try {
       await api.markRead(scopeType, scopeId, messageId);
       setReadState(scopeType, scopeId, messageId);

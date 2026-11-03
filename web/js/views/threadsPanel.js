@@ -3,6 +3,7 @@ import { bus } from '../bus.js';
 import { icons } from '../icons.js';
 import { escapeHtml, formatTimestamp, apiErrorMessage } from '../utils.js';
 import { t } from '../i18n.js';
+import { threadUnread } from '../state.js';
 
 // Docked in the right rail (same slot as the member list/pinned/search panels) - lists every
 // thread in this channel, most recently active first, so a thread you created and then navigated
@@ -10,6 +11,10 @@ import { t } from '../i18n.js';
 export function mountThreadsPanel(container, serverId, channelId, { onOpen, onClose } = {}) {
   container.innerHTML = `<div class="panel-loading" style="height:160px"><div class="spinner"></div></div>`;
   let destroyed = false;
+  // A thread's unread dot appears live and clears as soon as its newest message has been read (opening it does that).
+  const offUnread = bus.on('state:threads', () => {
+    container.querySelectorAll('.thread-item').forEach((n) => n.classList.toggle('unread', threadUnread(Number(n.dataset.id))));
+  });
   const offDelete = bus.on('ws:thread_delete', ({ channelId: cid }) => { if (cid === channelId && !destroyed) load(); });
   load();
 
@@ -47,7 +52,7 @@ export function mountThreadsPanel(container, serverId, channelId, { onOpen, onCl
 
   function renderItem(thread) {
     return `
-      <div class="thread-item pinned-item" data-id="${thread.id}">
+      <div class="thread-item pinned-item${threadUnread(thread.id) ? ' unread' : ''}" data-id="${thread.id}">
         <span class="ti-icon">${icons.messageSquare(18)}</span>
         <div class="pi-body">
           <div class="pi-head">
@@ -59,6 +64,6 @@ export function mountThreadsPanel(container, serverId, channelId, { onOpen, onCl
       </div>`;
   }
 
-  function destroy() { destroyed = true; offDelete(); }
+  function destroy() { destroyed = true; offDelete(); offUnread(); }
   return { destroy };
 }

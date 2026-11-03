@@ -12,6 +12,7 @@ const { isValidBackup, isValidBackupFor } = require('../lib/passportCrypto');
 const { areFriends, isBlocked } = require('../lib/friends');
 const { broadcastPresence, notifyUser } = require('../socket/hub');
 const { syncUser, syncAfter } = require('../lib/userSync');
+const { clipBio } = require('../lib/bio');
 const { sanitizeServerLayout } = require('../lib/serverLayout');
 const { sanitizeTheme } = require('../lib/theme');
 const { singleLine, statusEmoji } = require('../lib/textSanitize');
@@ -90,7 +91,7 @@ router.patch('/me', requireAuth, (req, res) => {
     updates.push('display_name = ?'); params.push(v);
   }
   if (bio !== undefined) {
-    updates.push('bio = ?'); params.push(String(bio).slice(0, 500));
+    updates.push('bio = ?'); params.push(clipBio(bio));
   }
   if (dmPrivacy !== undefined) {
     if (!['everyone', 'friends', 'none'].includes(dmPrivacy)) return res.status(400).json({ error: 'invalid dmPrivacy' });

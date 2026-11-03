@@ -1,7 +1,7 @@
 import { api } from '../../js/api.js';
 import { bus } from '../../js/bus.js';
 import { t } from '../../js/i18n.js';
-import { escapeHtml, toast, avatarHtml, colorForId } from '../../js/utils.js';
+import { escapeHtml, toast, avatarHtml, colorForId, BIO_MAX } from '../../js/utils.js';
 import { state } from '../../js/state.js';
 import { handleError } from './errors.js';
 import { cropImage } from '../../js/cropEditor.js';
@@ -11,7 +11,7 @@ export function openEditProfile() {
   openSheet({
     title: t('m.profile'),
     html: `<label class="m-field">${t('m.displayName')}<input class="m-input" id="p-name" maxlength="32" value="${escapeHtml(state.me.displayName)}"></label>
-      <label class="m-field">${t('m.bio')}<textarea class="m-input" id="p-bio" rows="3" maxlength="190">${escapeHtml(state.me.bio || '')}</textarea></label>
+      <label class="m-field"><span style="display:flex;justify-content:space-between">${t('m.bio')}<small id="p-bio-count"></small></span><textarea class="m-input" id="p-bio" rows="3" maxlength="${BIO_MAX}">${escapeHtml(state.me.bio || '')}</textarea></label>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span id="p-av-prev">${avatarHtml(state.me, 56)}</span>
         <label class="m-check" id="p-bg-row" ${state.me.avatarPath ? '' : 'hidden'}><input type="checkbox" id="p-bg" ${state.me.avatarBackground ? 'checked' : ''}> ${t('m.avatarBackground')}</label>
         <input type="color" id="p-bg-color" value="${escapeHtml(state.me.avatarBgColor || colorForId(state.me.id))}" ${state.me.avatarPath && state.me.avatarBackground ? '' : 'hidden'} title="${t('userSettings.avatarBackgroundColor')}"></div>
@@ -19,6 +19,9 @@ export function openEditProfile() {
       <div class="m-confirm-row"><button class="btn btn-secondary" id="p-pick">${t('m.attachPhoto')}</button><button class="btn btn-primary" id="p-save">${t('m.save')}</button></div>
       <div class="m-confirm-row"><button class="btn btn-secondary" id="p-stranger">${t('profile.viewAsStrangerMenuItem')}</button></div>`,
     onMount: (body, close) => {
+      const bioBox = body.querySelector('#p-bio'); const bioCount = body.querySelector('#p-bio-count');
+      const paintBioCount = () => { bioCount.textContent = `${[...bioBox.value].length}/${BIO_MAX}`; };
+      paintBioCount(); bioBox.addEventListener('input', paintBioCount);
       const bgBox = body.querySelector('#p-bg');
       const colorBox = body.querySelector('#p-bg-color');
       let colorTouched = false;

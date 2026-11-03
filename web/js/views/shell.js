@@ -8,7 +8,7 @@ import {
   setServerDetail, getServerDetail, upsertServer, removeServer, upsertDmPreview, upsertDm, removeDm,
   setWsConnected, setNotificationPrefs, setServerPrefs, setUserAnnotations, setDmPrefs, setDmPref, dmPrefFor, setBookmarkIds, nameFor, notificationPrefFor, setNotificationPref, setReadStateBulk, setReadState, isSelf,
   setFriendVoice, pushActivity, setServerLayout, shouldPlayNotifySound,
-  setServerVoiceBulk, applyServerVoiceState, getGlobalUnreadCount, applyDmRead, noteChannelMessage, isUnread, pinUnseen,
+  setServerVoiceBulk, applyServerVoiceState, getGlobalUnreadCount, applyDmRead, noteChannelMessage, isUnread, pinUnseen, channelHasUnreadThreads,
 } from '../state.js';
 import { keysToClear, notifyKey } from '../notifyClear.mjs';
 import { openContextMenu, openModal, confirmModal, confirmTypedModal } from './modal.js';
@@ -462,7 +462,7 @@ export async function mountShell(root) {
   async function resyncAfterReconnect() {
     try {
       const [serversRes, dmsRes, friendsRes, readStateRes] = await Promise.all([api.listServers(), api.listDms(), api.friends(), api.getReadState()]);
-      setReadStateBulk(readStateRes.state, readStateRes.pinsUnseen);
+      setReadStateBulk(readStateRes.state, readStateRes.pinsUnseen, readStateRes.threadsUnread);
       setServers(serversRes.servers);
       setDms(dmsRes.dms);
       setFriends(friendsRes);
@@ -606,6 +606,13 @@ export async function mountShell(root) {
         if (isOpen('pinned')) markPinsSeen(scopeType, scopeId);
         paintPinDot();
       });
+    }
+    const threadsPanel = panels.find((p) => p.mode === 'threads' && p.channelId);
+    if (threadsPanel) {
+      const btn = threadsPanel.btn;
+      const paintThreadDot = () => btn.classList.toggle('has-dot', channelHasUnreadThreads(threadsPanel.channelId));
+      paintThreadDot();
+      const offThreads = bus.on('state:threads', () => { if (!btn.isConnected) offThreads(); else paintThreadDot(); });
     }
     panels.forEach((p) => p.btn.addEventListener('click', () => (isOpen(p.mode) ? closeAll() : open(p.mode))));
     // Every call site remounts this whole header+panel on each render (a full renderMain(), even
@@ -963,7 +970,7 @@ export async function mountShell(root) {
       };
       wirePanelToggles(membersEl, 'channel', view.channelId, [
         {
-          btn: document.getElementById('threads-btn'), mode: 'threads',
+          btn: document.getElementById('threads-btn'), mode: 'threads', channelId: view.channelId,
           mount: (onClose) => mountThreadsPanel(membersEl, view.serverId, view.channelId, {
             onOpen: (threadId) => bus.emit('ui:navigate', { type: 'server', serverId: view.serverId, channelId: view.channelId, threadId }),
             onClose,
@@ -1125,7 +1132,7 @@ export async function mountShell(root) {
     };
     wirePanelToggles(membersEl, 'thread', view.threadId, [
       {
-        btn: document.getElementById('threads-btn'), mode: 'threads',
+        btn: document.getElementById('threads-btn'), mode: 'threads', channelId: view.channelId,
         mount: (onClose) => mountThreadsPanel(membersEl, view.serverId, view.channelId, {
           onOpen: (threadId) => bus.emit('ui:navigate', { type: 'server', serverId: view.serverId, channelId: view.channelId, threadId }),
           onClose,
@@ -1426,7 +1433,7 @@ export async function mountShell(root) {
     setDmPrefs(dmPrefsRes.prefs);
     setBookmarkIds(bookmarkIdsRes.ids);
     Object.assign(state.config, config);
-    setReadStateBulk(readStateRes.state, readStateRes.pinsUnseen);
+    setReadStateBulk(readStateRes.state, readStateRes.pinsUnseen, readStateRes.threadsUnread);
     setServerLayout(layoutRes.layout);
     applyTheme(themeRes.theme);
     if (uiPrefsRes.uiPrefs.sidebarWidth) document.documentElement.style.setProperty('--sidebar-width', `${uiPrefsRes.uiPrefs.sidebarWidth}px`);

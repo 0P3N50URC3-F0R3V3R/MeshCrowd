@@ -9,7 +9,7 @@ import {
 } from '../passport/flow.js';
 import { icons } from '../icons.js';
 import { cropImage } from '../cropEditor.js';
-import { avatarHtml, colorForId, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle, navScroll, restoreNavScroll } from '../utils.js';
+import { avatarHtml, BIO_MAX, colorForId, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle, navScroll, restoreNavScroll } from '../utils.js';
 import { openAdminPanel } from './admin.js';
 import { nextZIndex } from '../zstack.js';
 import { voicePrefs, keyLabel } from '../voicePrefs.js';
@@ -125,8 +125,8 @@ export function openUserSettings(initialTab = 'account') {
         <input class="input" id="f-display" value="${escapeHtml(me.displayName)}">
       </div>
       <div class="field">
-        <label>${t('userSettings.bioLabel')}</label>
-        <textarea class="textarea" id="f-bio" maxlength="500" placeholder="${t('userSettings.bioPlaceholder')}">${escapeHtml(me.bio || '')}</textarea>
+        <label style="display:flex;justify-content:space-between;align-items:baseline">${t('userSettings.bioLabel')}<span class="hint" id="f-bio-count" style="margin:0"></span></label>
+        <textarea class="textarea" id="f-bio" maxlength="${BIO_MAX}" placeholder="${t('userSettings.bioPlaceholder')}">${escapeHtml(me.bio || '')}</textarea>
       </div>
       <div class="field"><label>${t('userSettings.usernameLabel')}</label><input class="input" value="${escapeHtml(me.username)}" disabled></div>
       <div class="field"><label>${t('userSettings.emailLabel')}</label><input class="input" value="${escapeHtml(me.email || '')}" disabled></div>
@@ -201,7 +201,10 @@ export function openUserSettings(initialTab = 'account') {
     });
 
     const bioInput = inner.querySelector('#f-bio');
-    bioInput.addEventListener('input', () => { inner.querySelector('#pp-bio-preview').textContent = bioInput.value; });
+    const bioCount = inner.querySelector('#f-bio-count');
+    const paintBioCount = () => { const n = [...bioInput.value].length; bioCount.textContent = `${n}/${BIO_MAX}`; bioCount.style.color = n >= BIO_MAX ? 'var(--danger)' : ''; };
+    paintBioCount();
+    bioInput.addEventListener('input', () => { inner.querySelector('#pp-bio-preview').textContent = bioInput.value; paintBioCount(); });
 
     inner.querySelector('#f-banner-color').addEventListener('input', (e) => {
       bannerColorTouched = true;

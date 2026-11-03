@@ -7,6 +7,7 @@ const { has, PERMISSIONS } = require('../lib/permissions');
 const { getChannelPermissionBits } = require('../lib/channelAccess');
 const { broadcastToDm } = require('../socket/hub');
 const pinSeen = require('../lib/pinSeen');
+const { unreadThreads } = require('../lib/threadUnread');
 const { isInvisible } = require('../lib/invisible');
 
 const router = express.Router();
@@ -17,6 +18,7 @@ router.get('/', (req, res) => {
   res.json({
     state: rows.map((r) => ({ scopeType: r.scope_type, scopeId: r.scope_id, lastReadMessageId: r.last_read_message_id })),
     pinsUnseen: pinSeen.unseenPins(req.user.id),
+    threadsUnread: unreadThreads(req.user.id),
   });
 });
 
@@ -32,7 +34,7 @@ router.put('/:scopeType/:scopeId', (req, res) => {
   const { scopeType } = req.params;
   const scopeId = Number(req.params.scopeId);
   const messageId = Number(req.body?.messageId);
-  if (!['channel', 'dm'].includes(scopeType) || !Number.isInteger(scopeId) || !Number.isInteger(messageId) || messageId < 0) {
+  if (!['channel', 'dm', 'thread'].includes(scopeType) || !Number.isInteger(scopeId) || !Number.isInteger(messageId) || messageId < 0) {
     return res.status(400).json({ error: 'invalid read-state update' });
   }
 
@@ -41,6 +43,8 @@ router.put('/:scopeType/:scopeId', (req, res) => {
     if (!channel || !has(getChannelPermissionBits(channel, req.user.id), PERMISSIONS.VIEW_CHANNEL)) {
       return res.status(403).json({ error: 'no access to this channel' });
     }
+  } else if (scopeType === 'thread') {
+    if (!pinSeen.canView('thread', scopeId, req.user.id)) return res.status(403).json({ error: 'no access to this thread' });
   } else {
     const member = db.prepare('SELECT 1 FROM dm_members WHERE dm_channel_id = ? AND user_id = ?').get(scopeId, req.user.id);
     if (!member) return res.status(403).json({ error: 'not a member of this conversation' });
