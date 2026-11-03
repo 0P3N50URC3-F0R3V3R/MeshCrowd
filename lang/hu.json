@@ -2232,6 +2232,7 @@
     },
     "settings": {
       "title": "Oldal beállításai",
+      "iconRemove": "Kép eltávolítása",
       "originsLabel": "Engedélyezett külső források",
       "originsHint": "Soronként egy https:// forrás, például https://cdn.jsdelivr.net. Az ezekről betöltött szkriptek teljes hozzáféréssel futnak az oldalon.",
       "originsWarnTitle": "Engedélyezed a külső forrásokat?",

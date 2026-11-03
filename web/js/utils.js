@@ -265,9 +265,12 @@ export function cardStyle(user) {
 export function serverIconHtml(server, size = 48) {
   const style = `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.4)}px`;
   const iconPath = server?.icon_path || server?.iconPath;
-  if (server?.kind === 'site' && !iconPath) return icons.globe(Math.round(size * 0.5));
   const color = server?.icon_bg_color ?? server?.iconBgColor ?? '';
   const bgOn = (server?.icon_bg ?? server?.iconBackground ?? 1) !== 0 && (server?.icon_bg ?? server?.iconBackground) !== false;
+  if (server?.kind === 'site' && !iconPath) {
+    const globe = icons.globe(Math.round(size * 0.5));
+    return color && bgOn ? `<span style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${escapeHtml(color)};color:#fff">${globe}</span>` : globe;
+  }
   if (iconPath) {
     // Without a background the transparent parts of the image show the rail, so the .srv-nobg marker
     // lets CSS clear the wrapper's own background too.

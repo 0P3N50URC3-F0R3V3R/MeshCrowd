@@ -128,6 +128,12 @@ export const api = {
   siteCreate: (payload) => post('/api/sites', payload),
   siteGet: (id) => get(`/api/sites/${id}`),
   siteUpdate: (id, payload) => patch(`/api/sites/${id}`, payload),
+  siteUploadIcon: (id, file) => {
+    const fd = new FormData();
+    fd.append('icon', file);
+    return postForm(`/api/sites/${id}/icon`, fd);
+  },
+  siteRemoveIcon: (id) => del(`/api/sites/${id}/icon`),
   siteDelete: (id) => del(`/api/sites/${id}`),
   siteRuntime: () => get('/api/sites/runtime'),
   siteFiles: (id) => get(`/api/sites/${id}/files`),

@@ -4,7 +4,8 @@ const express = require('express');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { db } = require('../db');
+const multer = require('multer');
+const { db, DATA_DIR } = require('../db');
 const hub = require('../socket/hub');
 const { requireAuth } = require('../middleware/auth');
 const { hasSite, SITE_PERMISSIONS, DEFAULT_EVERYONE_PERMISSIONS } = require('../lib/permissions');
@@ -87,8 +88,39 @@ router.get('/:id', loadSite, (req, res) => {
   res.json({ server: req.site, canEdit: req.canEdit, origins: JSON.parse(req.site.site_csp_origins || '[]') });
 });
 
+const ICON_ALLOWED = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
+const uploadIcon = multer({
+  storage: multer.diskStorage({
+    destination: path.join(DATA_DIR, 'servericons'),
+    filename: (req, file, cb) => cb(null, `${Number(req.params.id)}-${crypto.randomBytes(6).toString('hex')}.png`),
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, ICON_ALLOWED.has(file.mimetype)),
+});
+
+router.post('/:id/icon', loadSite, requireEditor, uploadIcon.single('icon'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'icon file required' });
+  const rel = `/uploads/servericons/${req.file.filename}`;
+  db.prepare('UPDATE servers SET icon_path = ? WHERE id = ?').run(rel, req.site.id);
+  logAudit(req.site.id, req.user.id, 'server_icon_update', 'server', req.site.id, null);
+  const server = getRow(req.site.id);
+  hub.notifyUserIds(memberIds(req.site.id), { type: 'server_update', server });
+  res.json({ iconPath: rel, server });
+});
+
+router.delete('/:id/icon', loadSite, requireEditor, (req, res) => {
+  db.prepare('UPDATE servers SET icon_path = NULL WHERE id = ?').run(req.site.id);
+  logAudit(req.site.id, req.user.id, 'server_icon_update', 'server', req.site.id, { removed: true });
+  const server = getRow(req.site.id);
+  hub.notifyUserIds(memberIds(req.site.id), { type: 'server_update', server });
+  res.json({ server });
+});
+
 router.patch('/:id', loadSite, requireEditor, (req, res) => {
-  const { name, description, origins } = req.body || {};
+  const { name, description, origins, iconBackground, iconBgColor } = req.body || {};
+  if (iconBgColor !== undefined && iconBgColor !== '' && !/^#[0-9a-fA-F]{6}$/.test(String(iconBgColor))) return res.status(400).json({ error: 'iconBgColor must be #rrggbb or empty' });
+  if (iconBackground !== undefined) db.prepare('UPDATE servers SET icon_bg = ? WHERE id = ?').run(iconBackground ? 1 : 0, req.site.id);
+  if (iconBgColor !== undefined) db.prepare('UPDATE servers SET icon_bg_color = ? WHERE id = ?').run(String(iconBgColor), req.site.id);
   if (name !== undefined) {
     const clean = typeof name === 'string' ? singleLine(name, 100) : '';
     if (!clean) return res.status(400).json({ error: 'site name required' });

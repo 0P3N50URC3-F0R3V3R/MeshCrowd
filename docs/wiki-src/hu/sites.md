@@ -29,6 +29,10 @@ A **Szerkesztés** gomb fájlfát nyit kódnézettel (CodeMirror HTML-, PHP-, JS
 
 Engedélyezett fájlok: `php html htm css js json txt md svg png jpg jpeg gif webp ico`, fájlonként legfeljebb 2 MB, 200 fájl és Oldalanként 50 MB.
 
+## Ikon
+
+Az **Oldal beállításai** között a kerek ikonra kattintva képet tölthetsz fel az Oldalhoz (PNG, JPEG, GIF vagy WebP, legfeljebb 5 MB); a **Kép eltávolítása** visszaállítja a földgömböt. Az **Ikon háttere** jelölőnégyzet kikapcsolásával az átlátszó kép egyedül jelenik meg, vagy kiválaszthatod a mögötte lévő lap színét. Kép nélkül az Oldal a földgömböt mutatja a választott színen.
+
 ## Külső eredetek
 
 Az Oldal beállításai felsorolják azokat a további `https://` eredeteket, amelyekről az oldalai szkripteket, stíluslapokat, képeket és kereteket tölthetnek be. Hozzáadáskor figyelmeztetést mutat, mert egy másik eredetről betöltött szkript az oldal jogosultságaival fut. Helyettesítő karakter nem engedélyezett.

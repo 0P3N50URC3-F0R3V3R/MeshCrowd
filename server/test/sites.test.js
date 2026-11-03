@@ -147,3 +147,27 @@ test('chat routes refuse site servers; GET detail still works; a chat server is 
   assert.equal(created.status, 201);
   assert.equal((await call('GET', `/api/servers/${created.data.server.id}`, { uid: staff })).status, 200);
 });
+
+test('site icon: background/color via PATCH, picture upload and removal, editors only', async () => {
+  const staff = makeUser('st_ic1'); const plain = makeUser('st_ic2');
+  const s = await makeSite(staff);
+  const row = () => db.prepare('SELECT icon_bg, icon_bg_color, icon_path FROM servers WHERE id = ?').get(s.id);
+  assert.deepEqual({ ...row() }, { icon_bg: 1, icon_bg_color: '', icon_path: null });
+
+  const r = await call('PATCH', `/api/sites/${s.id}`, { uid: staff, perms: STAFF, json: { iconBackground: false, iconBgColor: '#aabbcc' } });
+  assert.equal(r.status, 200);
+  assert.deepEqual({ ...row() }, { icon_bg: 0, icon_bg_color: '#aabbcc', icon_path: null });
+  assert.equal((await call('PATCH', `/api/sites/${s.id}`, { uid: staff, perms: STAFF, json: { iconBgColor: 'red; x' } })).status, 400);
+  assert.equal((await call('PATCH', `/api/sites/${s.id}`, { uid: plain, json: { iconBackground: true } })).status, 403);
+
+  const form = () => { const fd = new FormData(); fd.append('icon', new Blob([Buffer.from('89504e470d0a1a0a', 'hex')], { type: 'image/png' }), 'i.png'); return fd; };
+  fs.mkdirSync(path.join(tmpDir, 'servericons'), { recursive: true });
+  const up = await fetch(`${base}/api/sites/${s.id}/icon`, { method: 'POST', headers: { 'x-uid': String(staff), 'x-perms': String(STAFF) }, body: form() });
+  assert.equal(up.status, 200);
+  assert.match(row().icon_path, /^\/uploads\/servericons\/\d+-[0-9a-f]+\.png$/);
+  const denied = await fetch(`${base}/api/sites/${s.id}/icon`, { method: 'POST', headers: { 'x-uid': String(plain), 'x-perms': '0' }, body: form() });
+  assert.equal(denied.status, 403);
+
+  assert.equal((await call('DELETE', `/api/sites/${s.id}/icon`, { uid: staff, perms: STAFF })).status, 200);
+  assert.equal(row().icon_path, null);
+});

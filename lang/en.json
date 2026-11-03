@@ -2232,6 +2232,7 @@
     },
     "settings": {
       "title": "Site settings",
+      "iconRemove": "Remove picture",
       "originsLabel": "Allowed external origins",
       "originsHint": "One https:// origin per line, for example https://cdn.jsdelivr.net. Scripts loaded from these origins run with full access to the page.",
       "originsWarnTitle": "Allow external origins?",
