@@ -23,6 +23,8 @@ const OVERRIDES = {
   'turn.credentialTtlSeconds': { min: 60, max: 31536000 },
   'turn.maxAllocations': { min: 1, max: 1000000 },
   'turn.maxAllocationsPerUser': { min: 1, max: 1000000 },
+  'turn.autoIpSource': { enum: ['upnp', 'stun', 'http'] },
+  'turn.autoIpIntervalMinutes': { min: 1, max: 1440 },
   'turn.maxKbps': { min: 0, max: 10000000 },
   'logging.level': { enum: ['debug', 'info', 'warn', 'error'] },
   'logging.keepDays': { min: 1, max: 3650 },

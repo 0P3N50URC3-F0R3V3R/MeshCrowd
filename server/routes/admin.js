@@ -154,7 +154,11 @@ const intIn = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 
 function validateTurnPatch(p) {
   const bool = (k) => p[k] === undefined || typeof p[k] === 'boolean';
-  if (!['enabled', 'tcp', 'allowPrivatePeers'].every(bool)) return 'enabled, tcp and allowPrivatePeers must be booleans';
+  if (!['enabled', 'tcp', 'allowPrivatePeers', 'autoIp'].every(bool)) return 'enabled, tcp, allowPrivatePeers and autoIp must be booleans';
+  if (p.autoIpSource !== undefined && !['upnp', 'stun', 'http'].includes(p.autoIpSource)) return 'autoIpSource must be upnp, stun or http';
+  if (p.autoIpIntervalMinutes !== undefined && !intIn(p.autoIpIntervalMinutes, 1, 1440)) return 'autoIpIntervalMinutes must be 1-1440';
+  if (p.autoIpStun !== undefined && (typeof p.autoIpStun !== 'string' || (p.autoIpStun !== '' && !/^[A-Za-z0-9.-]{1,253}(:\d{1,5})?$/.test(p.autoIpStun)))) return 'autoIpStun must be host or host:port';
+  if (p.autoIpUrl !== undefined && (typeof p.autoIpUrl !== 'string' || p.autoIpUrl.length > 500 || (p.autoIpUrl !== '' && !/^https?:\/\/[^\s]+$/i.test(p.autoIpUrl)))) return 'autoIpUrl must be an http or https URL';
   if (p.port !== undefined && !intIn(p.port, 1, 65535)) return 'port must be 1-65535';
   for (const k of ['relayPortMin', 'relayPortMax']) if (p[k] !== undefined && !intIn(p[k], 1024, 65535)) return `${k} must be 1024-65535`;
   if (p.maxAllocations !== undefined && !intIn(p.maxAllocations, 1, 100000)) return 'maxAllocations must be 1-100000';
@@ -186,7 +190,7 @@ router.patch('/calls', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), asy
   const patch = {};
   if (body.turn !== undefined) {
     if (!body.turn || typeof body.turn !== 'object') return res.status(400).json({ error: 'turn must be an object' });
-    const allowed = ['enabled', 'port', 'listenAddress', 'tcp', 'externalIp', 'advertisedHost', 'relayPortMin', 'relayPortMax', 'realm', 'credentialTtlSeconds', 'allowPrivatePeers', 'maxAllocations', 'maxAllocationsPerUser', 'maxKbps'];
+    const allowed = ['enabled', 'port', 'listenAddress', 'tcp', 'externalIp', 'advertisedHost', 'relayPortMin', 'relayPortMax', 'realm', 'credentialTtlSeconds', 'allowPrivatePeers', 'maxAllocations', 'maxAllocationsPerUser', 'maxKbps', 'autoIp', 'autoIpSource', 'autoIpStun', 'autoIpUrl', 'autoIpIntervalMinutes'];
     const turn = Object.fromEntries(Object.entries(body.turn).filter(([k]) => allowed.includes(k)));
     const err = validateTurnPatch(turn);
     if (err) return res.status(400).json({ error: err });
@@ -212,6 +216,11 @@ router.patch('/calls', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), asy
 
 router.post('/calls/test', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), async (req, res) => {
   res.json(await turnManager.selfTest());
+});
+
+router.post('/calls/check-ip', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), async (req, res) => {
+  const result = await turnManager.checkWanIp();
+  res.json({ ...result, calls: callsPayload() });
 });
 
 router.post('/calls/detect-ip', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), async (req, res) => {

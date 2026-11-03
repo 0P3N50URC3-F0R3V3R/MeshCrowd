@@ -498,6 +498,7 @@ export const api = {
   adminGetCalls: () => get('/api/admin/calls'),
   adminUpdateCalls: (payload) => patch('/api/admin/calls', payload),
   adminTestCalls: () => post('/api/admin/calls/test', {}),
+  adminCheckIp: () => post('/api/admin/calls/check-ip', {}),
   adminDetectIp: () => post('/api/admin/calls/detect-ip', {}),
   adminStats: () => get('/api/admin/stats'),
   adminUsers: () => get('/api/admin/users'),

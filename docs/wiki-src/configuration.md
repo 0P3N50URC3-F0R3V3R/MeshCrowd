@@ -73,6 +73,18 @@ MeshCrowd has both built in, with nothing to install. It is **off by default**, 
 
 The same settings live in **Admin Panel, Calls** (site administrators): enable or disable the server, the external IP with a **Detect** button, ports, a live status, and a **Test** button. Changes apply without a restart. `setup-turn --status`, `--disable` and `--remove-firewall` are also available.
 
+### Dynamic public IP
+
+If your provider changes your public address from time to time and you have no domain name for it, turn on **Detect the public IP automatically** in **Admin Panel, Calls**. MeshCrowd then re-reads the address on a schedule (every 5 minutes by default). When it differs from the stored `externalIp`, it saves the new one, keeps the old one as `previousIp`, and restarts the built-in server so clients are handed the new address. Nothing happens while the address stays the same.
+
+Choose where the address comes from, so you need not depend on a third party:
+
+- **Ask the router (UPnP)**: the default. The router reports its own WAN address; nothing leaves your network. UPnP must be enabled on the router.
+- **Ask a STUN server I choose**: `host` or `host:port` of a STUN server you trust, for example your own.
+- **Read a URL I choose**: an http(s) address whose reply contains your public IPv4, such as the router's status page or a small page on a server of yours. The first public IPv4 in the reply is used.
+
+A result that is not a public address (for example behind a second router, or a carrier-grade NAT) is rejected and the stored address is kept. The status line shows the last check and any error, and **Save and check now** runs a check immediately.
+
 ### Settings
 
 The `turn` section of `data/config.json`:
@@ -83,6 +95,11 @@ The `turn` section of `data/config.json`:
 | `port` | `3478` | UDP and TCP port clients connect to. |
 | `tcp` | `true` | Also accept TCP, which helps behind strict firewalls. The relay itself is UDP. |
 | `externalIp` | `""` | The machine's public IPv4 address. Set it when the server is behind a router. |
+| `autoIp` | `false` | Re-read the public IPv4 periodically and update `externalIp` when it changes. |
+| `autoIpSource` | `"upnp"` | `upnp` (ask the router), `stun` (use `autoIpStun`) or `http` (use `autoIpUrl`). |
+| `autoIpStun`, `autoIpUrl` | `""` | STUN server (`host:port`) or URL for the chosen source. |
+| `autoIpIntervalMinutes` | `5` | How often to check (1-1440). |
+| `previousIp`, `ipChangedAt` | `""` | Maintained automatically: the address before the last change and when it changed. |
 | `advertisedHost` | `""` | Host name given to clients. Empty uses `externalIp`, then `publicHost`. |
 | `relayPortMin`, `relayPortMax` | `49152`, `49999` | UDP ports used for relayed streams. |
 | `credentialTtlSeconds` | `86400` | Lifetime of the per-user credentials. |

@@ -277,13 +277,14 @@ if (config.useHttps) {
 const wss = socket.attach(server);
 logger.scoped('app').info(`MeshCrowd ${require('../package.json').version} starting: ${config.useHttps ? `https ${config.httpsPort}, http redirect ${config.port}` : `http ${config.port}`}, log level ${logger.getLevel()}, ssh ${config.ssh && config.ssh.enabled ? 'on' : 'off'}`);
 turnManager.start(logger);
+turnManager.startIpWatcher(logger);
 
 const closeServer = (s) => new Promise((resolve) => { s.close(() => resolve()); s.closeAllConnections?.(); });
 lifecycle.registerCloser('http', () => closeServer(server), { resume: () => server.listen(config.useHttps ? config.httpsPort : config.port) });
 if (redirectServer) lifecycle.registerCloser('http-redirect', () => closeServer(redirectServer), { resume: () => redirectServer.listen(config.port) });
 // Upgraded sockets are detached from the HTTP server, so server.close() alone would wait on them forever.
 lifecycle.registerCloser('websockets', () => { for (const ws of wss.clients) ws.terminate(); });
-lifecycle.registerCloser('turn', () => turnManager.stop(), { resume: () => turnManager.start(logger) });
+lifecycle.registerCloser('turn', () => { turnManager.stopIpWatcher(); return turnManager.stop(); }, { resume: () => { turnManager.startIpWatcher(logger); return turnManager.start(logger); } });
 lifecycle.registerCloser('sites', () => require('./lib/siteProcesses').stopAll());
 let stopBackupScheduler = require('./lib/backup').startScheduler();
 lifecycle.registerCloser('backup-scheduler', () => stopBackupScheduler(), { resume: () => { stopBackupScheduler = require('./lib/backup').startScheduler(); } });

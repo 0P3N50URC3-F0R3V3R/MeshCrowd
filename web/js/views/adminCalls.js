@@ -34,6 +34,16 @@ export function renderCallsTab(inner) {
       </div>`;
   }
 
+  function autoIpStatusLine() {
+    const a = data.status?.autoIp;
+    if (!a || !data.turn.autoIp) return '';
+    const parts = [];
+    if (a.checkedAt) parts.push(a.error ? `<span style="color:var(--danger)">${t('admin.calls.autoIpFailed')}: ${escapeHtml(a.error)}</span>` : t('admin.calls.autoIpOk', { time: escapeHtml(new Date(a.checkedAt).toLocaleString()) }));
+    else parts.push(t('admin.calls.autoIpPending'));
+    if (a.previousIp) parts.push(t('admin.calls.autoIpPrevious', { ip: escapeHtml(a.previousIp), time: a.changedAt ? escapeHtml(new Date(a.changedAt).toLocaleString()) : '' }));
+    return parts.join(' · ');
+  }
+
   function draw() {
     const tn = data.turn;
     const ice = data.iceServers;
@@ -46,6 +56,22 @@ export function renderCallsTab(inner) {
         <div style="display:flex;gap:8px;flex-wrap:wrap"><input class="input" id="tn-ip" value="${escapeHtml(tn.externalIp)}" placeholder="203.0.113.10" style="max-width:220px">
         <button class="btn btn-secondary" id="tn-detect" type="button">${t('admin.calls.detect')}</button></div>
         <div class="hint">${t('admin.calls.externalIpHint')}</div></div>
+      <div class="field"><label class="check-row" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="tn-auto" ${tn.autoIp ? 'checked' : ''}> ${t('admin.calls.autoIp')}</label>
+        <div class="hint">${t('admin.calls.autoIpHint')}</div>
+        <div id="tn-auto-opts" style="margin-top:8px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <select class="select" id="tn-auto-src" style="max-width:260px">
+              <option value="upnp" ${tn.autoIpSource === 'upnp' ? 'selected' : ''}>${t('admin.calls.autoIpUpnp')}</option>
+              <option value="stun" ${tn.autoIpSource === 'stun' ? 'selected' : ''}>${t('admin.calls.autoIpStun')}</option>
+              <option value="http" ${tn.autoIpSource === 'http' ? 'selected' : ''}>${t('admin.calls.autoIpHttp')}</option>
+            </select>
+            <input class="input" id="tn-auto-stun" value="${escapeHtml(tn.autoIpStun)}" placeholder="stun.example.com:3478" style="max-width:260px">
+            <input class="input" id="tn-auto-url" value="${escapeHtml(tn.autoIpUrl)}" placeholder="http://192.168.1.1/status.html" style="max-width:320px">
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px">${t('admin.calls.autoIpEvery')} <input class="input" id="tn-auto-min" type="number" min="1" max="1440" value="${tn.autoIpIntervalMinutes}" style="max-width:90px"> ${t('admin.calls.autoIpMinutes')}
+            <button class="btn btn-secondary" id="tn-auto-check" type="button">${t('admin.calls.autoIpCheckNow')}</button></div>
+          <div class="hint" id="tn-auto-status" style="margin-top:6px">${autoIpStatusLine()}</div>
+        </div></div>
       <div class="field"><label>${t('admin.calls.port')}</label><input class="input" id="tn-port" type="number" min="1" max="65535" value="${tn.port}" style="max-width:140px">
         <label class="check-row" style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="tn-tcp" ${tn.tcp ? 'checked' : ''}> ${t('admin.calls.tcp')}</label>
         <div class="hint">${t('admin.calls.portHint')}</div></div>
@@ -116,6 +142,15 @@ export function renderCallsTab(inner) {
     });
 
     const num = (id) => Number(body.querySelector(id).value);
+    const syncAutoRows = () => {
+      body.querySelector('#tn-auto-opts').style.display = body.querySelector('#tn-auto').checked ? '' : 'none';
+      const src = body.querySelector('#tn-auto-src').value;
+      body.querySelector('#tn-auto-stun').style.display = src === 'stun' ? '' : 'none';
+      body.querySelector('#tn-auto-url').style.display = src === 'http' ? '' : 'none';
+    };
+    body.querySelector('#tn-auto').addEventListener('change', syncAutoRows);
+    body.querySelector('#tn-auto-src').addEventListener('change', syncAutoRows);
+    syncAutoRows();
     body.querySelector('#tn-detect').addEventListener('click', async (e) => {
       const btn = e.currentTarget;
       btn.disabled = true;
@@ -132,6 +167,9 @@ export function renderCallsTab(inner) {
             enabled: body.querySelector('#tn-enabled').checked, externalIp: body.querySelector('#tn-ip').value.trim(),
             port: num('#tn-port'), tcp: body.querySelector('#tn-tcp').checked, relayPortMin: num('#tn-lo'), relayPortMax: num('#tn-hi'),
             advertisedHost: body.querySelector('#tn-host').value.trim(), maxAllocationsPerUser: num('#tn-peruser'), maxKbps: num('#tn-kbps'),
+            autoIp: body.querySelector('#tn-auto').checked, autoIpSource: body.querySelector('#tn-auto-src').value,
+            autoIpStun: body.querySelector('#tn-auto-stun').value.trim(), autoIpUrl: body.querySelector('#tn-auto-url').value.trim(),
+            autoIpIntervalMinutes: num('#tn-auto-min') || 5,
             credentialTtlSeconds: Math.round(num('#tn-ttl') * 3600), allowPrivatePeers: body.querySelector('#tn-private').checked, ...extra,
           },
         });
@@ -141,6 +179,18 @@ export function renderCallsTab(inner) {
       } catch (e2) { err.textContent = apiErrorMessage(e2, t('admin.couldNotSave')); }
     };
     body.querySelector('#tn-save').addEventListener('click', () => saveTurn());
+    body.querySelector('#tn-auto-check').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      try {
+        await saveTurn();
+        const r = await api.adminCheckIp();
+        data = r.calls;
+        if (r.error) toast(r.error, { type: 'error' }); else toast(r.changed ? t('admin.calls.autoIpChanged', { ip: r.ip }) : t('admin.calls.autoIpSame', { ip: r.ip }));
+        draw();
+      } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }
+      btn.disabled = false;
+    });
     body.querySelector('#tn-rotate').addEventListener('click', () => saveTurn({ rotateSecret: true }));
     body.querySelector('#tn-test').addEventListener('click', async (e) => {
       const out = body.querySelector('#tn-test-out');

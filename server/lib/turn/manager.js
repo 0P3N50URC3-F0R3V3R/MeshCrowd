@@ -7,11 +7,14 @@ const os = require('node:os');
 const { TurnServer, isPrivate } = require('./server');
 const { TurnClient } = require('./client');
 const credentials = require('./credentials');
-const { load } = require('../config');
+const { load, save } = require('../config');
+const wanIp = require('./wanIp');
 
 let server = null;
 let lastError = null;
 let log = null;
+let watcher = null;
+const ipState = { checkedAt: null, error: null, source: null };
 
 const isIpv4 = (s) => /^(\d{1,3})(\.\d{1,3}){3}$/.test(s) && s.split('.').every((n) => Number(n) <= 255);
 
@@ -75,6 +78,7 @@ function status() {
     ...(server ? server.status() : { port: t.port, tcp: t.tcp, allocations: 0, bytesRelayed: 0, allocationsTotal: 0, relayPorts: [t.relayPortMin, t.relayPortMax] }),
     localAddresses: locals,
     warnings,
+    autoIp: { enabled: !!t.autoIp, checkedAt: ipState.checkedAt, error: ipState.error, previousIp: t.previousIp || '', changedAt: t.ipChangedAt || '' },
   };
 }
 
@@ -148,4 +152,45 @@ async function detectExternalIp() {
   return null;
 }
 
-module.exports = { start, stop, reload, status, iceServersFor, publicIceServers, selfTest, detectExternalIp, isIpv4 };
+// Reads the current WAN address from the configured source and, when it differs from the stored
+// externalIp, stores it (keeping the old one as previousIp) and restarts the built-in server so it
+// advertises the new address. Never throws; the outcome lands in status().autoIp.
+async function checkWanIp({ detect = wanIp.detectWanIp } = {}) {
+  const cfg = load();
+  const t = cfg.turn;
+  ipState.source = t.autoIpSource;
+  try {
+    const ip = await detect(t);
+    ipState.error = null;
+    ipState.checkedAt = new Date().toISOString();
+    if (ip === t.externalIp) return { ip, changed: false };
+    save({ turn: { externalIp: ip, previousIp: t.externalIp || '', ipChangedAt: ipState.checkedAt } });
+    log?.info?.(`[turn] WAN address changed ${t.externalIp || '(none)'} -> ${ip}${cfg.turn.enabled ? ', restarting' : ''}`);
+    if (cfg.turn.enabled) await reload();
+    return { ip, changed: true, previous: t.externalIp || '' };
+  } catch (err) {
+    ipState.error = err.message;
+    ipState.checkedAt = new Date().toISOString();
+    log?.warn?.(`[turn] WAN address check failed: ${err.message}`);
+    return { error: err.message };
+  }
+}
+
+// Self-rescheduling so a changed interval or switching the feature on/off takes effect on the next tick.
+function startIpWatcher(logger) {
+  if (logger) log = logger;
+  if (watcher) return;
+  const tick = async () => {
+    const t = load().turn;
+    if (t.autoIp) await checkWanIp();
+    const minutes = Math.max(1, Number(load().turn.autoIpIntervalMinutes) || 5);
+    watcher = setTimeout(tick, minutes * 60 * 1000);
+    watcher.unref?.();
+  };
+  watcher = setTimeout(tick, 5000);
+  watcher.unref?.();
+}
+
+function stopIpWatcher() { clearTimeout(watcher); watcher = null; }
+
+module.exports = { checkWanIp, startIpWatcher, stopIpWatcher, start, stop, reload, status, iceServersFor, publicIceServers, selfTest, detectExternalIp, isIpv4 };

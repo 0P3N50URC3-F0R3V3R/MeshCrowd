@@ -73,6 +73,18 @@ A MeshCrowdban mindkettő be van építve, nem kell semmit telepíteni. Alapból
 
 Ugyanezek a beállítások az **Adminpanel, Hívások** oldalon is megvannak (webhelyadminisztrátoroknak): a szerver ki- és bekapcsolása, a külső IP-cím **Felismerés** gombbal, portok, élő állapot és egy **Próba** gomb. A változtatások újraindítás nélkül életbe lépnek. Elérhető a `setup-turn --status`, a `--disable` és a `--remove-firewall` is.
 
+### Dinamikus nyilvános IP
+
+Ha a szolgáltatód időnként megváltoztatja a nyilvános címedet, és nincs hozzá domainneved, kapcsold be **A nyilvános IP automatikus felismerése** opciót az **Admin felület, Hívások** oldalon. A MeshCrowd ekkor ütemezetten (alapból 5 percenként) újraolvassa a címet. Ha az eltér a tárolt `externalIp`-től, elmenti az újat, a régit `previousIp` néven megőrzi, és újraindítja a beépített szervert, hogy a kliensek az új címet kapják. Amíg a cím nem változik, nem történik semmi.
+
+Te választod meg, honnan jön a cím, így nem kell külső szolgáltatótól függned:
+
+- **A router megkérdezése (UPnP)**: az alapértelmezett. A router megmondja a saját WAN-címét, semmi nem hagyja el a hálózatodat. A routeren be kell kapcsolni az UPnP-t.
+- **Általam választott STUN-szerver**: egy általad megbízhatónak tartott STUN-szerver `host` vagy `host:port` címe, például a saját szervered.
+- **Általam megadott URL beolvasása**: egy http(s) cím, amelynek válasza tartalmazza a nyilvános IPv4-címedet, például a router állapotoldala vagy egy saját szerveren futó kis oldal. A válasz első nyilvános IPv4-címét használja.
+
+Ha az eredmény nem nyilvános cím (például egy második router vagy szolgáltatói NAT mögött), elveti, és a tárolt cím marad. Az állapotsor mutatja az utolsó ellenőrzést és az esetleges hibát, a **Mentés és ellenőrzés most** gomb azonnal ellenőriz.
+
 ### Beállítások
 
 A `data/config.json` `turn` szakasza:
@@ -83,6 +95,11 @@ A `data/config.json` `turn` szakasza:
 | `port` | `3478` | UDP- és TCP-port, ahová az ügyfelek csatlakoznak. |
 | `tcp` | `true` | TCP fogadása is, ami szigorú tűzfal mögött segít. Maga a továbbító UDP. |
 | `externalIp` | `""` | A gép nyilvános IPv4-címe. Állítsd be, ha a szerver router mögött van. |
+| `autoIp` | `false` | Rendszeresen újraolvassa a nyilvános IPv4-címet, és változáskor frissíti az `externalIp`-t. |
+| `autoIpSource` | `"upnp"` | `upnp` (a router megkérdezése), `stun` (az `autoIpStun` használata) vagy `http` (az `autoIpUrl` használata). |
+| `autoIpStun`, `autoIpUrl` | `""` | A választott forráshoz tartozó STUN-szerver (`host:port`) vagy URL. |
+| `autoIpIntervalMinutes` | `5` | Ellenőrzés gyakorisága (1-1440). |
+| `previousIp`, `ipChangedAt` | `""` | Automatikusan karbantartva: az utolsó változás előtti cím és a változás ideje. |
 | `advertisedHost` | `""` | Az ügyfeleknek megadott gépnév. Üresen az `externalIp`-t, majd a `publicHost`-ot használja. |
 | `relayPortMin`, `relayPortMax` | `49152`, `49999` | A továbbított folyamok UDP-portjai. |
 | `credentialTtlSeconds` | `86400` | A felhasználónkénti hitelesítő adatok élettartama. |

@@ -67,6 +67,16 @@ const DEFAULTS = {
     // Host name or IP clients are told to use. Empty = externalIp, else publicHost, else the
     // address the browser used to reach this server.
     advertisedHost: '',
+    // Dynamic WAN address: re-read the public IPv4 periodically and, when it changes, store it in
+    // externalIp (the old one goes to previousIp) and restart the built-in server. Source: 'upnp'
+    // asks the router, 'stun' asks the STUN server in autoIpStun, 'http' reads the URL in autoIpUrl.
+    autoIp: false,
+    autoIpSource: 'upnp',
+    autoIpStun: '',
+    autoIpUrl: '',
+    autoIpIntervalMinutes: 5,
+    previousIp: '',
+    ipChangedAt: '',
     relayPortMin: 49152,
     relayPortMax: 49999,
     realm: 'meshcrowd',
