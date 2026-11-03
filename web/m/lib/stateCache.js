@@ -2,14 +2,15 @@ const DB = 'mc_state';
 const STORE = 'snapshot';
 const KEY = 'last';
 const MESSAGES = 'messages';
+const DETAILS = 'details';
 const KEEP_CHATS = 8;
 const KEEP_MESSAGES = 40;
 
 function open() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB, 2);
+    const req = indexedDB.open(DB, 3);
     req.onupgradeneeded = () => {
-      for (const name of [STORE, MESSAGES]) if (!req.result.objectStoreNames.contains(name)) req.result.createObjectStore(name);
+      for (const name of [STORE, MESSAGES, DETAILS]) if (!req.result.objectStoreNames.contains(name)) req.result.createObjectStore(name);
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -40,6 +41,20 @@ export async function writeSnapshot(snapshot) {
 export async function clearSnapshot() {
   try { await run('readwrite', (s) => s.delete(KEY)); } catch { /* nothing to clear */ }
   try { await run('readwrite', (s) => s.clear(), MESSAGES); } catch { /* nothing to clear */ }
+  try { await run('readwrite', (s) => s.clear(), DETAILS); } catch { /* nothing to clear */ }
+}
+
+// Server detail (channels, roles, members) of the servers opened last, so their chats still open offline.
+export async function readDetail(key) {
+  try { return (await run('readonly', (s) => s.get(key), DETAILS)) || null; } catch { return null; }
+}
+
+export async function writeDetail(key, detail) {
+  try {
+    await run('readwrite', (s) => s.put(detail, key), DETAILS);
+    const keys = await run('readonly', (s) => s.getAllKeys(), DETAILS);
+    for (const k of keys.slice(0, Math.max(0, keys.length - KEEP_CHATS))) await run('readwrite', (s) => s.delete(k), DETAILS);
+  } catch { /* storage unavailable or full */ }
 }
 
 // Newest messages of the chats opened last, keyed `<userId>:<scope>:<id>`. Plain (unencrypted)

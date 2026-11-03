@@ -5,6 +5,7 @@ import { applyTheme } from '../js/theme.js';
 import { wireUserSync } from '../js/userSync.js';
 import { t } from '../js/i18n.js';
 import { toast } from '../js/utils.js';
+import { readDetail, writeDetail } from './lib/stateCache.js';
 import { notifySound } from '../js/notifySound.js';
 import { eventNotice } from '../js/notifyEvent.mjs';
 import { peekPlaintext } from '../js/e2ee/dmCrypto.js';
@@ -60,7 +61,16 @@ export async function loadAll(prefetched) {
 export async function ensureServerDetail(serverId) {
   let detail = getServerDetail(serverId);
   if (!detail) {
-    detail = await api.getServer(serverId);
+    const key = `${state.me.id}:${serverId}`;
+    try {
+      detail = await api.getServer(serverId);
+      writeDetail(key, detail);
+    } catch (err) {
+      // No network (a fetch TypeError, not an HTTP answer): fall back to the copy from the last visit.
+      if (err && err.status) throw err;
+      detail = await readDetail(key);
+      if (!detail) throw err;
+    }
     setServerDetail(serverId, detail);
     api.serverVoiceActivity(serverId).then((res) => setServerVoiceBulk(res.activity)).catch(() => {});
   }

@@ -53,7 +53,8 @@ export async function initI18n(user) {
   if (!code) {
     let available = new Set([FALLBACK_CODE]);
     try {
-      const { languages } = await api.getLanguages();
+      // On a dead or very slow network this must not hold the whole app back: fall through to English.
+      const { languages } = await Promise.race([api.getLanguages(), new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))]);
       available = new Set(languages.map((l) => l.code));
     } catch { /* stay on English if the list can't be fetched */ }
     code = guessBrowserCode(available);
