@@ -63,6 +63,7 @@ export function openUserSettings(initialTab = 'account') {
           <div class="snav-item ${tab === 'appearance' ? 'active' : ''}" data-tab="appearance">${t('userSettings.appearanceTab')}</div>
           <div class="snav-item ${tab === 'privacy' ? 'active' : ''}" data-tab="privacy">${t('userSettings.privacySafetyTab')}</div>
           <div class="snav-item ${tab === 'passport' ? 'active' : ''}" data-tab="passport">${t('passport.tab')}</div>
+          <div class="snav-item ${tab === 'devices' ? 'active' : ''}" data-tab="devices">${t('userSettings.devicesTab')}</div>
           ${window.dismeshClient && !window.dismeshClient.isAndroidWebView ? `<div class="snav-item ${tab === 'app' ? 'active' : ''}" data-tab="app">${t('userSettings.desktopAppTab')}</div>` : ''}
           ${me.isSiteAdmin ? `<div class="snav-label">${t('userSettings.instanceLabel')}</div><div class="snav-item" data-admin>${t('userSettings.adminPanelNav')}</div>` : ''}
           <div class="snav-label"></div>
@@ -87,6 +88,7 @@ export function openUserSettings(initialTab = 'account') {
     else if (tab === 'appearance') renderAppearance(inner);
     else if (tab === 'privacy') renderPrivacy(inner);
     else if (tab === 'passport') renderPassport(inner);
+    else if (tab === 'devices') renderDevices(inner);
     else if (tab === 'app') renderApp(inner);
   }
 
@@ -1085,6 +1087,39 @@ export function openUserSettings(initialTab = 'account') {
         renderPassport(inner);
       } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); } finally { done(); }
     });
+  }
+
+  function deviceLabel(ua) {
+    const browser = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Firefox\//.test(ua) ? 'Firefox' : /Electron\//.test(ua) ? 'Desktop app' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : '';
+    const os = /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Windows/.test(ua) ? 'Windows' : /Mac OS X/.test(ua) ? 'macOS' : /Linux/.test(ua) ? 'Linux' : '';
+    return [browser, os].filter(Boolean).join(' · ') || t('userSettings.deviceUnknown');
+  }
+
+  async function renderDevices(inner) {
+    inner.innerHTML = `<h2>${t('userSettings.devicesTab')}</h2><div class="hint">${t('userSettings.devicesHint')}</div><div id="dev-list" style="margin-top:16px"></div>`;
+    const list = inner.querySelector('#dev-list');
+    const load = async () => {
+      let sessions;
+      try { sessions = (await api.listSessions()).sessions; } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); return; }
+      const when = (iso) => new Date(iso).toLocaleString();
+      list.innerHTML = sessions.map((s) => `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border,#0003);text-align:left;max-width:640px">
+          <div style="flex:1;min-width:0">
+            <b>${escapeHtml(deviceLabel(s.userAgent))}</b>
+            ${s.current ? `<span class="hint"> — ${t('userSettings.deviceThis')}</span>` : (s.online ? `<span class="hint"> — ${t('userSettings.deviceActiveNow')}</span>` : '')}
+            <div class="hint">${escapeHtml(s.ip || '—')} · ${t('userSettings.deviceLastActive')} ${escapeHtml(when(s.lastUsedAt))}</div>
+            <div class="hint">${t('userSettings.deviceSignedIn')} ${escapeHtml(when(s.createdAt))}</div>
+          </div>
+          ${s.current ? '' : `<button class="btn btn-danger" data-kick="${s.id}">${t('userSettings.deviceSignOut')}</button>`}
+        </div>`).join('') + (sessions.length > 1 ? `<button class="btn btn-danger" id="dev-kick-all" style="margin-top:16px">${t('userSettings.deviceSignOutOthers')}</button>` : '');
+      list.querySelectorAll('[data-kick]').forEach((b) => b.addEventListener('click', async () => {
+        try { await api.revokeSession(b.dataset.kick); toast(t('userSettings.deviceSignedOutToast')); load(); } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }
+      }));
+      list.querySelector('#dev-kick-all')?.addEventListener('click', async () => {
+        try { await api.revokeOtherSessions(); toast(t('userSettings.deviceSignedOutToast')); load(); } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }
+      });
+    };
+    load();
   }
 
   function renderPrivacy(inner) {

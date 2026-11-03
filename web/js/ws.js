@@ -28,8 +28,14 @@ function connect() {
     bus.emit(`ws:${msg.type}`, msg);
   });
 
-  socket.addEventListener('close', () => {
+  socket.addEventListener('close', (evt) => {
     clearInterval(pingTimer);
+    if (evt.code === 4003) {
+      // This device's session was revoked from another one: the cookie is dead, reconnecting would loop on 401.
+      manuallyClosed = true;
+      location.reload();
+      return;
+    }
     bus.emit('ws:close');
     if (!manuallyClosed) scheduleReconnect();
   });

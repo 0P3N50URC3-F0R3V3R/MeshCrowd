@@ -23,6 +23,15 @@ Az adminpanel csak az **oldalszemélyzeti ranggal** rendelkező fiókoknak láts
 
 A panel példányszintű statisztikákat is mutat, és lehetővé teszi a felhasználók és szerverek kezelését.
 
+### Szerverek
+
+Az **Admin, Szerverek** lista minden szervert mutat tulajdonossal, tagszámmal és létrehozási dátummal. Kétféleképpen távolítható el egy szerver:
+
+- A **Törlés most** azonnal törli a szervert, csatornáit, üzeneteit és fájljait. A megerősítéshez be kell írni a szerver nevét.
+- A **Törlés ütemezése** időzített törlést állít be órákban vagy napokban. A szerver addig használható marad, a lista mutatja a dátumot, a **Törlés visszavonása** pedig a lefutás előtt bármikor leállítja.
+
+Mindkettőhöz a **Bármely szerver kezelése** jogosultság kell.
+
 ## Mellékletek
 
 Az **Admin, Áttekintés** alatt futás közben csökkentheted a feltöltési méretkorlátot (a konfiguráció `maxUploadMb` értéke fölé sosem), és opcionálisan engedélyezőlistára korlátozhatod a feltöltéseket olyan kiterjesztésekkel, mint `.png, .jpg, .pdf`. A futtathatók, a HTML és az SVG mindig tiltottak, a fájlokat pedig letöltésként, homokozó Content-Security-Policy alatt szolgálja ki a rendszer, így a feltöltés sosem futhat szkriptként az alkalmazás eredetében.

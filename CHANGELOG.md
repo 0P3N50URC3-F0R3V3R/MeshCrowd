@@ -6,6 +6,11 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ### 2026-11-03
 #### Added
+- Devices (settings > Devices, Android You tab): lists every browser and app signed in to your account (device, IP, last active, signed in) and lets you sign any of them out, or all others; the revoked device is logged out and its live connection closed at once.
+- Admin Panel > Servers: every server with owner, members and creation date; delete now (type the name to confirm) or schedule a timed deletion in hours or days, cancellable until it runs. A background worker executes due deletions.
+- "Remove Custom Status" item in the avatar status menu (web, desktop and Android), shown while a custom status is set.
+- Devices re-sync everything after a connection drop, so changes made while offline show up without pressing the refresh button.
+- Wiki (EN/HU): documented devices, the admin Servers tab, removing a custom status and automatic device sync.
 - Invite dialog and Android "Copy invite code": when a server has a vanity link, you can pick which one to share (vanity preselected) or the random code.
 - Avatar background color picker beside the "Show avatar background color" checkbox (web, desktop and Android); the color is per user and shown to everyone.
 - "View as a stranger" button in the profile editor and in the profile popup "..." menu (web, desktop and Android): shows your profile exactly as a non-friend sees it, without private fields.

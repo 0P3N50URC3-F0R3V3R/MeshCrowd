@@ -39,6 +39,10 @@ Turn on TOTP under **Settings, Account**. Scan the QR code with an authenticator
 
 Use **Settings, Account, Change password**. For strengthened accounts the browser re-wraps your Passport with the new password.
 
+## Your devices
+
+**Settings, Devices** lists every browser and app signed in to your account, with the approximate device, IP address, last activity and sign-in time. The device you are using is marked. Use **Sign out** on any entry you do not recognise, or **Sign out all other devices**: that device is logged out at once and its live connection is closed. Changing your password also signs out every other device.
+
 ## Profile
 
 Your avatar, banner, bio, custom status and presence are covered in [Profiles, status and themes](personalization.html). Privacy controls decide who can send you DMs and who can see your profile card.

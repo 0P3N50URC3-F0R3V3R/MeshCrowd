@@ -3,7 +3,7 @@
 const express = require('express');
 const QRCode = require('qrcode');
 const { db } = require('../db');
-const { createSession, destroySession, sessionCookie } = require('../lib/session');
+const { createSession, destroySession, sessionCookie, listSessionsForUser, sessionId } = require('../lib/session');
 const { toPublicUser } = require('../lib/publicUser');
 const { requireAuth } = require('../middleware/auth');
 const totp = require('../lib/totp');
@@ -41,7 +41,7 @@ router.post('/register', (req, res) => {
     throw err;
   }
   const { userId, autoJoinServers } = created;
-  const { token } = createSession(userId, req.headers['user-agent']);
+  const { token } = createSession(userId, req.headers['user-agent'], req.ip);
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   accounts.announceJoins(userId, autoJoinServers);
   res.setHeader('Set-Cookie', sessionCookie(req, token));
@@ -80,7 +80,7 @@ router.post('/login', (req, res) => {
   if (user.totp_enabled) {
     return res.json({ requiresTotp: true, pendingToken: pendingLogin.create(user.id) });
   }
-  const { token } = createSession(user.id, req.headers['user-agent']);
+  const { token } = createSession(user.id, req.headers['user-agent'], req.ip);
   res.setHeader('Set-Cookie', sessionCookie(req, token));
   log.info(`login ${safeName(user.username)} (id ${user.id}) from ${req.ip}`);
   res.json({ user: toPublicUser(user, { viewerIsSelf: true }) });
@@ -103,7 +103,7 @@ router.post('/login/2fa', (req, res) => {
   }
 
   pendingLogin.remove(pendingToken); // only now — the code is confirmed correct, so the pending login is used up
-  const { token } = createSession(user.id, req.headers['user-agent']);
+  const { token } = createSession(user.id, req.headers['user-agent'], req.ip);
   res.setHeader('Set-Cookie', sessionCookie(req, token));
   log.info(`login ${safeName(user.username)} (id ${user.id}) from ${req.ip} (2FA)`);
   res.json({ user: toPublicUser(user, { viewerIsSelf: true }) });
@@ -241,6 +241,40 @@ router.post('/upgrade-credentials', requireAuth, (req, res) => {
   challenges.clearFailures(lockKey);
   authAudit(user.id, user.passport_id, 'upgrade', true, req);
   res.json({ user: toPublicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(user.id), { viewerIsSelf: true }) });
+});
+
+router.get('/sessions', requireAuth, (req, res) => {
+  const sessions = listSessionsForUser(req.user.id).map((s) => ({
+    id: sessionId(s.token),
+    current: s.token === req.sessionToken,
+    userAgent: s.user_agent || '',
+    ip: s.ip || '',
+    createdAt: s.created_at,
+    lastUsedAt: s.last_used_at || s.created_at,
+    online: hub.isSessionOnline(req.user.id, s.token),
+  }));
+  res.json({ sessions });
+});
+
+// Declared before /sessions/:id so "others" isn't read as an id.
+router.delete('/sessions/others', requireAuth, (req, res) => {
+  const others = listSessionsForUser(req.user.id).filter((s) => s.token !== req.sessionToken);
+  for (const s of others) {
+    destroySession(s.token);
+    hub.disconnectSession(req.user.id, s.token);
+  }
+  log.info(`${others.length} other session(s) revoked for ${safeName(req.user.username)} (id ${req.user.id}) from ${req.ip}`);
+  res.json({ ok: true, revoked: others.length });
+});
+
+router.delete('/sessions/:id', requireAuth, (req, res) => {
+  const target = listSessionsForUser(req.user.id).find((s) => sessionId(s.token) === req.params.id);
+  if (!target) return res.status(404).json({ error: 'session not found' });
+  if (target.token === req.sessionToken) return res.status(400).json({ error: 'use sign out for this device' });
+  destroySession(target.token);
+  hub.disconnectSession(req.user.id, target.token);
+  log.info(`session revoked for ${safeName(req.user.username)} (id ${req.user.id}) from ${req.ip}`);
+  res.json({ ok: true });
 });
 
 router.post('/logout', requireAuth, (req, res) => {

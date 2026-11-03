@@ -119,6 +119,7 @@ function attach(httpServer) {
       return;
     }
     wss.handleUpgrade(req, socket, head, (ws) => {
+      ws.sessionToken = session.token;
       wss.emit('connection', ws, req, user);
     });
   });

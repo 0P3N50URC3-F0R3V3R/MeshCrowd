@@ -23,13 +23,22 @@ The admin panel is shown only to accounts with a **site staff rank**. The **Owne
 
 The panel also shows instance statistics and lets you manage users and servers.
 
+### Servers
+
+**Admin, Servers** lists every server with its owner, member count and creation date. Two ways to remove one:
+
+- **Delete now** removes the server, its channels, messages and files at once. You must type the server name to confirm.
+- **Schedule deletion** sets a timed deletion in hours or days. The server stays usable until then, the list shows the date, and **Cancel deletion** stops it at any time before it runs.
+
+Both need the **Manage Any Server** permission.
+
 ## Attachments
 
 Under **Admin, Overview** you can lower the upload size limit at runtime (never above `maxUploadMb` in the configuration) and optionally restrict uploads to an allowlist of extensions such as `.png, .jpg, .pdf`. Executables, HTML and SVG are always blocked, and files are served as downloads under a sandboxing Content-Security-Policy so an upload can never run as script in the app's origin.
 
 ## Sessions
 
-Session lifetime is a site setting. Individual sessions are revocable, and disabling an account ends its sessions and live connections immediately.
+Session lifetime is a site setting. Members can review and revoke their own sessions under **Settings, Devices** (see [Accounts](accounts.html#your-devices)), and disabling an account ends its sessions and live connections immediately.
 
 ## Data pruning
 

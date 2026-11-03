@@ -33,6 +33,7 @@ export function mountYouTab(host) {
       ${row('tab:voice', icons.mic(20), t('userSettings.voiceVideoTab'))}
       ${row('tab:privacy', icons.shield(20), t('userSettings.privacySafetyTab'))}
       ${row('tab:passport', icons.lock(20), t('passport.tab'))}
+      ${row('tab:devices', icons.link(20), t('userSettings.devicesTab'))}
       ${row('saved', icons.bookmark(20), t('bookmarks.title'))}
       ${row('scheduled', icons.clock ? icons.clock(20) : icons.bell(20), t('scheduled.listTitle'))}
       ${me.isSiteAdmin ? row('admin', icons.shield(20), t('userSettings.adminPanelNav')) : ''}
@@ -51,8 +52,13 @@ export function mountYouTab(host) {
   async function onRow(id) {
     try {
       if (id === 'status') {
-        const v = await actionSheet({ title: t('m.setStatus'), items: STATUSES.map(([value, key]) => ({ id: value, label: t(key) })) });
-        if (v) { await api.setStatus({ status: v }); state.me.status = v; bus.emit('state:me'); if (v === 'invisible') (await import('../../js/views/voice.js')).leaveActiveCall(); }
+        const hasCustom = state.me.customStatusEmoji || state.me.customStatusText;
+        const v = await actionSheet({ title: t('m.setStatus'), items: [...STATUSES.map(([value, key]) => ({ id: value, label: t(key) })), ...(hasCustom ? [{ id: '__removeCustom', label: t('userBar.removeCustomStatus') }] : [])] });
+        if (v === '__removeCustom') {
+          await api.setStatus({ customStatusEmoji: '', customStatusText: '' });
+          Object.assign(state.me, { customStatusEmoji: '', customStatusText: '' });
+          bus.emit('state:me');
+        } else if (v) { await api.setStatus({ status: v }); state.me.status = v; bus.emit('state:me'); if (v === 'invisible') (await import('../../js/views/voice.js')).leaveActiveCall(); }
       } else if (id === 'syncDevices') {
         await api.syncDevices(); toast(t('userSync.syncDevicesDone'));
       } else if (id === 'sound') {

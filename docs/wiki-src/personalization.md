@@ -15,7 +15,7 @@ Privacy settings decide who can send you direct messages and who can see your pr
 
 ## Presence and custom status
 
-Choose **Online**, **Idle**, **Do not disturb** or **Invisible**, and add a custom status with an emoji and text. The slash command `/afk` sets idle with a message. Notification sounds follow your presence by default (online and idle chime, do not disturb stays silent), and you can override that per account.
+Choose **Online**, **Idle**, **Do not disturb** or **Invisible**, and add a custom status with an emoji and text. Open the status menu from your avatar: **Custom Status** edits it and **Remove Custom Status** (shown while one is set) clears it in one click. The slash command `/afk` sets idle with a message. Notification sounds follow your presence by default (online and idle chime, do not disturb stays silent), and you can override that per account.
 
 ## Themes
 
@@ -59,3 +59,7 @@ The interface speaks English and Hungarian. Change it in your settings, or from 
 ## Names and nicknames
 
 A server can give you a **nickname** that only shows there. Server admins can set a per-member name color that beats the role color.
+
+## Syncing between devices
+
+Settings follow your account automatically. Theme, layout, language, notification levels, DM preferences, folders, nicknames, friends and private channels change on all your signed-in devices within a moment, in place, without a reload. A device that was offline or in the background catches up when it reconnects or comes back to the foreground. **Refresh my other devices** in Settings is only a manual fallback.

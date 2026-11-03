@@ -90,6 +90,7 @@ function buildAdminPanel() {
           <div class="snav-item ${tab === 'users' ? 'active' : ''}" data-tab="users">${t('admin.usersTab')}</div>
           <div class="snav-item ${tab === 'roles' ? 'active' : ''}" data-tab="roles">${t('admin.staffRolesTab')}</div>
           <div class="snav-item ${tab === 'reports' ? 'active' : ''}" data-tab="reports">${t('admin.reportsTab')}${reports.length && reportsStatus === 'open' ? ` (${reports.length})` : ''}</div>
+          <div class="snav-item ${tab === 'servers' ? 'active' : ''}" data-tab="servers">${t('admin.serversTab')}</div>
           <div class="snav-item ${tab === 'stickers' ? 'active' : ''}" data-tab="stickers">${t('admin.stickersTab')}</div>
           <div class="snav-item ${tab === 'soundboard' ? 'active' : ''}" data-tab="soundboard">${t('admin.soundboardTab')}</div>
           <div class="snav-item ${tab === 'ai' ? 'active' : ''}" data-tab="ai">${t('admin.aiTab')}</div>
@@ -112,6 +113,7 @@ function buildAdminPanel() {
     else if (tab === 'users') renderUsers(inner);
     else if (tab === 'roles') renderRoles(inner);
     else if (tab === 'reports') renderReports(inner);
+    else if (tab === 'servers') renderServersTab(inner);
     else if (tab === 'stickers') renderStickersTab(inner);
     else if (tab === 'soundboard') renderSoundboardTab(inner);
     else if (tab === 'ai') renderAdminAi(inner);
@@ -120,6 +122,69 @@ function buildAdminPanel() {
     else if (tab === 'security') renderSecurityTab(inner);
     else if (tab === 'prune') renderPruneTab(inner);
     else if (tab === 'federation') renderFederationTab(inner);
+  }
+
+  // ---------------- servers manager (MANAGE_ANY_SERVER): permanent and timed deletion ----------------
+  function renderServersTab(inner) {
+    inner.innerHTML = `<h2>${t('admin.serversTab')}</h2><div class="hint">${t('admin.serversIntro')}</div><div id="adm-srv-body" style="margin-top:16px"><div class="panel-loading" style="height:80px"><div class="spinner"></div></div></div>`;
+    const body = inner.querySelector('#adm-srv-body');
+    const reload = () => renderServersTab(inner);
+    api.adminServersOverview().then(({ servers }) => {
+      if (tab !== 'servers') return;
+      if (!servers.length) { body.innerHTML = `<div class="empty-state"><p>${t('admin.serversNone')}</p></div>`; return; }
+      body.innerHTML = `<table class="admin-table" style="width:100%"><thead><tr>
+        <th>${t('admin.serversColName')}</th><th>${t('admin.serversColOwner')}</th><th>${t('admin.serversColMembers')}</th><th>${t('admin.serversColCreated')}</th><th></th></tr></thead><tbody>${servers.map((s) => `
+        <tr>
+          <td><b>${escapeHtml(s.name)}</b>${s.kind === 'site' ? ` <span class="hint">(${t('admin.serversSiteKind')})</span>` : ''}
+            ${s.deleteAt ? `<div class="hint" style="color:var(--red)">${t('admin.serversDeletesOn')} ${escapeHtml(new Date(s.deleteAt).toLocaleString())}</div>` : ''}</td>
+          <td>${escapeHtml(s.ownerName)}</td>
+          <td>${s.memberCount}</td>
+          <td>${escapeHtml(new Date(s.createdAt).toLocaleDateString())}</td>
+          <td style="white-space:nowrap">
+            ${s.deleteAt
+              ? `<button class="btn" data-cancel="${s.id}">${t('admin.serversCancelDeletion')}</button>`
+              : `<button class="btn" data-schedule="${s.id}">${t('admin.serversScheduleDeletion')}</button>`}
+            <button class="btn btn-danger" data-delete="${s.id}">${t('admin.serversDeleteNow')}</button>
+          </td>
+        </tr>`).join('')}</tbody></table>`;
+      const byId = (id) => servers.find((s) => s.id === Number(id));
+      body.querySelectorAll('[data-cancel]').forEach((b) => b.addEventListener('click', async () => {
+        try { await api.adminScheduleServerDeletion(b.dataset.cancel, null); toast(t('admin.serversDeletionCancelled')); reload(); } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }
+      }));
+      body.querySelectorAll('[data-delete]').forEach((b) => b.addEventListener('click', () => {
+        const s = byId(b.dataset.delete);
+        confirmTypedModal({
+          title: t('admin.serversDeleteTitle', { name: s.name }),
+          message: t('admin.serversDeleteMessage'),
+          expectedText: s.name,
+          onConfirm: async () => {
+            try { await api.adminDeleteServer(s.id); toast(t('admin.serversDeleted')); reload(); } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }
+          },
+        });
+      }));
+      body.querySelectorAll('[data-schedule]').forEach((b) => b.addEventListener('click', () => {
+        const s = byId(b.dataset.schedule);
+        const m = openModal({
+          title: t('admin.serversScheduleTitle', { name: s.name }),
+          render(mb) {
+            mb.innerHTML = `<div class="field"><label>${t('admin.serversDeleteIn')}</label>
+              <div style="display:flex;gap:8px"><input class="input" id="sd-n" type="number" min="1" value="7" style="width:90px">
+              <select class="select" id="sd-unit"><option value="3600000">${t('admin.serversUnitHours')}</option><option value="86400000" selected>${t('admin.serversUnitDays')}</option></select></div>
+              <div class="hint" style="margin-top:8px">${t('admin.serversScheduleHint')}</div></div>`;
+          },
+          footer: `<button class="btn btn-danger" id="sd-ok">${t('admin.serversScheduleDeletion')}</button>`,
+        });
+        m.overlay.querySelector('#sd-ok').addEventListener('click', async () => {
+          const n = Number(m.overlay.querySelector('#sd-n').value);
+          const unit = Number(m.overlay.querySelector('#sd-unit').value);
+          if (!(n >= 1)) return;
+          try {
+            await api.adminScheduleServerDeletion(s.id, new Date(Date.now() + n * unit).toISOString());
+            toast(t('admin.serversDeletionScheduled')); m.close(); reload();
+          } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }
+        });
+      }));
+    }).catch((err) => { body.innerHTML = `<div class="empty-state"><p>${escapeHtml(apiErrorMessage(err, t('admin.couldNotLoadServers')))}</p></div>`; });
   }
 
   // ---------------- stickers (any server, MANAGE_ANY_SERVER — not just servers you're in) ----------------

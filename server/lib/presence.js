@@ -33,6 +33,13 @@ function isOnline(userId) {
   return connections.has(userId);
 }
 
+function isSessionOnline(userId, token) {
+  const set = connections.get(userId);
+  if (!set) return false;
+  for (const ws of set) if (ws.sessionToken === token) return true;
+  return false;
+}
+
 function connectionCount(userId) {
   const set = connections.get(userId);
   return set ? set.size : 0;
@@ -57,4 +64,14 @@ function disconnectUser(userId, code = 4001, reason = 'account disabled') {
   }
 }
 
-module.exports = { registerConnection, unregisterConnection, notifyUser, isOnline, onlineUserIds, connectionCount, totalConnections, disconnectUser };
+// Close only the sockets opened with this session token (a revoked device).
+function disconnectSession(userId, token, code = 4003, reason = 'session revoked') {
+  const set = connections.get(userId);
+  if (!set) return;
+  for (const ws of [...set]) {
+    if (ws.sessionToken !== token) continue;
+    try { ws.close(code, reason); } catch { /* already closing */ }
+  }
+}
+
+module.exports = { disconnectSession, isSessionOnline, registerConnection, unregisterConnection, notifyUser, isOnline, onlineUserIds, connectionCount, totalConnections, disconnectUser };

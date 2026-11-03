@@ -7,7 +7,7 @@ const { PERMISSIONS } = require('../lib/permissions');
 const presence = require('../lib/presence');
 const { isSiteAdmin } = require('../lib/siteAuth');
 
-const { registerConnection, unregisterConnection, notifyUser, isOnline, disconnectUser } = presence;
+const { registerConnection, unregisterConnection, notifyUser, isOnline, disconnectUser, disconnectSession, isSessionOnline } = presence;
 
 function broadcastToChannel(channel, payload, requiredFlag = PERMISSIONS.VIEW_CHANNEL) {
   const members = db.prepare('SELECT user_id FROM server_members WHERE server_id = ?').all(channel.server_id);
@@ -89,6 +89,6 @@ function notifySiteAdmins(payload) {
 }
 
 module.exports = {
-  registerConnection, unregisterConnection, notifyUser, isOnline, disconnectUser, notifyUserIds,
+  registerConnection, unregisterConnection, notifyUser, isOnline, disconnectUser, disconnectSession, isSessionOnline, notifyUserIds,
   broadcastToChannel, broadcastToDm, broadcastToServer, broadcastPresence, broadcastToFriends, broadcastAll, notifySiteAdmins,
 };

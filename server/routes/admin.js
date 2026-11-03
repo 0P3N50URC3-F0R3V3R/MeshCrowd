@@ -317,14 +317,41 @@ router.post('/users/:id/avatar', requireSitePerm(SITE_PERMISSIONS.MANAGE_USERS),
 router.delete('/servers/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_ANY_SERVER), (req, res) => {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'server not found' });
-  const memberIds = db.prepare('SELECT user_id FROM server_members WHERE server_id = ?').all(server.id).map((r) => r.user_id);
-  db.prepare('DELETE FROM servers WHERE id = ?').run(server.id);
-  if (server.kind === 'site') {
-    require('../lib/siteProcesses').stop(server.id);
-    require('../lib/siteFiles').removeSiteDir(server.id);
-  }
-  hub.notifyUserIds(memberIds, { type: 'server_delete', serverId: server.id });
+  require('../lib/serverDeletion').deleteServerNow(server);
+  log.info(`server ${server.id} deleted by admin ${req.user.id}`);
   res.json({ ok: true });
+});
+
+// Full overview for the Servers tab: who owns what, how big, and any pending timed deletion.
+router.get('/servers-overview', requireSitePerm(SITE_PERMISSIONS.MANAGE_ANY_SERVER), (req, res) => {
+  const rows = db.prepare(`
+    SELECT s.id, s.name, s.icon_path, s.kind, s.visibility, s.created_at, s.delete_at, s.owner_id,
+           u.username AS owner_username, u.display_name AS owner_display_name,
+           (SELECT COUNT(*) FROM server_members m WHERE m.server_id = s.id) AS member_count,
+           (SELECT COUNT(*) FROM channels c WHERE c.server_id = s.id) AS channel_count
+    FROM servers s LEFT JOIN users u ON u.id = s.owner_id
+    ORDER BY s.name COLLATE NOCASE ASC`).all();
+  res.json({ servers: rows.map((r) => ({
+    id: r.id, name: r.name, iconPath: r.icon_path, kind: r.kind, visibility: r.visibility, createdAt: r.created_at,
+    deleteAt: r.delete_at, ownerId: r.owner_id, ownerName: r.owner_display_name || r.owner_username || '',
+    memberCount: r.member_count, channelCount: r.channel_count,
+  })) });
+});
+
+// Timed deletion: body { deleteAt: ISO date in the future } schedules, { deleteAt: null } cancels.
+router.patch('/servers/:id/deletion', requireSitePerm(SITE_PERMISSIONS.MANAGE_ANY_SERVER), (req, res) => {
+  const server = db.prepare('SELECT id, name FROM servers WHERE id = ?').get(req.params.id);
+  if (!server) return res.status(404).json({ error: 'server not found' });
+  const { deleteAt } = req.body || {};
+  let value = null;
+  if (deleteAt !== null) {
+    const ms = typeof deleteAt === 'string' ? Date.parse(deleteAt) : NaN;
+    if (!Number.isFinite(ms) || ms <= Date.now()) return res.status(400).json({ error: 'deleteAt must be a future date' });
+    value = new Date(ms).toISOString();
+  }
+  db.prepare('UPDATE servers SET delete_at = ? WHERE id = ?').run(value, server.id);
+  log.info(`server ${server.id} deletion ${value ? `scheduled for ${value}` : 'cancelled'} by admin ${req.user.id}`);
+  res.json({ ok: true, deleteAt: value });
 });
 
 // Every server on the instance, for the Stickers tab's server picker — site staff managing

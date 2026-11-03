@@ -1,7 +1,7 @@
 'use strict';
 
 const { db } = require('../db');
-const { getSession } = require('../lib/session');
+const { getSession, touchSession } = require('../lib/session');
 const { getSitePermissionBits } = require('../lib/siteAuth');
 const { hasSite, SITE_PERMISSIONS } = require('../lib/permissions');
 
@@ -28,6 +28,7 @@ function attachUser(req, res, next) {
     if (user && !user.is_disabled) {
       req.user = user;
       req.sessionToken = token;
+      touchSession(session);
       req.sitePermissions = getSitePermissionBits(user.id);
       req.user.isSiteAdmin = hasSite(req.sitePermissions, SITE_PERMISSIONS.VIEW_ADMIN_PANEL);
     }

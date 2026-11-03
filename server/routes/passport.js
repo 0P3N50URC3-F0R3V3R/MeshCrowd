@@ -87,7 +87,7 @@ router.post('/register', (req, res) => {
     return res.status(409).json({ error: 'username, email or passport already taken' });
   }
   const { userId, autoJoinServers } = created;
-  const { token } = createSession(userId, req.headers['user-agent']);
+  const { token } = createSession(userId, req.headers['user-agent'], req.ip);
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   accounts.announceJoins(userId, autoJoinServers);
   audit(userId, passportId, 'register', true, req);
@@ -131,7 +131,7 @@ router.post('/login', (req, res) => {
     audit(user.id, user.passport_id, 'login_totp_pending', true, req);
     return res.json({ requiresTotp: true, pendingToken });
   }
-  const { token } = createSession(user.id, req.headers['user-agent']);
+  const { token } = createSession(user.id, req.headers['user-agent'], req.ip);
   audit(user.id, user.passport_id, 'login', true, req);
   res.setHeader('Set-Cookie', sessionCookie(req, token));
   res.json({ user: toPublicUser(user, { viewerIsSelf: true }) });
@@ -165,7 +165,7 @@ router.post('/recover', (req, res) => {
   pendingLogin.removeForUser(user.id);
   hub.disconnectUser(user.id);
   challenges.clearFailures(lockKey);
-  const { token } = createSession(user.id, req.headers['user-agent']);
+  const { token } = createSession(user.id, req.headers['user-agent'], req.ip);
   audit(user.id, user.passport_id, 'recover', true, req);
   res.setHeader('Set-Cookie', sessionCookie(req, token));
   res.json({ user: toPublicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(user.id), { viewerIsSelf: true }) });

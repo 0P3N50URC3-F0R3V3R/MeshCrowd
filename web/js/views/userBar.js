@@ -75,6 +75,20 @@ export function mountUserBar(container) {
       },
     }));
     items.push('sep', { label: t('userBar.customStatusMenuItem'), icon: icons.smile, onClick: openCustomStatusModal });
+    if (state.me.customStatusEmoji || state.me.customStatusText) {
+      items.push({
+        label: t('userBar.removeCustomStatus'),
+        icon: icons.x,
+        onClick: async () => {
+          try {
+            await api.setStatus({ customStatusEmoji: '', customStatusText: '' });
+            Object.assign(state.me, { customStatusEmoji: '', customStatusText: '' });
+            bus.emit('state:me');
+            toast(t('userBar.statusUpdated'));
+          } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }
+        },
+      });
+    }
     openContextMenu(rect.left, rect.top - 8 - (items.length - 1) * 40, items);
   }
 

@@ -94,6 +94,9 @@ export const api = {
   passportRecover: (body) => post('/api/passport/recover', body),
   passportAttach: (body) => post('/api/passport/attach', body),
   changePassword: (body) => post('/api/auth/change-password', body),
+  listSessions: () => get('/api/auth/sessions'),
+  revokeSession: (id) => del(`/api/auth/sessions/${id}`),
+  revokeOtherSessions: () => del('/api/auth/sessions/others'),
   verifyPassword: (body) => post('/api/auth/verify-password', body),
 
   // friends
@@ -216,6 +219,9 @@ export const api = {
 
   // stickers (site-admin, MANAGE_ANY_SERVER — any server, not just ones you're a member of)
   adminListServers: () => get('/api/admin/servers'),
+  adminServersOverview: () => get('/api/admin/servers-overview'),
+  adminDeleteServer: (id) => del(`/api/admin/servers/${id}`),
+  adminScheduleServerDeletion: (id, deleteAt) => patch(`/api/admin/servers/${id}/deletion`, { deleteAt }),
   adminListStickers: (serverId) => get(`/api/admin/servers/${serverId}/stickers`),
   adminUploadSticker: (serverId, name, description, file) => {
     const fd = new FormData();

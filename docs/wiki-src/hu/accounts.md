@@ -39,6 +39,10 @@ Kapcsold be a TOTP-t a **Beállítások, Fiókom** oldalon. Olvasd be a QR-kódo
 
 Használd a **Beállítások, Fiókom, Jelszó módosítása** lehetőséget. A megerősített fiókoknál a böngésző újracsomagolja az Útleveledet az új jelszóval.
 
+## Az eszközeid
+
+A **Beállítások, Eszközök** oldal felsorolja a fiókodba bejelentkezett összes böngészőt és alkalmazást: az eszköz típusát, az IP-címet, az utolsó aktivitást és a bejelentkezés idejét. Az éppen használt eszköz meg van jelölve. A **Kijelentkeztetés** gombbal kiléptethetsz minden ismeretlen bejegyzést, vagy a **Összes többi eszköz kijelentkeztetése** gombbal az összeset. Az érintett eszköz azonnal kijelentkezik, élő kapcsolata megszakad. A jelszóváltoztatás is kijelentkeztet minden más eszközt.
+
 ## Profil
 
 Az avatárod, bannered, bemutatkozásod, egyéni státuszod és jelenléted a [Profilok, státusz és témák](personalization.html) oldalon szerepel. Az adatvédelmi beállítások döntik el, ki küldhet neked privát üzenetet, és ki láthatja a profilkártyádat.

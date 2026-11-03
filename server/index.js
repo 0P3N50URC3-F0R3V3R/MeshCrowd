@@ -28,6 +28,7 @@ require('./lib/security/blocklists').startWorker();
 startPruneWorker();
 require('./lib/reminders').startReminderWorker();
 require('./lib/scheduledMessages').startWorker();
+require('./lib/serverDeletion').startWorker();
 
 // Both of these otherwise crash the process with only a stack trace flying past in the terminal
 // (unrecoverable by the time anyone can scroll back) — data/logs/ keeps a copy to read/copy later.

@@ -58,6 +58,15 @@ export function wireUserSync(opts = {}) {
     lastSync = Date.now();
     applyUserSync('all', opts).catch(() => {});
   };
+  // Events pushed while this device was offline are gone for good, so a reconnect re-reads everything.
+  let wasClosed = false;
+  bus.on('ws:close', () => { wasClosed = true; });
+  bus.on('ws:open', () => {
+    if (!wasClosed) return;
+    wasClosed = false;
+    lastSync = Date.now();
+    applyUserSync('all', opts).catch(() => {});
+  });
   document.addEventListener('visibilitychange', onVisible);
   window.addEventListener('focus', onVisible);
 }
