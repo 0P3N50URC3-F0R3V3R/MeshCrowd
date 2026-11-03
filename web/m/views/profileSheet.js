@@ -1,6 +1,6 @@
 import { api } from '../../js/api.js';
 import { t } from '../../js/i18n.js';
-import { escapeHtml, avatarHtml, toast } from '../../js/utils.js';
+import { escapeHtml, avatarHtml, customStatusLabel, toast } from '../../js/utils.js';
 import { state, setFriends, setDms, presenceFor } from '../../js/state.js';
 import { icons } from '../../js/icons.js';
 import { nav } from '../router.js';
@@ -16,12 +16,13 @@ function relation(userId) {
   return p ? `pending-${p.direction}` : 'none';
 }
 
-export async function openProfileSheet(userId) {
+export async function openProfileSheet(userId, { asStranger = false } = {}) {
   let user;
-  try { user = presenceFor((await api.getUser(userId)).user); } catch (err) { handleError(err, 'm.loadFailed'); return; }
+  asStranger = asStranger && userId === state.me.id;
+  try { user = asStranger ? (await api.getUser(userId, { as: 'stranger' })).user : presenceFor((await api.getUser(userId)).user); } catch (err) { handleError(err, 'm.loadFailed'); return; }
   const self = userId === state.me.id;
   const rel = relation(userId);
-  const items = self ? [{ id: 'edit', label: t('profile.editProfileButton') }] : [
+  const items = self ? [{ id: 'edit', label: t('profile.editProfileButton') }, { id: 'stranger', label: t('profile.viewAsStrangerMenuItem') }] : [
     { id: 'dm', label: t('m.sendMessage') },
     ...(rel === 'none' ? [{ id: 'add', label: t('m.addFriend') }] : []),
     ...(rel === 'pending-incoming' ? [{ id: 'accept', label: t('m.accept') }] : []),
@@ -33,6 +34,7 @@ export async function openProfileSheet(userId) {
   async function run(a) {
     try {
       if (a === 'edit') { openEditProfile(); return; }
+      if (a === 'stranger') { await openProfileSheet(userId, { asStranger: true }); return; }
       if (a === 'dm') { await openDmWith(userId); return; }
       if (a === 'report') {
         const reason = await actionSheet({ title: t('m.actReport'), items: [
@@ -53,10 +55,11 @@ export async function openProfileSheet(userId) {
 
   openSheet({
     html: `<div class="m-profile">
-        <button class="btn-icon m-profile-more" data-more title="${t('profile.moreTitle')}">${icons.kebab(20)}</button>
+        ${asStranger ? '' : `<button class="btn-icon m-profile-more" data-more title="${t('profile.moreTitle')}">${icons.kebab(20)}</button>`}
         <div class="m-profile-avatar">${avatarHtml(user, 72)}</div>
         <div class="m-profile-name">${escapeHtml(user.displayName)}</div>
-        <div class="m-profile-user">@${escapeHtml(user.username)}${user.customStatusText ? ` · ${escapeHtml(user.customStatusText)}` : ''}</div>
+        <div class="m-profile-user">@${escapeHtml(user.username)}${customStatusLabel(user) ? ` · ${escapeHtml(customStatusLabel(user))}` : ''}</div>
+        ${asStranger ? `<p class="m-profile-bio"><i>${escapeHtml(t('profile.viewingAsStranger'))}</i></p>` : ''}
         ${user.bio ? `<p class="m-profile-bio">${escapeHtml(user.bio)}</p>` : ''}
         ${!self && user.canMessage ? `<input class="input m-profile-quick" maxlength="2000" enterkeyhint="send" placeholder="${escapeHtml(t('profile.messageInputPlaceholder', { name: user.displayName }))}">` : ''}</div>`,
     onMount: (body, close) => {

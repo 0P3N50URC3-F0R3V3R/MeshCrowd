@@ -171,7 +171,7 @@ export function mountServerRail(container) {
     `;
 
     container.querySelector('[data-action="home"]').addEventListener('click', () => {
-      bus.emit('ui:navigate', { type: 'home' });
+      bus.emit('ui:navigate', { type: 'friends', tab: 'online' });
     });
     container.querySelector('[data-action="create"]').addEventListener('click', () => openCreateJoinModal('create'));
     container.querySelector('[data-action="discover"]').addEventListener('click', () => openCreateJoinModal('discover'));

@@ -10,7 +10,7 @@ export function dmPreview(dm, { peek, encryptedLabel, attachmentLabel, stickerLa
 
 export function dmTitle(dm, nameFor) {
   if (dm.isGroup) return dm.name || dm.members.map((u) => nameFor(u)).join(', ');
-  return nameFor(dm.members[0]);
+  return nameFor(dm.members[0] || dm.closedBy);
 }
 
 // Text safe to show for a message: an encrypted message is only shown once decryption succeeded.

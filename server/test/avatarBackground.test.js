@@ -47,3 +47,12 @@ test('avatarBackground rejects non-boolean values', async () => {
   }
   assert.equal(db.prepare('SELECT avatar_bg FROM users WHERE username = ?').get('ab_two').avatar_bg, 0);
 });
+
+test('avatarBgColor validates hex, persists and clears', async () => {
+  const reg = await call('POST', '/api/auth/register', { username: 'ab_three', email: 'ab3@t.co', password: 'password123' });
+  assert.equal((await call('GET', '/api/auth/me', null, reg.cookie)).body.user.avatarBgColor, '');
+  const ok = await call('PATCH', '/api/users/me', { avatarBgColor: '#aabbcc' }, reg.cookie);
+  assert.equal(ok.body.user.avatarBgColor, '#aabbcc');
+  assert.equal((await call('PATCH', '/api/users/me', { avatarBgColor: 'red' }, reg.cookie)).status, 400);
+  assert.equal((await call('PATCH', '/api/users/me', { avatarBgColor: '' }, reg.cookie)).body.user.avatarBgColor, '');
+});

@@ -4,7 +4,7 @@ import { ws } from '../../js/ws.js';
 import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
 import { avatarHtml, escapeHtml, toast } from '../../js/utils.js';
-import { state, setReadState, nameFor, getKnownUser } from '../../js/state.js';
+import { state, pinUnseen, setReadState, nameFor, getKnownUser } from '../../js/state.js';
 import { PERMISSIONS, has, memberPermissionBits, channelPermissionBits } from '../../js/permissions.js';
 import { decryptMessages, encryptForSend, cacheSentPlaintext, uploadDmFile, fetchDmFile, trustView, refreshTrust, NO_IDENTITY, KEY_CHANGED } from '../../js/e2ee/dmCrypto.js';
 import { nav } from '../router.js';
@@ -653,7 +653,7 @@ export function mountChat(el, params) {
       + (kind === 'channel' ? `<button class="m-icon-btn" id="m-threads" aria-label="${t('m.threads')}">${icons.messageSquare(20)}</button>` : '')
       + (kind === 'dm' && encrypted() && !dm().isGroup ? `<button class="m-icon-btn" id="m-verify" aria-label="${t('dmVerify.title')}">${icons.lock(20)}</button>` : '')
       + (kind === 'thread' && thread && (canEditPost(thread, state.me) || canDeletePost(thread, state.me, { canManage })) ? `<button class="m-icon-btn" id="m-post-menu" aria-label="${t('forum.postActions')}">${icons.more(20)}</button>` : '')
-      + `<button class="m-icon-btn" id="m-info" aria-label="${t('m.infoMembers')}">${icons.users(20)}</button>`;
+      + `<button class="m-icon-btn${pinUnseen(kind, kind === 'dm' ? params.dmId : kind === 'thread' ? params.threadId : params.channelId) ? ' m-pin-dot' : ''}" id="m-info" aria-label="${t('m.infoMembers')}">${icons.users(20)}</button>`;
     box.querySelector('#m-call')?.addEventListener('click', () => nav.push('voice', { kind: 'dm', dmId: params.dmId }));
     box.querySelector('#m-verify')?.addEventListener('click', () => openVerifySheet(dm()));
     box.querySelector('#m-search').addEventListener('click', () => nav.push('search', { serverId: params.serverId, channelId: params.channelId, dmId: params.dmId }));

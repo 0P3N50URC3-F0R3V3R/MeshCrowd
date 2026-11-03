@@ -23,6 +23,8 @@ export const state = {
   dmPrefs: new Map(), // dmId -> { pinned, favorite, hidden }
   bookmarkIds: new Set(), // message ids this user saved
   serverPrefs: new Map(), // serverId -> { notifLevel, mutedUntil, hideMutedChannels, showAllChannels, allowDms }
+  pinsUnseen: new Map(), // "channel:1" -> newest pin time the user has not looked at yet
+  pinSeenAt: new Map(), // "channel:1" -> when this session last opened that pin list
   readState: new Map(), // "channel:1" | "dm:2" -> last message id this user has read there
   uiPrefs: {}, // /api/users/me/ui-prefs — layout + unread-line preferences (see unreadLine.mjs for defaults)
 
@@ -299,9 +301,31 @@ export function forceReadState(scopeType, scopeId, messageId) {
   bus.emit('state:readState', key);
 }
 
-export function setReadStateBulk(rows) {
+export function setReadStateBulk(rows, pinsUnseen = []) {
   state.readState = new Map(rows.map((r) => [`${r.scopeType}:${r.scopeId}`, r.lastReadMessageId]));
+  state.pinsUnseen = new Map(pinsUnseen.map((p) => [`${p.scopeType}:${p.scopeId}`, p.latest]));
+  bus.emit('state:pins');
 }
+
+// Per-user "new pin" dot: a pin by someone else newer than the last time this user opened the list.
+export function pinUnseen(scopeType, scopeId) {
+  return state.pinsUnseen.has(`${scopeType}:${scopeId}`);
+}
+
+export function clearPinUnseen(scopeType, scopeId, seenAt) {
+  const key = `${scopeType}:${scopeId}`;
+  state.pinSeenAt.set(key, seenAt);
+  if (state.pinsUnseen.delete(key)) bus.emit('state:pins', key);
+}
+
+bus.on('ws:message_update', ({ message }) => {
+  if (!message?.pinnedAt || !state.me || message.pinnedBy?.id === state.me.id) return;
+  const key = `${message.scopeType}:${message.scopeId}`;
+  if (message.pinnedAt <= (state.pinSeenAt.get(key) || '')) return;
+  if ((state.pinsUnseen.get(key) || '') >= message.pinnedAt) return;
+  state.pinsUnseen.set(key, message.pinnedAt);
+  bus.emit('state:pins', key);
+});
 
 // Only advances forward — a stale response landing after a newer local mark-as-read must never
 // roll the pointer back and make something unread again.

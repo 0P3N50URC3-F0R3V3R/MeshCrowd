@@ -118,7 +118,7 @@ export async function openFullProfile(userId, { serverId } = {}) {
     }
     if (tab === 'servers') {
       return mutualServers.length
-        ? mutualServers.map((s) => `<div class="list-row" data-open-server="${s.id}" style="cursor:pointer"><div class="avatar-fallback" style="width:36px;height:36px">${escapeHtml(s.name.slice(0, 1).toUpperCase())}</div><div class="lr-main"><div class="lr-title">${escapeHtml(s.name)}</div></div></div>`).join('')
+        ? mutualServers.map((s) => `<div class="list-row" data-open-server="${s.id}" style="cursor:pointer">${s.icon_path ? `<img class="avatar" style="width:36px;height:36px;border-radius:10px;object-fit:cover" src="${escapeHtml(s.icon_path)}" alt="" draggable="false">` : `<div class="avatar-fallback" style="width:36px;height:36px">${escapeHtml(s.name.slice(0, 1).toUpperCase())}</div>`}<div class="lr-main"><div class="lr-title">${escapeHtml(s.name)}</div></div></div>`).join('')
         : `<div class="empty-state"><p>${t('fullProfile.noMutualServers')}</p></div>`;
     }
     return `<div class="empty-state"><h3>${t('fullProfile.noActivityTitle', { name: escapeHtml(live.displayName) })}</h3><p>${t('fullProfile.noActivityBody', { name: escapeHtml(live.displayName) })}</p>

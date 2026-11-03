@@ -56,13 +56,14 @@ function openProfilePopover(anchor) {
   return { close, body: el, place };
 }
 
-export async function openProfileModal(userId, { serverId, anchor } = {}) {
+export async function openProfileModal(userId, { serverId, anchor, asStranger = false } = {}) {
   const m = openProfilePopover(anchor);
   const isSelf = userId === state.me.id;
+  asStranger = asStranger && isSelf;
 
   try {
-    const res = await api.getUser(userId);
-    const user = presenceFor(res.user);
+    const res = await api.getUser(userId, asStranger ? { as: 'stranger' } : undefined);
+    const user = asStranger ? res.user : presenceFor(res.user);
     const status = user.status === 'invisible' ? 'offline' : (user.status || 'offline');
     const isFriend = state.friends.friends.some((f) => f.user.id === userId);
     const isPending = state.friends.pending.some((f) => f.user.id === userId);
@@ -75,7 +76,7 @@ export async function openProfileModal(userId, { serverId, anchor } = {}) {
       <div class="profile-preview" style="max-width:none;margin-top:0">
         <div class="pp-banner" style="${bannerStyle(user)}"></div>
         <div class="pp-icons-row">
-          <button class="btn-icon pp-icon-btn" id="pm-more" title="${t('profile.moreTitle')}">${icons.kebab(16)}</button>
+          ${asStranger ? '' : `<button class="btn-icon pp-icon-btn" id="pm-more" title="${t('profile.moreTitle')}">${icons.kebab(16)}</button>`}
         </div>
         <div class="pp-body" style="${cardStyle(user)}">
           <div style="position:relative;width:68px">
@@ -93,6 +94,7 @@ export async function openProfileModal(userId, { serverId, anchor } = {}) {
           ${user.bio !== undefined ? `<div class="pp-bio">${escapeHtml(user.bio || t('profile.noBioYet'))}</div>` : ''}
         </div>
       </div>
+      ${asStranger ? `<div class="hint" style="padding:6px 12px">${t('profile.viewingAsStranger')}</div>` : ''}
       ${!isSelf && user.canMessage ? `<input class="input pp-quick-dm" id="pm-quick" maxlength="2000" placeholder="${escapeHtml(t('profile.messageInputPlaceholder', { name: user.displayName }))}">` : ''}
       <div class="error-text" id="pm-err"></div>`;
     m.place();
@@ -157,6 +159,7 @@ export async function openProfileModal(userId, { serverId, anchor } = {}) {
             },
           },
           { label: t('profile.viewFullProfileMenuItem'), onClick: () => { m.close(); openFullProfile(userId, { serverId }); } },
+          { label: t('profile.viewAsStrangerMenuItem'), onClick: () => { m.close(); openProfileModal(userId, { serverId, anchor, asStranger: true }); } },
           { label: t('profile.shareProfileMenuItem'), onClick: () => shareProfile(user) },
         ]);
         return;

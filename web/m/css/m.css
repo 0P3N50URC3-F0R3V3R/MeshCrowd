@@ -296,3 +296,7 @@ button.m-att-file { width: 100%; border: 0; text-align: left; font: inherit; }
 .m-forum-list .forum-card .fc-pin-btn { display: inline-flex; padding: 8px; }
 .m-forum-list .forum-card:has(.fc-pin-btn) { padding-right: 44px; }
 .m-text .channel-ref { background: rgba(13, 148, 136, 0.15); color: var(--brand, #0d9488); border-radius: 3px; padding: 0 2px; font-weight: 500; cursor: pointer; }
+
+.m-pin-dot { position: relative; }
+.m-pin-dot::after { content: ''; position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--danger); }
+.status-emoji-badge { position: absolute; top: -4px; right: -5px; font-size: 12px; line-height: 1; padding: 1px; border-radius: 50%; background: var(--bg-primary); }

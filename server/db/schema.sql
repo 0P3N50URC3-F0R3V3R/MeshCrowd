@@ -670,6 +670,16 @@ CREATE TABLE IF NOT EXISTS read_state (
   PRIMARY KEY (user_id, scope_type, scope_id)
 );
 
+-- Last time a user opened the pinned-messages list of a channel/thread/DM; a newer pin by someone
+-- else shows a dot on the pin button until then (see server/lib/pinSeen.js).
+CREATE TABLE IF NOT EXISTS pin_seen (
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  scope_type TEXT NOT NULL,
+  scope_id   INTEGER NOT NULL,
+  seen_at    TEXT NOT NULL,
+  PRIMARY KEY (user_id, scope_type, scope_id)
+);
+
 -- Durable copy of every notify-worthy event already computed by notifyChannelMessage/
 -- notifyDmMessage (server/lib/notifications.js) — same mute/mentions filtering, just also
 -- persisted here instead of only pushed live over WS, so a client with no open WebSocket (e.g.

@@ -83,7 +83,7 @@ export const api = {
   deleteBanner: () => del('/api/users/me/banner'),
   uploadCard: (file) => { const fd = new FormData(); fd.append('card', file); return postForm('/api/users/me/card', fd); },
   deleteCard: () => del('/api/users/me/card'),
-  getUser: (id) => get(`/api/users/${id}`),
+  getUser: (id, query) => get(`/api/users/${id}`, query),
   searchUsers: (q) => get('/api/users/search', { q }),
   setE2eePublicKey: (publicKey) => put('/api/users/me/e2ee-key', { publicKey }),
   setE2eeBackup: (backup) => put('/api/users/me/e2ee-backup', backup),
@@ -439,6 +439,7 @@ export const api = {
 
   // read state (unread indicators + DM "Seen")
   getReadState: () => get('/api/read-state'),
+  markPinsSeen: (scopeType, scopeId) => put(`/api/read-state/pins/${scopeType}/${scopeId}`, {}),
   markRead: (scopeType, scopeId, messageId) => put(`/api/read-state/${scopeType}/${scopeId}`, { messageId }),
 
   // admin

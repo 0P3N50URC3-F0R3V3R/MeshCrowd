@@ -222,10 +222,19 @@ export function colorForId(id) {
   return AVATAR_PALETTE[n % AVATAR_PALETTE.length];
 }
 
+export function statusEmojiBadge(user) {
+  return user?.customStatusEmoji ? `<span class="status-emoji-badge" title="${escapeHtml(user.customStatusText || '')}">${escapeHtml(user.customStatusEmoji)}</span>` : '';
+}
+
+export function customStatusLabel(user) {
+  if (!user?.customStatusText && !user?.customStatusEmoji) return '';
+  return [user.customStatusEmoji, user.customStatusText].filter(Boolean).join(' ');
+}
+
 export function avatarHtml(user, size = 40) {
   const style = `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.4)}px`;
   if (user?.avatarPath) {
-    const bgStyle = user.avatarBackground ? `;background:${colorForId(user.id)}` : '';
+    const bgStyle = user.avatarBackground ? `;background:${escapeHtml(user.avatarBgColor || colorForId(user.id))}` : '';
     return `<img class="avatar" style="${style}${bgStyle}" src="${escapeHtml(user.avatarPath)}" alt="" draggable="false">`;
   }
   const bg = colorForId(user?.id);

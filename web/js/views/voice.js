@@ -188,7 +188,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   // Server-side backstop for the one-call rule (e.g. already in a call from another tab/device).
   const offJoinDenied = bus.on('ws:voice_join_denied', (payload) => {
     if (!joined || !matchesThisRoom(payload)) return;
-    toast(t('voice.joinDeniedToast'), { type: 'error' });
+    toast(payload.reason === 'invisible' ? t('voice.joinDeniedInvisible') : t('voice.joinDeniedToast'), { type: 'error' });
     cleanupAll();
     joined = false;
     if (activeCall?.key === key) activeCall = null;

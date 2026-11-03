@@ -9,7 +9,7 @@ import {
 } from '../passport/flow.js';
 import { icons } from '../icons.js';
 import { cropImage } from '../cropEditor.js';
-import { avatarHtml, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle, navScroll, restoreNavScroll } from '../utils.js';
+import { avatarHtml, colorForId, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle, navScroll, restoreNavScroll } from '../utils.js';
 import { openAdminPanel } from './admin.js';
 import { nextZIndex } from '../zstack.js';
 import { voicePrefs, keyLabel } from '../voicePrefs.js';
@@ -96,13 +96,16 @@ export function openUserSettings(initialTab = 'account') {
   let pendingCardColor = '';
   let avatarBgTouched = false;
   let pendingAvatarBg = false;
+  let avatarBgColorTouched = false;
+  let pendingAvatarBgColor = '';
 
   function renderAccount(inner) {
     const me = state.me;
     if (!bannerColorTouched) pendingBannerColor = me.bannerColor || '';
     if (!cardColorTouched) pendingCardColor = me.cardColor || '';
     if (!avatarBgTouched) pendingAvatarBg = !!me.avatarBackground;
-    const previewUser = { ...me, bannerColor: pendingBannerColor, cardColor: pendingCardColor, avatarBackground: pendingAvatarBg };
+    if (!avatarBgColorTouched) pendingAvatarBgColor = me.avatarBgColor || '';
+    const previewUser = { ...me, bannerColor: pendingBannerColor, cardColor: pendingCardColor, avatarBackground: pendingAvatarBg, avatarBgColor: pendingAvatarBgColor };
     inner.innerHTML = `
       <h2>${t('userSettings.myAccountTab')}</h2>
       <div class="settings-avatar-row">
@@ -114,7 +117,7 @@ export function openUserSettings(initialTab = 'account') {
         <div>
           <div style="font-weight:700;font-size:18px">${escapeHtml(me.displayName)}</div>
           <div style="color:var(--text-muted);font-size:14px">@${escapeHtml(me.username)}</div>
-          ${me.avatarPath ? `<label class="checkbox-row" style="margin-top:8px"><input type="checkbox" id="f-avatar-bg" ${pendingAvatarBg ? 'checked' : ''}><span>${t('userSettings.avatarBackgroundLabel')}</span></label>` : ''}
+          ${me.avatarPath ? `<label class="checkbox-row" style="margin-top:8px"><input type="checkbox" id="f-avatar-bg" ${pendingAvatarBg ? 'checked' : ''}><span>${t('userSettings.avatarBackgroundLabel')}</span></label><input type="color" class="theme-color-input" id="f-avatar-bg-color" style="margin-top:6px${pendingAvatarBg ? '' : ';display:none'}" value="${pendingAvatarBgColor || colorForId(me.id)}" title="${t('userSettings.avatarBackgroundColor')}">` : ''}
         </div>
       </div>
       <div class="field">
@@ -149,6 +152,7 @@ export function openUserSettings(initialTab = 'account') {
       </div>
       <div class="error-text" id="acc-err"></div>
       <button class="btn btn-primary" id="acc-save">${t('userSettings.saveChangesButton')}</button>
+      <button class="btn btn-secondary" id="acc-view-stranger" type="button">${t('profile.viewAsStrangerMenuItem')}</button>
 
       <div class="profile-preview" id="acc-preview">
         <div class="pp-banner" id="pp-banner-preview" style="${bannerStyle(previewUser)}"></div>
@@ -180,7 +184,17 @@ export function openUserSettings(initialTab = 'account') {
     inner.querySelector('#f-avatar-bg')?.addEventListener('change', (e) => {
       avatarBgTouched = true;
       pendingAvatarBg = e.target.checked;
-      const pv = { ...me, avatarBackground: pendingAvatarBg };
+      const colorInput = inner.querySelector('#f-avatar-bg-color');
+      if (colorInput) colorInput.style.display = pendingAvatarBg ? '' : 'none';
+      const pv = { ...me, avatarBackground: pendingAvatarBg, avatarBgColor: pendingAvatarBgColor };
+      inner.querySelector('#avatar-edit .avatar').outerHTML = avatarHtml(pv, 80);
+      inner.querySelector('#pp-body-preview .pp-avatar').outerHTML = avatarHtml(pv, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar');
+    });
+
+    inner.querySelector('#f-avatar-bg-color')?.addEventListener('input', (e) => {
+      avatarBgColorTouched = true;
+      pendingAvatarBgColor = e.target.value;
+      const pv = { ...me, avatarBackground: pendingAvatarBg, avatarBgColor: pendingAvatarBgColor };
       inner.querySelector('#avatar-edit .avatar').outerHTML = avatarHtml(pv, 80);
       inner.querySelector('#pp-body-preview .pp-avatar').outerHTML = avatarHtml(pv, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar');
     });
@@ -245,6 +259,11 @@ export function openUserSettings(initialTab = 'account') {
       } catch (err) { toast(apiErrorMessage(err, t('userSettings.couldNotRemoveCard')), { type: 'error' }); }
     });
 
+    inner.querySelector('#acc-view-stranger').addEventListener('click', async (e) => {
+      const { openProfileModal } = await import('./profile.js');
+      openProfileModal(state.me.id, { anchor: e.currentTarget, asStranger: true });
+    });
+
     inner.querySelector('#acc-save').addEventListener('click', async () => {
       const displayName = inner.querySelector('#f-display').value.trim();
       const bio = bioInput.value;
@@ -254,12 +273,14 @@ export function openUserSettings(initialTab = 'account') {
       if (bannerColorTouched) payload.bannerColor = pendingBannerColor;
       if (cardColorTouched) payload.cardColor = pendingCardColor;
       if (avatarBgTouched) payload.avatarBackground = pendingAvatarBg;
+      if (avatarBgColorTouched) payload.avatarBgColor = pendingAvatarBgColor;
       try {
         const res = await api.updateMe(payload);
         Object.assign(state.me, res.user);
         bannerColorTouched = false;
         cardColorTouched = false;
         avatarBgTouched = false;
+        avatarBgColorTouched = false;
         bus.emit('state:me');
         toast(t('userSettings.profileUpdated'));
       } catch (err) {
@@ -302,6 +323,7 @@ export function openUserSettings(initialTab = 'account') {
         try {
           await api.setStatus({ status: node.dataset.status });
           state.me.status = node.dataset.status;
+          if (node.dataset.status === 'invisible') (await import('./voice.js')).leaveActiveCall();
           bus.emit('state:me');
           render();
         } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }

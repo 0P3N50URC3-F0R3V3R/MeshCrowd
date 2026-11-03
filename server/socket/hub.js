@@ -56,6 +56,12 @@ function broadcastPresence(userId) {
     for (const m of mates) recipients.add(m.user_id);
   }
 
+  const dmMates = db.prepare(
+    `SELECT DISTINCT b.user_id FROM dm_members a JOIN dm_members b ON b.dm_channel_id = a.dm_channel_id
+      WHERE a.user_id = ? AND b.user_id != ?`
+  ).all(userId, userId);
+  for (const m of dmMates) recipients.add(m.user_id);
+
   const payload = { type: 'presence', user: toPublicUser(user, { viewerIsSelf: false }) };
   for (const rid of recipients) notifyUser(rid, payload);
 }

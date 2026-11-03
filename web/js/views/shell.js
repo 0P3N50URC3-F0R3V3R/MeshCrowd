@@ -8,7 +8,7 @@ import {
   setServerDetail, getServerDetail, upsertServer, removeServer, upsertDmPreview, upsertDm, removeDm,
   setWsConnected, setNotificationPrefs, setServerPrefs, setUserAnnotations, setDmPrefs, setDmPref, dmPrefFor, setBookmarkIds, nameFor, notificationPrefFor, setNotificationPref, setReadStateBulk, setReadState, isSelf,
   setFriendVoice, pushActivity, setServerLayout, shouldPlayNotifySound,
-  setServerVoiceBulk, applyServerVoiceState, getGlobalUnreadCount, applyDmRead, noteChannelMessage, isUnread,
+  setServerVoiceBulk, applyServerVoiceState, getGlobalUnreadCount, applyDmRead, noteChannelMessage, isUnread, pinUnseen,
 } from '../state.js';
 import { keysToClear, notifyKey } from '../notifyClear.mjs';
 import { openContextMenu, openModal, confirmModal, confirmTypedModal } from './modal.js';
@@ -37,6 +37,7 @@ import { openBookmarksModal } from './bookmarks.js';
 import { mountSearchPanel } from './search.js';
 import { mountActivityPanel } from './activityPanel.js';
 import { mountPinnedPanel } from './pinnedPanel.js';
+import { markPinsSeen } from '../pinSeen.js';
 import { mountThreadsPanel } from './threadsPanel.js';
 import { openServerSettings } from './serverSettings.js';
 import { voicePrefs } from '../voicePrefs.js';
@@ -59,7 +60,7 @@ export async function mountShell(root) {
         <span class="topbar-title" id="topbar-title"></span>
         <div class="spacer"></div>
         <button class="btn-icon" id="topbar-saved" title="${t('bookmarks.title')}">${icons.bookmark(18)}</button>
-        <button class="btn-icon" id="topbar-inbox" title="${t('shell.recentActivityTitle')}">${icons.bell(18)}</button>
+        <button class="btn-icon" id="topbar-inbox" title="${t('shell.recentActivityTitle')}">${icons.inbox(18)}</button>
         <button class="btn-icon" id="topbar-help" title="${t('shell.aboutMeshcordTitle')}">${icons.info(18)}</button>
         <button class="btn-icon" id="topbar-newdm" title="${t('shell.newDirectMessageTitle')}">${icons.userPlus(18)}</button>
       </div>
@@ -211,6 +212,20 @@ export async function mountShell(root) {
   bus.on('ws:server_notice', ({ text }) => { if (text) toast(text, { ttl: 15000 }); });
   bus.on('ws:voice_ring', ({ dmChannelId, fromUser }) => onVoiceRing(dmChannelId, fromUser));
   bus.on('ws:dm_create', ({ dm }) => upsertDm(dm));
+  bus.on('ws:dm_closed', ({ dmId, closedBy }) => {
+    const dm = state.dms.find((d) => d.id === dmId);
+    if (!dm) return;
+    dm.closedBy = closedBy;
+    dm.members = dm.members.filter((u) => u.id !== closedBy.id);
+    bus.emit('state:dms');
+    if (state.view.type === 'dm' && state.view.dmId === dmId) navigate({ type: 'dm', dmId });
+    confirmModal({
+      title: t('dmMenu.closedTitle'),
+      message: t('dmMenu.closedPrompt', { name: escapeHtml(closedBy.displayName) }),
+      confirmLabel: t('dmMenu.deleteConversation'),
+      onConfirm: () => deleteClosedDm(dm),
+    });
+  });
   bus.on('ws:dm_update', ({ dm: patch }) => {
     const dm = state.dms.find((d) => d.id === patch.id);
     if (!dm) return;
@@ -327,6 +342,14 @@ export async function mountShell(root) {
     };
   }
 
+  async function deleteClosedDm(dm) {
+    try {
+      await api.leaveDm(dm.id);
+      removeDm(dm.id);
+      if (state.view.type === 'dm' && state.view.dmId === dm.id) navigate({ type: 'friends', tab: 'online' });
+    } catch (err) { toast(apiErrorMessage(err, t('sidebar.couldNotLeaveConversation')), { type: 'error' }); }
+  }
+
   function pushTrayLabels() {
     window.dismeshClient?.setTrayLabels?.({
       open: t('trayMenu.open'), recent: t('trayMenu.recent'), none: t('trayMenu.none'),
@@ -436,7 +459,7 @@ export async function mountShell(root) {
   async function resyncAfterReconnect() {
     try {
       const [serversRes, dmsRes, friendsRes, readStateRes] = await Promise.all([api.listServers(), api.listDms(), api.friends(), api.getReadState()]);
-      setReadStateBulk(readStateRes.state);
+      setReadStateBulk(readStateRes.state, readStateRes.pinsUnseen);
       setServers(serversRes.servers);
       setDms(dmsRes.dms);
       setFriends(friendsRes);
@@ -563,11 +586,22 @@ export async function mountShell(root) {
     };
     const open = (mode) => {
       dockedPanel = { mode, scopeType, scopeId };
+      if (mode === 'pinned') markPinsSeen(scopeType, scopeId);
       panels.forEach((p) => p.btn.classList.toggle('active', p.mode === mode));
       membersEl.classList.remove('collapsed');
       currentMembers?.destroy?.();
       currentMembers = panels.find((p) => p.mode === mode).mount(closeAll);
     };
+    const pinBtn = panels.find((p) => p.mode === 'pinned')?.btn;
+    if (pinBtn) {
+      const paintPinDot = () => pinBtn.classList.toggle('has-dot', pinUnseen(scopeType, scopeId));
+      paintPinDot();
+      const offPins = bus.on('state:pins', () => {
+        if (!pinBtn.isConnected) { offPins(); return; }
+        if (isOpen('pinned')) markPinsSeen(scopeType, scopeId);
+        paintPinDot();
+      });
+    }
     panels.forEach((p) => p.btn.addEventListener('click', () => (isOpen(p.mode) ? closeAll() : open(p.mode))));
     // Every call site remounts this whole header+panel on each render (a full renderMain(), even
     // for a same-scope jump-navigate) - so this is also what decides what the slot shows this
@@ -762,7 +796,7 @@ export async function mountShell(root) {
     if (view.type === 'dm') {
       membersEl.classList.add('collapsed');
       const dm = state.dms.find((d) => d.id === view.dmId);
-      const name = dm ? (dm.isGroup ? (dm.name || dm.members.map((m) => m.displayName).join(', ')) : (dm.members[0] ? nameFor(dm.members[0]) : '')) : t('shell.directMessageFallback');
+      const name = dm ? (dm.isGroup ? (dm.name || dm.members.map((m) => m.displayName).join(', ')) : ((dm.members[0] || dm.closedBy) ? nameFor(dm.members[0] || dm.closedBy) : '')) : t('shell.directMessageFallback');
       mainEl.innerHTML = `
         <div class="chat-header">
           <span class="ch-icon">${icons.users(20)}</span>
@@ -777,10 +811,12 @@ export async function mountShell(root) {
             ${dm?.isGroup && dm.createdBy === state.me.id ? `<button class="btn-icon" id="dm-prune-btn" title="${t('shell.pruneGroupHistoryTitle')}">${icons.trash(18)}</button>` : ''}
           </div>
         </div>
+        ${dm?.closedBy && !dm.isGroup ? `<div class="dm-closed-banner"><span>${escapeHtml(t('dmMenu.closedBanner', { name: dm.closedBy.displayName }))}</span><button class="btn btn-danger btn-sm" id="dm-closed-delete">${t('dmMenu.deleteConversation')}</button></div>` : ''}
         <div id="dm-voice-panel" class="voice-panel-combo" hidden></div>
         <div id="dm-voice-splitter" class="voice-splitter" hidden></div>
         <div id="chat-body" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>`;
       mainEl.querySelector('#notif-bell').addEventListener('click', (e) => openNotifyMenu(e.currentTarget, 'dm', view.dmId));
+      mainEl.querySelector('#dm-closed-delete')?.addEventListener('click', () => deleteClosedDm(dm));
       if (dm && !dm.isGroup && dm.members[0]) {
         const titleEl = mainEl.querySelector('.ch-title');
         titleEl.classList.add('clickable');
@@ -1385,7 +1421,7 @@ export async function mountShell(root) {
     setDmPrefs(dmPrefsRes.prefs);
     setBookmarkIds(bookmarkIdsRes.ids);
     Object.assign(state.config, config);
-    setReadStateBulk(readStateRes.state);
+    setReadStateBulk(readStateRes.state, readStateRes.pinsUnseen);
     setServerLayout(layoutRes.layout);
     applyTheme(themeRes.theme);
     if (uiPrefsRes.uiPrefs.sidebarWidth) document.documentElement.style.setProperty('--sidebar-width', `${uiPrefsRes.uiPrefs.sidebarWidth}px`);

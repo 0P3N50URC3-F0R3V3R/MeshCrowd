@@ -6,13 +6,26 @@ const { requireAuth } = require('../middleware/auth');
 const { has, PERMISSIONS } = require('../lib/permissions');
 const { getChannelPermissionBits } = require('../lib/channelAccess');
 const { broadcastToDm } = require('../socket/hub');
+const pinSeen = require('../lib/pinSeen');
+const { isInvisible } = require('../lib/invisible');
 
 const router = express.Router();
 router.use(requireAuth);
 
 router.get('/', (req, res) => {
   const rows = db.prepare('SELECT scope_type, scope_id, last_read_message_id FROM read_state WHERE user_id = ?').all(req.user.id);
-  res.json({ state: rows.map((r) => ({ scopeType: r.scope_type, scopeId: r.scope_id, lastReadMessageId: r.last_read_message_id })) });
+  res.json({
+    state: rows.map((r) => ({ scopeType: r.scope_type, scopeId: r.scope_id, lastReadMessageId: r.last_read_message_id })),
+    pinsUnseen: pinSeen.unseenPins(req.user.id),
+  });
+});
+
+router.put('/pins/:scopeType/:scopeId', (req, res) => {
+  const scopeId = Number(req.params.scopeId);
+  const { scopeType } = req.params;
+  if (!pinSeen.SCOPES.includes(scopeType) || !Number.isInteger(scopeId)) return res.status(400).json({ error: 'invalid scope' });
+  if (!pinSeen.canView(scopeType, scopeId, req.user.id)) return res.status(403).json({ error: 'not allowed to view this' });
+  res.json({ seenAt: pinSeen.markSeen(req.user.id, scopeType, scopeId) });
 });
 
 router.put('/:scopeType/:scopeId', (req, res) => {
@@ -35,18 +48,23 @@ router.put('/:scopeType/:scopeId', (req, res) => {
 
   // `force` lets "mark as unread" move the pointer backwards; everything else only advances it.
   const force = req.body?.force === true;
+  // `seen_id` is what other people see as "read": it stops advancing while the reader is invisible,
+  // so going visible again never reveals what was read in the meantime.
+  const hidden = scopeType === 'dm' && isInvisible(req.user.id);
+  const newLast = 'CASE WHEN ? THEN excluded.last_read_message_id ELSE MAX(last_read_message_id, excluded.last_read_message_id) END';
   db.prepare(
-    `INSERT INTO read_state (user_id, scope_type, scope_id, last_read_message_id, updated_at)
-     VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+    `INSERT INTO read_state (user_id, scope_type, scope_id, last_read_message_id, seen_id, updated_at)
+     VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
      ON CONFLICT(user_id, scope_type, scope_id) DO UPDATE SET
-       last_read_message_id = CASE WHEN ? THEN excluded.last_read_message_id ELSE MAX(last_read_message_id, excluded.last_read_message_id) END,
+       seen_id = CASE WHEN ? THEN COALESCE(seen_id, last_read_message_id) ELSE ${newLast} END,
+       last_read_message_id = ${newLast},
        updated_at = excluded.updated_at`
-  ).run(req.user.id, scopeType, scopeId, messageId, force ? 1 : 0);
+  ).run(req.user.id, scopeType, scopeId, messageId, hidden ? 0 : messageId, hidden ? 1 : 0, force ? 1 : 0, force ? 1 : 0);
 
   // Lets the other side of a DM show a live "Seen" marker — channels don't get this broadcast,
   // there's no per-message "seen by" concept for a multi-member room, just each viewer's own
   // unread state (which they already have locally the moment they open the channel).
-  if (scopeType === 'dm') {
+  if (scopeType === 'dm' && !hidden) {
     broadcastToDm(scopeId, { type: 'dm_read', dmId: scopeId, userId: req.user.id, messageId });
   }
   res.json({ ok: true });

@@ -2,7 +2,7 @@ import { bus } from '../bus.js';
 import { api } from '../api.js';
 import { state, presenceFor, nameFor } from '../state.js';
 import { icons } from '../icons.js';
-import { avatarHtml, escapeHtml, toast, apiErrorMessage, el, debounce } from '../utils.js';
+import { avatarHtml, statusEmojiBadge, customStatusLabel, escapeHtml, toast, apiErrorMessage, el, debounce } from '../utils.js';
 import { t } from '../i18n.js';
 import { openContextMenu } from './modal.js';
 import { userActionItems } from './userMenu.js';
@@ -175,10 +175,12 @@ export function mountFriends(container, initialTab = 'online') {
         <div class="avatar-wrap">
           ${avatarHtml(user, 40)}
           <div class="status-dot ${status}"></div>
+          ${statusEmojiBadge(user)}
         </div>
         <div class="fr-meta">
           <div class="fr-name">${escapeHtml(nameFor(user))}</div>
           <div class="fr-sub">${escapeHtml(subLabelOverride || `@${user.username}`)}</div>
+          ${!subLabelOverride && customStatusLabel(user) ? `<div class="fr-status">${escapeHtml(customStatusLabel(user))}</div>` : ''}
         </div>
         <div class="fr-actions"></div>
       </div>`);

@@ -642,7 +642,7 @@ function buildAdminPanel() {
     inner.innerHTML = `
       <h2>${t('admin.usersHeading', { count: users.length })}</h2>
       <table class="data-table">
-        <thead><tr><th></th><th>${t('admin.userColumn')}</th><th>${t('admin.rolesColumn')}</th><th>${t('admin.statusColumn')}</th><th></th></tr></thead>
+        <thead><tr><th></th><th>${t('admin.userColumn')}</th><th>${t('admin.rolesColumn')}</th><th>${t('admin.statusColumn')}</th><th>${t('admin.presenceColumn')}</th><th></th></tr></thead>
         <tbody id="u-body"></tbody>
       </table>`;
     const body = inner.querySelector('#u-body');
@@ -654,6 +654,7 @@ function buildAdminPanel() {
           <td>${escapeHtml(u.displayName)}<br><span style="color:var(--text-muted);font-size:12px">@${escapeHtml(u.username)}</span></td>
           <td>${roleNames.map((r) => `<span class="pill-static" style="margin-right:4px"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:${escapeHtml(r.color)};display:inline-block"></span>${escapeHtml(r.name)}</span>`).join('') || '<span style="color:var(--text-muted)">—</span>'}</td>
           <td>${u.isDisabled ? `<span style="color:var(--danger)">${t('admin.disabledStatus')}</span>` : `<span style="color:var(--green)">${t('admin.activeStatus')}</span>`}</td>
+          <td>${u.online ? `<span style="color:var(--green)">${u.invisible ? t('admin.onlineInvisible') : t('admin.onlineNow')}</span>` : `<span style="color:var(--text-muted)">${t('admin.offlineNow')}</span>`}</td>
           <td style="text-align:right"><button class="btn-icon" data-menu="${u.id}">${icons.kebab(18)}</button></td>
         </tr>`);
       tr.querySelector('[data-menu]').addEventListener('click', (e) => openUserMenu(e.currentTarget, u));
@@ -719,6 +720,7 @@ function buildAdminPanel() {
             </div>
           </div>
           <div class="field"><label>${t('admin.displayNameLabel')}</label><input class="input" id="eu-name" value="${escapeHtml(u.displayName)}"></div>
+          <div class="field"><label>${t('admin.bioLabel')}</label><textarea class="textarea" id="eu-bio" maxlength="500">${escapeHtml(u.bio || '')}</textarea></div>
           <div class="field"><label>${t('admin.emailLabel')}</label><input class="input" id="eu-email" type="email" value="${escapeHtml(u.email || '')}"></div>
           <div class="field"><label>${t('admin.newPasswordLabel')} <span class="hint">${t('admin.leaveBlankHint')}</span></label><input class="input" id="eu-password" type="password" autocomplete="new-password"><div class="hint">${t('admin.passportResetWarning')}</div>${u.authMode === 'split' ? `<div class="hint">${t('admin.splitResetNote')}</div>` : ''}</div>
           <div class="error-text" id="eu-err"></div>`;
@@ -738,6 +740,8 @@ function buildAdminPanel() {
       const payload = {};
       if (name && name !== u.displayName) payload.displayName = name;
       if (email && email !== u.email) payload.email = email;
+      const bio = m.body.querySelector('#eu-bio').value;
+      if (bio !== (u.bio || '')) payload.bio = bio;
       if (password && password.length < MIN_PASSWORD_LENGTH) { errEl.textContent = t('auth.passwordTooShort'); return; }
       const label = saveBtn.textContent;
       saveBtn.disabled = true;

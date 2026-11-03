@@ -10,7 +10,7 @@ const { toPublicUser } = require('../lib/publicUser');
 const { requireAuth } = require('../middleware/auth');
 const { isValidBackup, isValidBackupFor } = require('../lib/passportCrypto');
 const { areFriends, isBlocked } = require('../lib/friends');
-const { broadcastPresence } = require('../socket/hub');
+const { broadcastPresence, notifyUser } = require('../socket/hub');
 const { sanitizeServerLayout } = require('../lib/serverLayout');
 const { sanitizeTheme } = require('../lib/theme');
 const { singleLine, statusEmoji } = require('../lib/textSanitize');
@@ -54,8 +54,16 @@ const uploadBanner = makeCardImageUpload('banners');
 const uploadCard = makeCardImageUpload('cards');
 const uploadFolderIcon = makeCardImageUpload('foldericons');
 
+// Pushes a profile change to everyone who can see this user and to the user's own other devices,
+// so open clients update without a reload.
+function syncProfile(userId) {
+  broadcastPresence(userId);
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+  if (row) notifyUser(userId, { type: 'presence', user: toPublicUser(row, { viewerIsSelf: true }) });
+}
+
 router.patch('/me', requireAuth, (req, res) => {
-  const { displayName, bio, dmPrivacy, profilePrivacy, discoverable, bannerColor, cardColor, avatarBackground } = req.body || {};
+  const { displayName, bio, dmPrivacy, profilePrivacy, discoverable, bannerColor, cardColor, avatarBackground, avatarBgColor } = req.body || {};
   const updates = [];
   const params = [];
 
@@ -66,6 +74,10 @@ router.patch('/me', requireAuth, (req, res) => {
   if (avatarBackground !== undefined) {
     if (typeof avatarBackground !== 'boolean') return res.status(400).json({ error: 'avatarBackground must be a boolean' });
     updates.push('avatar_bg = ?'); params.push(avatarBackground ? 1 : 0);
+  }
+  if (avatarBgColor !== undefined) {
+    if (avatarBgColor !== '' && !HEX_COLOR_RE.test(String(avatarBgColor))) return res.status(400).json({ error: 'avatarBgColor must be #rrggbb or empty' });
+    updates.push('avatar_bg_color = ?'); params.push(String(avatarBgColor));
   }
   if (cardColor !== undefined) {
     if (cardColor !== '' && !HEX_COLOR_RE.test(String(cardColor))) return res.status(400).json({ error: 'cardColor must be #rrggbb or empty' });
@@ -95,7 +107,7 @@ router.patch('/me', requireAuth, (req, res) => {
   params.push(req.user.id);
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
-  if (avatarBackground !== undefined) broadcastPresence(req.user.id);
+  syncProfile(req.user.id);
   res.json({ user: toPublicUser(user, { viewerIsSelf: true }) });
 });
 
@@ -202,6 +214,7 @@ router.post('/me/avatar', requireAuth, uploadAvatar.single('avatar'), (req, res)
   if (!req.file) return res.status(400).json({ error: 'avatar file required (png/jpg/gif/webp, max 5MB)' });
   const rel = `/uploads/avatars/${req.file.filename}`;
   db.prepare('UPDATE users SET avatar_path = ? WHERE id = ?').run(rel, req.user.id);
+  syncProfile(req.user.id);
   res.json({ avatarPath: rel });
 });
 
@@ -209,11 +222,13 @@ router.post('/me/banner', requireAuth, uploadBanner.single('banner'), (req, res)
   if (!req.file) return res.status(400).json({ error: 'banner file required (png/jpg/gif/webp, max 8MB)' });
   const rel = `/uploads/banners/${req.file.filename}`;
   db.prepare('UPDATE users SET banner_path = ? WHERE id = ?').run(rel, req.user.id);
+  syncProfile(req.user.id);
   res.json({ bannerPath: rel });
 });
 
 router.delete('/me/banner', requireAuth, (req, res) => {
   db.prepare('UPDATE users SET banner_path = NULL WHERE id = ?').run(req.user.id);
+  syncProfile(req.user.id);
   res.json({ ok: true });
 });
 
@@ -221,11 +236,13 @@ router.post('/me/card', requireAuth, uploadCard.single('card'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'card background file required (png/jpg/gif/webp, max 8MB)' });
   const rel = `/uploads/cards/${req.file.filename}`;
   db.prepare('UPDATE users SET card_path = ? WHERE id = ?').run(rel, req.user.id);
+  syncProfile(req.user.id);
   res.json({ cardPath: rel });
 });
 
 router.delete('/me/card', requireAuth, (req, res) => {
   db.prepare('UPDATE users SET card_path = NULL WHERE id = ?').run(req.user.id);
+  syncProfile(req.user.id);
   res.json({ ok: true });
 });
 
@@ -248,7 +265,7 @@ router.put('/me/status', requireAuth, (req, res) => {
   if (updates.length === 0) return res.status(400).json({ error: 'nothing to update' });
   params.push(req.user.id);
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
-  broadcastPresence(req.user.id);
+  syncProfile(req.user.id);
   res.json({ ok: true });
 });
 
@@ -309,13 +326,19 @@ router.get('/:id', requireAuth, (req, res) => {
   if (!user) return res.status(404).json({ error: 'user not found' });
   const viewerIsSelf = user.id === req.user.id;
   const friends = areFriends(req.user.id, user.id);
-  const shaped = toPublicUser(user, { viewerIsSelf, areFriends: friends });
-  if (!viewerIsSelf) {
+  // `?as=stranger` lets a user preview their own profile the way someone with no relationship sees it.
+  const asStranger = viewerIsSelf && req.query.as === 'stranger';
+  const shaped = toPublicUser(user, { viewerIsSelf: viewerIsSelf && !asStranger, areFriends: friends && !asStranger });
+  if (asStranger) {
+    shaped.mutualServers = [];
+    shaped.mutualFriends = [];
+    shaped.canMessage = user.dm_privacy === 'everyone';
+  } else if (!viewerIsSelf) {
     // Servers both people are in — same "safe to reveal" tier as mutual friends, shown on the
     // profile card so a viewer can see shared context and pick a server to invite this person
     // into (only ones they're NOT already in, filtered client-side against this list).
     shaped.mutualServers = db.prepare(
-      `SELECT s.id, s.name FROM servers s
+      `SELECT s.id, s.name, s.icon_path FROM servers s
         JOIN server_members mine ON mine.server_id = s.id AND mine.user_id = ?
         JOIN server_members theirs ON theirs.server_id = s.id AND theirs.user_id = ?`
     ).all(req.user.id, user.id);

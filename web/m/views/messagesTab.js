@@ -2,9 +2,9 @@ import { api } from '../../js/api.js';
 import { bus } from '../../js/bus.js';
 import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
-import { escapeHtml, avatarHtml, formatShortTime, toast } from '../../js/utils.js';
+import { escapeHtml, avatarHtml, statusEmojiBadge, formatShortTime, toast } from '../../js/utils.js';
 import {
-  state, isUnread, nameFor, dmPrefFor, setDmPrefs, setReadState, setNotificationPref as setPrefState, notificationPrefFor, presenceFor,
+  state, isUnread, nameFor, dmPrefFor, setDmPrefs, removeDm, setReadState, setNotificationPref as setPrefState, notificationPrefFor, presenceFor,
 } from '../../js/state.js';
 import { peekPlaintext } from '../../js/e2ee/dmCrypto.js';
 import { nav } from '../router.js';
@@ -36,7 +36,7 @@ export function mountMessagesTab(host) {
     list.innerHTML = dms.length ? dms.map((d) => {
       const unread = isUnread('dm', d.id, d.lastMessage?.id);
       const who = d.members[0];
-      const status = d.isGroup ? '' : `<i class="m-status s-${escapeHtml(presenceFor(who)?.status || 'offline')}"></i>`;
+      const status = d.isGroup ? '' : `<i class="m-status s-${escapeHtml(presenceFor(who)?.status || 'offline')}"></i>${statusEmojiBadge(presenceFor(who))}`;
       return `<button class="m-row m-dm${unread ? ' unread' : ''}" data-dm="${d.id}">
         <span class="m-dm-avatar">${avatarHtml(d.isGroup ? { id: d.id, displayName: dmTitle(d, nameFor) } : who, 44)}${status}</span>
         <span class="m-grow"><b>${escapeHtml(dmTitle(d, nameFor))}</b>
@@ -58,13 +58,13 @@ export function mountMessagesTab(host) {
       { id: 'pin', icon: icons.pin(20), label: pinned ? t('m.actUnpin') : t('m.actPin') },
       { id: 'read', icon: icons.check(20), label: t('m.markRead') },
       { id: 'mute', icon: icons.bell(20), label: muted ? t('m.unmute') : t('m.mute') },
-      d.isGroup && { id: 'leave', icon: icons.x(20), label: t('m.leaveServer'), danger: true },
+      { id: 'leave', icon: icons.x(20), label: d.isGroup ? t('m.leaveServer') : t('dmMenu.deleteConversation'), danger: true },
     ].filter(Boolean) });
     try {
       if (id === 'pin') { await api.setDmPref(d.id, { pinned: !pinned }); setDmPrefs((await api.getDmPrefs()).prefs); bus.emit('state:dms'); }
       else if (id === 'read' && d.lastMessage) { setReadState('dm', d.id, d.lastMessage.id); api.markRead('dm', d.id, d.lastMessage.id).catch(() => {}); }
       else if (id === 'mute') { const pref = muted ? 'all' : 'mute'; await api.setNotificationPref('dm', d.id, pref); setPrefState('dm', d.id, pref); }
-      else if (id === 'leave' && await confirmSheet(t('m.leaveConfirm'), { okLabel: t('m.leaveServer') })) await api.leaveDm(d.id);
+      else if (id === 'leave' && await confirmSheet(d.isGroup ? t('m.leaveConfirm') : t('dmMenu.deleteConversationConfirm', { name: dmTitle(d, nameFor) }), { okLabel: d.isGroup ? t('m.leaveServer') : t('common.deleteForever') })) { await api.leaveDm(d.id); removeDm(d.id); }
     } catch (err) { handleError(err); }
   });
 

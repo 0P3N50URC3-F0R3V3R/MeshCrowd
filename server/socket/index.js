@@ -14,6 +14,7 @@ const voice = require('./voice');
 const stage = require('./stage');
 const whiteboard = require('../lib/whiteboard');
 const { isAllowedWsOrigin } = require('../lib/wsOrigin');
+const { isInvisible } = require('../lib/invisible');
 
 function getChannel(id) {
   return db.prepare('SELECT * FROM channels WHERE id = ?').get(id);
@@ -145,6 +146,7 @@ function attach(httpServer) {
       }
 
       if (msg.type === 'typing' && msg.scopeType && msg.scopeId) {
+        if (isInvisible(user.id)) return;
         const payload = { type: 'typing', scopeType: msg.scopeType, scopeId: msg.scopeId, userId: user.id };
         if (msg.scopeType === 'dm') {
           const isMember = db.prepare('SELECT 1 FROM dm_members WHERE dm_channel_id = ? AND user_id = ?')
@@ -167,6 +169,7 @@ function attach(httpServer) {
 
       if (msg.type === 'voice_join' && msg.dmChannelId) {
         if (!isDmMember(msg.dmChannelId, user.id)) return;
+        if (isInvisible(user.id)) { ws.send(JSON.stringify({ type: 'voice_join_denied', dmChannelId: msg.dmChannelId, reason: 'invisible' })); return; }
         const roomKey = dmRoomKey(msg.dmChannelId);
         if (voice.inOtherRoom(roomKey, user.id)) { ws.send(JSON.stringify({ type: 'voice_join_denied', dmChannelId: msg.dmChannelId })); return; }
         const wasEmpty = voice.participants(roomKey).length === 0;
@@ -178,6 +181,7 @@ function attach(httpServer) {
           const others = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ? AND user_id != ?')
             .all(msg.dmChannelId, user.id);
           for (const m of others) {
+            if (isInvisible(m.user_id)) continue;
             hub.notifyUser(m.user_id, { type: 'voice_ring', dmChannelId: msg.dmChannelId, fromUser: toPublicUser(user, {}) });
           }
         }
@@ -189,6 +193,7 @@ function attach(httpServer) {
         if (!channel || (channel.type !== 'voice' && channel.type !== 'stage')) return;
         if (!canAccessChannel(channel, user.id, PERMISSIONS.VIEW_CHANNEL)) return;
         if (isPendingMember(channel.server_id, user.id)) return;
+        if (isInvisible(user.id)) { ws.send(JSON.stringify({ type: 'voice_join_denied', channelId: channel.id, reason: 'invisible' })); return; }
         if (voice.inOtherRoom(channel.id, user.id)) { ws.send(JSON.stringify({ type: 'voice_join_denied', channelId: channel.id })); return; }
         voice.join(channel.id, user.id);
         if (channel.type === 'stage') {

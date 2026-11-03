@@ -16,6 +16,7 @@ const { destroyAllSessionsForUser } = require('../lib/session');
 const { toPublicUser } = require('../lib/publicUser');
 const siteSettings = require('../lib/siteSettings');
 const hub = require('../socket/hub');
+const { isOnline } = require('../lib/presence');
 const { singleLine } = require('../lib/textSanitize');
 const { uploadSticker, createSticker, deleteSticker } = require('../lib/stickers');
 const { uploadSound, createSound, deleteSound } = require('../lib/sounds');
@@ -80,6 +81,9 @@ function adminUserShape(u) {
     displayName: u.display_name,
     email: u.email,
     avatarPath: u.avatar_path || null,
+    bio: u.bio || '',
+    online: isOnline(u.id),
+    invisible: u.status === 'invisible',
     isDisabled: !!u.is_disabled,
     authMode: u.auth_mode || 'password',
     createdAt: u.created_at,
@@ -237,7 +241,7 @@ router.patch('/users/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_USERS), (req,
   if (!assertCanGrant(req, getSitePermissionBits(target.id))) {
     return res.status(403).json({ error: 'cannot modify a user with permissions you do not hold' });
   }
-  const { displayName, email, password, authKey, authSalt, isDisabled } = req.body || {};
+  const { displayName, email, password, authKey, authSalt, isDisabled, bio } = req.body || {};
 
   let credentialReset = null;
   if (password !== undefined || authKey !== undefined || authSalt !== undefined) {
@@ -259,6 +263,11 @@ router.patch('/users/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_USERS), (req,
     const v = singleLine(displayName, 64);
     if (!v) return res.status(400).json({ error: 'displayName cannot be empty' });
     db.prepare('UPDATE users SET display_name = ? WHERE id = ?').run(v, target.id);
+  }
+  if (bio !== undefined) {
+    if (typeof bio !== 'string') return res.status(400).json({ error: 'bio must be a string' });
+    db.prepare('UPDATE users SET bio = ? WHERE id = ?').run(bio.slice(0, 500), target.id);
+    log.info(`${who(req.user)} edited the bio of ${who(target)}`);
   }
   if (email !== undefined) {
     if (typeof email !== 'string' || !EMAIL_RE.test(email)) return res.status(400).json({ error: 'invalid email' });

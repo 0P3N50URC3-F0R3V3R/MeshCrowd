@@ -2,11 +2,12 @@ import { bus } from '../bus.js';
 import { api } from '../api.js';
 import { state, setVoiceState } from '../state.js';
 import { icons } from '../icons.js';
-import { avatarHtml, escapeHtml, toast, apiErrorMessage } from '../utils.js';
+import { avatarHtml, statusEmojiBadge, customStatusLabel, escapeHtml, toast, apiErrorMessage } from '../utils.js';
 import { openContextMenu, openModal } from './modal.js';
 import { openUserSettings } from './userSettings.js';
 import { statusEmojiFieldHtml, bindStatusEmojiField } from './statusEmojiField.js';
 import { t } from '../i18n.js';
+import { leaveActiveCall } from './voice.js';
 
 // A function (not a module-level constant) because it's built from t(), which must be
 // re-evaluated after the active language resolves — a plain top-level array would freeze in
@@ -35,10 +36,11 @@ export function mountUserBar(container) {
       <div class="self-avatar" id="ub-avatar">
         ${avatarHtml(me, 32)}
         <div class="status-dot ${me.status}" style="width:10px;height:10px"></div>
+        ${statusEmojiBadge(me)}
       </div>
       <div class="self-info" id="ub-info">
         <div class="name">${escapeHtml(me.displayName)}</div>
-        <div class="status-text">${me.customStatusText ? escapeHtml(me.customStatusText) : (statusOptions().find((s) => s.value === me.status)?.label || t('common.statusOnline'))}</div>
+        <div class="status-text">${customStatusLabel(me) ? escapeHtml(customStatusLabel(me)) : (statusOptions().find((s) => s.value === me.status)?.label || t('common.statusOnline'))}</div>
       </div>
       <div class="actions">
         <button class="btn-icon ${muted ? 'active-danger' : ''}" id="ub-mute" title="${muted ? t('userBar.unmute') : t('userBar.mute')}">${muted ? icons.micOff(18) : icons.mic(18)}</button>
@@ -66,6 +68,7 @@ export function mountUserBar(container) {
       onClick: async () => {
         try {
           await api.setStatus({ status: opt.value });
+          if (opt.value === 'invisible') leaveActiveCall();
           state.me.status = opt.value;
           bus.emit('state:me');
         } catch { /* toast handled globally if needed */ }

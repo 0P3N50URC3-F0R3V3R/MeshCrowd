@@ -2,7 +2,7 @@ import { bus } from '../bus.js';
 import { api } from '../api.js';
 import { state, presenceFor, isUnread, removeDm, serverPrefFor, isChannelMuted, dmPrefFor, setDmPref, nameFor, isScopeMuted, setReadState, getKnownUser } from '../state.js';
 import { icons } from '../icons.js';
-import { avatarHtml, escapeHtml, toast, apiErrorMessage } from '../utils.js';
+import { avatarHtml, statusEmojiBadge, escapeHtml, toast, apiErrorMessage } from '../utils.js';
 import { has, PERMISSIONS, memberPermissionBits } from '../permissions.js';
 import { openContextMenu, openModal, confirmModal, promptModal } from './modal.js';
 import { openServerSettings } from './serverSettings.js';
@@ -355,25 +355,38 @@ export function mountChannelSidebar(container, detail) {
 }
 
 export function openInviteModal(server) {
+  const detail = state.serverDetail?.get(server.id)?.server;
+  const random = server.invite_code || detail?.invite_code || '';
+  const vanity = server.vanity_code || detail?.vanity_code || '';
   const m = openModal({
     title: t('sidebar.inviteFriendsTitle', { server: server.name }),
     render(body) {
+      let kind = vanity ? 'vanity' : 'random';
+      const current = () => (kind === 'vanity' ? vanity : random);
       body.innerHTML = `
         <p style="color:var(--text-secondary);font-size:14px;margin:0 0 12px">${t('sidebar.shareCodeHint')}</p>
+        ${vanity ? `<div class="invite-kind" style="display:flex;gap:16px;margin:0 0 10px">
+          <label><input type="radio" name="inv-kind" value="vanity" checked> ${t('sidebar.inviteKindVanity')}</label>
+          <label><input type="radio" name="inv-kind" value="random"> ${t('sidebar.inviteKindRandom')}</label>
+        </div>` : ''}
         <div class="invite-box">
-          <div class="invite-code">${escapeHtml(server.invite_code || '')}</div>
+          <div class="invite-code">${escapeHtml(current())}</div>
           <button class="btn btn-secondary" id="inv-copy">${t('sidebar.copyButton')}</button>
           <button class="btn btn-secondary" id="inv-copy-link">${t('invites.copyLink')}</button>
         </div>`;
+      body.querySelectorAll('input[name="inv-kind"]').forEach((r) => r.addEventListener('change', () => {
+        kind = r.value;
+        body.querySelector('.invite-code').textContent = current();
+      }));
       body.querySelector('#inv-copy-link').addEventListener('click', async () => {
         try {
-          await navigator.clipboard.writeText(inviteLinkFor(server.invite_code || ''));
+          await navigator.clipboard.writeText(inviteLinkFor(current()));
           toast(t('invites.linkCopied'));
         } catch { toast(t('sidebar.couldNotCopyManual')); }
       });
       body.querySelector('#inv-copy').addEventListener('click', async () => {
         try {
-          await navigator.clipboard.writeText(server.invite_code || '');
+          await navigator.clipboard.writeText(current());
           toast(t('sidebar.inviteCodeCopied'));
         } catch { toast(t('sidebar.couldNotCopyManual')); }
       });
@@ -483,7 +496,7 @@ export function mountHomeSidebar(container) {
   // 1:1 only hides it, so it no longer offers a destructive "leave".
   function openDmContextMenu(x, y, dm) {
     const isCreator = dm.isGroup && dm.createdBy === state.me.id;
-    const label = dm.isGroup ? (dm.name || dm.members.map((m) => m.displayName).join(', ')) : (dm.members[0]?.displayName || t('sidebar.thisConversationFallback'));
+    const label = dm.isGroup ? (dm.name || dm.members.map((m) => m.displayName).join(', ')) : ((dm.members[0] || dm.closedBy)?.displayName || t('sidebar.thisConversationFallback'));
     const pref = dmPrefFor(dm.id);
     const unread = isUnread('dm', dm.id, dm.lastMessage?.id);
     const leaveOrDelete = () => {
@@ -527,12 +540,26 @@ export function mountHomeSidebar(container) {
       return;
     }
     const other = dm.members[0];
-    if (!other) return;
+    const deleteOne = () => confirmModal({
+      title: t('dmMenu.deleteConversation'),
+      message: t('dmMenu.deleteConversationConfirm', { name: escapeHtml(label) }),
+      confirmLabel: t('common.deleteForever'),
+      onConfirm: async () => {
+        try {
+          await api.leaveDm(dm.id);
+          removeDm(dm.id);
+          if (state.view.type === 'dm' && state.view.dmId === dm.id) bus.emit('ui:navigate', { type: 'friends', tab: 'online' });
+        } catch (err) { toast(apiErrorMessage(err, t('sidebar.couldNotLeaveConversation')), { type: 'error' }); }
+      },
+    });
+    const deleteItem = { label: t('dmMenu.deleteConversation'), icon: icons.trash, danger: true, onClick: deleteOne };
+    if (!other) { openContextMenu(x, y, [...head, deleteItem]); return; }
     openContextMenu(x, y, [
       ...head,
       ...userActionItems(other, { openProfile: (id) => openFullProfile(id), withClose: { label: t('dmMenu.closeConversation'), onClick: close }, onReport: openReportModal }),
       'sep',
       muteItem,
+      deleteItem,
     ]);
   }
 
@@ -543,7 +570,7 @@ export function mountHomeSidebar(container) {
 
   function renderDmRow(dm) {
     const active = state.view.type === 'dm' && state.view.dmId === dm.id;
-    const other = dm.members[0];
+    const other = dm.members[0] || dm.closedBy;
     const name = dm.isGroup ? (dm.name || dm.members.map((m) => m.displayName).join(', ')) : (other ? nameFor(other) : t('sidebar.unknownUserFallback'));
     const pref = dmPrefFor(dm.id);
     const avatarUser = dm.isGroup ? null : presenceFor(other);
@@ -560,7 +587,7 @@ export function mountHomeSidebar(container) {
           ${dm.isGroup
             ? `<div class="avatar avatar-fallback" style="width:32px;height:32px;font-size:13px">${icons.users(16)}</div>`
             : avatarHtml(avatarUser || other, 32)}
-          ${!dm.isGroup ? `<div class="status-dot ${status}"></div>` : ''}
+          ${!dm.isGroup ? `<div class="status-dot ${status}"></div>${statusEmojiBadge(avatarUser)}` : ''}
         </div>
         <div class="meta">
           <div class="name">${escapeHtml(name)}${pref.pinned ? ` <span class="dm-flag" title="${t('dmMenu.pinned')}">${icons.pin(12)}</span>` : ''}${pref.favorite ? ` <span class="dm-flag" title="${t('dmMenu.favorite')}">${icons.star ? icons.star(12) : ''}</span>` : ''}${isScopeMuted('dm', dm.id) ? ` <span class="dm-flag" title="${t('dmMenu.muted')}">${icons.bellOff ? icons.bellOff(12) : ''}</span>` : ''}</div>

@@ -16,19 +16,21 @@ function effectiveStatus(user, viewerIsSelf) {
 // Shape a DB user row for API responses. `viewerIsSelf`/`areFriends` gate privacy-sensitive fields.
 function toPublicUser(user, { viewerIsSelf = false, areFriends = false } = {}) {
   if (!user) return null;
+  const hideStatus = user.status === 'invisible' && !viewerIsSelf;
   const base = {
     id: user.id,
     username: user.username,
     displayName: user.display_name,
     avatarPath: user.avatar_path || null,
     avatarBackground: !!user.avatar_bg,
+    avatarBgColor: user.avatar_bg_color || '',
     bannerColor: user.banner_color || '',
     bannerPath: user.banner_path || null,
     cardColor: user.card_color || '',
     cardPath: user.card_path || null,
     status: effectiveStatus(user, viewerIsSelf),
-    customStatusText: user.custom_status_text || '',
-    customStatusEmoji: user.custom_status_emoji || '',
+    customStatusText: hideStatus ? '' : (user.custom_status_text || ''),
+    customStatusEmoji: hideStatus ? '' : (user.custom_status_emoji || ''),
     isSiteAdmin: isSiteAdmin(user.id),
     canManageSites: canManageSites(user.id),
     e2eePublicKey: user.e2ee_public_key || null,

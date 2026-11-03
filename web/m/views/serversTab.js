@@ -178,7 +178,18 @@ export function mountServersTab(host) {
     ].filter(Boolean);
     const id = await actionSheet({ title: server.name, items });
     if (id === 'read') markServerRead(server.id);
-    else if (id === 'invite') { await copyText(d.server.invite_code); toast(t('m.copied')); }
+    else if (id === 'invite') {
+      let code = d.server.invite_code;
+      if (d.server.vanity_code) {
+        const pick = await actionSheet({ title: t('m.copyInvite'), items: [
+          { id: 'vanity', icon: icons.copy(20), label: `${t('sidebar.inviteKindVanity')}: ${d.server.vanity_code}` },
+          { id: 'random', icon: icons.copy(20), label: `${t('sidebar.inviteKindRandom')}: ${code}` },
+        ] });
+        if (!pick) return;
+        if (pick === 'vanity') code = d.server.vanity_code;
+      }
+      await copyText(code); toast(t('m.copied'));
+    }
     else if (id === 'events') openEventsModal(d.server, { canManage: canManageServer, channels: d.channels });
     else if (id === 'settings') openServerSettings(server.id);
     else if (id === 'channel') openServerSettings(server.id, { tab: 'channels', createNew: true });

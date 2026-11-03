@@ -31,7 +31,7 @@ export async function loadAll() {
     setDmPrefs(dmPrefsRes.prefs);
     setBookmarkIds(bookmarkIdsRes.ids);
     Object.assign(state.config, config);
-    setReadStateBulk(readStateRes.state);
+    setReadStateBulk(readStateRes.state, readStateRes.pinsUnseen);
     setServerLayout(layoutRes.layout);
     applyTheme(themeRes.theme);
     if (config.federationEnabled) refreshRemoteServers();
@@ -58,7 +58,7 @@ export async function refreshServerDetailSilently(serverId) {
 async function resync() {
   try {
     const [s, d, f, r] = await Promise.all([api.listServers(), api.listDms(), api.friends(), api.getReadState()]);
-    setServers(s.servers); setDms(d.dms); setFriends(f); setReadStateBulk(r.state);
+    setServers(s.servers); setDms(d.dms); setFriends(f); setReadStateBulk(r.state, r.pinsUnseen);
     for (const id of [...state.serverDetail.keys()]) refreshServerDetailSilently(id);
   } catch (err) { if (err && err.status === 401) bus.emit('m:unauthorized'); }
 }
@@ -136,6 +136,17 @@ export function wireRealtime() {
   bus.on('ws:friend_request', async () => { try { setFriends(await api.friends()); } catch { /* ignore */ } });
   bus.on('ws:friend_accept', async () => { try { setFriends(await api.friends()); } catch { /* ignore */ } });
   bus.on('ws:dm_create', ({ dm }) => upsertDm(dm));
+  bus.on('ws:dm_closed', async ({ dmId, closedBy }) => {
+    const dm = state.dms.find((d) => d.id === dmId);
+    if (!dm) return;
+    dm.closedBy = closedBy;
+    dm.members = dm.members.filter((u) => u.id !== closedBy.id);
+    bus.emit('state:dms');
+    const { confirmSheet } = await import('./components/bottomSheet.js');
+    if (await confirmSheet(t('dmMenu.closedPrompt', { name: closedBy.displayName }).replace(/<[^>]+>/g, ''), { okLabel: t('common.deleteForever') })) {
+      try { await api.leaveDm(dmId); removeDm(dmId); } catch { /* stays in the list */ }
+    }
+  });
   bus.on('ws:dm_update', ({ dm: patch }) => {
     const dm = state.dms.find((d) => d.id === patch.id);
     if (!dm) return;

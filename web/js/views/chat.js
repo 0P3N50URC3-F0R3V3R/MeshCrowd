@@ -196,6 +196,19 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   const offDelete = bus.on('ws:message_delete', onWsDelete);
   const offTyping = bus.on('ws:typing', onWsTyping);
   const offConnection = bus.on('state:connection', setComposerConnected);
+  // A profile edit (name/avatar) updates already-rendered messages in place, so scroll position and
+  // a half-typed draft are never disturbed by a re-render.
+  const offProfile = bus.on('state:presence', (u) => {
+    if (!u?.id) return;
+    const fields = { displayName: u.displayName, avatarPath: u.avatarPath, avatarBackground: u.avatarBackground, avatarBgColor: u.avatarBgColor };
+    for (const msg of messages) if (msg.author?.id === u.id) msg.author = { ...msg.author, ...fields };
+    scrollEl.querySelectorAll(`.msg-group[data-author="${u.id}"]`).forEach((g) => {
+      const av = g.querySelector('.gutter > .avatar');
+      if (av) av.outerHTML = avatarHtml({ ...u }, 40);
+      const nameEl = g.querySelector('.author-name');
+      if (nameEl) nameEl.textContent = u.displayName;
+    });
+  });
   // Only matters for a DM: the other member's read pointer moving is what drives the "Seen" tag.
   const offDms = scope.kind === 'dm' ? bus.on('state:dms', () => {
     const encrypted = isEncryptedDm();
@@ -480,7 +493,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     const lockedBtn = (action, icon, titleKey) => `<button class="btn-icon disabled" disabled aria-disabled="true" data-locked="${action}" title="${escapeHtml(t(titleKey))}">${icon}</button>`;
 
     return `
-      <div class="msg-group ${continued ? 'continued' : ''} ${m.pending ? 'pending' : ''} ${m.errored ? 'errored' : ''} ${isThreadOp ? 'thread-op' : ''}" data-id="${m.id}">
+      <div class="msg-group ${continued ? 'continued' : ''} ${m.pending ? 'pending' : ''} ${m.errored ? 'errored' : ''} ${isThreadOp ? 'thread-op' : ''}" data-id="${m.id}" data-author="${m.author.id}">
         ${isThreadOp ? `<div class="thread-op-label">${icons.messageSquare(12)} ${t('chat.mainPostLabel')}</div>` : ''}
         <div class="gutter">
           ${continued
@@ -2013,7 +2026,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   }
 
   function destroy() {
-    offEphemeral(); offCreate(); offUpdate(); offDelete(); offTyping(); offConnection(); offDms?.(); offTrust?.(); offAccepted?.();
+    offEphemeral(); offCreate(); offUpdate(); offDelete(); offTyping(); offConnection(); offProfile(); offDms?.(); offTrust?.(); offAccepted?.();
     scrollEl.removeEventListener('scroll', onScroll);
     clearTimeout(typingTimer);
     for (const f of uploadFiles) releaseObjectUrl(f);

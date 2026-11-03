@@ -2,9 +2,10 @@ import { api } from '../../js/api.js';
 import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
 import { escapeHtml, avatarHtml, formatBytes } from '../../js/utils.js';
-import { state, nameFor, notificationPrefFor, setNotificationPref as setPrefState } from '../../js/state.js';
+import { state, pinUnseen, nameFor, notificationPrefFor, setNotificationPref as setPrefState } from '../../js/state.js';
 import { nav } from '../router.js';
 import { ensureServerDetail } from '../data.js';
+import { markPinsSeen } from '../../js/pinSeen.js';
 import { handleError } from '../lib/errors.js';
 import { dmTitle, messageText } from '../lib/dmPreview.mjs';
 import { collectItems } from '../lib/infoItems.mjs';
@@ -31,14 +32,14 @@ export function mountInfo(el, params) {
   const pane = el.querySelector('#m-pane');
 
   function paintTabs() {
-    el.querySelector('#m-tabs').innerHTML = TABS.map(([id, key]) => `<button class="m-tabchip${id === tab ? ' active' : ''}" data-t="${id}">${t(key)}</button>`).join('');
+    el.querySelector('#m-tabs').innerHTML = TABS.map(([id, key]) => `<button class="m-tabchip${id === tab ? ' active' : ''}${id === 'pins' && pinUnseen(scopeType, scopeId) ? ' m-pin-dot' : ''}" data-t="${id}">${t(key)}</button>`).join('');
   }
   function paintQuick() {
     const prefScope = kind === 'dm' ? 'dm' : 'channel';
     const muted = notificationPrefFor(prefScope, kind === 'dm' ? params.dmId : params.channelId) === 'mute';
     el.querySelector('#m-qa').innerHTML = `
       <button class="m-qa" data-q="search">${icons.search(22)}<span>${t('m.searchAction')}</span></button>
-      <button class="m-qa" data-q="pins">${icons.pin(22)}<span>${t('m.infoPins')}</span></button>
+      <button class="m-qa${pinUnseen(scopeType, scopeId) ? ' m-pin-dot' : ''}" data-q="pins">${icons.pin(22)}<span>${t('m.infoPins')}</span></button>
       ${kind === 'thread' ? '' : `<button class="m-qa" data-q="mute">${icons.bell(22)}<span>${muted ? t('m.unmute') : t('m.mute')}</span></button>`}`;
   }
 
@@ -67,6 +68,7 @@ export function mountInfo(el, params) {
       if (tab === 'members') {
         pane.innerHTML = members.map((u) => `<button class="m-row" data-u="${u.id}">${avatarHtml(u, 40)}<span class="m-grow"><b>${escapeHtml(nameFor(u))}</b><small>@${escapeHtml(u.username)}</small></span></button>`).join('') || none;
       } else if (tab === 'pins') {
+        markPinsSeen(scopeType, scopeId);
         if (!pins) {
           pins = (await api.listPins(scopeType, scopeId)).messages;
           if (encrypted) await decryptMessages(dm, state.me, pins);

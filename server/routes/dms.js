@@ -150,9 +150,10 @@ router.get('/', (req, res) => {
     // Every other member's read pointer (not just a single 1:1 peer) — powers both the 1:1
     // "Seen" tag and a Discord-style reader-avatar row for group DMs.
     const readStates = db.prepare(
-      'SELECT user_id AS userId, last_read_message_id AS lastReadMessageId FROM read_state WHERE scope_type = ? AND scope_id = ? AND user_id != ?'
+      'SELECT user_id AS userId, COALESCE(seen_id, last_read_message_id) AS lastReadMessageId FROM read_state WHERE scope_type = ? AND scope_id = ? AND user_id != ?'
     ).all('dm', id, req.user.id);
-    return { id: dm.id, isGroup: !!dm.is_group, name: dm.name, createdBy: dm.created_by, e2eeEnabled: !!dm.e2ee_enabled, e2eeEligible: isE2eeEligible(dm), members, lastMessage: last ? serializeMessage(last) : null, readStates };
+    const closer = dm.closed_by ? db.prepare('SELECT * FROM users WHERE id = ?').get(dm.closed_by) : null;
+    return { id: dm.id, closedBy: closer ? toPublicUser(closer, {}) : null, isGroup: !!dm.is_group, name: dm.name, createdBy: dm.created_by, e2eeEnabled: !!dm.e2ee_enabled, e2eeEligible: isE2eeEligible(dm), members, lastMessage: last ? serializeMessage(last) : null, readStates };
   });
   res.json({ dms });
 });
@@ -235,6 +236,13 @@ router.delete('/:dmId/members/me', loadDm, (req, res) => {
   if (remaining === 0) {
     prune.wipeScope('dm', req.dm.id);
     db.prepare('DELETE FROM dm_channels WHERE id = ?').run(req.dm.id);
+  } else if (!req.dm.is_group) {
+    // The other side keeps the history until they choose to keep or delete it; they are asked.
+    db.prepare('UPDATE dm_channels SET closed_by = ? WHERE id = ?').run(req.user.id, req.dm.id);
+    const closedBy = toPublicUser(req.user, {});
+    for (const m of db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(req.dm.id)) {
+      notifyUser(m.user_id, { type: 'dm_closed', dmId: req.dm.id, closedBy });
+    }
   }
   res.json({ ok: true });
 });
@@ -378,6 +386,7 @@ router.post('/:dmId/messages', loadDm, rejectEncryptedUpload, upload.array('file
     const otherRow = db.prepare(
       'SELECT user_id FROM dm_members WHERE dm_channel_id = ? AND user_id != ?'
     ).get(req.dm.id, req.user.id);
+    if (!otherRow) return res.status(409).json({ error: 'the other participant closed this conversation' });
     if (otherRow && isBlocked(req.user.id, otherRow.user_id)) {
       return res.status(403).json({ error: 'you cannot message this user' });
     }

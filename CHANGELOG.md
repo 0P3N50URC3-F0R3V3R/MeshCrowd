@@ -4,6 +4,23 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ## [Unreleased]
 
+### 2026-11-03
+#### Added
+- Invite dialog and Android "Copy invite code": when a server has a vanity link, you can pick which one to share (vanity preselected) or the random code.
+- Avatar background color picker beside the "Show avatar background color" checkbox (web, desktop and Android); the color is per user and shown to everyone.
+- "View as a stranger" button in the profile editor and in the profile popup "..." menu (web, desktop and Android): shows your profile exactly as a non-friend sees it, without private fields.
+- Admin Panel: bio editing in Edit user (moderation), and a Presence column showing whether each user is online right now (also for invisible users, visible only there).
+- Custom status emoji badge on avatars in the members list, DM list, friends list and the user bar; the full custom status text now appears in the friends list and the user bar (Android friends list and profile too).
+- Pin button dot: a new pin by someone else puts a dot on the pin button (and the Android conversation info button) until you open the pinned list; remembered per user on the server.
+- Mutual servers in the full profile popup now show their server icons.
+
+#### Changed
+- Direct messages can now be deleted: "Delete Conversation" (web, desktop, Android) removes a 1:1 for you. The other person is told the conversation was closed and asked whether to delete it too (Cancel keeps the history as a read-only archive; the prompt also reappears as a banner), and sending into a closed conversation is refused. Once both sides delete, the history is wiped, so messaging again starts a fresh conversation (it can be unencrypted again). "Close Conversation" still only hides it.
+- Invisible mode: no typing indicator, read receipts ("Seen") stop advancing while invisible and stay hidden afterwards, no custom status shown, cannot be rung by DM calls, and cannot join any voice or stage channel or DM call (switching to invisible leaves the current call). Messages still arrive normally. Admin Panel still shows real online state.
+- The global notification bell in the top bar and the Android Notifications tab now use an inbox icon, so it no longer looks like the per-channel notification settings bell.
+- Clicking the MeshCrowd logo at the top of the server rail (web and desktop) opens the Friends tab instead of the empty "no conversation selected" page.
+- Profile edits (name, avatar, avatar background, banner, card, status) now reach other users and your own other devices live; already rendered messages update in place without a re-render, so scroll position and drafts stay put. DM partners also receive profile updates.
+
 ### 2026-11-01
 #### Added
 - Admin console: a text interface in the server window (no login, local) and optionally over SSH (`ssh.enabled`, localhost:2222 by default, own host key, password plus TOTP, lockout and rate limits). `help` lists the commands.

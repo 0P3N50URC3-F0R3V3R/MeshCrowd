@@ -11,7 +11,7 @@ import { mountYouTab } from './youTab.js';
 const TABS = [
   { id: 'servers', icon: 'home', label: 'm.tabServers', mount: mountServersTab },
   { id: 'messages', icon: 'messageSquare', label: 'm.tabMessages', mount: mountMessagesTab },
-  { id: 'notifications', icon: 'bell', label: 'm.tabNotifications', mount: mountNotificationsTab },
+  { id: 'notifications', icon: 'inbox', label: 'm.tabNotifications', mount: mountNotificationsTab },
   { id: 'you', icon: 'user', label: 'm.tabYou', mount: mountYouTab },
 ];
 

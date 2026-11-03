@@ -2,7 +2,7 @@ import { api } from '../../js/api.js';
 import { bus } from '../../js/bus.js';
 import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
-import { escapeHtml, avatarHtml, toast } from '../../js/utils.js';
+import { escapeHtml, avatarHtml, customStatusLabel, toast } from '../../js/utils.js';
 import { state, setFriends, presenceFor } from '../../js/state.js';
 import { nav } from '../router.js';
 import { handleError } from '../lib/errors.js';
@@ -17,7 +17,7 @@ export function mountFriends(el) {
   el.querySelector('#m-back').addEventListener('click', () => nav.back());
 
   const row = (f, actions) => `<div class="m-row" data-uid="${f.user.id}">${avatarHtml(f.user, 40)}
-    <span class="m-grow"><b>${escapeHtml(f.user.displayName)}</b><small>@${escapeHtml(f.user.username)}</small></span>${actions}</div>`;
+    <span class="m-grow"><b>${escapeHtml(f.user.displayName)}</b><small>@${escapeHtml(f.user.username)}${customStatusLabel(f.user) ? ` · ${escapeHtml(customStatusLabel(f.user))}` : ''}</small></span>${actions}</div>`;
   const btn = (a, icon, label) => `<button class="m-icon-btn" data-a="${a}" aria-label="${label}">${icon}</button>`;
 
   function paint() {

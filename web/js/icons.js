@@ -74,6 +74,7 @@ export const icons = {
 
   // Folder icon picker set (server-rail folders) — decorative, so a plain geometric style
   // matching the rest of the set rather than anything brand-specific.
+  inbox: (s) => svg(`<path d="M22 12h-6l-2 3h-4l-2-3H2" ${stroke} stroke-linejoin="round"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.7 4H7.2a2 2 0 0 0-1.7 1.1z" ${stroke} stroke-linejoin="round"/>`, s),
   bellOff: (s) => svg(`<path d="M13.7 21a2 2 0 0 1-3.4 0" ${stroke}/><path d="M18.6 13A17.9 17.9 0 0 1 18 8" ${stroke}/><path d="M6.3 6.3A5.9 5.9 0 0 0 6 8c0 7-3 9-3 9h14" ${stroke}/><path d="M18 8a6 6 0 0 0-9.3-5" ${stroke}/><path d="M1 1l22 22" ${stroke}/>`, s),
   bookmark: (s) => svg(`<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" ${stroke} stroke-linejoin="round"/>`, s),
   star: (s) => svg(`<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z" ${stroke} stroke-linejoin="round"/>`, s),

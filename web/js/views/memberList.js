@@ -1,7 +1,7 @@
 import { bus } from '../bus.js';
 import { state, presenceFor } from '../state.js';
 import { icons } from '../icons.js';
-import { avatarHtml, escapeHtml } from '../utils.js';
+import { avatarHtml, statusEmojiBadge, escapeHtml } from '../utils.js';
 import { memberNameColor } from '../permissions.js';
 import { memberRoleIcon, roleIconHtml } from '../roleIcon.js';
 import { t } from '../i18n.js';
@@ -113,6 +113,7 @@ function renderMember(m, server, roles) {
       <div class="avatar-wrap">
         ${avatarHtml(u, 32)}
         <div class="status-dot ${status}" style="width:10px;height:10px"></div>
+        ${statusEmojiBadge(u)}
       </div>
       <div class="m-meta">
         <div class="m-name" ${color ? `style="color:${escapeHtml(color)}"` : ''}>${isOwner ? '👑 ' : ''}${escapeHtml(name)}${roleIconHtml(memberRoleIcon(roles, m))}${u.isBot ? `<span class="bot-badge">${t('bots.badge')}</span>` : ''}</div>

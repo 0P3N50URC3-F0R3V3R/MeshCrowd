@@ -301,7 +301,7 @@ router.get('/:id', requireMember, (req, res) => {
   const myBits = getMemberPermissionBits(req.server.id, req.user.id);
   const server = has(myBits, PERMISSIONS.CREATE_INVITE)
     ? req.server
-    : { ...req.server, invite_code: null };
+    : { ...req.server, invite_code: null, vanity_code: null };
 
   const welcomeChannels = db.prepare('SELECT * FROM welcome_channels WHERE server_id = ? ORDER BY position ASC, id ASC').all(req.server.id)
     .filter((wc) => channels.some((ch) => ch.id === wc.channel_id));
