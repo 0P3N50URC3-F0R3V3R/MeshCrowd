@@ -871,6 +871,7 @@ router.patch('/:id/channels/:channelId', requireMember, requirePerm(PERMISSIONS.
   const updated = db.prepare('SELECT * FROM channels WHERE id = ?').get(channel.id);
   logAudit(req.server.id, req.user.id, 'channel_update', 'channel', channel.id, { name, type, topic, position, categoryId, nsfw });
   broadcastToChannel(updated, { type: 'channel_update', channel: updated });
+  broadcastToServer(req.server.id, { type: 'server_refresh', serverId: req.server.id });
   if (updated.name !== channel.name) postServerEvent(req.server.id, 'channel_rename', null, { from: channel.name, channel: updated.name }, req.user.id);
   if (updated.topic !== channel.topic) postServerEvent(req.server.id, 'channel_topic', null, { channel: updated.name, topic: updated.topic }, req.user.id);
   res.json({ channel: updated });
@@ -886,6 +887,7 @@ router.post('/:id/channels/:channelId/icon', requireMember, requirePerm(PERMISSI
   db.prepare('UPDATE channels SET icon_path = ? WHERE id = ?').run(rel, channel.id);
   const updated = db.prepare('SELECT * FROM channels WHERE id = ?').get(channel.id);
   broadcastToChannel(updated, { type: 'channel_update', channel: updated });
+  broadcastToServer(req.server.id, { type: 'server_refresh', serverId: req.server.id });
   res.json({ iconPath: rel });
 });
 
@@ -954,6 +956,7 @@ router.put('/:id/channels/:channelId/slowmode', requireMember, requirePerm(PERMI
   logAudit(req.server.id, req.user.id, 'channel_slowmode_update', 'channel', channel.id, { seconds });
   const updated = db.prepare('SELECT * FROM channels WHERE id = ?').get(channel.id);
   broadcastToChannel(updated, { type: 'channel_update', channel: updated });
+  broadcastToServer(req.server.id, { type: 'server_refresh', serverId: req.server.id });
   res.json({ channel: updated });
 });
 
@@ -974,6 +977,7 @@ router.put('/:id/channels/:channelId/overrides/:roleId', requireMember, requireP
      ON CONFLICT(channel_id, role_id) DO UPDATE SET allow = excluded.allow, deny = excluded.deny`
   ).run(channel.id, role.id, allow, deny);
   logAudit(req.server.id, req.user.id, 'channel_overrides_update', 'channel', channel.id, { roleId: role.id, allow, deny });
+  broadcastToServer(req.server.id, { type: 'server_refresh', serverId: req.server.id });
   res.json({ ok: true });
 });
 

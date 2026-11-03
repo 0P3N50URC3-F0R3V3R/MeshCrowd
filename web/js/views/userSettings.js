@@ -153,6 +153,7 @@ export function openUserSettings(initialTab = 'account') {
       <div class="error-text" id="acc-err"></div>
       <button class="btn btn-primary" id="acc-save">${t('userSettings.saveChangesButton')}</button>
       <button class="btn btn-secondary" id="acc-view-stranger" type="button">${t('profile.viewAsStrangerMenuItem')}</button>
+      <button class="btn btn-secondary" id="acc-sync-devices" type="button" title="${escapeHtml(t('userSync.syncDevicesHint'))}">${t('userSync.syncDevicesButton')}</button>
 
       <div class="profile-preview" id="acc-preview">
         <div class="pp-banner" id="pp-banner-preview" style="${bannerStyle(previewUser)}"></div>
@@ -257,6 +258,10 @@ export function openUserSettings(initialTab = 'account') {
         bus.emit('state:me');
         render();
       } catch (err) { toast(apiErrorMessage(err, t('userSettings.couldNotRemoveCard')), { type: 'error' }); }
+    });
+
+    inner.querySelector('#acc-sync-devices').addEventListener('click', async () => {
+      try { await api.syncDevices(); toast(t('userSync.syncDevicesDone')); } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }
     });
 
     inner.querySelector('#acc-view-stranger').addEventListener('click', async (e) => {

@@ -2,6 +2,7 @@ import { api } from '../js/api.js';
 import { bus } from '../js/bus.js';
 import { ws } from '../js/ws.js';
 import { applyTheme } from '../js/theme.js';
+import { wireUserSync } from '../js/userSync.js';
 import { t } from '../js/i18n.js';
 import { toast } from '../js/utils.js';
 import { notifySound } from '../js/notifySound.js';
@@ -73,6 +74,7 @@ function notifyBody(payload) {
 }
 
 export function wireRealtime() {
+  wireUserSync({ refreshServerDetail: refreshServerDetailSilently });
   let connectedOnce = false;
   // If the websocket cannot come back because the session is gone, no API call would notice until
   // the user did something; probe while disconnected so the app returns to sign-in on its own.
@@ -121,6 +123,7 @@ export function wireRealtime() {
   bus.on('ws:server_update', ({ server }) => upsertServer(server));
   bus.on('ws:server_delete', ({ serverId }) => removeServer(serverId));
   for (const ev of ['channel_create', 'channel_update']) bus.on(`ws:${ev}`, ({ channel }) => refreshServerDetailSilently(channel.server_id));
+  bus.on('ws:server_refresh', ({ serverId }) => refreshServerDetailSilently(serverId));
   for (const ev of ['channel_delete', 'category_delete', 'role_delete', 'member_join', 'member_leave', 'member_role_update', 'emoji_remove', 'sticker_remove']) {
     bus.on(`ws:${ev}`, ({ serverId }) => serverId && refreshServerDetailSilently(serverId));
   }

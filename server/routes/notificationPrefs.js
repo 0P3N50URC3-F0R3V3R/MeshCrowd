@@ -5,6 +5,7 @@ const { db } = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { getPref, setPref, VALID_PREFS } = require('../lib/notifications');
 const { muteExpiry } = require('../lib/userMeta');
+const { syncUser, syncAfter } = require('../lib/userSync');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -14,7 +15,7 @@ router.get('/', (req, res) => {
   res.json({ prefs: rows.map((r) => ({ scopeType: r.scope_type, scopeId: r.scope_id, pref: r.pref, mutedUntil: r.muted_until })) });
 });
 
-router.put('/:scopeType/:scopeId', (req, res) => {
+router.put('/:scopeType/:scopeId', syncAfter('notification_prefs'), (req, res) => {
   const { scopeType, scopeId } = req.params;
   const { pref } = req.body || {};
   if (!VALID_PREFS.has(pref)) return res.status(400).json({ error: 'pref must be one of all|mentions|mute' });

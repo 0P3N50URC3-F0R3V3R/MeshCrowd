@@ -2725,5 +2725,11 @@
         "desc": "A szerver admin konzoljának használata. Az Oldal adminisztrátora jog nem adja meg; csak a jog birtokosai adhatják tovább."
       }
     }
+  },
+  "userSync": {
+    "languageChanged": "A nyelvet egy másik eszközön megváltoztattad. Töltsd újra az oldalt az alkalmazáshoz.",
+    "syncDevicesButton": "Másik eszközeim frissítése",
+    "syncDevicesHint": "Megkéri a többi bejelentkezett eszközödet, hogy a beállításokat és listákat helyben újratöltsék.",
+    "syncDevicesDone": "A többi eszköz frissül."
   }
 }

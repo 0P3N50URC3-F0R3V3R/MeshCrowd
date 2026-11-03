@@ -438,6 +438,7 @@ export const api = {
   setNotificationPref: (scopeType, scopeId, pref, extra = {}) => put(`/api/notification-prefs/${scopeType}/${scopeId}`, { pref, ...extra }),
 
   // read state (unread indicators + DM "Seen")
+  syncDevices: () => post('/api/users/me/sync-devices'),
   getReadState: () => get('/api/read-state'),
   markPinsSeen: (scopeType, scopeId) => put(`/api/read-state/pins/${scopeType}/${scopeId}`, {}),
   markRead: (scopeType, scopeId, messageId) => put(`/api/read-state/${scopeType}/${scopeId}`, { messageId }),

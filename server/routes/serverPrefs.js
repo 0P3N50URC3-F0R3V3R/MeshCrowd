@@ -4,6 +4,7 @@ const express = require('express');
 const { db } = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { LEVELS, FOREVER, listServerPrefs, setServerPref } = require('../lib/serverPrefs');
+const { syncUser, syncAfter } = require('../lib/userSync');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -16,7 +17,7 @@ router.get('/', (req, res) => {
 
 // Body: any of notifLevel ('all'|'mentions'|'mute'|null), mute ({ minutes } | { forever: true } |
 // null to unmute), hideMutedChannels, showAllChannels, allowDms.
-router.put('/:serverId', (req, res) => {
+router.put('/:serverId', syncAfter('server_prefs'), (req, res) => {
   const serverId = Number(req.params.serverId);
   if (!Number.isInteger(serverId)) return res.status(400).json({ error: 'invalid server id' });
   if (!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(serverId, req.user.id)) {

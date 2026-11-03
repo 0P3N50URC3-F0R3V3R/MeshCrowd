@@ -42,6 +42,7 @@ export function mountYouTab(host) {
       ${row('unreadAlways', icons.messageSquare(20), t('userSettings.unreadAlwaysLabel'), t(state.uiPrefs.unreadAlways === 'on' ? 'userSettings.unreadAlwaysOn' : 'userSettings.unreadAlwaysOff'))}
       ${row('language', icons.menu(20), t('m.language'), currentLanguage())}
       ${bridge ? row('android', icons.bell(20), t('m.androidSection')) : ''}
+      ${row('syncDevices', icons.link(20), t('userSync.syncDevicesButton'))}
       ${row('desktop', icons.link(20), t('m.openDesktop'))}
       ${row('logout', icons.x(20), t('m.logout'))}
     </div>`;
@@ -52,6 +53,8 @@ export function mountYouTab(host) {
       if (id === 'status') {
         const v = await actionSheet({ title: t('m.setStatus'), items: STATUSES.map(([value, key]) => ({ id: value, label: t(key) })) });
         if (v) { await api.setStatus({ status: v }); state.me.status = v; bus.emit('state:me'); if (v === 'invisible') (await import('../../js/views/voice.js')).leaveActiveCall(); }
+      } else if (id === 'syncDevices') {
+        await api.syncDevices(); toast(t('userSync.syncDevicesDone'));
       } else if (id === 'sound') {
         const v = await actionSheet({ title: t('m.notificationSound'), items: Object.entries(SOUNDS).map(([value, key]) => ({ id: value, label: t(key) })) });
         if (v) { await api.setStatus({ notifySoundMode: v }); state.me.notifySoundMode = v; bus.emit('state:me'); }

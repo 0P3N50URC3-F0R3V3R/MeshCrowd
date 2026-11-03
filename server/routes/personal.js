@@ -6,6 +6,7 @@ const { requireAuth } = require('../middleware/auth');
 const { serializeMessage } = require('../lib/messages');
 const { canViewMessage, muteExpiry } = require('../lib/userMeta');
 const { singleLine } = require('../lib/textSanitize');
+const { syncUser, syncAfter } = require('../lib/userSync');
 
 const router = express.Router();
 // Mounted at /api, so auth is scoped to this router's own paths; a bare router.use() would 401 every
@@ -22,7 +23,7 @@ router.get('/user-annotations', (req, res) => {
   res.json({ annotations: rows.map((r) => ({ targetId: r.target_id, note: r.note, nickname: r.nickname, ignored: !!r.ignored })) });
 });
 
-router.put('/user-annotations/:targetId', (req, res) => {
+router.put('/user-annotations/:targetId', syncAfter('annotations'), (req, res) => {
   const targetId = Number(req.params.targetId);
   if (!Number.isInteger(targetId) || targetId === req.user.id) return res.status(400).json({ error: 'invalid user' });
   if (!db.prepare('SELECT 1 FROM users WHERE id = ?').get(targetId)) return res.status(404).json({ error: 'user not found' });
@@ -60,7 +61,7 @@ router.get('/dm-prefs', (req, res) => {
   res.json({ prefs: rows.map((r) => ({ dmId: r.dm_id, pinned: !!r.pinned, favorite: !!r.favorite, hidden: !!r.hidden })) });
 });
 
-router.put('/dm-prefs/:dmId', (req, res) => {
+router.put('/dm-prefs/:dmId', syncAfter('dm_prefs'), (req, res) => {
   const dmId = Number(req.params.dmId);
   if (!Number.isInteger(dmId)) return res.status(400).json({ error: 'invalid conversation' });
   if (!db.prepare('SELECT 1 FROM dm_members WHERE dm_channel_id = ? AND user_id = ?').get(dmId, req.user.id)) {
@@ -108,14 +109,14 @@ router.get('/bookmarks/ids', (req, res) => {
   res.json({ ids: db.prepare('SELECT message_id FROM message_bookmarks WHERE user_id = ?').all(req.user.id).map((r) => r.message_id) });
 });
 
-router.put('/bookmarks/:messageId', (req, res) => {
+router.put('/bookmarks/:messageId', syncAfter('bookmarks'), (req, res) => {
   const message = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.messageId);
   if (!message || !canViewMessage(req.user.id, message)) return res.status(404).json({ error: 'message not found' });
   db.prepare('INSERT OR IGNORE INTO message_bookmarks (user_id, message_id) VALUES (?, ?)').run(req.user.id, message.id);
   res.json({ ok: true });
 });
 
-router.delete('/bookmarks/:messageId', (req, res) => {
+router.delete('/bookmarks/:messageId', syncAfter('bookmarks'), (req, res) => {
   db.prepare('DELETE FROM message_bookmarks WHERE user_id = ? AND message_id = ?').run(req.user.id, Number(req.params.messageId));
   res.json({ ok: true });
 });

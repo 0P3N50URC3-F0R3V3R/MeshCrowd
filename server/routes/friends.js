@@ -6,6 +6,7 @@ const { requireAuth } = require('../middleware/auth');
 const { pairKey, getFriendship } = require('../lib/friends');
 const { toPublicUser } = require('../lib/publicUser');
 const { notifyUser } = require('../socket/hub');
+const { syncUser } = require('../lib/userSync');
 const voice = require('../socket/voice');
 const { resolveOrCreateRemoteUser } = require('../lib/federationUsers');
 const { isFederatedTarget, sendFriendRequestEvent, sendFriendAcceptEvent, sendFriendRemoveEvent } = require('../lib/federationFriendsOutbound');
@@ -75,6 +76,7 @@ router.post('/request', requireAuth, (req, res) => {
   db.prepare('INSERT INTO friendships (user_a, user_b, status, requested_by) VALUES (?, ?, ?, ?)')
     .run(a, b, 'pending', req.user.id);
   notifyUser(target.id, { type: 'friend_request', from: toPublicUser(req.user, { viewerIsSelf: false }) });
+  syncUser(req.user.id, 'friends');
   res.status(201).json({ ok: true });
 });
 
@@ -93,6 +95,7 @@ router.post('/:userId/accept', requireAuth, (req, res) => {
   } else {
     notifyUser(otherId, { type: 'friend_accept', by: toPublicUser(req.user, { viewerIsSelf: false }) });
   }
+  syncUser(req.user.id, 'friends');
   res.json({ ok: true });
 });
 
@@ -114,6 +117,7 @@ router.post('/:userId/block', requireAuth, (req, res) => {
     db.prepare('INSERT INTO friendships (user_a, user_b, status, requested_by) VALUES (?, ?, ?, ?)')
       .run(a, b, 'blocked', req.user.id);
   }
+  syncUser(req.user.id, 'friends');
   res.json({ ok: true });
 });
 
@@ -132,6 +136,9 @@ router.delete('/:userId', requireAuth, (req, res) => {
   if (other.home_instance_id) {
     sendFriendRemoveEvent(other.home_instance_id, { fromRemoteId: req.user.id, fromUsername: req.user.username, toUsername: remoteUsernameOf(other) });
   }
+  syncUser(req.user.id, 'friends');
+  // Lifting your own block must stay invisible to the blocked person; everything else (cancel, decline, unfriend) is not.
+  if (existing.status !== 'blocked') syncUser(otherId, 'friends');
   res.json({ ok: true });
 });
 

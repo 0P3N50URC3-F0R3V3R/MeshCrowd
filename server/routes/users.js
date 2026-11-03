@@ -11,6 +11,7 @@ const { requireAuth } = require('../middleware/auth');
 const { isValidBackup, isValidBackupFor } = require('../lib/passportCrypto');
 const { areFriends, isBlocked } = require('../lib/friends');
 const { broadcastPresence, notifyUser } = require('../socket/hub');
+const { syncUser, syncAfter } = require('../lib/userSync');
 const { sanitizeServerLayout } = require('../lib/serverLayout');
 const { sanitizeTheme } = require('../lib/theme');
 const { singleLine, statusEmoji } = require('../lib/textSanitize');
@@ -119,7 +120,7 @@ router.get('/me/server-layout', requireAuth, (req, res) => {
   res.json({ layout });
 });
 
-router.put('/me/server-layout', requireAuth, (req, res) => {
+router.put('/me/server-layout', requireAuth, syncAfter('layout'), (req, res) => {
   if (!Array.isArray(req.body?.layout)) return res.status(400).json({ error: 'layout must be an array' });
 
   // Only servers this user is actually a member of are allowed in — silently drops anything
@@ -148,7 +149,7 @@ router.get('/me/language', requireAuth, (req, res) => {
   res.json({ language: req.user.language || null });
 });
 
-router.put('/me/language', requireAuth, (req, res) => {
+router.put('/me/language', requireAuth, syncAfter('language'), (req, res) => {
   const code = sanitizeCode(req.body?.code);
   if (!code) return res.status(400).json({ error: 'invalid language code' });
   const lang = getLanguage(code);
@@ -157,13 +158,19 @@ router.put('/me/language', requireAuth, (req, res) => {
   res.json({ ok: true, language: code });
 });
 
+// Asks every other live device of this account to re-read its settings and lists in place.
+router.post('/me/sync-devices', requireAuth, (req, res) => {
+  syncUser(req.user.id, 'all');
+  res.json({ ok: true });
+});
+
 router.get('/me/theme', requireAuth, (req, res) => {
   let stored;
   try { stored = JSON.parse(req.user.theme || '{}'); } catch { stored = {}; }
   res.json({ theme: sanitizeTheme(stored) });
 });
 
-router.put('/me/theme', requireAuth, (req, res) => {
+router.put('/me/theme', requireAuth, syncAfter('theme'), (req, res) => {
   const cleaned = sanitizeTheme(req.body?.theme);
   db.prepare('UPDATE users SET theme = ? WHERE id = ?').run(JSON.stringify(cleaned), req.user.id);
   res.json({ ok: true, theme: cleaned });
@@ -194,7 +201,7 @@ router.get('/me/ui-prefs', requireAuth, (req, res) => {
   res.json({ uiPrefs: sanitizeUiPrefs(stored) });
 });
 
-router.put('/me/ui-prefs', requireAuth, (req, res) => {
+router.put('/me/ui-prefs', requireAuth, syncAfter('ui_prefs'), (req, res) => {
   let stored;
   try { stored = JSON.parse(req.user.ui_prefs || '{}'); } catch { stored = {}; }
   const merged = sanitizeUiPrefs({ ...stored, ...req.body });

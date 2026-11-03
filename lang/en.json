@@ -2725,5 +2725,11 @@
         "desc": "Use the server admin console. Not granted by Site Administrator; only holders can hand it out."
       }
     }
+  },
+  "userSync": {
+    "languageChanged": "Language was changed on another device. Reload to apply it here.",
+    "syncDevicesButton": "Refresh my other devices",
+    "syncDevicesHint": "Asks your other signed-in devices to re-read their settings and lists in place.",
+    "syncDevicesDone": "Other devices will refresh."
   }
 }

@@ -38,6 +38,7 @@ import { mountSearchPanel } from './search.js';
 import { mountActivityPanel } from './activityPanel.js';
 import { mountPinnedPanel } from './pinnedPanel.js';
 import { markPinsSeen } from '../pinSeen.js';
+import { wireUserSync } from '../userSync.js';
 import { mountThreadsPanel } from './threadsPanel.js';
 import { openServerSettings } from './serverSettings.js';
 import { voicePrefs } from '../voicePrefs.js';
@@ -194,6 +195,7 @@ export async function mountShell(root) {
   bus.on('ws:sticker_remove', ({ serverId }) => refreshServerDetailSilently(serverId));
   bus.on('ws:sound_add', ({ sound }) => refreshServerDetailSilently(sound.server_id));
   bus.on('ws:sound_remove', ({ serverId }) => refreshServerDetailSilently(serverId));
+  bus.on('ws:server_refresh', ({ serverId }) => refreshServerDetailSilently(serverId));
   bus.on('ws:role_create', ({ role }) => refreshServerDetailSilently(role.server_id));
   bus.on('ws:role_update', ({ role }) => refreshServerDetailSilently(role.server_id));
   bus.on('ws:role_delete', ({ serverId }) => refreshServerDetailSilently(serverId));
@@ -207,6 +209,7 @@ export async function mountShell(root) {
     refreshServerDetailSilently(serverId);
     if (userId === state.me.id) { toast(t('shell.bannedFromServerToast')); removeServer(serverId); if (state.view.type === 'server' && state.view.serverId === serverId) bus.emit('ui:navigate', { type: 'home' }); }
   });
+  wireUserSync({ refreshServerDetail: (id) => refreshServerDetailSilently(id) });
   bus.on('ws:friend_request', (payload) => { refreshFriendsSilently(); onFriendEvent(t('shell.friendRequestReceivedToast', { name: payload.from.displayName }), 'pending'); });
   bus.on('ws:friend_accept', (payload) => { refreshFriendsSilently(); onFriendEvent(t('shell.friendRequestAcceptedToast', { name: payload.by.displayName }), 'all'); });
   bus.on('ws:server_notice', ({ text }) => { if (text) toast(text, { ttl: 15000 }); });
