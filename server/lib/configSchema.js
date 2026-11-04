@@ -15,6 +15,7 @@ const OVERRIDES = {
   registrationMode: { enum: ['open', 'closed', 'invite'] },
   trustProxy: { type: 'json', looseString: true, check: 'trustProxy' },
   iceServers: { type: 'json', array: true, check: 'iceServers' },
+  lanNetworks: { type: 'json', array: true, check: 'lanNetworks' },
   passportOrigins: { type: 'json', array: true },
   'sites.maxWorkers': { min: 1, max: 16 },
   'turn.port': port,
@@ -104,6 +105,14 @@ function checkIceServers(key, list) {
   });
 }
 
+function checkLanNetworks(key, list) {
+  if (list.length > 32) throw new Error(`${key} may have at most 32 entries`);
+  list.forEach((e, i) => {
+    const m = typeof e === 'string' && /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/.exec(e.trim());
+    if (!m || m.slice(1, 5).some((o) => Number(o) > 255) || Number(m[5]) > 32) throw new Error(`${key}[${i}] must be an IPv4 CIDR like 192.168.3.0/24`);
+  });
+}
+
 function checkTrustProxy(key, value) {
   const ok = typeof value === 'boolean' || typeof value === 'string' || (Number.isInteger(value) && value >= 0);
   if (!ok) throw new Error(`${key} must be true, false, a non-negative integer hop count or a string`);
@@ -133,6 +142,7 @@ function coerce(key, raw) {
     }
     if (spec.array && !Array.isArray(value)) throw new Error(`${key} must be a JSON array`);
     if (spec.check === 'iceServers') checkIceServers(key, value);
+    if (spec.check === 'lanNetworks') checkLanNetworks(key, value);
     if (spec.check === 'trustProxy') checkTrustProxy(key, value);
     return value;
   }

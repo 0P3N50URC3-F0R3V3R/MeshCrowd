@@ -182,11 +182,13 @@ function appIconImage() {
 }
 
 // `windowBounds` is the user's last manually-resized/moved size+position (Settings has no UI for
-// this — it's saved automatically). Never persisted while maximized/minimized: restoring into a
-// maximized state would otherwise "stick" the window maximized with no stored un-maximize size.
+// this — it's saved automatically). While maximized the un-maximized (normal) bounds are stored
+// with `windowMaximized`, so the next start restores maximized and un-maximize still has a size.
 function saveWindowBounds() {
-  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMaximized() || mainWindow.isMinimized() || mainWindow.isFullScreen()) return;
-  clientConfig.windowBounds = mainWindow.getBounds();
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isMinimized() || mainWindow.isFullScreen()) return;
+  const maximized = mainWindow.isMaximized();
+  clientConfig.windowBounds = maximized ? mainWindow.getNormalBounds() : mainWindow.getBounds();
+  clientConfig.windowMaximized = maximized;
   saveClientConfig(clientConfig);
 }
 
@@ -238,6 +240,8 @@ function createWindow() {
     },
   });
 
+  if (clientConfig.windowMaximized) mainWindow.maximize();
+
   mainWindow.once('ready-to-show', () => {
     if (!clientConfig.startMinimized) mainWindow.show();
     else if (!clientConfig.closeToTray) { mainWindow.showInactive(); mainWindow.minimize(); }
@@ -252,6 +256,8 @@ function createWindow() {
   });
   mainWindow.on('resize', scheduleSaveBounds);
   mainWindow.on('move', scheduleSaveBounds);
+  mainWindow.on('maximize', scheduleSaveBounds);
+  mainWindow.on('unmaximize', scheduleSaveBounds);
 
   // A monitor unplugged or a resolution change can strand the window off-screen: pull it back.
   const refit = () => {
@@ -422,6 +428,14 @@ ipcMain.handle('dismesh:forget-server', () => {
   saveClientConfig(clientConfig);
   loadTarget();
   return { ok: true };
+});
+
+ipcMain.handle('dismesh:get-network-interfaces', () => {
+  const out = [];
+  for (const [name, addrs] of Object.entries(require('node:os').networkInterfaces())) {
+    for (const a of addrs || []) if (a.family === 'IPv4' && !a.internal && !a.address.startsWith('169.254.')) out.push({ name, address: a.address });
+  }
+  return out;
 });
 
 ipcMain.handle('dismesh:get-app-settings', () => ({

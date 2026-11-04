@@ -129,3 +129,14 @@ test('a port that is already taken is reported, not thrown', async () => {
   blocker.close();
   await call('PATCH', '/api/admin/calls', admin, { turn: { enabled: false } });
 });
+
+test('lanNetworks are validated, stored and returned by the admin API', async () => {
+  const bad = [{ lanNetworks: 'x' }, { lanNetworks: ['nope'] }, { lanNetworks: ['1.2.3.4'] }, { lanNetworks: ['300.0.0.0/8'] }, { lanNetworks: ['10.0.0.0/33'] }, { lanNetworks: [5] }, { lanNetworks: new Array(33).fill('10.0.0.0/8') }];
+  for (const body of bad) assert.equal((await call('PATCH', '/api/admin/calls', admin, body)).status, 400, JSON.stringify(body));
+  assert.equal((await call('PATCH', '/api/admin/calls', staff, { lanNetworks: ['10.0.0.0/8'] })).status, 403);
+  const put = await call('PATCH', '/api/admin/calls', admin, { lanNetworks: [' 26.0.0.0/8 ', '192.168.3.0/24'] });
+  assert.equal(put.status, 200);
+  assert.deepEqual(put.data.lanNetworks, ['26.0.0.0/8', '192.168.3.0/24']);
+  assert.deepEqual(appConfig.load().lanNetworks, ['26.0.0.0/8', '192.168.3.0/24']);
+  assert.deepEqual((await call('PATCH', '/api/admin/calls', admin, { lanNetworks: [] })).data.lanNetworks, []);
+});

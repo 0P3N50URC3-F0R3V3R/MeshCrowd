@@ -30,6 +30,11 @@ const DEFAULTS = {
   // separate VLANs, restrictive NAT/firewalls) need at least a STUN entry here for WebRTC ICE
   // to find a path between peers at all — e.g. [{ "urls": "stun:stun.l.google.com:19302" }].
   iceServers: [],
+  // Optional: LAN/VPN subnets (CIDR, e.g. ["26.0.0.0/8", "192.168.3.0/24"]) that voice peers should
+  // reach each other on. Empty = automatic (nothing filtered). When set, private-range addresses
+  // outside these subnets (Docker/WSL/other adapters) are not tried, so ICE settles on the VPN path
+  // faster. STUN/TURN stay available as fallback either way.
+  lanNetworks: [],
   // Mesh federation between instances. Off by default; a stand-alone server never opens any
   // federation route or worker. Passport identity works regardless of this flag.
   federation: { enabled: false },

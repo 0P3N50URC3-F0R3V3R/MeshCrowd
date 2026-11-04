@@ -105,7 +105,26 @@ export function renderCallsTab(inner) {
         <button class="btn btn-secondary" id="ice-add" type="button">${t('admin.calls.addServer')}</button>
         <button class="btn btn-primary" id="ice-save" type="button">${t('common.save')}</button>
       </div>
-      <div class="error-text" id="ice-err"></div>`;
+      <div class="error-text" id="ice-err"></div>
+      <div class="divider"></div>
+      <h3 style="margin:0 0 8px">${t('admin.calls.lanTitle')}</h3>
+      <p class="hint" style="margin:0 0 8px">${t('admin.calls.lanHint')}</p>
+      <textarea class="input" id="lan-nets" rows="4" placeholder="26.0.0.0/8&#10;192.168.3.0/24" style="max-width:360px;font-family:monospace">${escapeHtml((data.lanNetworks || []).join('\n'))}</textarea>
+      <div class="hint">${t('admin.calls.lanExamples')}</div>
+      <div style="margin-top:8px"><button class="btn btn-primary" id="lan-save" type="button">${t('common.save')}</button></div>
+      <div class="error-text" id="lan-err"></div>
+      <div class="admin-stat-card" style="max-width:none;text-align:left;margin-top:16px">
+        <b>${t('admin.calls.howTitle')}</b>
+        <div class="hint" style="margin-top:6px;white-space:pre-line">${t('admin.calls.howBody')}</div>
+      </div>`;
+
+    body.querySelector('#lan-save').addEventListener('click', async () => {
+      const err = body.querySelector('#lan-err');
+      err.textContent = '';
+      const nets = body.querySelector('#lan-nets').value.split(/[\s,;]+/).filter(Boolean);
+      try { data = await api.adminUpdateCalls({ lanNetworks: nets }); resetIceServers(); toast(t('admin.calls.saved')); draw(); }
+      catch (e2) { err.textContent = apiErrorMessage(e2, t('admin.couldNotSave')); }
+    });
 
     const list = body.querySelector('#ice-list');
     const rows = ice.map((s) => ({ urls: (Array.isArray(s.urls) ? s.urls : [s.urls]).join(', '), username: s.username || '', credential: s.credential || '' }));

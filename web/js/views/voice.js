@@ -10,6 +10,7 @@ import { openSoundboardPicker } from './soundboardPicker.js';
 import { t } from '../i18n.js';
 import { createWhiteboard } from '../whiteboard.js';
 import { tuneOpusSdp, voiceQualityPreset, DEFAULT_VOICE_QUALITY } from '../voiceQuality.js';
+import { shouldAcceptRemoteCandidate, connectionPath } from '../iceUtil.js';
 
 // A function (not a module-level constant) so labels re-evaluate against the current language —
 // see userBar.js's statusOptions() for why a plain top-level object built with t() would freeze.
@@ -17,23 +18,42 @@ function qualityLabel() {
   return { good: t('voice.goodConnection'), ok: t('voice.unstableConnection'), poor: t('voice.poorConnection') };
 }
 
+// Quality dot tooltip: the quality label plus how the audio travels (direct LAN/VPN/public path,
+// NAT-traversed through STUN, or relayed by TURN). Path is unknown until the first stats poll.
+function qualityTitle(peer) {
+  const q = qualityLabel()[peer?.quality || 'good'];
+  const p = peer?.path ? { direct: t('voice.pathDirect'), stun: t('voice.pathStun'), relay: t('voice.pathRelay') }[peer.path] : '';
+  const base = p ? `${q} - ${p}` : q;
+  return localNetworks ? `${base}\n${t('voice.yourNetworks')}: ${localNetworks}` : base;
+}
+
+// Desktop client only: this machine's IPv4 adapters, shown in the tooltip so a Radmin/ZeroTier/VPN
+// address is easy to spot when checking why two people do or don't connect directly.
+let localNetworks = '';
+window.dismeshClient?.getNetworkInterfaces?.()
+  .then((list) => { localNetworks = (list || []).map((n) => `${n.name} ${n.address}`).join(', '); })
+  .catch(() => {});
+
 // ICE servers for every peer connection: the operator's external STUN/TURN entries plus the
 // built-in server's with a short-lived credential (GET /api/voice/ice, empty unless the admin
 // opted in, so a default install stays LAN-only). Cached until shortly before the credential expires.
-let iceCache = null; // { servers, expires }
-async function getIceServers() {
-  if (iceCache && iceCache.expires > Date.now()) return iceCache.servers;
+// lanNetworks is the operator's optional LAN/VPN subnet list (see config.js); empty = no filtering.
+let iceCache = null; // { servers, lanNetworks, expires }
+async function getIceConfig() {
+  if (iceCache && iceCache.expires > Date.now()) return iceCache;
   let servers;
+  let lanNetworks = [];
   let ttlMs = 3_600_000;
   try {
     const res = await api.voiceIce();
     servers = res.iceServers || [];
+    lanNetworks = Array.isArray(res.lanNetworks) ? res.lanNetworks : [];
     if (res.ttlMs) ttlMs = res.ttlMs;
   } catch {
     try { servers = (await api.config()).iceServers || []; } catch { servers = []; }
   }
-  iceCache = { servers, expires: Date.now() + Math.max(60_000, ttlMs - 600_000) };
-  return servers;
+  iceCache = { servers, lanNetworks, expires: Date.now() + Math.max(60_000, ttlMs - 600_000) };
+  return iceCache;
 }
 export const resetIceServers = () => { iceCache = null; };
 
@@ -296,7 +316,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
         <button class="btn-icon vc-fullscreen-btn" data-fullscreen="${u.id}:camera" title="${t('voice.fullscreenTitle')}">${icons.maximize(16)}</button>
         ${mutedByMod ? `<span class="vc-mod-muted-badge vc-mod-muted-badge-video" title="${t('voice.mutedByModeratorTitle')}">${icons.micOff(11)}</span>` : ''}`;
     } else {
-      media = `<div class="voice-tile-avatar">${avatarHtml(u, 96)}${!mine ? `<span class="vc-quality vc-quality-${peer?.quality || 'good'}" title="${qualityLabel()[peer?.quality || 'good']}"></span>` : ''}${mutedByMod ? `<span class="vc-mod-muted-badge" title="${t('voice.mutedByModeratorTitle')}">${icons.micOff(11)}</span>` : ''}</div>`;
+      media = `<div class="voice-tile-avatar">${avatarHtml(u, 96)}${!mine ? `<span class="vc-quality vc-quality-${peer?.quality || 'good'}" title="${escapeHtml(qualityTitle(peer))}"></span>` : ''}${mutedByMod ? `<span class="vc-mod-muted-badge" title="${t('voice.mutedByModeratorTitle')}">${icons.micOff(11)}</span>` : ''}</div>`;
     }
     return `
       <div class="voice-tile ${speaking ? 'speaking' : ''} ${cameraStream ? 'has-video' : ''}" data-uid="${u.id}">
@@ -752,7 +772,8 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   }
 
   async function createPeer(userId) {
-    const pc = new RTCPeerConnection({ iceServers: await getIceServers() });
+    const ice = await getIceConfig();
+    const pc = new RTCPeerConnection({ iceServers: ice.servers, iceCandidatePoolSize: 2 });
     pc.onicecandidate = (e) => {
       if (e.candidate) ws.send({ type: 'voice_signal', ...scopePayload(), toUserId: userId, signal: { kind: 'ice', candidate: e.candidate.toJSON() } });
     };
@@ -763,14 +784,39 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
       attachRemoteVideo(userId, media, e.streams[0]);
       e.track.onended = () => detachRemoteVideo(userId, media);
     };
+    // A dropped path (Wi-Fi roam, VPN reconnect) is retried with an ICE restart, which gathers
+    // fresh candidates and falls back to STUN/TURN if the direct path is gone; only after repeated
+    // failures is the peer closed.
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') closePeer(userId);
+      const peer = peers.get(userId);
+      if (!peer || peer.pc !== pc) return;
+      clearTimeout(peer.restartTimer);
+      if (pc.connectionState === 'connected') peer.restarts = 0;
+      else if (pc.connectionState === 'disconnected') peer.restartTimer = setTimeout(() => restartIceFor(userId), 4000);
+      else if (pc.connectionState === 'failed') restartIceFor(userId);
+      else if (pc.connectionState === 'closed') closePeer(userId);
     };
     if (sendTrack) pc.addTrack(sendTrack, new MediaStream([sendTrack]));
     if (cameraTrack) { pc.addTrack(cameraTrack, new MediaStream([cameraTrack])); announceMediaTo(userId, 'camera', cameraTrack); }
     if (screenTrack) { pc.addTrack(screenTrack, new MediaStream([screenTrack])); announceMediaTo(userId, 'screen', screenTrack); }
-    peers.set(userId, { pc, audioEl: null, speaking: false, volume: 1, quality: 'good', cameraStream: null, screenStream: null, makingOffer: false });
+    peers.set(userId, { pc, audioEl: null, speaking: false, volume: 1, quality: 'good', cameraStream: null, screenStream: null, makingOffer: false, pendingIce: [], lanNetworks: ice.lanNetworks, restarts: 0, restartTimer: null, path: null });
     return pc;
+  }
+
+  async function restartIceFor(userId) {
+    const peer = peers.get(userId);
+    if (!peer || peer.pc.connectionState === 'connected' || peer.pc.connectionState === 'closed') return;
+    if (peer.restarts >= 3) { closePeer(userId); return; }
+    if (peer.makingOffer || peer.pc.signalingState !== 'stable') { peer.restartTimer = setTimeout(() => restartIceFor(userId), 3000); return; }
+    peer.restarts++;
+    peer.pc.restartIce();
+    try { await renegotiateWith(userId); } catch { /* next state change retries */ }
+    peer.restartTimer = setTimeout(() => restartIceFor(userId), 8000);
+  }
+
+  async function flushPendingIce(peer) {
+    const queued = peer.pendingIce.splice(0);
+    for (const c of queued) { try { await peer.pc.addIceCandidate(c); } catch { /* stale candidate */ } }
   }
 
   async function initiateOfferTo(userId) {
@@ -825,6 +871,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
       if (offerCollision && !polite) return; // impolite: ignore their offer, ours will win
       if (offerCollision) await pc.setLocalDescription({ type: 'rollback' });
       await pc.setRemoteDescription({ type: 'offer', sdp: signal.sdp });
+      await flushPendingIce(peer);
       const answer = await pc.createAnswer();
       preferOpus(pc);
       await setTunedLocal(pc, answer);
@@ -833,10 +880,17 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
       const peer = peers.get(fromUserId);
       // A stale answer for an offer we already rolled back (we were the polite side in a glare)
       // has nothing to apply to - signalingState is 'stable' by then, not 'have-local-offer'.
-      if (peer && peer.pc.signalingState === 'have-local-offer') await peer.pc.setRemoteDescription({ type: 'answer', sdp: signal.sdp });
+      if (peer && peer.pc.signalingState === 'have-local-offer') {
+        await peer.pc.setRemoteDescription({ type: 'answer', sdp: signal.sdp });
+        await flushPendingIce(peer);
+      }
     } else if (signal.kind === 'ice' && signal.candidate) {
       const peer = peers.get(fromUserId);
-      if (peer) { try { await peer.pc.addIceCandidate(signal.candidate); } catch { /* stray late candidate, ignore */ } }
+      if (!peer || !shouldAcceptRemoteCandidate(signal.candidate, peer.lanNetworks)) return;
+      // Candidates can outrun the offer/answer they belong to; adding one before the remote
+      // description is set throws, so hold it until then.
+      if (!peer.pc.remoteDescription) { peer.pendingIce.push(signal.candidate); return; }
+      try { await peer.pc.addIceCandidate(signal.candidate); } catch { /* stray late candidate, ignore */ }
     } else if (signal.kind === 'media-announce') {
       if (signal.active) {
         if (!pendingRemoteMedia.has(fromUserId)) pendingRemoteMedia.set(fromUserId, []);
@@ -877,6 +931,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   function closePeer(userId) {
     const peer = peers.get(userId);
     if (!peer) return;
+    clearTimeout(peer.restartTimer);
     peer.pc.close();
     peer.audioEl?.remove();
     peer.analyser?.ctx?.close?.().catch(() => {});
@@ -949,6 +1004,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     for (const [id, peer] of peers) {
       try {
         const report = await peer.pc.getStats();
+        const path = connectionPath(report);
         let rtt = 0, lost = 0, received = 0;
         report.forEach((stat) => {
           if (stat.type === 'candidate-pair' && (stat.state === 'succeeded') && stat.currentRoundTripTime != null) {
@@ -961,10 +1017,11 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
         });
         const lossRatio = received > 0 ? lost / (lost + received) : 0;
         const quality = rtt < 150 && lossRatio < 0.02 ? 'good' : rtt < 300 && lossRatio < 0.05 ? 'ok' : 'poor';
-        if (peer.quality !== quality) {
+        if (peer.quality !== quality || peer.path !== path) {
           peer.quality = quality;
+          peer.path = path;
           const dot = container.querySelector(`.voice-tile[data-uid="${id}"] .vc-quality`);
-          if (dot) { dot.className = `vc-quality vc-quality-${quality}`; dot.title = qualityLabel()[quality]; }
+          if (dot) { dot.className = `vc-quality vc-quality-${quality}`; dot.title = qualityTitle(peer); }
         }
       } catch { /* stats unavailable mid-negotiation — try again next tick */ }
     }

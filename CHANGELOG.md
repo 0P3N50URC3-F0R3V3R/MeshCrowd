@@ -4,6 +4,17 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ## [Unreleased]
 
+### 2026-11-04
+#### Added
+- Voice calls connect directly over LAN and private VPNs (Radmin, ZeroTier, SoftEther, Hamachi) with no setup: the direct path is tried alongside STUN/TURN and the best working one is used, with STUN/TURN as the automatic fallback on web, desktop and Android. Optional `lanNetworks` setting (JSON list of CIDRs, e.g. `["26.0.0.0/8","192.168.3.0/24"]`; `config set lanNetworks ...` in the console) skips stray adapters (Docker, WSL) so a VPN call settles faster; empty by default.
+- Admin Panel > Calls: new "LAN / VPN networks" field for `lanNetworks` (one CIDR per line, with examples for Radmin, Hamachi, ZeroTier) and a "How voice connects" help box explaining direct, STUN and TURN paths and how to write external server addresses.
+- End-to-end checks `scripts/tour/voice-ice.mjs` (browser peers direct, forced TURN relay, lanNetworks fallback, browser to Electron, Electron remembers a maximized window) and `scripts/tour/voice-ice-android.mjs` (Android emulator to desktop peer).
+- The voice quality dot's tooltip now says how the audio travels (direct LAN/VPN, via NAT/STUN, or relayed/TURN); the desktop client also lists this machine's network adapters there.
+
+#### Fixed
+- Voice: ICE candidates that arrived before the offer/answer were silently dropped, which could leave a call without audio; they are now held and applied. A dropped connection is retried with an ICE restart (up to 3 times) before the peer is closed, instead of closing at once.
+- Desktop client remembers a maximized window: closing it maximized now starts it maximized again instead of in the smaller default size. The normal (un-maximized) size is kept for when you restore it.
+
 ### 2026-11-03
 #### Added
 - Mobile page and Android app work without a connection after a first visit: the server detail (channels, roles, members) of the last 8 servers you opened is kept too, so their chats open offline with the cached messages. Starting the app no longer waits on the language list when the network is dead (2 second limit).

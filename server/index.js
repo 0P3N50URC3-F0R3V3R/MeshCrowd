@@ -208,10 +208,11 @@ if (config.federation && config.federation.enabled) {
 
 // Signed-in users get their ICE servers here: operator-defined external ones plus this server's own
 // STUN/TURN with a short-lived credential. /api/config below only ever shows credential-free entries.
-app.get('/api/voice/ice', rateLimit({ windowMs: 60_000, max: 60 }), require('./middleware/auth').requireAuth, (req, res) => {
+const liveLanNetworks = () => { const l = require('./lib/config').load().lanNetworks; return Array.isArray(l) ? l : []; };
+app.get('/api/voice/ice',rateLimit({ windowMs: 60_000, max: 60 }), require('./middleware/auth').requireAuth, (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const { iceServers, ttlMs, builtIn } = turnManager.iceServersFor(req.user, req.hostname);
-  res.json({ iceServers, ttlMs, builtIn });
+  res.json({ iceServers, ttlMs, builtIn, lanNetworks: liveLanNetworks() });
 });
 
 const { httpsLink } = require('./lib/httpsLink');

@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('dismeshClient', {
   setServer: (url) => ipcRenderer.invoke('dismesh:set-server', url),
   forgetServer: () => ipcRenderer.invoke('dismesh:forget-server'),
   retryConnect: () => ipcRenderer.invoke('dismesh:retry-connect'),
+  getNetworkInterfaces: () => ipcRenderer.invoke('dismesh:get-network-interfaces'),
   openExternal: (url) => ipcRenderer.invoke('dismesh:open-external', url),
 
   getAppSettings: () => ipcRenderer.invoke('dismesh:get-app-settings'),

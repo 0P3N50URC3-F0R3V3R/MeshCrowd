@@ -147,7 +147,7 @@ const ICE_URL_RE = /^(stun|stuns|turn|turns):[^\s]+$/i;
 function callsPayload() {
   const cfg = appConfig.load();
   const { secret, ...turn } = cfg.turn;
-  return { turn: { ...turn, secretSet: !!secret }, iceServers: cfg.iceServers || [], publicHost: cfg.publicHost, status: turnManager.status() };
+  return { turn: { ...turn, secretSet: !!secret }, iceServers: cfg.iceServers || [], lanNetworks: cfg.lanNetworks || [], publicHost: cfg.publicHost, status: turnManager.status() };
 }
 
 const intIn = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
@@ -183,6 +183,15 @@ function validateIceServers(list) {
   return null;
 }
 
+function validateLanNetworks(list) {
+  if (!Array.isArray(list) || list.length > 32) return 'lanNetworks must be a list of at most 32 entries';
+  for (const c of list) {
+    const m = typeof c === 'string' && /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(\d{1,2})$/.exec(c.trim());
+    if (!m || m.slice(1, 5).some((o) => Number(o) > 255) || Number(m[5]) > 32) return 'lanNetworks entries must be IPv4 CIDRs like 192.168.3.0/24';
+  }
+  return null;
+}
+
 router.get('/calls', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), (req, res) => res.json(callsPayload()));
 
 router.patch('/calls', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), async (req, res) => {
@@ -206,9 +215,14 @@ router.patch('/calls', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), asy
     if (err) return res.status(400).json({ error: err });
     patch.iceServers = body.iceServers.map((s) => ({ urls: s.urls, ...(s.username ? { username: s.username } : {}), ...(s.credential ? { credential: s.credential } : {}) }));
   }
+  if (body.lanNetworks !== undefined) {
+    const err = validateLanNetworks(body.lanNetworks);
+    if (err) return res.status(400).json({ error: err });
+    patch.lanNetworks = body.lanNetworks.map((c) => c.trim());
+  }
   if (Object.keys(patch).length) {
     appConfig.save(patch);
-    require('../lib/logger').log(`[calls] settings updated by user ${req.user.id}:`, patch.turn ? Object.keys(patch.turn).filter((k) => k !== 'secret').join(',') : '', patch.iceServers ? `iceServers=${patch.iceServers.length}` : '');
+    require('../lib/logger').log(`[calls] settings updated by user ${req.user.id}:`, patch.turn ? Object.keys(patch.turn).filter((k) => k !== 'secret').join(',') : '', patch.iceServers ? `iceServers=${patch.iceServers.length}` : '', patch.lanNetworks ? `lanNetworks=${patch.lanNetworks.length}` : '');
     if (patch.turn) await turnManager.reload();
   }
   res.json(callsPayload());
