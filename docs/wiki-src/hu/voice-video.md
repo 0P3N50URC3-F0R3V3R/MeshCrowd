@@ -59,11 +59,20 @@ A szervernek lehet rövid hangklipekből álló hangpultja, amelyet a jogosult t
 
 A **Beállítások, Hang és videó, Fejlett zajszűrés (RNNoise)** a mikrofonodat egy WebAssemblyre fordított kis neurális hálózaton engedi át, ami eltávolítja a billentyűzet-, ventilátor- és háttérzajt. A saját eszközödön működik, nagyjából tíz milliszekundum késleltetést ad, és alapból ki van kapcsolva. A modul (kb. 5 MB) csak akkor töltődik le, amikor először indul hívás bekapcsolt állapotban. Ha nem tud elindulni, a hívás egyszerűen nélküle folytatódik.
 
+## Hogyan választ útvonalat a kapcsolat
+
+Nincs mit beállítani: mindenki alkalmazása egyszerre kipróbál minden címet, amivel rendelkezik (LAN, VPN például Radmin, ZeroTier, SoftEther vagy Hamachi, és nyilvános), és a leggyorsabb működőt használja, így az azonos LAN-on vagy privát VPN-en lévők STUN vagy TURN szerver nélkül, közvetlenül kapcsolódnak. A STUN és a TURN automatikus tartalékként marad a különböző hálózatokon lévőknek.
+
+Ha egy csempén a színes minőségjelző pont fölé viszed az egeret, látod az útvonalat: **közvetlen (LAN/VPN)**, **NAT-on át (STUN)** vagy **továbbítva (TURN)**. Az asztali alkalmazás itt a gép hálózati adaptereit is felsorolja. A megszakadt hívást (VPN újracsatlakozás, Wi-Fi váltás) az alkalmazás automatikusan újrapróbálja, mielőtt lezárná.
+
+A szerver tulajdonosa opcionálisan megadhatja a LAN és VPN alhálózatokat, lásd: [LAN és VPN hálózatok](configuration.html#lan-s-vpn-h-l-zatok).
+
 ## Hívások hibaelhárítása
 
 | Tünet | Mit ellenőrizz |
 |---|---|
 | Nincs mikrofonkérés | Az oldal nem HTTPS-en vagy localhoston van |
 | LAN-on csatlakozik, hálózatok között nem | Kapcsold be a beépített STUN/TURN szervert (`setup-turn.bat`, vagy Adminpanel, Hívások), és irányítsd át a portokat a routeren, lásd: [STUN és TURN](configuration.html#stun-s-turn) |
+| Az azonos Radmin/ZeroTier/LAN hálózaton lévők lassan vagy továbbításon át kapcsolódnak | A minőségjelző pont fölé víve látszik az útvonal. Add meg a VPN alhálózatot az **Adminpanel, Hívások, LAN / VPN hálózatok** alatt, hogy a többi adapter (Docker, WSL) ki legyen hagyva, és ellenőrizd, hogy a VPN átengedi az UDP-t a tagok között |
 | Valakit nem hallani | A böngészője letiltotta a mikrofont, vagy rossz a bemeneti eszköze az eszközválasztóban |
 | Szaggatott hang nagy hívásban | Csökkentsd az előbeállítást, vagy kérd meg az embereket, hogy kapcsolják ki a kamerát |

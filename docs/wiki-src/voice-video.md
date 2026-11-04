@@ -59,11 +59,20 @@ A server can have a soundboard of short clips that members with permission can p
 
 **Settings, Voice, Advanced noise suppression (RNNoise)** runs your microphone through a small neural network compiled to WebAssembly, which removes keyboard, fan and background noise. It works on your own device, adds about ten milliseconds of delay and is off by default. The module (about 5 MB) is only downloaded the first time a call starts with it on. If it cannot start, the call simply continues without it.
 
+## How the connection path is chosen
+
+Nothing to configure: each person's app tries every address it has at once (LAN, VPN such as Radmin, ZeroTier, SoftEther or Hamachi, and public) and uses the fastest one that works, so people on the same LAN or private VPN connect directly without any STUN or TURN server. STUN and TURN stay available as the automatic fallback for people on different networks.
+
+Hover the colored quality dot on someone's tile to see the path: **direct (LAN/VPN)**, **via NAT (STUN)** or **relayed (TURN)**. The desktop app also lists this computer's network adapters there. A call that drops (VPN reconnect, Wi-Fi change) is retried automatically before it is closed.
+
+Server owners can optionally list their LAN and VPN subnets, see [LAN and VPN networks](configuration.html#lan-and-vpn-networks).
+
 ## Troubleshooting calls
 
 | Symptom | What to check |
 |---|---|
 | No microphone prompt | The page is not on HTTPS or localhost |
 | Connects on the LAN but not across networks | Turn on the built-in STUN/TURN server (`setup-turn.bat`, or Admin Panel, Calls) and forward the ports on the router, see [STUN and TURN](configuration.html#stun-and-turn) |
+| People on the same Radmin/ZeroTier/LAN network connect slowly or via a relay | Hover the quality dot to see the path. List the VPN subnet under **Admin Panel, Calls, LAN / VPN networks** so other adapters (Docker, WSL) are skipped, and check that the VPN allows UDP between members |
 | One person cannot be heard | Their browser blocked the microphone, or their input device is wrong in the device picker |
 | Choppy audio in a big call | Lower the preset, or ask people to turn cameras off |

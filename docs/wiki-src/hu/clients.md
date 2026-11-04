@@ -24,6 +24,7 @@ Hordozható alkalmazás: csomagold ki és futtasd a `MeshCrowd.exe` fájlt. Az e
 - **Tálcaikonnal** élő olvasatlan jelvénnyel, a jelenléted színével. A színek a **Beállítások, Asztali alkalmazás, Tálcaikon** alatt testreszabhatók.
 - **Csatlakozási képernyővel**, amely pörgő jelzést mutat, amíg a szerver válaszol. Ha nem érhető el (vagy 20 másodpercnél tovább tart), üres ablak helyett az **Újrapróbálás** és a **Szerver módosítása** gombot kínálja.
 - **Natív értesítésekkel**, tálcára zárással és indítással a Windowsszal.
+- **Ablak-memóriával**: a méretet, a pozíciót és a teljes képernyős (maximalizált) állapotot a következő indításkor visszaállítja.
 - Az operációs rendszer **képernyő- és ablakválasztójával** a képernyőmegosztáshoz.
 - **Meghívólinkek**: a meghívóoldalról érkező `mcr://` linkek az alkalmazásban nyílnak meg. Az alkalmazás minden indításkor regisztrálja magát hozzájuk, ami a mappa áthelyezése után is helyreállítja a bejegyzést; kikapcsolható a **Beállítások, Asztali alkalmazás** alatt. A linkek szerverváltás és csatlakozás előtt mindig rákérdeznek. A `MeshCrowd.exe` melletti `register-mcr-protocol.bat` és `unregister-mcr-protocol.bat` kézzel ugyanezt teszi.
 - **Első használatkori tanúsítvány-rögzítéssel** önaláírt szerverekhez: először megerősíted az ujjlenyomatot, egy későbbi változás pedig figyelmeztetést vált ki. A nyilvános hatóság által kiállított tanúsítványt a rendes módon elfogadja.

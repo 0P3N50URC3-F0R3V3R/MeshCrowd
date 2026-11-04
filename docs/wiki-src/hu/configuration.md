@@ -25,6 +25,7 @@ A `data/config.json` az első indításkor jön létre, és minden indításkor 
 | `trustProxy` | `false` | Az Express `trust proxy` értéke. Fordított proxy mögött állítsd be. |
 | `pushAllowPrivateEndpoints` | `false` | Engedi, hogy a szerver UnifiedPush ébresztéseket küldjön magánhálózati címekre, például egy LAN-on futó ntfy-nak. |
 | `iceServers` | `[]` | Külső STUN- és TURN-szerverek a hálózatok közötti WebRTC-hívásokhoz. |
+| `lanNetworks` | `[]` | Opcionális LAN és VPN alhálózatok (CIDR) a hanghoz. Lásd: [LAN és VPN hálózatok](#lan-s-vpn-h-l-zatok). |
 | `turn` | lásd lent | A beépített STUN/TURN szerver, alapból kikapcsolva. Lásd: [STUN és TURN](#stun-s-turn). |
 | `sites` | `{"phpPath": "", "maxWorkers": 4}` | PHP futtatókörnyezet és munkafolyamat-szám az [Oldalakhoz](sites.html). |
 | `logging` | `{"level": "info", "keepDays": 30, "maxFileMb": 10}` | Naplószint (`debug`, `info`, `warn`, `error`), hány napig maradnak meg a `data/logs/` fájljai, és mekkora méret után indul új fájl. Futás közben a `log level` és a `config set` is módosíthatja. |
@@ -108,6 +109,16 @@ A `data/config.json` `turn` szakasza:
 | `maxKbps` | `0` | Sávszélesség-korlát továbbításonként, `0` = nincs. |
 
 A bejelentkezett felhasználók rövid életű, magától lejáró hitelesítő adatokat kapnak, így nem tárolódik semmi, és egy kiszivárgott hamar használhatatlan lesz. Az IPv6-továbbítás nem támogatott.
+
+### LAN és VPN hálózatok
+
+Az azonos LAN-on vagy privát VPN-en (Radmin, ZeroTier, SoftEther, Hamachi) lévők hívásai beállítás nélkül, közvetlenül kapcsolódnak, és sem STUN-ra, sem TURN-ra nincs szükségük. Hagyd üresen, hacsak a felhasználóknak nincs extra hálózati adapterük (Docker, WSL, virtuális gépek), amitől lassan indulnak a hívások. Ekkor add meg azokat az alhálózatokat, amelyeken az embereknek egymást el kell érniük, az **Adminpanel, Hívások, LAN / VPN hálózatok** alatt (soronként egyet) vagy a `lanNetworks` kulcsban:
+
+```json
+"lanNetworks": ["26.0.0.0/8", "192.168.3.0/24"]
+```
+
+Gyakori tartományok: `26.0.0.0/8` Radmin VPN, `25.0.0.0/8` Hamachi, `10.147.17.0/24` ZeroTier (a tiéd a vezérlőpultján látszik). A listán kívüli privát címeket kihagyja; a nyilvános címeket, a STUN-t és a TURN-t soha nem blokkolja. A beállítás újraindítás nélkül érvényes az új hívásokra.
 
 ### Külső szerverek
 

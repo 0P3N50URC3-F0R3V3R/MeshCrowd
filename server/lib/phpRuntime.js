@@ -100,7 +100,7 @@ async function init(config) {
   }
   status = { ...r, bin: activeBin };
   if (status.ok) logger.log(`[php] ${status.version} at ${activeBin}`);
-  else logger.warn(`[php] unavailable (${status.reason}${status.detail ? `: ${status.detail}` : ''}); Sites with PHP pages will not work`);
+  else logger.warn(`[php] unavailable (${status.reason}${status.detail ? `: ${status.detail}` : ''}); Sites with PHP pages will not work. The PHP runtime ships only in the release packages: run "npm run fetch:php" (Windows), install PHP with your package manager, or set sites.phpPath`);
   return getStatus();
 }
 

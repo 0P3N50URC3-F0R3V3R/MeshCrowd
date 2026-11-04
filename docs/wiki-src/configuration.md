@@ -25,6 +25,7 @@ order: 3
 | `trustProxy` | `false` | Express `trust proxy` value. Set it behind a reverse proxy. |
 | `pushAllowPrivateEndpoints` | `false` | Let the server send UnifiedPush wake-ups to private network addresses, such as a ntfy on your LAN. |
 | `iceServers` | `[]` | External STUN and TURN servers for WebRTC calls across networks. |
+| `lanNetworks` | `[]` | Optional LAN and VPN subnets (CIDR) for voice. See [LAN and VPN networks](#lan-and-vpn-networks). |
 | `turn` | see below | The built-in STUN/TURN server, off by default. See [STUN and TURN](#stun-and-turn). |
 | `sites` | `{"phpPath": "", "maxWorkers": 4}` | PHP runtime and worker count for [Sites](sites.html). |
 | `logging` | `{"level": "info", "keepDays": 30, "maxFileMb": 10}` | Log level (`debug`, `info`, `warn`, `error`), days to keep log files in `data/logs/`, and the size after which a new file is started. Changeable at runtime with `log level` and `config set`. |
@@ -108,6 +109,16 @@ The `turn` section of `data/config.json`:
 | `maxKbps` | `0` | Bandwidth cap per relay, `0` for none. |
 
 Signed-in users receive short-lived credentials that expire by themselves, so nothing is stored and a leaked one soon stops working. IPv6 relaying is not supported.
+
+### LAN and VPN networks
+
+Calls between people on the same LAN or private VPN (Radmin, ZeroTier, SoftEther, Hamachi) connect directly with no setup, and need neither STUN nor TURN. Leave this empty unless users have extra network adapters (Docker, WSL, virtual machines) that make calls slow to start. Then list the subnets people should reach each other on, in **Admin Panel, Calls, LAN / VPN networks** (one per line) or in `lanNetworks`:
+
+```json
+"lanNetworks": ["26.0.0.0/8", "192.168.3.0/24"]
+```
+
+Common ranges: `26.0.0.0/8` Radmin VPN, `25.0.0.0/8` Hamachi, `10.147.17.0/24` ZeroTier (yours is shown in its dashboard). Private addresses outside the list are skipped; public addresses, STUN and TURN are never blocked. The setting takes effect for new calls without a restart.
 
 ### External servers
 

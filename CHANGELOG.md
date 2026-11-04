@@ -11,6 +11,10 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - End-to-end checks `scripts/tour/voice-ice.mjs` (browser peers direct, forced TURN relay, lanNetworks fallback, browser to Electron, Electron remembers a maximized window) and `scripts/tour/voice-ice-android.mjs` (Android emulator to desktop peer).
 - The voice quality dot's tooltip now says how the audio travels (direct LAN/VPN, via NAT/STUN, or relayed/TURN); the desktop client also lists this machine's network adapters there.
 
+#### Changed
+- README.md shortened to the essentials: it points to the website and wiki, and states clearly that the runtimes (Node, PHP, Electron, node_modules, APKs) are only in the Releases, with the steps to run from source. The server's PHP-unavailable log line now says how to get PHP.
+- Android app 3.16 and a rebuilt desktop client (voice ICE and window-state changes). The wiki (EN and HU) documents the connection paths, the `lanNetworks` setting and the desktop window memory.
+
 #### Fixed
 - Voice: ICE candidates that arrived before the offer/answer were silently dropped, which could leave a call without audio; they are now held and applied. A dropped connection is retried with an ICE restart (up to 3 times) before the peer is closed, instead of closing at once.
 - Desktop client remembers a maximized window: closing it maximized now starts it maximized again instead of in the smaller default size. The normal (un-maximized) size is kept for when you restore it.
