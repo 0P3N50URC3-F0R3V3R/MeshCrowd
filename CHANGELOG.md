@@ -16,6 +16,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Android app 3.16 and a rebuilt desktop client (voice ICE and window-state changes). The wiki (EN and HU) documents the connection paths, the `lanNetworks` setting and the desktop window memory.
 
 #### Fixed
+- Desktop client: with "start minimized" set and a remembered maximized window, the window showed up maximized at launch instead of going to the tray / taskbar. The maximize is now applied only when the window is first brought back (tray click, double-click).
 - Voice: ICE candidates that arrived before the offer/answer were silently dropped, which could leave a call without audio; they are now held and applied. A dropped connection is retried with an ICE restart (up to 3 times) before the peer is closed, instead of closing at once.
 - Desktop client remembers a maximized window: closing it maximized now starts it maximized again instead of in the smaller default size. The normal (un-maximized) size is kept for when you restore it.
 

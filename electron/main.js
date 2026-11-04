@@ -240,11 +240,24 @@ function createWindow() {
     },
   });
 
-  if (clientConfig.windowMaximized) mainWindow.maximize();
+  // maximize() on a hidden window makes Windows show it, defeating start-minimized/tray start, so
+  // when starting hidden the maximize is deferred until the user first brings the window back.
+  let pendingMaximize = !!clientConfig.windowMaximized;
+  const applyPendingMaximize = () => {
+    if (!pendingMaximize || !mainWindow || mainWindow.isDestroyed()) return;
+    pendingMaximize = false;
+    mainWindow.maximize();
+  };
+  mainWindow.once('show', applyPendingMaximize);
+  mainWindow.once('restore', applyPendingMaximize);
 
   mainWindow.once('ready-to-show', () => {
     if (!clientConfig.startMinimized) mainWindow.show();
-    else if (!clientConfig.closeToTray) { mainWindow.showInactive(); mainWindow.minimize(); }
+    else if (!clientConfig.closeToTray) {
+      mainWindow.removeListener('show', applyPendingMaximize);
+      mainWindow.showInactive();
+      mainWindow.minimize();
+    }
   });
 
   let saveBoundsTimer = null;
