@@ -590,6 +590,8 @@
       "captchaApply": "Hol",
       "applyLogin": "Bejelentkezés",
       "applyRegister": "Regisztráció",
+      "registerRequired": "Regisztrációnál mindig kérjen captchát",
+      "registerRequiredHint": "Alapból be van kapcsolva. A regisztráció figyelmen kívül hagyja a fenti módot és mindig kérdez; a sikertelen regisztrációkat külön számolja a bejelentkezési hibáktól.",
       "captchaLook": "Milyen legyen",
       "captchaType": "Fajta",
       "typeText": "Véletlen karakterek",

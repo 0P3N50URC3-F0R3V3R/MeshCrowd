@@ -85,6 +85,7 @@ export function renderSecurityTab(inner) {
         <div class="hint">${L('captchaAfterHint')}</div></div>
       <div class="field"><label>${L('captchaApply')}</label>
         ${check('c-login', cfg.applyTo.login, L('applyLogin'))}${check('c-register', cfg.applyTo.register, L('applyRegister'))}</div>
+      <div class="field">${check('c-regreq', cfg.registerRequired, L('registerRequired'))}<div class="hint">${L('registerRequiredHint')}</div></div>
       <div class="divider"></div>
       <h3 style="margin:0 0 8px">${L('captchaLook')}</h3>
       <div class="field"><label>${L('captchaType')}</label>
@@ -119,7 +120,7 @@ export function renderSecurityTab(inner) {
     const $ = (id) => body.querySelector(id);
     const collect = () => ({
       mode: $('#c-mode').value, failureThreshold: Number($('#c-threshold').value), failureWindowMinutes: Number($('#c-window').value),
-      applyTo: { login: $('#c-login').checked, register: $('#c-register').checked },
+      applyTo: { login: $('#c-login').checked, register: $('#c-register').checked }, registerRequired: $('#c-regreq').checked,
       type: $('#c-type').value, charset: $('#c-charset').value, length: Number($('#c-length').value), excludeAmbiguous: $('#c-ambig').checked,
       difficulty: $('#c-diff').value, ttlSeconds: Number($('#c-ttl').value),
       words: {

@@ -103,6 +103,7 @@ function sweepExpired() {
 // ---- failure, flood and strike tracking ---------------------------------------------------------
 
 const failures = new Map(); // ip -> [ms]
+const kindFailures = { login: new Map(), register: new Map() }; // per-scope copies that drive the captcha
 const floods = new Map(); // ip -> { start, count, fired }
 const strikes = new Map(); // ip -> [ms]
 const registrations = new Map(); // ip -> [ms]
@@ -185,9 +186,10 @@ function noteScanner(ip) {
   }
 }
 
-function noteFailure(ip) {
+function noteFailure(ip, kind = 'login') {
   const cfg = settings.load().protection;
   const keep = Math.max(cfg.failedLoginBan.windowMinutes, settings.load().captcha.failureWindowMinutes) * 60_000;
+  push(kindFailures[kind] || kindFailures.login, ip, keep);
   const list = push(failures, ip, keep);
   if (cfg.mode === 'off' || check(ip).allowlisted) return;
   const fb = cfg.failedLoginBan;
@@ -197,8 +199,13 @@ function noteFailure(ip) {
   }
 }
 
-const failureCount = (ip, windowMinutes) => within(failures.get(ip) || [], windowMinutes * 60_000);
-const clearFailures = (ip) => failures.delete(ip);
+// kind 'login' or 'register' counts that scope only; omitted counts both (what the ban threshold sees).
+const failureCount = (ip, windowMinutes, kind) => within((kind ? kindFailures[kind] : failures).get(ip) || [], windowMinutes * 60_000);
+const clearFailures = (ip, kind) => {
+  if (kind) kindFailures[kind].delete(ip);
+  if (kind !== 'register') { failures.delete(ip); kindFailures.login.delete(ip); }
+  if (!kind) kindFailures.register.delete(ip);
+};
 
 function noteRegistration(ip) {
   push(registrations, ip, 720 * 3600_000);
@@ -229,9 +236,10 @@ const underAttackInfo = () => ({ active: isUnderAttack(), until: isUnderAttack()
 function captchaRequired(ip, kind) {
   const c = settings.load().captcha;
   if (isUnderAttack()) return true;
+  if (kind === 'register' && c.registerRequired) return true;
   if (!c.applyTo[kind] || c.mode === 'off') return false;
   if (c.mode === 'always') return true;
-  return failureCount(ip, c.failureWindowMinutes) >= c.failureThreshold;
+  return failureCount(ip, c.failureWindowMinutes, kind) >= c.failureThreshold;
 }
 
 // ---- middleware ---------------------------------------------------------------------------------
@@ -312,7 +320,7 @@ function gate(kind, { requireCaptcha = true } = {}) {
       const tooFast = kind === 'register' && Number.isFinite(body.formMs) && body.formMs < 800;
       if ((typeof body.website === 'string' && body.website !== '') || tooFast) {
         event('honeypot', ip, { kind, tooFast });
-        noteFailure(ip);
+        noteFailure(ip, kind);
         return res.status(400).json(REJECT);
       }
     }
@@ -324,7 +332,7 @@ function gate(kind, { requireCaptcha = true } = {}) {
       const result = captcha.verify(body.captchaId, body.captchaAnswer);
       if (result !== 'ok') {
         const missing = typeof body.captchaId !== 'string' || !body.captchaId;
-        if (!missing) { event('captcha_failed', ip, { kind, result }); noteFailure(ip); }
+        if (!missing) { event('captcha_failed', ip, { kind, result }); noteFailure(ip, kind); }
         return res.status(403).json({
           error: missing ? 'captcha required' : result === 'expired' ? 'captcha expired' : 'captcha incorrect',
           code: missing ? 'captcha_required' : 'captcha_invalid',
@@ -334,10 +342,10 @@ function gate(kind, { requireCaptcha = true } = {}) {
     res.on('finish', () => {
       const status = res.statusCode;
       if (status < 400) {
-        if (kind === 'register') noteRegistration(ip);
-        else clearFailures(ip);
+        if (kind === 'register') { noteRegistration(ip); clearFailures(ip, 'register'); }
+        else clearFailures(ip, 'login');
       } else if (FAILURE_STATUSES.has(status)) {
-        noteFailure(ip);
+        noteFailure(ip, kind);
       }
     });
     next();
@@ -394,7 +402,7 @@ function start() {
   setInterval(() => {
     const now = clock();
     for (const [ip, f] of floods) if (now - f.start > 300_000) floods.delete(ip);
-    for (const map of [failures, strikes, registrations, scanners]) {
+    for (const map of [failures, kindFailures.login, kindFailures.register, strikes, registrations, scanners]) {
       for (const [ip, list] of map) if (!list.length || list[list.length - 1] < now - 720 * 3600_000) map.delete(ip);
     }
   }, 60_000).unref();
@@ -405,7 +413,7 @@ const _test = {
   setClock(fn) { clock = fn; },
   resetClock() { clock = () => Date.now(); },
   reset() {
-    for (const m of [failures, floods, strikes, registrations, scanners, blockedLogged]) m.clear();
+    for (const m of [failures, kindFailures.login, kindFailures.register, floods, strikes, registrations, scanners, blockedLogged]) m.clear();
     autoBanTimes.length = 0; underAttackUntil = 0; counters.blocked = 0;
   },
 };

@@ -590,6 +590,8 @@
       "captchaApply": "Where",
       "applyLogin": "Sign-in",
       "applyRegister": "Sign-up",
+      "registerRequired": "Always require a captcha at sign-up",
+      "registerRequiredHint": "On by default. Sign-up ignores the mode above and always asks; failed sign-up attempts are counted separately from sign-in failures.",
       "captchaLook": "What it looks like",
       "captchaType": "Kind",
       "typeText": "Random characters",

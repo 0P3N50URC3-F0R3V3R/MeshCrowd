@@ -6,6 +6,7 @@ sleep 2
 DATA="${TMPDIR:-/tmp}/tourdata"
 rm -rf "$DATA" && mkdir -p "$DATA"
 echo '{"useHttps":false,"port":8099}' > "$DATA/config.json"
+DISMESH_DATA_DIR="$(cygpath -w "$DATA")" node -e "const{DatabaseSync}=require('node:sqlite');const d=new DatabaseSync(process.env.DISMESH_DATA_DIR+'/dismesh.db');d.exec('CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)');d.prepare('INSERT OR IGNORE INTO meta (key,value) VALUES (?,?)').run('security_settings',JSON.stringify({captcha:{registerRequired:false}}));d.close()"
 (DISMESH_DATA_DIR="$(cygpath -w "$DATA")" nohup node server/index.js > "$DATA/../tour-server.log" 2>&1 &)
 sleep 6
 (cd scripts/tour && nohup node world.mjs > "$DATA/../tour-world.log" 2>&1 &)

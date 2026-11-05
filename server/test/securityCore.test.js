@@ -207,7 +207,8 @@ test('captcha policy: off, always, or after N failures inside the window, per sc
   guard.clearFailures(ip);
   assert.equal(guard.captchaRequired(ip, 'login'), false);
 
-  settings.update({ captcha: { mode: 'always', applyTo: { register: false } } });
+  assert.equal(guard.captchaRequired(ip, 'register'), true, 'sign-up is mandatory by default');
+  settings.update({ captcha: { mode: 'always', registerRequired: false, applyTo: { register: false } } });
   assert.equal(guard.captchaRequired(ip, 'login'), true);
   assert.equal(guard.captchaRequired(ip, 'register'), false);
   settings.update({ captcha: { mode: 'off' } });
@@ -220,6 +221,20 @@ test('captcha policy: off, always, or after N failures inside the window, per sc
   assert.equal(guard.captchaRequired(ip, 'login'), true);
   t += 6 * 60_000;
   assert.equal(guard.captchaRequired(ip, 'login'), false, 'failures age out');
+});
+
+test('sign-in and sign-up failures are counted separately for the captcha', () => {
+  const ip = '203.0.113.85';
+  settings.update({ captcha: { mode: 'after_failures', failureThreshold: 2, failureWindowMinutes: 15, registerRequired: false, applyTo: { login: true, register: true } } });
+  guard.noteFailure(ip, 'login'); guard.noteFailure(ip, 'register');
+  assert.equal(guard.captchaRequired(ip, 'login'), false);
+  assert.equal(guard.captchaRequired(ip, 'register'), false);
+  guard.noteFailure(ip, 'login');
+  assert.equal(guard.captchaRequired(ip, 'login'), true);
+  assert.equal(guard.captchaRequired(ip, 'register'), false);
+  guard.clearFailures(ip, 'login');
+  assert.equal(guard.captchaRequired(ip, 'login'), false);
+  assert.equal(guard.failureCount(ip, 15, 'register'), 1);
 });
 
 test('registration limit is per address and skips allowlisted ones', () => {

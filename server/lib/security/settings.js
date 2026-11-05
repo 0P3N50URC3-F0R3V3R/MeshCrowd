@@ -11,6 +11,7 @@ const DEFAULTS = {
     failureThreshold: 3,
     failureWindowMinutes: 15,
     applyTo: { login: true, register: true },
+    registerRequired: true, // sign-up always asks for a captcha, whatever the mode says
     type: 'text', // text | words | math
     charset: 'alphanumeric', // digits | letters | alphanumeric (type text)
     length: 5,
@@ -86,6 +87,7 @@ function mergeCaptcha(cur, p) {
     if (p.applyTo.login !== undefined) next.applyTo.login = bool(p.applyTo.login, 'captcha.applyTo.login');
     if (p.applyTo.register !== undefined) next.applyTo.register = bool(p.applyTo.register, 'captcha.applyTo.register');
   }
+  if (p.registerRequired !== undefined) next.registerRequired = bool(p.registerRequired, 'captcha.registerRequired');
   if (p.type !== undefined) next.type = oneOf(p.type, ['text', 'words', 'math'], 'captcha.type');
   if (p.charset !== undefined) next.charset = oneOf(p.charset, ['digits', 'letters', 'alphanumeric'], 'captcha.charset');
   if (p.length !== undefined) next.length = int(p.length, 3, 10, 'captcha.length');

@@ -8,6 +8,7 @@ const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
+const { DatabaseSync } = require('node:sqlite');
 const { DEFAULTS } = require('../../lib/config');
 
 function writeInstanceConfig(dataDir, { port, httpsPort }) {
@@ -28,6 +29,11 @@ function writeInstanceConfig(dataDir, { port, httpsPort }) {
     federationPublicUrl: `https://127.0.0.1:${httpsPort}`,
   };
   fs.writeFileSync(path.join(dataDir, 'config.json'), JSON.stringify(config, null, 2));
+  // Sign-up needs a captcha by default and these tests cannot solve one.
+  const seed = new DatabaseSync(path.join(dataDir, 'dismesh.db'));
+  seed.exec('CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+  seed.prepare("INSERT OR IGNORE INTO meta (key, value) VALUES ('security_settings', ?)").run(JSON.stringify({ captcha: { registerRequired: false } }));
+  seed.close();
 }
 
 function startInstance(dataDir, ports) {
