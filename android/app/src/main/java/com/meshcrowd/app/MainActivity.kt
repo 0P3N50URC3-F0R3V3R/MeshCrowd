@@ -185,11 +185,15 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
         NotificationPoller.appVisible = true
         NotificationHelper.cancelMessages(this)
+        stopService(Intent(this, ConnectionService::class.java))
     }
 
     override fun onStop() {
         NotificationPoller.appVisible = false
         CookieManager.getInstance().flush() // so the background poller sees the current session cookie
+        if (settings.configured && !isChangingConfigurations) {
+            try { ContextCompat.startForegroundService(this, Intent(this, ConnectionService::class.java)) } catch (_: Exception) { /* not allowed right now; the poller still runs */ }
+        }
         super.onStop()
     }
 

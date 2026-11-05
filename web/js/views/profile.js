@@ -222,7 +222,7 @@ export async function openProfileModal(userId, { serverId, anchor, asStranger = 
   }
 }
 
-function nameColorFor(serverId, userId) {
+export function nameColorFor(serverId, userId) {
   if (!serverId) return null;
   const detail = getServerDetail(serverId);
   if (!detail) return null;
@@ -230,7 +230,7 @@ function nameColorFor(serverId, userId) {
   return memberNameColor(detail.roles, member);
 }
 
-function rankFor(serverId, userId) {
+export function rankFor(serverId, userId) {
   if (!serverId) return null;
   const detail = getServerDetail(serverId);
   if (!detail) return null;

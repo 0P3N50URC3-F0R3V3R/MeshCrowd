@@ -414,10 +414,16 @@ function buildServerSettings(serverId, opts) {
     inner.querySelector('#icon-input').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
+      const localUrl = URL.createObjectURL(file);
+      const box = inner.querySelector('#icon-edit');
+      box.querySelector('img, span').outerHTML = `<img src="${localUrl}" alt="" style="width:80px;height:80px;object-fit:cover">`;
       try {
         await api.uploadServerIcon(serverId, file);
         await refresh();
-      } catch (err) { toast(apiErrorMessage(err, t('serverSettings.couldNotUploadIconError')), { type: 'error' }); }
+      } catch (err) {
+        box.querySelector('img, span').outerHTML = serverIconHtml(previewIcon(d.server), 80);
+        toast(apiErrorMessage(err, t('serverSettings.couldNotUploadIconError')), { type: 'error' });
+      } finally { URL.revokeObjectURL(localUrl); }
     });
 
     const repaintIcon = () => {

@@ -15,7 +15,8 @@ function pushRecent(e) {
 }
 
 // Resolves to a unicode character, or ":name:" for a server custom emoji.
-export function openEmojiSheet(customEmoji = []) {
+// With `onPick` the sheet stays open after each tap (so several can be added) and resolves null when dismissed.
+export function openEmojiSheet(customEmoji = [], onPick = null) {
   return new Promise((resolve) => {
     let chosen = null;
     const recent = recentEmoji();
@@ -55,7 +56,11 @@ export function openEmojiSheet(customEmoji = []) {
         });
         body.addEventListener('click', (ev) => {
           const b = ev.target.closest('[data-e]');
-          if (b) { chosen = b.dataset.e; pushRecent(chosen); close(); }
+          if (!b) return;
+          pushRecent(b.dataset.e);
+          if (onPick) { onPick(b.dataset.e); return; }
+          chosen = b.dataset.e;
+          close();
         });
       },
       onClose: () => resolve(chosen),

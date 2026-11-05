@@ -4,6 +4,18 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ## [Unreleased]
 
+### 2026-11-05
+#### Added
+- Android app: a foreground "connected" service (with CPU and Wi-Fi locks) runs while the app is in the background, so the websocket stays connected instead of dying after a few minutes and the app is already current when you return.
+- Mobile page: the profile card now matches the desktop one (banner, status dot, bot badge, server rank and name colour, mutual servers, bio placeholder).
+
+#### Changed
+- Mobile page: the red offline banner only appears after 6 seconds without a connection, and returning to the app refetches the lists and the open chat over HTTP at once instead of waiting for the websocket.
+- Mobile emoji picker stays open after each pick (several emoji can be added) and closes only when dismissed.
+
+#### Fixed
+- Server settings: picking a new server icon shows it immediately as a preview instead of nothing until the upload finishes.
+
 ### 2026-11-04
 #### Added
 - Voice calls connect directly over LAN and private VPNs (Radmin, ZeroTier, SoftEther, Hamachi) with no setup: the direct path is tried alongside STUN/TURN and the best working one is used, with STUN/TURN as the automatic fallback on web, desktop and Android. Optional `lanNetworks` setting (JSON list of CIDRs, e.g. `["26.0.0.0/8","192.168.3.0/24"]`; `config set lanNetworks ...` in the console) skips stray adapters (Docker, WSL) so a VPN call settles faster; empty by default.

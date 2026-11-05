@@ -100,18 +100,18 @@ export function mountComposer(host, opts) {
     else if (id === 'file') host.querySelector('#c-file-any').click();
     else if (id === 'poll') opts.onPoll();
   });
-  function insertText(text) {
+  function insertText(text, focus = true) {
     const a = input.selectionStart ?? input.value.length;
     const b = input.selectionEnd ?? a;
     input.value = input.value.slice(0, a) + text + input.value.slice(b);
     input.setSelectionRange(a + text.length, a + text.length);
     refresh();
-    input.focus();
+    if (focus) input.focus();
     opts.onInput?.(input.value);
   }
   host.querySelector('#c-emoji')?.addEventListener('click', async () => {
-    const e = await opts.onEmoji();
-    if (e) insertText(e);
+    await opts.onEmoji((e) => insertText(e, false));
+    input.focus();
   });
   host.querySelector('#c-sticker')?.addEventListener('click', () => opts.onSticker());
   host.querySelector('#c-mic')?.addEventListener('click', async () => {

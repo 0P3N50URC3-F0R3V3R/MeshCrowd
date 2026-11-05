@@ -4,6 +4,8 @@
     <string name="channel_service">Background message checker</string>
     <string name="channel_downloads">Downloads</string>
     <string name="channel_call">Voice calls</string>
+    <string name="connection_title">MeshCrowd is connected</string>
+    <string name="connection_text">Stays connected in the background so messages arrive instantly.</string>
     <string name="call_title">MeshCrowd call in progress</string>
     <string name="call_text">Tap to return to the call.</string>
     <string name="service_title">MeshCrowd is checking for messages</string>

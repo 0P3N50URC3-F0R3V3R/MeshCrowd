@@ -112,7 +112,15 @@ export function wireRealtime() {
       try { await api.me(); } catch (err) { if (err && err.status === 401) bus.emit('m:unauthorized'); }
     }, 10000);
   });
-  bus.on('state:connection', (ok) => document.getElementById('m-conn')?.classList.toggle('hidden', ok));
+  // The red banner waits a moment: coming back from the background the socket is usually mid-reconnect,
+  // and flashing "offline" for those seconds only hides that the data is being refreshed.
+  let bannerTimer = null;
+  bus.on('state:connection', (ok) => {
+    clearTimeout(bannerTimer);
+    const el = document.getElementById('m-conn');
+    if (ok) { el?.classList.add('hidden'); return; }
+    bannerTimer = setTimeout(() => document.getElementById('m-conn')?.classList.remove('hidden'), 6000);
+  });
 
   bus.on('ws:message_create', ({ message }) => {
     if (isSelf(message.author?.id) && (message.scopeType === 'dm' || message.scopeType === 'channel')) {
@@ -190,6 +198,12 @@ export function wireRealtime() {
   bus.on('ws:channel_invite_received', async () => { try { setServers((await api.listServers()).servers); } catch { /* ignore */ } });
 
   // A backgrounded WebView throttles timers, so reconnect immediately on resume.
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) ws.reconnectNow(); });
+  // Fetch over HTTP right away instead of waiting for the socket, so new messages show up at once.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    ws.reconnectNow();
+    resync();
+    bus.emit('m:resume');
+  });
   ws.connect();
 }

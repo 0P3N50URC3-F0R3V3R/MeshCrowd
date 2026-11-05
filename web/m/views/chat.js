@@ -412,17 +412,16 @@ export function mountChat(el, params) {
     el.querySelector('#m-info')?.classList.toggle('m-pin-dot', pinUnseen(kind, kind === 'dm' ? params.dmId : kind === 'thread' ? params.threadId : params.channelId));
   };
   offs.push(bus.on('state:threads', paintHeaderDots), bus.on('state:pins', paintHeaderDots));
-  offs.push(bus.on('state:connection', (ok) => {
-    if (!ok) return;
-    enqueue(async () => {
-      if (!isLatest) return;
-      const res = await scope.list({ limit: PAGE });
-      messages = reconcileLatest(messages, await decryptList(res.messages), PAGE);
-      for (const id of deleted) messages = applyDelete(messages, id);
-      paint();
-      if (stickToBottom) scrollBottom();
-    });
-  }));
+  const refetchLatest = () => enqueue(async () => {
+    if (!isLatest) return;
+    const res = await scope.list({ limit: PAGE });
+    messages = reconcileLatest(messages, await decryptList(res.messages), PAGE);
+    for (const id of deleted) messages = applyDelete(messages, id);
+    paint();
+    if (stickToBottom) scrollBottom();
+  });
+  offs.push(bus.on('state:connection', (ok) => { if (ok) refetchLatest(); }));
+  offs.push(bus.on('m:resume', refetchLatest));
   function paintTyping() {
     const now = Date.now();
     const names = [...typing].filter(([, until]) => until > now).map(([id]) => getKnownUser(id)).filter(Boolean).map((u) => nameFor(u));
@@ -473,7 +472,7 @@ export function mountChat(el, params) {
       placeholder: info.placeholder, canSend, readOnlyText: thread?.archived ? t('m.threadArchived') : t('m.readOnly'),
       attachEnabled: true,
       onInput: paintHints,
-      onEmoji: () => openEmojiSheet(detail?.customEmoji || []),
+      onEmoji: (insert) => openEmojiSheet(detail?.customEmoji || [], insert),
       onSend: async ({ text, files }) => {
         if (!files.length && text.startsWith('/')) {
           const handled = await runSlash(text);
