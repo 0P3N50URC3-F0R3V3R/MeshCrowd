@@ -19,10 +19,10 @@ order: 2
 
 Admin Panel, **Security Center** (site administrators only) holds the tools against bots and floods. It all runs on your server; nothing is sent to a third-party captcha or reputation service.
 
-- **Captcha**: a distorted picture on sign-in and sign-up, shown never, after a number of failed attempts, or always. Pick random characters, dictionary words (built-in English and Hungarian, or your own list typed into the editor) or a simple sum, and tune the distortion. A captcha works once, so a wrong guess needs a new picture.
+- **Captcha**: a distorted picture on sign-in and sign-up. Each has its own mode: never, after a number of failed attempts, or always. Sign-in defaults to after failed attempts and sign-up to always, so new accounts always need a captcha unless you change it. Failed sign-in and sign-up attempts are counted separately. Pick random characters, dictionary words (built-in English and Hungarian, or your own list typed into the editor) or a simple sum, and tune the distortion. A captcha works once, so a wrong guess needs a new picture.
 - **Flood protection**: an address that sends too many requests, keeps hitting the rate limits or keeps failing to sign in is banned for a while. A burst of such bans turns on **under attack mode**, which requires a captcha for every sign-in and sign-up.
 - **IP bans**: addresses, ranges (`1.2.3.4-1.2.3.9`) and networks (`10.0.0.0/8`), IPv4 and IPv6, permanent or timed. You cannot ban your own address.
-- **Blocklists**: subscribe to public lists of known bad addresses (Spamhaus DROP, Tor exit nodes, FireHOL) or your own URL. Updates run on a schedule and a failed update keeps the old copy.
+- **Blocklists**: subscribe to public lists of known bad addresses (Spamhaus DROP, Tor exit nodes, FireHOL) or your own URL. Updates run on a schedule and a failed update keeps the old copy. Lists never apply to private, loopback, link-local or carrier-grade NAT addresses (`10.0.0.0/8`, `192.168.0.0/16`, `127.0.0.0/8`, `100.64.0.0/10` and so on), because some lists such as FireHOL level 1 contain them and would lock out everyone on your LAN, VPN or reverse proxy. Manual bans still apply to them.
 - **Allowlist**: addresses that are never banned or limited. This machine itself is on it by default.
 - **Bot traps** (a hidden field and a speed check on the forms), a **sign-up cap per address**, an **IP check** tool and an **event log**.
 
