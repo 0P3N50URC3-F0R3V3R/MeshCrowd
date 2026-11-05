@@ -13,6 +13,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Mobile emoji picker stays open after each pick (several emoji can be added) and closes only when dismissed.
 
 #### Fixed
+- Security: subscribed IP blocklists (FireHOL level 1, Spamhaus, Tor) no longer block private, loopback, link-local or carrier-grade NAT addresses (10/8, 172.16/12, 192.168/16, 127/8, 169.254/16, 100.64/10). FireHOL level 1 contains those ranges, so enabling it locked out everyone on the LAN, VPN or behind a reverse proxy, the admin included. Manual bans still apply to them.
 - Sign-in and sign-up pages scroll when taller than the window (the mobile page and Android app cut off the bottom, e.g. the captcha and the button, on small screens), with some margin above and below the card on all platforms.
 - Server settings: picking a new server icon shows it immediately as a preview instead of nothing until the upload finishes.
 

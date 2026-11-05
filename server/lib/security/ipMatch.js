@@ -89,4 +89,13 @@ function isPrivateIp(ip) {
   return n === '::1' || /^f[cd]/.test(n) || /^fe[89ab]/.test(n);
 }
 
-module.exports = { isPrivateIp, normalizeIp, parseEntry, IpSet, entryCovers };
+// Private, loopback, link-local and carrier-grade NAT (100.64/10, used by Tailscale and some ISPs).
+function isNonPublicIp(ip) {
+  if (isPrivateIp(ip)) return true;
+  const n = normalizeIp(ip);
+  if (!n || !net.isIPv4(n)) return false;
+  const [a, b] = n.split('.').map(Number);
+  return a === 100 && b >= 64 && b <= 127;
+}
+
+module.exports = { isPrivateIp, isNonPublicIp, normalizeIp, parseEntry, IpSet, entryCovers };

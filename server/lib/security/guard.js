@@ -3,7 +3,7 @@
 const { db } = require('../../db');
 const settings = require('./settings');
 const captcha = require('./captcha');
-const { normalizeIp, parseEntry, IpSet, entryCovers, isPrivateIp } = require('./ipMatch');
+const { normalizeIp, parseEntry, IpSet, entryCovers, isPrivateIp, isNonPublicIp } = require('./ipMatch');
 const logger = require('../logger');
 const log = logger.scoped('security');
 
@@ -30,7 +30,7 @@ function rebuild() {
   state.verdicts.clear();
 }
 
-// { blocked, allowlisted, source }. Allowlisted addresses are never blocked, even when a ban or a
+// { blocked, allowlisted, source }. Subscribed lists never apply to non-public addresses. Allowlisted addresses are never blocked, even when a ban or a
 // subscribed list covers them: the allowlist is how an admin recovers from a bad entry.
 function check(ip) {
   const n = normalizeIp(ip);
@@ -42,7 +42,8 @@ function check(ip) {
   if (state.allow.has(n)) v = { blocked: false, allowlisted: true };
   else if (state.banSet.has(n)) v = { blocked: true, allowlisted: false, source: 'ban' };
   else {
-    const list = state.lists.find((l) => l.set.has(n));
+    // Public lists (FireHOL level 1 lists 10/8, 192.168/16, 127/8 ...) must never lock out LAN, VPN or proxied clients.
+    const list = isNonPublicIp(n) ? null : state.lists.find((l) => l.set.has(n));
     v = list ? { blocked: true, allowlisted: false, source: 'blocklist', list: list.name } : { blocked: false, allowlisted: false };
   }
   if (state.verdicts.size > 20000) state.verdicts.clear();

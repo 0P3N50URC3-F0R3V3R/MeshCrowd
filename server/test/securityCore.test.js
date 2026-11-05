@@ -277,6 +277,16 @@ test('lookup reports bans, subscribed lists and recent events for an address', (
 
 // ---- blocklists ----
 
+test('subscribed lists never block private, loopback or CGNAT addresses, but manual bans still do', () => {
+  const entries = ['10.0.0.0/8', '192.168.0.0/16', '100.64.0.0/10', '127.0.0.0/8', '198.51.100.0/24'];
+  db.prepare("INSERT INTO ip_blocklists (name, url, entries, entry_count) VALUES ('bogons', 'https://x.test/b', ?, 5)").run(entries.join('\n'));
+  guard.rebuild();
+  for (const ip of ['10.1.2.3', '192.168.1.44', '100.100.1.1', '127.0.0.2']) assert.equal(guard.check(ip).blocked, false, ip);
+  assert.equal(guard.check('198.51.100.9').blocked, true, 'public entries still apply');
+  guard.addBan('192.168.1.44', { reason: 'manual' });
+  assert.equal(guard.check('192.168.1.44').blocked, true);
+});
+
 test('blocklist parsing handles comments, trailing notes, duplicates and junk', () => {
   const { entries, skipped } = blocklists.parseList('# header\n1.2.3.0/24 ; SBL123\n1.2.3.0/24\n\n8.8.8.8 # dns\nnot-an-ip\n2001:db8::/32\n// c\n');
   assert.deepEqual(entries, ['1.2.3.0/24', '8.8.8.8', '2001:db8::/32']);
