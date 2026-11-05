@@ -244,6 +244,10 @@ class TurnServer extends EventEmitter {
     const locals = localIpv4s();
     const bound = this.opts.listenAddress;
     if (bound !== '0.0.0.0' && bound !== '::') return bound;
+    // With a public address configured every non-loopback client advertises it: relays on this server
+    // reach each other directly (see toPeer), so a LAN caller and a remote caller can meet without the
+    // router having to loop traffic back to itself.
+    if (this.opts.externalIp && !clientIp.startsWith('127.')) return this.opts.externalIp;
     if (isPrivate(clientIp)) {
       const sameNet = locals.find((l) => ipToInt(l) >>> 8 === ipToInt(clientIp) >>> 8);
       if (clientIp.startsWith('127.')) return '127.0.0.1';
@@ -394,9 +398,22 @@ class TurnServer extends EventEmitter {
     this.toPeer(a, buf.subarray(4, 4 + len), ch.ip, ch.port);
   }
 
+  // Another allocation on this server that owns the address `ip:port`, if any.
+  allocationAt(ip, port) {
+    const own = new Set([this.opts.externalIp, ...localIpv4s()]);
+    for (const b of this.allocations.values()) {
+      if (b.relayPort === port && (ip === b.relayIp || (own.has(ip) && own.has(b.relayIp)))) return b;
+    }
+    return null;
+  }
+
   toPeer(a, data, ip, port) {
     if (!this.allow(a, data.length)) return;
     this.stats.bytesRelayed += data.length;
+    // Relay to relay on this very server: hand it over directly instead of sending to our own public
+    // address, which only works if the router supports NAT loopback.
+    const b = this.allocationAt(ip, port);
+    if (b && b !== a) { this.onPeerData(b, data, { address: a.relayIp, port: a.relayPort }); return; }
     a.relay.send(data, port, ip);
   }
 

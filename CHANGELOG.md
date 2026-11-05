@@ -12,6 +12,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Notifications for a forum post open that post.
 - Right-clicking highlighted text in a message offers "Copy Selection" for just that text (Copy Text still copies the whole message).
 - Voice: the microphone goes straight to the call when input volume is 100% and noise suppression is off, instead of through the Web Audio graph, which can crackle when the mic and the graph run on different clocks. The mic request also asks for mono with echo cancellation, noise suppression and auto gain.
+- Voice over the built-in TURN relay: with a public address configured, every client (LAN or remote) is given that address for its relay, and two relays on the same server now pass data to each other directly instead of sending to the server's own public address. Callers on the LAN and callers elsewhere can now meet through the relay without the router having to support NAT loopback; before, that case failed and voice only worked between LAN users.
 - Admin TURN self-test shows the relay address clients actually get instead of the loopback address.
 - Notification grid on phones and the Android app: bigger touch targets, tabs in one row, the table fits the screen without sideways scrolling and the buttons stack full width.
 

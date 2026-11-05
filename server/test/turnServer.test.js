@@ -172,3 +172,18 @@ test('relay bandwidth cap drops excess traffic', async () => {
   assert.ok(count > 0 && count < 50, `delivered ${count}`);
   a.close(); b.close(); await s.stop();
 });
+
+test('two relays on this server reach each other directly, without NAT loopback', async () => {
+  const s = await startServer({ externalIp: '203.0.113.9' });
+  const a = client(s, 'ua'); const b = client(s, 'ub');
+  const ra = await a.allocate(); const rb = await b.allocate();
+  assert.ok(ra.ok && rb.ok);
+  assert.ok((await a.createPermission(rb.relayed.ip)).ok);
+  assert.ok((await b.createPermission(ra.relayed.ip)).ok);
+  const got = once(b);
+  a.sendTo(rb.relayed.ip, rb.relayed.port, Buffer.from('hello'));
+  const d = await Promise.race([got, new Promise((r) => setTimeout(() => r(null), 1500))]);
+  assert.ok(d, 'relay-to-relay data arrived');
+  assert.equal(d.data.toString(), 'hello');
+  a.close(); b.close(); await s.stop();
+});
