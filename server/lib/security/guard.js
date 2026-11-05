@@ -236,9 +236,9 @@ const underAttackInfo = () => ({ active: isUnderAttack(), until: isUnderAttack()
 function captchaRequired(ip, kind) {
   const c = settings.load().captcha;
   if (isUnderAttack()) return true;
-  if (kind === 'register' && c.registerRequired) return true;
-  if (!c.applyTo[kind] || c.mode === 'off') return false;
-  if (c.mode === 'always') return true;
+  const mode = kind === 'register' ? c.registerMode : c.mode;
+  if (mode === 'off') return false;
+  if (mode === 'always') return true;
   return failureCount(ip, c.failureWindowMinutes, kind) >= c.failureThreshold;
 }
 

@@ -7,11 +7,10 @@ const KEY = 'security_settings';
 
 const DEFAULTS = {
   captcha: {
-    mode: 'after_failures', // off | after_failures | always
+    mode: 'after_failures', // sign-in: off | after_failures | always
+    registerMode: 'always', // sign-up: same choices, mandatory by default
     failureThreshold: 3,
     failureWindowMinutes: 15,
-    applyTo: { login: true, register: true },
-    registerRequired: true, // sign-up always asks for a captcha, whatever the mode says
     type: 'text', // text | words | math
     charset: 'alphanumeric', // digits | letters | alphanumeric (type text)
     length: 5,
@@ -79,15 +78,11 @@ const bool = (v, name) => {
 };
 
 function mergeCaptcha(cur, p) {
-  const next = { ...cur, applyTo: { ...cur.applyTo }, words: { ...cur.words } };
+  const next = { ...cur, words: { ...cur.words } };
   if (p.mode !== undefined) next.mode = oneOf(p.mode, ['off', 'after_failures', 'always'], 'captcha.mode');
   if (p.failureThreshold !== undefined) next.failureThreshold = int(p.failureThreshold, 1, 100, 'captcha.failureThreshold');
   if (p.failureWindowMinutes !== undefined) next.failureWindowMinutes = int(p.failureWindowMinutes, 1, 1440, 'captcha.failureWindowMinutes');
-  if (p.applyTo !== undefined) {
-    if (p.applyTo.login !== undefined) next.applyTo.login = bool(p.applyTo.login, 'captcha.applyTo.login');
-    if (p.applyTo.register !== undefined) next.applyTo.register = bool(p.applyTo.register, 'captcha.applyTo.register');
-  }
-  if (p.registerRequired !== undefined) next.registerRequired = bool(p.registerRequired, 'captcha.registerRequired');
+  if (p.registerMode !== undefined) next.registerMode = oneOf(p.registerMode, ['off', 'after_failures', 'always'], 'captcha.registerMode');
   if (p.type !== undefined) next.type = oneOf(p.type, ['text', 'words', 'math'], 'captcha.type');
   if (p.charset !== undefined) next.charset = oneOf(p.charset, ['digits', 'letters', 'alphanumeric'], 'captcha.charset');
   if (p.length !== undefined) next.length = int(p.length, 3, 10, 'captcha.length');
@@ -108,6 +103,17 @@ function mergeCaptcha(cur, p) {
     throw new Error('add at least 10 custom words, or use the built-in list');
   }
   return next;
+}
+
+// Earlier versions kept one mode plus per-scope on/off switches (applyTo) and a sign-up override.
+function migrateCaptcha(c) {
+  const { applyTo, registerRequired, ...rest } = c;
+  if (applyTo && applyTo.login === false) rest.mode = 'off';
+  if (rest.registerMode === undefined) {
+    if (applyTo && applyTo.register === false) rest.registerMode = 'off';
+    else if (registerRequired === false) rest.registerMode = 'after_failures';
+  }
+  return rest;
 }
 
 function mergeProtection(cur, p) {
@@ -165,7 +171,7 @@ function load() {
   let stored = {};
   try { stored = JSON.parse(siteSettings.get(KEY) || '{}'); } catch { stored = {}; }
   let merged = { captcha: DEFAULTS.captcha, protection: DEFAULTS.protection, allowlist: DEFAULTS.allowlist };
-  try { merged = { ...merged, captcha: mergeCaptcha(DEFAULTS.captcha, stored.captcha || {}) }; } catch { /* keep defaults */ }
+  try { merged = { ...merged, captcha: mergeCaptcha(DEFAULTS.captcha, migrateCaptcha(stored.captcha || {})) }; } catch { /* keep defaults */ }
   try {
     const sp = { ...(stored.protection || {}) };
     for (const [k, old] of Object.entries(LEGACY_PROTECTION)) if (sp[k] === old) delete sp[k];

@@ -4,7 +4,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ### 2026-11-05
 #### Added
-- Security: sign-up now always requires a captcha by default (Admin Panel > Security > Captcha > "Always require a captcha at sign-up", can be switched off). Sign-in and sign-up failures are now counted separately for the captcha, so failed logins no longer trigger a captcha at sign-up or the other way round; the failed-sign-in IP ban still counts both.
+- Security: sign-up now always requires a captcha by default. Admin Panel > Security > Captcha has a separate mode for sign-in (default: after failed attempts) and sign-up (default: always), each Never / After failed attempts / Always, replacing the old shared mode and "Where" checkboxes; saved settings migrate automatically. Sign-in and sign-up failures are counted separately for the captcha, so failed logins no longer trigger a captcha at sign-up or the other way round; the failed-sign-in IP ban still counts both.
 - Android app: a foreground "connected" service (with CPU and Wi-Fi locks) runs while the app is in the background, so the websocket stays connected instead of dying after a few minutes and the app is already current when you return.
 - Mobile page: the profile card now matches the desktop one (banner, status dot, bot badge, server rank and name colour, mutual servers, bio placeholder).
 

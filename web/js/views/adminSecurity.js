@@ -77,15 +77,14 @@ export function renderSecurityTab(inner) {
     const words = cfg.words;
     body.innerHTML = `
       <p class="hint" style="margin:0 0 12px">${L('captchaIntro')}</p>
-      <div class="field"><label>${L('captchaMode')}</label>
+      <div class="field"><label>${L('captchaModeLogin')}</label>
         ${select('c-mode', cfg.mode, [['off', L('modeOff')], ['after_failures', L('modeAfterFailures')], ['always', L('modeAlways')]])}</div>
+      <div class="field"><label>${L('captchaModeRegister')}</label>
+        ${select('c-rmode', cfg.registerMode, [['off', L('modeOff')], ['after_failures', L('modeAfterFailures')], ['always', L('modeAlways')]])}</div>
       <div id="c-fail" class="field">
         <label>${L('captchaAfter')}</label>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${num('c-threshold', cfg.failureThreshold, 1, 100, 90)} <span>${L('failuresWithin')}</span> ${num('c-window', cfg.failureWindowMinutes, 1, 1440, 100)} <span>${L('minutes')}</span></div>
         <div class="hint">${L('captchaAfterHint')}</div></div>
-      <div class="field"><label>${L('captchaApply')}</label>
-        ${check('c-login', cfg.applyTo.login, L('applyLogin'))}${check('c-register', cfg.applyTo.register, L('applyRegister'))}</div>
-      <div class="field">${check('c-regreq', cfg.registerRequired, L('registerRequired'))}<div class="hint">${L('registerRequiredHint')}</div></div>
       <div class="divider"></div>
       <h3 style="margin:0 0 8px">${L('captchaLook')}</h3>
       <div class="field"><label>${L('captchaType')}</label>
@@ -119,8 +118,7 @@ export function renderSecurityTab(inner) {
 
     const $ = (id) => body.querySelector(id);
     const collect = () => ({
-      mode: $('#c-mode').value, failureThreshold: Number($('#c-threshold').value), failureWindowMinutes: Number($('#c-window').value),
-      applyTo: { login: $('#c-login').checked, register: $('#c-register').checked }, registerRequired: $('#c-regreq').checked,
+      mode: $('#c-mode').value, registerMode: $('#c-rmode').value, failureThreshold: Number($('#c-threshold').value), failureWindowMinutes: Number($('#c-window').value),
       type: $('#c-type').value, charset: $('#c-charset').value, length: Number($('#c-length').value), excludeAmbiguous: $('#c-ambig').checked,
       difficulty: $('#c-diff').value, ttlSeconds: Number($('#c-ttl').value),
       words: {
@@ -129,7 +127,7 @@ export function renderSecurityTab(inner) {
       },
     });
     const toggle = () => {
-      $('#c-fail').style.display = $('#c-mode').value === 'after_failures' ? '' : 'none';
+      $('#c-fail').style.display = [$('#c-mode').value, $('#c-rmode').value].includes('after_failures') ? '' : 'none';
       $('#c-text').style.display = $('#c-type').value === 'text' ? '' : 'none';
       $('#c-words').style.display = $('#c-type').value === 'words' ? '' : 'none';
       const src = $('#c-wsource').value;

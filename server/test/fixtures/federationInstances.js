@@ -32,7 +32,7 @@ function writeInstanceConfig(dataDir, { port, httpsPort }) {
   // Sign-up needs a captcha by default and these tests cannot solve one.
   const seed = new DatabaseSync(path.join(dataDir, 'dismesh.db'));
   seed.exec('CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
-  seed.prepare("INSERT OR IGNORE INTO meta (key, value) VALUES ('security_settings', ?)").run(JSON.stringify({ captcha: { registerRequired: false } }));
+  seed.prepare("INSERT OR IGNORE INTO meta (key, value) VALUES ('security_settings', ?)").run(JSON.stringify({ captcha: { registerMode: 'off' } }));
   seed.close();
 }
 

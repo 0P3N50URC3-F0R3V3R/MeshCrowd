@@ -178,7 +178,7 @@ test('login: captcha appears after the configured failures and then must be solv
 
 test('a successful login clears the failure count', async () => {
   const ip = freshIp();
-  settings.update({ captcha: { mode: 'after_failures', failureThreshold: 3, registerRequired: false } });
+  settings.update({ captcha: { mode: 'after_failures', failureThreshold: 3, registerMode: 'off' } });
   await call('POST', '/api/auth/register', { ip: freshIp(), json: { username: 'sec_real', email: 'sec_real@t.local', password: 'a-long-enough-password' } });
   const wrong = () => call('POST', '/api/auth/login', { ip, json: { username: 'sec_real', password: 'wrongwrongwrong' } });
   await wrong(); await wrong();
@@ -190,11 +190,11 @@ test('a successful login clears the failure count', async () => {
 
 test('always mode needs a captcha for sign-up and sign-in; off mode never asks', async () => {
   const ip = freshIp();
-  settings.update({ captcha: { mode: 'always', registerRequired: false } });
+  settings.update({ captcha: { mode: 'always', registerMode: 'always' } });
   const reg = { username: 'sec_new1', email: 'sec_new1@t.local', password: 'a-long-enough-password' };
   assert.equal((await call('POST', '/api/auth/register', { ip, json: reg })).data.code, 'captcha_required');
   assert.equal((await call('POST', '/api/auth/register', { ip, json: { ...reg, ...(await solve(ip)) } })).status, 201);
-  settings.update({ captcha: { mode: 'off' } });
+  settings.update({ captcha: { mode: 'off', registerMode: 'off' } });
   assert.equal((await call('POST', '/api/auth/register', { ip: freshIp(), json: { ...reg, username: 'sec_new2', email: 'sec_new2@t.local' } })).status, 201);
 });
 
@@ -206,12 +206,12 @@ test('sign-up asks for a captcha by default, even with the mode off; sign-in doe
   assert.equal((await call('GET', '/api/auth/captcha/status?kind=login', { ip })).data.required, false);
   assert.equal((await call('POST', '/api/auth/register', { ip, json: reg })).data.code, 'captcha_required');
   assert.equal((await call('POST', '/api/auth/register', { ip, json: { ...reg, ...(await solve(ip)) } })).status, 201);
-  settings.update({ captcha: { registerRequired: false } });
+  settings.update({ captcha: { registerMode: 'off' } });
   assert.equal((await call('GET', '/api/auth/captcha/status?kind=register', { ip })).data.required, false);
 });
 
 test('honeypot field and instant form submits are rejected without touching the account system', async () => {
-  settings.update({ captcha: { mode: 'off', registerRequired: false } });
+  settings.update({ captcha: { mode: 'off', registerMode: 'off' } });
   const ip = freshIp();
   const reg = { username: 'sec_bot', email: 'sec_bot@t.local', password: 'a-long-enough-password' };
   assert.equal((await call('POST', '/api/auth/register', { ip, json: { ...reg, website: 'http://spam' } })).data.code, 'rejected');
@@ -223,7 +223,7 @@ test('honeypot field and instant form submits are rejected without touching the 
 });
 
 test('sign-ups per address are capped', async () => {
-  settings.update({ captcha: { mode: 'off', registerRequired: false }, protection: { registrationLimit: { enabled: true, max: 2, windowHours: 24 } } });
+  settings.update({ captcha: { mode: 'off', registerMode: 'off' }, protection: { registrationLimit: { enabled: true, max: 2, windowHours: 24 } } });
   const ip = freshIp();
   for (const n of [1, 2]) {
     assert.equal((await call('POST', '/api/auth/register', { ip, json: { username: `sec_cap${n}`, email: `sec_cap${n}@t.local`, password: 'a-long-enough-password' } })).status, 201);
