@@ -135,7 +135,7 @@ export function wireRealtime() {
     }
   });
   bus.on('ws:notify', (payload) => {
-    if (shouldPlayNotifySound() && (document.hidden || !state.mOpenScope || state.mOpenScope !== `${payload.scopeType}:${payload.scopeId}`)) notifySound.play();
+    if (shouldPlayNotifySound(payload.gridEvent) && (document.hidden || !state.mOpenScope || state.mOpenScope !== `${payload.scopeType}:${payload.scopeId}`)) notifySound.play();
     const author = payload.message.author;
     const notice = eventNotice(payload, t);
     const title = notice ? notice.title : payload.scopeType === 'dm'

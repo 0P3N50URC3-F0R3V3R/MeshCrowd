@@ -2,6 +2,7 @@
 
 const { isSiteAdmin, canManageSites } = require('./siteAuth');
 const { isOnline } = require('./presence');
+const notifyGrid = require('./notifyGrid');
 
 // `users.status` is the user's *chosen presence preference* (online/idle/dnd/invisible) — it is
 // never mutated by connect/disconnect. What's actually shown to a viewer also depends on whether
@@ -51,7 +52,7 @@ function toPublicUser(user, { viewerIsSelf = false, areFriends = false } = {}) {
     base.discoverable = !!user.discoverable;
     base.totpEnabled = !!user.totp_enabled;
     base.authMode = user.auth_mode || 'password';
-    base.notifySoundMode = user.notify_sound_mode || 'auto';
+    base.notifyGrid = notifyGrid.effective(notifyGrid.parseStored(user.notify_grid));
     base.language = user.language || null;
   }
   return base;

@@ -1,4 +1,5 @@
 import { bus } from './bus.js';
+import { gridAllows } from './notifyGrid.mjs';
 
 // Single in-memory store for everything the shell needs across views. Not reactive/proxied —
 // mutate via the helpers below, which emit bus events that views subscribe to individually.
@@ -189,14 +190,10 @@ export function isSelf(userId) {
   return state.me && state.me.id === userId;
 }
 
-// Server-wide notification-sound defaults by presence (per the user's own request): online/idle
-// chime, dnd/invisible stay visual-only. `notifySoundMode` ('auto'|'always'|'never') is the
-// user's personal override of that default, set alongside their status/custom status.
-export function shouldPlayNotifySound() {
-  const mode = state.me?.notifySoundMode || 'auto';
-  if (mode === 'always') return true;
-  if (mode === 'never') return false;
-  return state.me?.status === 'online' || state.me?.status === 'idle';
+// Whether the user's notification grid wants a sound for this kind of event in their current status.
+// `event` is a grid row (dmMessage, call, friend, ...), see server/lib/notifyGrid.js.
+export function shouldPlayNotifySound(event) {
+  return gridAllows(state.me, event, 'sound');
 }
 
 export function setNotificationPrefs(prefs) {

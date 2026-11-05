@@ -117,6 +117,7 @@ const COLUMN_MIGRATIONS = [
   { table: 'roles', column: 'icon_path', ddl: 'ALTER TABLE roles ADD COLUMN icon_path TEXT' },
   { table: 'messages', column: 'interaction_command', ddl: 'ALTER TABLE messages ADD COLUMN interaction_command TEXT' },
   { table: 'messages', column: 'interaction_user_id', ddl: 'ALTER TABLE messages ADD COLUMN interaction_user_id INTEGER' },
+  { table: 'users', column: 'notify_grid', ddl: 'ALTER TABLE users ADD COLUMN notify_grid TEXT' },
 ];
 for (const { table, column, ddl } of COLUMN_MIGRATIONS) {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all();
@@ -177,6 +178,19 @@ function migrateOwnerConsoleBit() {
   if (changes) console.log('[db] migrated: Owner site role gained MANAGE_CONSOLE');
 }
 migrateOwnerConsoleBit();
+
+// The per-status notification grid replaced the single sound mode. Users who had picked 'always' or
+// 'never' get the equivalent grid once, so nobody's sound behavior changes. Gated on a meta marker.
+function migrateNotifyGrid() {
+  if (db.prepare("SELECT 1 FROM meta WHERE key = 'notify_grid_migrated'").get()) return;
+  const { migrateSoundMode } = require('../lib/notifyGrid');
+  const set = db.prepare('UPDATE users SET notify_grid = ? WHERE id = ? AND notify_grid IS NULL');
+  for (const u of db.prepare("SELECT id, notify_sound_mode FROM users WHERE notify_sound_mode IN ('always', 'never')").all()) {
+    set.run(JSON.stringify(migrateSoundMode(u.notify_sound_mode)), u.id);
+  }
+  db.prepare("INSERT INTO meta (key, value) VALUES ('notify_grid_migrated', '1')").run();
+}
+migrateNotifyGrid();
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_servers_vanity ON servers(vanity_code) WHERE vanity_code IS NOT NULL');
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_bots_api_token ON bots(api_token_hash) WHERE api_token_hash IS NOT NULL');
 // Created after the column migration above so it also works on a DB that predates passport_id.
@@ -238,4 +252,4 @@ if (isNewDb) {
   console.log('[db] fresh database created at', DB_PATH);
 }
 
-module.exports = { db, isNewDb, DATA_DIR, WEBHOOK_SYSTEM_USER_ID, migrateOwnerConsoleBit };
+module.exports = { db, isNewDb, DATA_DIR, WEBHOOK_SYSTEM_USER_ID, migrateOwnerConsoleBit, migrateNotifyGrid };

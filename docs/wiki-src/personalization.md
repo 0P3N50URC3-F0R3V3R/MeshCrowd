@@ -15,7 +15,7 @@ Privacy settings decide who can send you direct messages and who can see your pr
 
 ## Presence and custom status
 
-Choose **Online**, **Idle**, **Do not disturb** or **Invisible**, and add a custom status with an emoji and text. Open the status menu from your avatar: **Custom Status** edits it and **Remove Custom Status** (shown while one is set) clears it in one click. The slash command `/afk` sets idle with a message. Notification sounds follow your presence by default (online and idle chime, do not disturb stays silent), and you can override that per account.
+Choose **Online**, **Idle**, **Do not disturb** or **Invisible**, and add a custom status with an emoji and text. Open the status menu from your avatar: **Custom Status** edits it and **Remove Custom Status** (shown while one is set) clears it in one click. The slash command `/afk` sets idle with a message. What reaches you in each status is set in the notification grid, see [Notifications](messaging.html#notifications).
 
 ## Themes
 

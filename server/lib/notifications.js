@@ -6,6 +6,7 @@ const { getChannelPermissionBits } = require('./channelAccess');
 const hub = require('../socket/hub');
 const { resolveChannelPref } = require('./serverPrefs');
 const { isIgnoring } = require('./userMeta');
+const notifyGrid = require('./notifyGrid');
 
 const VALID_PREFS = new Set(['all', 'mentions', 'mute']);
 const SCOPE_DEFAULTS = { channel: 'mentions', dm: 'all' };
@@ -15,7 +16,18 @@ const OUTBOX_KEEP_PER_USER = 200;
 // lets a client with no open WebSocket (the Android background poller) catch up via
 // pollOutbox() instead of re-deriving unread state itself. Pruned per-user on every insert so
 // the table can't grow unbounded for a chatty server.
+// The grid row of an event for one recipient, and whether their grid lets it reach their phone. The
+// Android app is only ever woken from here, so this is where the Android column is enforced.
+function gridFor(userId, { scopeType, kind = null, mentioned, message }) {
+  const user = db.prepare('SELECT username, status, notify_grid FROM users WHERE id = ?').get(userId);
+  if (!user) return { gridEvent: null, android: true };
+  const gridEvent = notifyGrid.classify({ scopeType, kind, mentioned, message, recipient: user });
+  const grid = notifyGrid.effective(notifyGrid.parseStored(user.notify_grid));
+  return { gridEvent, android: notifyGrid.allows(grid, user.status, gridEvent, 'android') };
+}
+
 function recordOutbox(userId, { scopeType, scopeId, serverId = null, serverName = null, channelName = null, message, mentioned, kind = null, extra = null }) {
+  if (!gridFor(userId, { scopeType, kind, mentioned, message }).android) return;
   db.prepare(
     `INSERT INTO notifications_outbox (user_id, scope_type, scope_id, server_id, server_name, channel_name, message_json, mentioned, kind, extra_json)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -118,6 +130,7 @@ function notifyChannelMessage(channel, message, mentions) {
     hub.notifyUser(m.user_id, {
       type: 'notify', scopeType: 'channel', scopeId: channel.id, serverId: channel.server_id,
       serverName: server.name, channelName: channel.name, message, mentioned,
+      gridEvent: gridFor(m.user_id, { scopeType: 'channel', mentioned, message }).gridEvent,
     });
     recordOutbox(m.user_id, {
       scopeType: 'channel', scopeId: channel.id, serverId: channel.server_id,
@@ -142,7 +155,7 @@ function notifyDmMessage(dm, rawMessage) {
     if (isIgnoring(m.user_id, message.author.id)) continue;
     const pref = getPref(m.user_id, 'dm', dm.id);
     if (pref === 'mute') continue;
-    hub.notifyUser(m.user_id, { type: 'notify', scopeType: 'dm', scopeId: dm.id, message, mentioned: true });
+    hub.notifyUser(m.user_id, { type: 'notify', scopeType: 'dm', scopeId: dm.id, message, mentioned: true, gridEvent: gridFor(m.user_id, { scopeType: 'dm', mentioned: true, message }).gridEvent });
     recordOutbox(m.user_id, { scopeType: 'dm', scopeId: dm.id, message, mentioned: true });
   }
 }
@@ -150,7 +163,7 @@ function notifyDmMessage(dm, rawMessage) {
 // Pins and thread starts are events about an existing message, not new messages: the payload is the
 // usual notify shape plus kind/actor (and threadId/threadTitle) so each client can word it itself.
 function deliverEvent(userId, kind, base, extra) {
-  const payload = { type: 'notify', kind, ...base, ...extra };
+  const payload = { type: 'notify', kind, ...base, ...extra, gridEvent: gridFor(userId, { ...base, kind }).gridEvent };
   hub.notifyUser(userId, payload);
   recordOutbox(userId, { ...base, kind, extra });
 }

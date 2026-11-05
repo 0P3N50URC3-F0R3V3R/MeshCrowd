@@ -466,3 +466,27 @@
   .crop-handle { width: 36px; height: 36px; margin: -18px 0 0 -18px; }
   .crop-handle::after { width: 16px; height: 16px; }
 }
+
+/* Notification grid editor (settings and the mobile You tab) */
+.ng-intro { color: var(--text-secondary); font-size: 14px; margin: 0 0 12px; }
+.ng-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.ng-tab { position: relative; padding: 6px 12px; border: 1px solid transparent; border-radius: 8px; background: var(--bg-input); font-weight: 700; font-size: 13px; cursor: pointer; color: var(--text-secondary); }
+.ng-tab.ng-online { color: var(--green); } .ng-tab.ng-idle { color: var(--yellow); } .ng-tab.ng-dnd { color: var(--red); } .ng-tab.ng-invisible { color: var(--grey-status); }
+.ng-tab.active { border-color: currentColor; background: var(--bg-modal); }
+.ng-dot { display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--yellow); vertical-align: middle; }
+.ng-warn { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 12px; padding: 10px 12px; border-radius: 8px; background: #f0b2321f; border: 1px solid var(--yellow); font-size: 13px; }
+.ng-scroll { overflow-x: auto; }
+.ng-table { width: 100%; border-collapse: separate; border-spacing: 0 4px; font-size: 13px; }
+.ng-table thead th { color: var(--text-muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 6px; text-align: center; }
+.ng-table tbody th { text-align: left; font-weight: 600; padding: 6px 10px; background: var(--bg-input); border-radius: 8px 0 0 8px; white-space: nowrap; }
+.ng-table td { text-align: center; padding: 6px; background: var(--bg-input); }
+.ng-table td:last-child { border-radius: 0 8px 8px 0; }
+.ng-cell { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 7px; font-weight: 800; font-size: 15px; border: 1px solid transparent; padding: 0; cursor: pointer; }
+.ng-cell.on { background: #23a55a26; color: var(--green); border-color: #23a55a80; }
+.ng-cell.off { background: #f23f4326; color: var(--red); border-color: #f23f4380; }
+.ng-cell.na { cursor: not-allowed; opacity: .35; color: var(--text-muted); background: transparent; }
+.ng-cell:focus-visible, .ng-tab:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.ng-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.ng-copy { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); }
+.ng-copy select { width: auto; }
+.ng-spacer { flex: 1; }

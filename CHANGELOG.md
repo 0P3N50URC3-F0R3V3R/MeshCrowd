@@ -4,11 +4,13 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ### 2026-11-05
 #### Added
+- Notification grid: every user decides, per status (Online, Away, Busy, Invisible) and per kind of event (DM messages, DM mentions, channel messages, channel mentions, thread replies, calls, friend requests, pins and reminders), whether it plays a sound, shows a pop-up, shows in the PC tray and alerts on Android. Settings > Notifications on desktop and web, and the You tab on mobile and the Android app. Every status is editable, Online included (with a "not recommended" warning while Online differs from its defaults), "Copy from…" copies another status, and there are reset buttons per status and for everything. Saved on the server, so it follows you to every device. Muted servers and channels stay muted. The defaults match the old behavior (Busy and Invisible silent, the rest on).
 - Security: sign-up now always requires a captcha by default. Admin Panel > Security > Captcha has a separate mode for sign-in (default: after failed attempts) and sign-up (default: always), each Never / After failed attempts / Always, replacing the old shared mode and "Where" checkboxes; saved settings migrate automatically. Sign-in and sign-up failures are counted separately for the captcha, so failed logins no longer trigger a captcha at sign-up or the other way round; the failed-sign-in IP ban still counts both.
 - Android app: a foreground "connected" service (with CPU and Wi-Fi locks) runs while the app is in the background, so the websocket stays connected instead of dying after a few minutes and the app is already current when you return.
 - Mobile page: the profile card now matches the desktop one (banner, status dot, bot badge, server rank and name colour, mutual servers, bio placeholder).
 
 #### Changed
+- The single notification-sound dropdown (Settings and the custom status dialog) is replaced by the grid. Users who had picked "always" or "never" get the equivalent grid automatically, so their sound behavior does not change. Android alerts now follow the grid too: when the Android cell for the current status is off, the server no longer sends the alert.
 - Mobile page: the red offline banner only appears after 6 seconds without a connection, and returning to the app refetches the lists and the open chat over HTTP at once instead of waiting for the websocket.
 - Mobile emoji picker stays open after each pick (several emoji can be added) and closes only when dismissed.
 

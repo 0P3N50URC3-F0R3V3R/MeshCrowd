@@ -300,3 +300,7 @@ button.m-att-file { width: 100%; border: 0; text-align: left; font: inherit; }
 .m-pin-dot { position: relative; }
 .m-pin-dot::after { content: ''; position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--danger); }
 .status-emoji-badge { position: absolute; top: -4px; right: -5px; font-size: 12px; line-height: 1; padding: 1px; border-radius: 50%; background: var(--bg-primary); }
+/* The notification grid inside a full-height sheet: a scrollable body, tabs and actions that wrap */
+.m-sheet-back.full .m-sheet-body .ng { padding: 0 12px 24px; }
+.m-sheet-back.full .m-sheet.m-sheet-grid { display: block; overflow-y: auto; background: var(--bg-modal); border-radius: 0; text-align: left; }
+.m-sheet-back.full .ng-table tbody th { white-space: normal; font-size: 12px; }

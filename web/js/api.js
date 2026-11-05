@@ -80,6 +80,7 @@ export const api = {
     return postForm('/api/users/me/avatar', fd);
   },
   setStatus: (payload) => put('/api/users/me/status', payload),
+  setNotifyGrid: (payload) => put('/api/users/me/notify-grid', payload),
   uploadBanner: (file) => { const fd = new FormData(); fd.append('banner', file); return postForm('/api/users/me/banner', fd); },
   deleteBanner: () => del('/api/users/me/banner'),
   uploadCard: (file) => { const fd = new FormData(); fd.append('card', file); return postForm('/api/users/me/card', fd); },

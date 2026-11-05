@@ -13,6 +13,7 @@ import {
 import { keysToClear, notifyKey } from '../notifyClear.mjs';
 import { openContextMenu, openModal, confirmModal, confirmTypedModal } from './modal.js';
 import { notifySound } from '../notifySound.js';
+import { gridAllows } from '../notifyGrid.mjs';
 import { updateBadge as updateFaviconBadge } from '../favicon.js';
 import { applyTheme } from '../theme.js';
 import { has, PERMISSIONS, memberPermissionBits, channelPermissionBits } from '../permissions.js';
@@ -273,7 +274,7 @@ export async function mountShell(root) {
     const viewingIt = state.view.type === (payload.scopeType === 'dm' ? 'dm' : 'server')
       && (payload.scopeType === 'dm' ? state.view.dmId === payload.scopeId : state.view.channelId === payload.scopeId);
     const isFocused = viewingIt && !document.hidden;
-    if ((!isFocused || notifySound.get().playWhenFocused) && shouldPlayNotifySound()) notifySound.play();
+    if ((!isFocused || notifySound.get().playWhenFocused) && shouldPlayNotifySound(payload.gridEvent)) notifySound.play();
     if (isFocused) return;
 
     const noticeLabels = { sticker: t('sidebar.sentASticker'), attachment: t('sidebar.sentAnAttachment') };
@@ -300,8 +301,9 @@ export async function mountShell(root) {
 
     // The Electron shell keeps its own tray "Recent" list independent of in-page Notification
     // permission — it's the only way to surface activity while the window is hidden to the tray.
-    window.dismeshClient?.pushNotification({ title, body, scopeType: payload.scopeType, scopeId: payload.scopeId, serverId: payload.serverId, ...target });
+    if (gridAllows(state.me, payload.gridEvent, 'tray')) window.dismeshClient?.pushNotification({ title, body, scopeType: payload.scopeType, scopeId: payload.scopeId, serverId: payload.serverId, ...target });
 
+    if (!gridAllows(state.me, payload.gridEvent, 'popup')) return;
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
     const n = new Notification(title, { body, tag: `${payload.scopeType}-${payload.scopeId}` });
     trackNotification(notifyKey(payload), n);
@@ -314,7 +316,7 @@ export async function mountShell(root) {
 
   // A message-reminder the user set from the message context menu. Always surfaces: they asked for it.
   function onReminder(payload) {
-    if (shouldPlayNotifySound()) notifySound.play();
+    if (shouldPlayNotifySound('pinReminder')) notifySound.play();
     const body = payload.encrypted ? t('msgMenu.reminderEncryptedBody') : payload.snippet || t('sidebar.sentAnAttachment');
     const title = t('msgMenu.reminderTitle', { name: payload.author?.displayName || '' });
     toast(`${title}: ${body}`.slice(0, 160));
@@ -324,7 +326,7 @@ export async function mountShell(root) {
         ? { type: 'server', serverId: payload.serverId, channelId: payload.channelId, threadId: payload.scopeId, jumpToMessageId: payload.messageId }
         : { type: 'server', serverId: payload.serverId, channelId: payload.scopeId, jumpToMessageId: payload.messageId };
     pushActivity({ kind: 'mention', title, body, scopeType: payload.scopeType === 'dm' ? 'dm' : 'channel', scopeId: payload.scopeType === 'dm' ? payload.scopeId : (payload.channelId || payload.scopeId), serverId: payload.serverId });
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    if (!gridAllows(state.me, 'pinReminder', 'popup') || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
     const n = new Notification(title, { body, tag: `reminder-${payload.reminderId}` });
     n.onclick = () => { window.focus(); bus.emit('ui:navigate', target); n.close(); };
   }
@@ -332,10 +334,10 @@ export async function mountShell(root) {
   // Friend request/accept has no channel/DM scope to suppress against (unlike onNotify), so it
   // always surfaces — these are rare enough events that there's no "already looking at it" case.
   function onFriendEvent(body, friendsTab) {
-    if (shouldPlayNotifySound()) notifySound.play();
-    window.dismeshClient?.pushNotification({ title: 'MeshCrowd', body, scopeType: 'friends', scopeId: friendsTab });
+    if (shouldPlayNotifySound('friend')) notifySound.play();
+    if (gridAllows(state.me, 'friend', 'tray')) window.dismeshClient?.pushNotification({ title: 'MeshCrowd', body, scopeType: 'friends', scopeId: friendsTab });
     trackNotification(`friends:${friendsTab}`, null);
-    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    if (!gridAllows(state.me, 'friend', 'popup') || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
     const n = new Notification('MeshCrowd', { body, tag: 'friend-event' });
     trackNotification(`friends:${friendsTab}`, n);
     n.onclick = () => {
@@ -422,8 +424,9 @@ export async function mountShell(root) {
     const dm = state.dms.find((d) => d.id === dmChannelId);
     const dmName = dm ? (dm.isGroup ? (dm.name || dm.members.map((m) => m.displayName).join(', ')) : dm.members[0]?.displayName) : null;
     const body = t('shell.startedCallToast', { name: fromUser.displayName, inClause: dmName ? t('shell.startedCallInClause', { dmName }) : '' });
-    if (shouldPlayNotifySound()) notifySound.play();
-    window.dismeshClient?.pushNotification({ title: t('shell.incomingCallTitle'), body, scopeType: 'dm', scopeId: dmChannelId });
+    if (shouldPlayNotifySound('call')) notifySound.play();
+    if (gridAllows(state.me, 'call', 'tray')) window.dismeshClient?.pushNotification({ title: t('shell.incomingCallTitle'), body, scopeType: 'dm', scopeId: dmChannelId });
+    if (!gridAllows(state.me, 'call', 'popup')) return;
     if (typeof Notification === 'undefined' || Notification.permission !== 'granted') { toast(body); return; }
     const n = new Notification(t('shell.incomingCallTitle'), { body, tag: `voice-ring-${dmChannelId}` });
     n.onclick = () => {

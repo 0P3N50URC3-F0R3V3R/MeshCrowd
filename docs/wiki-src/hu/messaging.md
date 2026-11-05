@@ -60,7 +60,20 @@ A keresést a nagyítóval nyithatod meg. Jelöld be, mely mezőkre keressen: **
 
 ## Értesítések
 
-Minden csatorna és privát beszélgetés elnémítható, beállítható csak megemlítésekre vagy mindenre (az alapérték csatornáknál a megemlítések, privát üzeneteknél minden). Az asztali értesítések a böngészőt vagy az asztali alkalmazást használják. Az asztali alkalmazás tálcaikonja olvasatlan jelvényt mutat. Androidon lásd az [Android-alkalmazás](android.html) oldalt. Az olvasatlan üzenetekkel megnyitott csevegésben egy piros **Új** vonal jelöli az elsőt; a beállításait lásd a [Profilok, állapot és témák](personalization.html#olvasatlan-zenetek) oldalon.
+Minden csatorna és privát beszélgetés elnémítható, beállítható csak megemlítésekre vagy mindenre (az alapérték csatornáknál a megemlítések, privát üzeneteknél minden). Az asztali értesítések a böngészőt vagy az asztali alkalmazást használják. Az asztali alkalmazás tálcaikonja olvasatlan jelvényt mutat. Androidon lásd az [Android-alkalmazás](android.html) oldalt.
+
+### Az értesítési rács
+
+A **Beállítások, Értesítések** alatt (telefonon: **Te, Mi értesítsen, állapotonként**) állíthatod be, hogy az egyes állapotokban mi érjen el. Válassz egy állapotfület (**Online**, **Tétlen**, **Ne zavarjanak**, **Láthatatlan**), majd minden eseménytípust kapcsolj be (zöld pipa) vagy ki (piros kereszt) négy helyre:
+
+- **Hang**: az értesítési csengő.
+- **Felugró**: a böngésző vagy az asztali alkalmazás felugró értesítése.
+- **PC tálca**: az asztali alkalmazás tálcalistája és jelvénye.
+- **Android**: a telefonos értesítés. Ha ki van kapcsolva, a szerver el sem küldi.
+
+Az események: közvetlen üzenetek, közvetlen üzenetben kapott említések, csatornaüzenetek (az „összes” módra állított csatornákon), csatornaemlítések, szálválaszok, bejövő hívások, barátkérések, valamint kitűzések és emlékeztetők. A kötőjel azt jelenti, hogy az adott helyre az esemény nem vonatkozik. A **Másolás innen** egy másik állapotot másol a szerkesztettbe, az **Ezen állapot visszaállítása** és az **Összes visszaállítása** az alapértékeket hozza vissza. A módosítások azonnal mentődnek és minden eszközödre elkísérnek.
+
+Az alapértékek a korábbi viselkedést követik: a „ne zavarjanak” és a „láthatatlan” néma, minden más be van kapcsolva. Minden állapot módosítható, az Online is, de amíg az Online eltér az alapértéktől, figyelmeztetés látszik, mert könnyű elfelejteni, hogy ott kikapcsoltál valamit. Az elnémított szerverek és csatornák a rácstól függetlenül némák maradnak. Az egy eszközre vonatkozó hangbeállítások (hangerő, saját hangfájl) ugyanazon az oldalon a rács alatt maradnak. Az olvasatlan üzenetekkel megnyitott csevegésben egy piros **Új** vonal jelöli az elsőt; a beállításait lásd a [Profilok, állapot és témák](personalization.html#olvasatlan-zenetek) oldalon.
 
 ## Bejövő webhookok
 

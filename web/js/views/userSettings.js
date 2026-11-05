@@ -19,6 +19,7 @@ import { notifySound, CUSTOM_MAX_BYTES, CUSTOM_MAX_SECONDS } from '../notifySoun
 import { COLOR_FIELDS, GRADIENT_FIELDS, FONT_LABELS, PRESETS, DEFAULT_THEME, generateCss, parseCss, applyTheme } from '../theme.js';
 import { t } from '../i18n.js';
 import { unreadPrefs as unreadPrefsOf } from '../unreadLine.mjs';
+import { mountNotifyGridEditor } from './notifyGridEditor.js';
 
 // A function (not a module-level constant) so the labels re-evaluate against the current
 // language — see userBar.js's statusOptions() for why a plain top-level array would freeze.
@@ -379,11 +380,7 @@ export function openUserSettings(initialTab = 'account') {
       <div class="divider"></div>
       <div class="field">
         <label>${t('userSettings.notificationSoundStatusLabel')}</label>
-        <select class="input" id="f-sound-mode">
-          <option value="auto" ${me.notifySoundMode === 'auto' || !me.notifySoundMode ? 'selected' : ''}>${t('userSettings.soundModeAuto')}</option>
-          <option value="always" ${me.notifySoundMode === 'always' ? 'selected' : ''}>${t('userSettings.soundModeAlways')}</option>
-          <option value="never" ${me.notifySoundMode === 'never' ? 'selected' : ''}>${t('userBar.soundNever')}</option>
-        </select>
+        <div id="ng-mount"></div>
       </div>
       <label class="checkbox-row">
         <input type="checkbox" id="f-sound-enabled" ${sound.enabled ? 'checked' : ''}>
@@ -415,14 +412,7 @@ export function openUserSettings(initialTab = 'account') {
       try { await Notification.requestPermission(); } catch { /* ignore */ }
       renderNotifications(inner);
     });
-    inner.querySelector('#f-sound-mode').addEventListener('change', async (e) => {
-      const notifySoundMode = e.target.value;
-      try {
-        await api.setStatus({ notifySoundMode });
-        state.me.notifySoundMode = notifySoundMode;
-        bus.emit('state:me');
-      } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); renderNotifications(inner); }
-    });
+    mountNotifyGridEditor(inner.querySelector('#ng-mount'));
     inner.querySelector('#f-sound-enabled').addEventListener('change', (e) => {
       notifySound.set({ enabled: e.target.checked });
       renderNotifications(inner);

@@ -18,6 +18,7 @@ const { sanitizeTheme } = require('../lib/theme');
 const { singleLine, statusEmoji } = require('../lib/textSanitize');
 const { sanitizeCode, getLanguage } = require('../lib/languages');
 const { acknowledgeNsfw } = require('../lib/ageGate');
+const notifyGrid = require('../lib/notifyGrid');
 
 const router = express.Router();
 
@@ -255,26 +256,48 @@ router.delete('/me/card', requireAuth, (req, res) => {
 });
 
 router.put('/me/status', requireAuth, (req, res) => {
-  const { status, customStatusText, customStatusEmoji, notifySoundMode } = req.body || {};
+  const { status, customStatusText, customStatusEmoji } = req.body || {};
   const valid = ['online', 'idle', 'dnd', 'invisible'];
   if (status !== undefined && !valid.includes(status)) {
     return res.status(400).json({ error: `status must be one of ${valid.join(', ')}` });
-  }
-  const validSoundModes = ['auto', 'always', 'never'];
-  if (notifySoundMode !== undefined && !validSoundModes.includes(notifySoundMode)) {
-    return res.status(400).json({ error: `notifySoundMode must be one of ${validSoundModes.join(', ')}` });
   }
   const updates = [];
   const params = [];
   if (status !== undefined) { updates.push('status = ?'); params.push(status); }
   if (customStatusText !== undefined) { updates.push('custom_status_text = ?'); params.push(singleLine(customStatusText, 128)); }
   if (customStatusEmoji !== undefined) { updates.push('custom_status_emoji = ?'); params.push(statusEmoji(customStatusEmoji)); }
-  if (notifySoundMode !== undefined) { updates.push('notify_sound_mode = ?'); params.push(notifySoundMode); }
+  // Earlier clients still send notifySoundMode; the grid replaced it, so it is accepted and ignored.
+  if (updates.length === 0 && req.body && req.body.notifySoundMode !== undefined) return res.json({ ok: true });
   if (updates.length === 0) return res.status(400).json({ error: 'nothing to update' });
   params.push(req.user.id);
   db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...params);
   syncProfile(req.user.id);
   res.json({ ok: true });
+});
+
+// The notification grid: partial overrides per status/event/surface, or a reset of one status or all.
+// Always answers with the full effective grid so a client never has to merge defaults itself.
+router.put('/me/notify-grid', requireAuth, (req, res) => {
+  const { grid: patch, reset } = req.body || {};
+  let stored = notifyGrid.parseStored(req.user.notify_grid);
+  try {
+    if (reset !== undefined) {
+      if (reset === 'all') stored = {};
+      else if (notifyGrid.STATUSES.includes(reset)) delete stored[reset];
+      else throw new Error('reset must be "all" or a status');
+    } else if (patch !== undefined) {
+      const add = notifyGrid.validate(patch);
+      for (const [s, events] of Object.entries(add)) {
+        stored[s] = stored[s] || {};
+        for (const [e, cells] of Object.entries(events)) stored[s][e] = { ...(stored[s][e] || {}), ...cells };
+      }
+    } else {
+      throw new Error('send grid or reset');
+    }
+  } catch (err) { return res.status(400).json({ error: err.message }); }
+  db.prepare('UPDATE users SET notify_grid = ? WHERE id = ?').run(Object.keys(stored).length ? JSON.stringify(stored) : null, req.user.id);
+  syncProfile(req.user.id);
+  res.json({ notifyGrid: notifyGrid.effective(stored) });
 });
 
 // A base64 X25519 public key, 32 raw bytes when decoded. Validated by length only — the server

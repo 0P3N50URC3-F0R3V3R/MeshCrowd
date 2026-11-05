@@ -60,7 +60,22 @@ Open search from the magnifier. Tick which fields to match: **message text** (fu
 
 ## Notifications
 
-Each channel and DM can be muted, set to mentions only, or to everything (the default is mentions for channels and everything for DMs). Desktop notifications use the browser or the desktop app. The tray icon of the desktop app shows an unread badge. On Android see the [Android app](android.html). A chat you open with unread messages shows a red **New** line above the first one; see [Profiles, status and themes](personalization.html#unread-messages) for its settings.
+Each channel and DM can be muted, set to mentions only, or to everything (the default is mentions for channels and everything for DMs). Desktop notifications use the browser or the desktop app. The tray icon of the desktop app shows an unread badge. On Android see the [Android app](android.html).
+
+### The notification grid
+
+Under **Settings, Notifications** (on a phone: **You, What notifies you, per status**) you decide, for each status, what reaches you. Pick a status tab (**Online**, **Idle**, **Do not disturb**, **Invisible**) and switch each kind of event on (green check) or off (red cross) for four places:
+
+- **Sound**: the notification chime.
+- **Pop-up**: the browser or desktop pop-up.
+- **PC tray**: the desktop app's tray list and badge.
+- **Android**: the phone alert. When it is off the server does not send the alert at all.
+
+The events are direct messages, direct-message mentions, channel messages (channels set to all), channel mentions, thread replies, calls ringing, friend requests, and pins and reminders. A dash means the place does not apply to that event. **Copy from** copies another status into the one you are editing, and **Reset this status** and **Reset all** bring back the defaults. Changes are saved at once and follow you to every device.
+
+The defaults match the old behavior: Do not disturb and Invisible are silent, everything else is on. Every status can be changed, Online included, but a warning appears while Online differs from its defaults, because switching things off there is easy to forget. Muted servers and channels stay muted whatever the grid says. The sound on or off for a single device (volume, your own sound file) stays under the grid in the same settings page.
+
+A chat you open with unread messages shows a red **New** line above the first one; see [Profiles, status and themes](personalization.html#unread-messages) for its settings.
 
 ## Incoming webhooks
 

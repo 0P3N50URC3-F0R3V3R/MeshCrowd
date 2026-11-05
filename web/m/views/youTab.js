@@ -14,10 +14,10 @@ import { openBookmarksModal } from '../../js/views/bookmarks.js';
 import { openAdminPanel } from '../../js/views/admin.js';
 import { openScheduleModal } from '../../js/views/scheduled.js';
 import { clearSnapshot } from '../lib/stateCache.js';
+import { mountNotifyGridEditor } from '../../js/views/notifyGridEditor.js';
 
 const STATUSES = [['online', 'm.statusOnline'], ['idle', 'm.statusIdle'], ['dnd', 'm.statusDnd'], ['invisible', 'm.statusInvisible']];
 const START_VIEWS = [['servers', 'm.tabServers'], ['messages', 'm.tabMessages'], ['notifications', 'm.tabNotifications'], ['you', 'm.tabYou'], ['last', 'm.startViewLast']];
-const SOUNDS = { auto: 'm.soundAuto', always: 'm.soundAlways', never: 'm.soundNever' };
 
 export function mountYouTab(host) {
   const bridge = androidBridge();
@@ -40,7 +40,7 @@ export function mountYouTab(host) {
       ${me.isSiteAdmin ? row('admin', icons.shield(20), t('userSettings.adminPanelNav')) : ''}
       ${row('startView', icons.home(20), t('m.startView'), t(START_VIEWS.find(([v]) => v === getPref('startView', 'messages'))?.[1] || 'm.tabMessages'))}
       ${bridge ? row('chatStyle', icons.messageSquare(20), t('m.chatStyle'), t(getPref('chatStyle', 'plain') === 'bubbles' ? 'm.chatStyleBubbles' : 'm.chatStylePlain')) : ''}
-      ${row('sound', icons.bell(20), t('m.notificationSound'), t(SOUNDS[me.notifySoundMode || 'auto']))}
+      ${row('notifyGrid', icons.bell(20), t('userSettings.notificationSoundStatusLabel'))}
       ${row('unreadAlways', icons.messageSquare(20), t('userSettings.unreadAlwaysLabel'), t(state.uiPrefs.unreadAlways === 'on' ? 'userSettings.unreadAlwaysOn' : 'userSettings.unreadAlwaysOff'))}
       ${row('language', icons.menu(20), t('m.language'), currentLanguage())}
       ${bridge ? row('android', icons.bell(20), t('m.androidSection')) : ''}
@@ -62,9 +62,8 @@ export function mountYouTab(host) {
         } else if (v) { await api.setStatus({ status: v }); state.me.status = v; bus.emit('state:me'); if (v === 'invisible') (await import('../../js/views/voice.js')).leaveActiveCall(); }
       } else if (id === 'syncDevices') {
         await api.syncDevices(); toast(t('userSync.syncDevicesDone'));
-      } else if (id === 'sound') {
-        const v = await actionSheet({ title: t('m.notificationSound'), items: Object.entries(SOUNDS).map(([value, key]) => ({ id: value, label: t(key) })) });
-        if (v) { await api.setStatus({ notifySoundMode: v }); state.me.notifySoundMode = v; bus.emit('state:me'); }
+      } else if (id === 'notifyGrid') {
+        openSheet({ title: t('userSettings.notificationSoundStatusLabel'), full: true, onMount: (body) => { body.closest('.m-sheet').classList.add('m-sheet-grid'); mountNotifyGridEditor(body); } });
       } else if (id === 'unreadAlways') {
         const v = await actionSheet({ title: t('userSettings.unreadAlwaysLabel'), items: [{ id: 'off', label: t('userSettings.unreadAlwaysOff') }, { id: 'on', label: t('userSettings.unreadAlwaysOn') }] });
         if (v) { Object.assign(state.uiPrefs, (await api.setUiPrefs({ unreadAlways: v })).uiPrefs); paint(); }

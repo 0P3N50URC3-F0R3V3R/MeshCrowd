@@ -107,14 +107,7 @@ export function mountUserBar(container) {
             </div>
             <div class="hint" style="margin-top:8px">${t('userBar.quickPicks')} ${['🎮', '💻', '🎧', '☕', '😴', '🚀'].map((e) => `<button type="button" class="quick-emoji" data-e="${e}" style="font-size:18px;margin-right:6px">${e}</button>`).join('')}</div>
           </div>
-          <div class="field">
-            <label>${t('userBar.notificationSoundLabel')}</label>
-            <select class="input" id="cs-sound-mode">
-              <option value="auto" ${(me.notifySoundMode || 'auto') === 'auto' ? 'selected' : ''}>${t('userBar.soundAuto')}</option>
-              <option value="always" ${me.notifySoundMode === 'always' ? 'selected' : ''}>${t('userBar.soundAlways')}</option>
-              <option value="never" ${me.notifySoundMode === 'never' ? 'selected' : ''}>${t('userBar.soundNever')}</option>
-            </select>
-          </div>`;
+          `;
         const setStatusEmoji = bindStatusEmojiField(body, 'cs-emoji');
         body.querySelectorAll('.quick-emoji').forEach((b) => b.addEventListener('click', () => setStatusEmoji(b.dataset.e)));
       },
@@ -123,10 +116,9 @@ export function mountUserBar(container) {
     m.overlay.querySelector('#cs-save').addEventListener('click', async () => {
       const customStatusEmoji = m.overlay.querySelector('#cs-emoji').value.trim();
       const customStatusText = m.overlay.querySelector('#cs-text').value.trim();
-      const notifySoundMode = m.overlay.querySelector('#cs-sound-mode').value;
       try {
-        await api.setStatus({ customStatusEmoji, customStatusText, notifySoundMode });
-        Object.assign(state.me, { customStatusEmoji, customStatusText, notifySoundMode });
+        await api.setStatus({ customStatusEmoji, customStatusText });
+        Object.assign(state.me, { customStatusEmoji, customStatusText });
         bus.emit('state:me');
         toast(t('userBar.statusUpdated'));
         m.close();

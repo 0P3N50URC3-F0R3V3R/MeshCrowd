@@ -15,7 +15,7 @@ Az adatvédelmi beállítások döntik el, ki küldhet neked privát üzenetet, 
 
 ## Jelenlét és egyéni státusz
 
-Válaszd az **Online**, **Tétlen**, **Ne zavarjanak** vagy **Láthatatlan** lehetőséget, és adj hozzá egyéni státuszt emojival és szöveggel. Az `/afk` perjeles parancs üzenettel együtt tétlenre állít. Az értesítési hangok alapból a jelenléteddel követik egymást (online és tétlen csenget, a „ne zavarjanak” néma marad), és ezt fiókonként felülbírálhatod. Az avatarodra kattintva megnyíló menüben az **Egyéni státusz** szerkeszti, az **Egyéni státusz törlése** (amíg be van állítva) egy kattintással törli.
+Válaszd az **Online**, **Tétlen**, **Ne zavarjanak** vagy **Láthatatlan** lehetőséget, és adj hozzá egyéni státuszt emojival és szöveggel. Az `/afk` perjeles parancs üzenettel együtt tétlenre állít. Hogy az egyes állapotokban mi ér el, azt az értesítési rács adja meg, lásd az [Értesítések](messaging.html#rtes-t-sek) részt. Az avatarodra kattintva megnyíló menüben az **Egyéni státusz** szerkeszti, az **Egyéni státusz törlése** (amíg be van állítva) egy kattintással törli.
 
 ## Témák
 
