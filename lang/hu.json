@@ -2186,6 +2186,7 @@
   "msgMenu": {
     "addReaction": "Reakció hozzáadása",
     "copyText": "Szöveg másolása",
+    "copySelection": "Kijelölt szöveg másolása",
     "textCopiedToast": "Szöveg kimásolva.",
     "bookmark": "Üzenet ellátása könyvjelzővel",
     "removeBookmark": "Könyvjelző eltávolítása",

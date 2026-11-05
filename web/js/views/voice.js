@@ -460,7 +460,8 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     let newRaw;
     try {
       newRaw = await navigator.mediaDevices.getUserMedia({
-        audio: prefs.inputDeviceId ? { deviceId: { exact: prefs.inputDeviceId } } : true, video: false,
+        audio: { ...(prefs.inputDeviceId ? { deviceId: { exact: prefs.inputDeviceId } } : {}), channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: false,
       });
     } catch {
       toast(t('voice.couldNotAccessMic'), { type: 'error' });
@@ -484,9 +485,16 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
         toast(t('voice.noiseSuppressionFailed'), { type: 'error' });
       }
     }
-    head.connect(gainNode);
-    gainNode.connect(dest);
-    sendTrack = dest.stream.getAudioTracks()[0];
+    // A mic that is clocked separately from the audio graph crackles when routed through it, so the
+    // graph (gain + denoiser) only sits in the send path when it actually changes the signal.
+    const needsGraph = denoiser || Math.abs(prefs.inputVolume - 1) > 0.01;
+    if (needsGraph) {
+      head.connect(gainNode);
+      gainNode.connect(dest);
+      sendTrack = dest.stream.getAudioTracks()[0];
+    } else {
+      sendTrack = rawStream.getAudioTracks()[0];
+    }
     updateSendEnabled();
     for (const { pc } of peers.values()) {
       const sender = pc.getSenders().find((s) => s.track?.kind === 'audio');

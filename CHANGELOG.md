@@ -10,6 +10,10 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Forwarded messages now jump to the original message in its channel, post or conversation when clicked.
 - Notification grid editor: ticking a cell no longer resets the scroll position or focus.
 - Notifications for a forum post open that post.
+- Right-clicking highlighted text in a message offers "Copy Selection" for just that text (Copy Text still copies the whole message).
+- Voice: the microphone goes straight to the call when input volume is 100% and noise suppression is off, instead of through the Web Audio graph, which can crackle when the mic and the graph run on different clocks. The mic request also asks for mono with echo cancellation, noise suppression and auto gain.
+- Admin TURN self-test shows the relay address clients actually get instead of the loopback address.
+- Notification grid on phones and the Android app: bigger touch targets, tabs in one row, the table fits the screen without sideways scrolling and the buttons stack full width.
 
 #### Added
 - Notification grid: every user decides, per status (Online, Away, Busy, Invisible) and per kind of event (DM messages, DM mentions, channel messages, channel mentions, thread replies, calls, friend requests, pins and reminders), whether it plays a sound, shows a pop-up, shows in the PC tray and alerts on Android. Settings > Notifications on desktop and web, and the You tab on mobile and the Android app. Every status is editable, Online included (with a "not recommended" warning while Online differs from its defaults), "Copy from…" copies another status, and there are reset buttons per status and for everything. Saved on the server, so it follows you to every device. Muted servers and channels stay muted. The defaults match the old behavior (Busy and Invisible silent, the rest on).

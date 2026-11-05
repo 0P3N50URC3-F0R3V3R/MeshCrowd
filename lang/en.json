@@ -2186,6 +2186,7 @@
   "msgMenu": {
     "addReaction": "Add Reaction",
     "copyText": "Copy Text",
+    "copySelection": "Copy Selection",
     "textCopiedToast": "Text copied.",
     "bookmark": "Bookmark Message",
     "removeBookmark": "Remove Bookmark",

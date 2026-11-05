@@ -126,7 +126,7 @@ async function selfTest() {
     const me = await cl.binding();
     checks.push({ name: 'stun', ok: !!me });
     const a = await cl.allocate();
-    checks.push({ name: 'allocate', ok: a.ok, detail: a.ok ? `${a.relayed.ip}:${a.relayed.port}` : `error ${a.code}` });
+    checks.push({ name: 'allocate', ok: a.ok, detail: a.ok ? `${server.relayIpFor?.('8.8.8.8') || a.relayed.ip}:${a.relayed.port}` : `error ${a.code}` });
     if (a.ok) {
       // The allocation above came from loopback, so its relayed address is a LAN one; what matters to
       // people outside is the address the server tells them about.

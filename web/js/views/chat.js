@@ -902,6 +902,9 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     const locked = isEncryptedDm() || msg.isEncrypted;
     const text = msg.content && !msg.decryptFailed ? msg.content : '';
     const canMarkUnread = scope.kind !== 'thread';
+    // The custom menu replaces the browser's own, so a highlighted passage has to be picked up here.
+    const sel = window.getSelection?.();
+    const selected = sel && !sel.isCollapsed && groupEl.contains(sel.anchorNode) && groupEl.contains(sel.focusNode) ? sel.toString().trim() : '';
     const items = [
       { emojiRow: QUICK_REACTIONS, onPick: (emoji) => toggleReaction(msg, emoji) },
       { label: t('msgMenu.addReaction'), onClick: () => openReactionPicker(groupEl.querySelector('.body') || groupEl, msg) },
@@ -910,6 +913,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       ...(!locked ? [{ label: t('chat.forwardActionTitle'), onClick: () => openForwardModal(msg) }] : []),
       ...(scope.kind === 'channel' && scope.canSend ? [{ label: t('chat.createThreadActionTitle'), onClick: () => openCreateThreadPrompt(msg) }] : []),
       'sep',
+      ...(selected ? [{ label: t('msgMenu.copySelection'), onClick: () => copyToClipboard(selected, 'msgMenu.textCopiedToast') }] : []),
       ...(text ? [{ label: t('msgMenu.copyText'), onClick: () => copyToClipboard(text, 'msgMenu.textCopiedToast') }] : []),
       { label: state.bookmarkIds.has(msg.id) ? t('msgMenu.removeBookmark') : t('msgMenu.bookmark'), onClick: () => toggleBookmark(msg) },
       { label: t('msgMenu.remindMe'), submenu: REMINDERS.map(([key, minutes]) => ({ label: t(`msgMenu.${key}`), onClick: () => remindMe(msg, minutes) })) },
