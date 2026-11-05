@@ -13,6 +13,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Mobile emoji picker stays open after each pick (several emoji can be added) and closes only when dismissed.
 
 #### Fixed
+- Sign-in and sign-up pages scroll when taller than the window (the mobile page and Android app cut off the bottom, e.g. the captcha and the button, on small screens), with some margin above and below the card on all platforms.
 - Server settings: picking a new server icon shows it immediately as a preview instead of nothing until the upload finishes.
 
 ### 2026-11-04

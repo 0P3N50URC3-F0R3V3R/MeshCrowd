@@ -7,6 +7,8 @@
   position: relative;
   overflow-x: hidden;
   overflow-y: auto;
+  padding: 16px 0;
+  box-sizing: border-box;
 }
 
 .auth-blob {
