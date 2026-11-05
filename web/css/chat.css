@@ -46,8 +46,12 @@
 .forum-sortbar { padding: 12px 16px 0; }
 .forum-sort { background: var(--bg-input); color: var(--text-primary); border: 0; border-radius: 16px; padding: 6px 12px; font-size: 13px; }
 .forum-nomatch { color: var(--text-muted); text-align: center; padding: 24px; }
-.forum-card { display: flex; gap: 12px; padding: 12px 14px; margin-bottom: 8px; border-radius: 10px; background: var(--bg-secondary, var(--bg-primary-alt)); border: 1px solid transparent; cursor: pointer; text-align: left; width: 100%; box-sizing: border-box; color: inherit; font: inherit; }
+.forum-card { position: relative; display: flex; gap: 12px; padding: 12px 14px; margin-bottom: 8px; border-radius: 10px; background: var(--bg-secondary, var(--bg-primary-alt)); border: 1px solid transparent; cursor: pointer; text-align: left; width: 100%; box-sizing: border-box; color: inherit; font: inherit; }
 .forum-card:hover { background: var(--bg-hover); }
+.forum-card .fc-unread-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); margin-right: 6px; vertical-align: middle; }
+.forum-card.unread .fc-title { color: var(--text-primary, var(--header-primary)); }
+.forum-pins { position: absolute; top: 44px; right: 0; bottom: 0; width: min(340px, 100%); z-index: 5; background: var(--bg-secondary, var(--bg-primary)); border-left: 1px solid var(--border, rgba(127,127,127,.25)); overflow-y: auto; }
+.forum-pane { position: relative; }
 .forum-card.active { border-color: var(--brand); }
 .forum-card .fc-main { flex: 1; min-width: 0; }
 .forum-card .fc-title { font-weight: 700; font-size: 16px; color: var(--header-primary); overflow-wrap: anywhere; }

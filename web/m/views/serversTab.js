@@ -4,7 +4,7 @@ import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
 import { avatarHtml, escapeHtml, serverIconHtml, toast } from '../../js/utils.js';
 import {
-  state, getKnownUser, isUnread, isChannelMuted, setServerPrefs, setServers, removeServer, setReadState, setNotificationPref as setPrefState,
+  state, getKnownUser, isUnread, isChannelMuted, setServerPrefs, setServers, removeServer, setReadState, setNotificationPref as setPrefState, forumHasUnreadPosts,
 } from '../../js/state.js';
 import { nav } from '../router.js';
 import { ensureServerDetail, refreshServerDetailSilently } from '../data.js';
@@ -80,7 +80,7 @@ export function mountServersTab(host) {
   }
 
   function chanRow(c) {
-    const unread = isUnread('channel', c.id, c.last_message_id);
+    const unread = isUnread('channel', c.id, c.last_message_id) || (c.type === 'forum' && forumHasUnreadPosts(c.id));
     const muted = isChannelMuted(sid, c.id);
     const on = unread && !muted;
     return `<button class="m-row m-chan${on ? ' unread' : ''}${muted ? ' muted' : ''}" data-cid="${c.id}">
@@ -273,6 +273,7 @@ export function mountServersTab(host) {
     bus.on('state:servers', () => { if (!state.servers.some((s) => s.id === sid)) sid = state.servers[0]?.id ?? null; refreshAll(); }),
     bus.on('state:serverVoice', () => { const d = state.serverDetail.get(sid); if (d) paintChannels(d); }),
     bus.on('state:channelActivity', () => { paintRail(); const d = state.serverDetail.get(sid); if (d) paintChannels(d); }),
+    bus.on('state:threads', () => { const d = state.serverDetail.get(sid); if (d) paintChannels(d); }),
     bus.on('state:readState', () => { paintRail(); const d = state.serverDetail.get(sid); if (d) paintChannels(d); }),
     bus.on('state:serverDetail', (id) => { paintRail(); if (id === sid) { const d = state.serverDetail.get(sid); if (d) paintChannels(d); } }),
     bus.on('state:notificationPrefs', () => { const d = state.serverDetail.get(sid); if (d) paintChannels(d); }),

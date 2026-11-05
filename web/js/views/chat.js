@@ -196,6 +196,28 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   const offDelete = bus.on('ws:message_delete', onWsDelete);
   const offTyping = bus.on('ws:typing', onWsTyping);
   const offConnection = bus.on('state:connection', setComposerConnected);
+  // Events missed while the socket was down: pull the newest page and fold it in, in place, so the
+  // draft, scroll position and open panels survive a reconnect.
+  let wsWasClosed = false;
+  const offWsClose = bus.on('ws:close', () => { wsWasClosed = true; });
+  const offWsOpen = bus.on('ws:open', async () => {
+    if (!wsWasClosed) return;
+    wsWasClosed = false;
+    if (loading || hasNewer) return;
+    try {
+      const res = await fetchMessages({ limit: prefs.initialMessages });
+      const fetched = await decryptList(res.messages);
+      const byId = new Map(fetched.map((m) => [m.id, m]));
+      const known = new Set(messages.map((m) => m.id));
+      messages = messages.map((m) => byId.get(m.id) || m);
+      const lastKnown = messages.reduce((mx, m) => Math.max(mx, m.pending ? 0 : m.id), 0);
+      const fresh = fetched.filter((m) => !known.has(m.id) && m.id > lastKnown);
+      const nearBottom = isNearBottom();
+      messages = messages.concat(fresh);
+      if (editingId === null) { renderKeepingPosition(); if (nearBottom) scrollToBottom(); }
+      if (fresh.length) markRead(fresh[fresh.length - 1].id);
+    } catch { /* the next event or reload catches up */ }
+  });
   // A profile edit (name/avatar) updates already-rendered messages in place, so scroll position and
   // a half-typed draft are never disturbed by a re-render.
   const offProfile = bus.on('state:presence', (u) => {
@@ -534,7 +556,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     const parts = [];
     if (m.forwardedFrom) {
       parts.push(`<div class="forwarded-tag">${icons.forward(12)} ${t('chat.forwardedMessageTag')}</div>`);
-      parts.push(`<div class="reply-preview" data-reply-jump="${m.forwardedFrom.id}">
+      parts.push(`<div class="reply-preview" data-reply-jump="${m.forwardedFrom.id}" data-forward-origin="${m.forwardedFrom.origin ? escapeHtml(JSON.stringify(m.forwardedFrom.origin)) : ''}">
         <span class="rp-name">${escapeHtml(m.forwardedFrom.author.displayName)}</span>
         <span class="rp-snippet">${escapeHtml((m.forwardedFrom.content || (m.forwardedFrom.sticker ? t('chat.stickerFallback') : t('chat.noTextFallback'))).replace(/\s+/g, ' ').slice(0, 150))}</span>
       </div>`);
@@ -767,7 +789,18 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     if (lightboxTarget) return openLightbox(lightboxTarget.dataset.url, lightboxTarget.dataset.name);
 
     const replyJumpTarget = e.target.closest('[data-reply-jump]');
-    if (replyJumpTarget) return highlightMessage(Number(replyJumpTarget.dataset.replyJump));
+    if (replyJumpTarget) {
+      const id = Number(replyJumpTarget.dataset.replyJump);
+      const raw = replyJumpTarget.dataset.forwardOrigin;
+      if (raw === undefined) return highlightMessage(id);
+      let o = null;
+      try { o = raw ? JSON.parse(raw) : null; } catch { /* no usable origin */ }
+      if (!o) return highlightMessage(id);
+      if (o.scopeType === 'dm') return o.dmId === scope.dmId ? highlightMessage(id) : bus.emit('ui:navigate', { type: 'dm', dmId: o.dmId, jumpToMessageId: id });
+      const here = scope.kind === 'thread' ? o.threadId === scope.threadId : (scope.kind === 'channel' && !o.threadId && o.channelId === scope.channelId);
+      if (here && listEl.querySelector(`[data-id="${id}"]`)) return highlightMessage(id);
+      return bus.emit('ui:navigate', { type: 'server', serverId: o.serverId, channelId: o.channelId, ...(o.threadId ? { threadId: o.threadId } : {}), jumpToMessageId: id });
+    }
 
     const userTarget = e.target.closest('[data-user]');
     if (userTarget) return bus.emit('ui:openProfile', { userId: Number(userTarget.dataset.user), serverId: scope.serverId, anchor: userTarget });
@@ -2031,7 +2064,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   }
 
   function destroy() {
-    offEphemeral(); offCreate(); offUpdate(); offDelete(); offTyping(); offConnection(); offProfile(); offDms?.(); offTrust?.(); offAccepted?.();
+    offEphemeral(); offCreate(); offUpdate(); offDelete(); offTyping(); offConnection(); offWsClose(); offWsOpen(); offProfile(); offDms?.(); offTrust?.(); offAccepted?.();
     scrollEl.removeEventListener('scroll', onScroll);
     clearTimeout(typingTimer);
     for (const f of uploadFiles) releaseObjectUrl(f);

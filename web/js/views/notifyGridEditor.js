@@ -22,7 +22,29 @@ export function mountNotifyGridEditor(container) {
     render();
   }
 
+  function scrollers() {
+    const list = [];
+    for (let el = container; el; el = el.parentElement) if (el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) list.push(el);
+    return list;
+  }
+
   function render() {
+    const saved = scrollers().map((el) => [el, el.scrollTop, el.scrollLeft]);
+    const inner = container.querySelector('.ng-scroll');
+    const innerPos = inner ? [inner.scrollTop, inner.scrollLeft] : null;
+    const focused = document.activeElement?.closest?.('.ng-cell[data-event]');
+    const focusKey = focused && container.contains(focused) ? `${focused.dataset.event}|${focused.dataset.surface}` : null;
+    paint();
+    const newInner = container.querySelector('.ng-scroll');
+    if (innerPos && newInner) { newInner.scrollTop = innerPos[0]; newInner.scrollLeft = innerPos[1]; }
+    for (const [el, top, left] of saved) { el.scrollTop = top; el.scrollLeft = left; }
+    if (focusKey) {
+      const [ev, sf] = focusKey.split('|');
+      container.querySelector(`.ng-cell[data-event="${ev}"][data-surface="${sf}"]`)?.focus({ preventScroll: true });
+    }
+  }
+
+  function paint() {
     const g = grid();
     const others = STATUSES.filter((s) => s !== active);
     container.innerHTML = `
@@ -66,7 +88,10 @@ export function mountNotifyGridEditor(container) {
     const cell = ev.target.closest('.ng-cell[data-event]');
     if (cell) {
       const { event, surface } = cell.dataset;
-      save({ grid: { [active]: { [event]: { [surface]: !grid()[active]?.[event]?.[surface] } } } });
+      const on = !grid()[active]?.[event]?.[surface];
+      cell.classList.toggle('on', on); cell.classList.toggle('off', !on);
+      cell.setAttribute('aria-checked', String(on)); cell.textContent = on ? '✓' : '✕';
+      save({ grid: { [active]: { [event]: { [surface]: on } } } });
       return;
     }
     const act = ev.target.closest('[data-act]')?.dataset.act;

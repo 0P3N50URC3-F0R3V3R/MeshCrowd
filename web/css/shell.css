@@ -298,6 +298,9 @@
   user-select: none;
   border-radius: var(--radius-sm);
 }
+.channel-category-header.unread { color: var(--text-primary); }
+.channel-category-header.unread .cat-name { font-weight: 700; }
+.channel-category-header.unread .cat-name::after { content: ''; display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--danger); vertical-align: middle; }
 .channel-category-header:hover { color: var(--text-secondary); }
 .channel-category-header.drag-over { outline: 2px solid var(--brand); outline-offset: -2px; }
 .channel-category-header .cat-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

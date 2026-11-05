@@ -289,7 +289,7 @@ export async function mountShell(root) {
       ? (previewText(peekPlaintext(state.me.id, payload.message.id) || {}, noticeLabels) || t('dmEncryption.notifyBody'))
       : previewText({ text: payload.message.content, sticker: payload.message.sticker, hasAttachments: !!payload.message.attachments?.length }, noticeLabels);
 
-    const target = notice ? {
+    const target = notice || payload.message.scopeType === 'thread' ? {
       threadId: payload.message.scopeType === 'thread' ? payload.message.scopeId : null, messageId: payload.message.id,
     } : {};
     trackNotification(notifyKey(payload), null);
@@ -436,8 +436,20 @@ export async function mountShell(root) {
     };
   }
 
+  // What renderMain() reads from a server detail, minus counters that move with every message. A
+  // silent refresh that leaves this unchanged must not remount the open chat/forum (it would drop
+  // the draft, scroll position and the open forum post).
+  const VOLATILE_DETAIL_KEY = /last_message|unread|message_count|^status$|^customStatus|^lastSeen|^timeoutUntil$/;
+  const mainSignature = (detail) => {
+    if (!detail) return '';
+    const members = detail.members.map((m) => [m.user.id, m.nickname, m.nameColor, m.user.displayName, m.user.avatarPath, m.roleIds]);
+    const { members: _members, onboarding: _onboarding, ...rest } = detail;
+    return JSON.stringify([rest, members], (k, v) => (VOLATILE_DETAIL_KEY.test(k) ? undefined : v));
+  };
+
   async function refreshServerDetailSilently(serverId) {
     try {
+      const before = mainSignature(getServerDetail(serverId));
       const detail = await api.getServer(serverId);
       setServerDetail(serverId, detail);
       // mountChannelSidebar takes a one-time detail snapshot, not a live subscription — it must
@@ -445,7 +457,11 @@ export async function mountShell(root) {
       // pick up create/edit/delete/role changes without the user navigating away and back.
       if (state.view.type === 'server' && state.view.serverId === serverId) {
         renderSidebar();
-        renderMain();
+        const after = mainSignature(detail);
+        if (after !== before) {
+          console.info('[shell] server detail changed, rebuilding main view', serverId, before.length, after.length);
+          renderMain();
+        }
       }
     } catch { /* likely lost access — ignore */ }
   }
@@ -471,7 +487,6 @@ export async function mountShell(root) {
       setFriends(friendsRes);
       refreshRemoteServers();
       if (state.view.type === 'server') await refreshServerDetailSilently(state.view.serverId);
-      renderMain();
     } catch { /* best-effort */ }
   }
 
@@ -1002,6 +1017,9 @@ export async function mountShell(root) {
       });
 
       if (channel.type === 'forum') {
+        // Forum posts are threads of their own, listed in the forum itself: the text-channel thread list
+        // would duplicate them, and pins live inside each post.
+        mainEl.querySelectorAll('#threads-btn, #pins-btn').forEach((b) => { b.style.display = 'none'; });
         currentChat = mountForum(document.getElementById('chat-body'), {
           serverId: view.serverId, channelId: view.channelId, channelName: channel.name, canSend, canManage,
           channels: detail.channels, customEmoji: detail.customEmoji, stickers: detail.stickers, rawHtmlEnabled: !!detail.server.raw_html_enabled,
@@ -1122,6 +1140,7 @@ export async function mountShell(root) {
       </div>
       <div id="chat-body" style="flex:1;display:flex;flex-direction:column;min-height:0"></div>`;
 
+    if (channel.type === 'forum') document.getElementById('threads-btn').style.display = 'none';
     document.getElementById('thread-back-btn').addEventListener('click', () => {
       bus.emit('ui:navigate', { type: 'server', serverId: view.serverId, channelId: view.channelId });
     });

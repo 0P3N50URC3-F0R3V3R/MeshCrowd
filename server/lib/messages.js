@@ -59,7 +59,21 @@ function getForwardedFrom(id) {
   const attachments = db.prepare('SELECT * FROM attachments WHERE message_id = ?').all(row.id).map((a) => ({
     id: a.id, url: a.file_path, fileName: a.file_name, mimeType: a.mime_type, sizeBytes: a.size_bytes,
   }));
-  return { id: row.id, author: toPublicUser(author, {}), content: row.content, createdAt: row.created_at, attachments, sticker: getSticker(row.sticker_id) };
+  return { id: row.id, author: toPublicUser(author, {}), content: row.content, createdAt: row.created_at, attachments, sticker: getSticker(row.sticker_id), origin: forwardOrigin(row) };
+}
+
+// Where a forwarded message came from, so the forward can link back to it.
+function forwardOrigin(row) {
+  if (row.scope_type === 'channel') {
+    const ch = db.prepare('SELECT id, server_id FROM channels WHERE id = ?').get(row.scope_id);
+    return ch ? { scopeType: 'channel', serverId: ch.server_id, channelId: ch.id } : null;
+  }
+  if (row.scope_type === 'thread') {
+    const th = db.prepare('SELECT t.id, t.channel_id, c.server_id FROM threads t JOIN channels c ON c.id = t.channel_id WHERE t.id = ?').get(row.scope_id);
+    return th ? { scopeType: 'thread', serverId: th.server_id, channelId: th.channel_id, threadId: th.id } : null;
+  }
+  if (row.scope_type === 'dm') return { scopeType: 'dm', dmId: row.scope_id };
+  return null;
 }
 
 // A webhook-posted message's author_id always points at the reserved system user (see

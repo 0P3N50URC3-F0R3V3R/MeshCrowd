@@ -3,6 +3,14 @@
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
 ### 2026-11-05
+#### Fixed
+- Forum and chats no longer close, reload or lose a half-typed message when the window regains focus, the socket reconnects, or a role/member/channel event arrives: the open view is only rebuilt when something it shows actually changed, and a reconnect now catches up on missed messages in place.
+- Forum: the pin button on a post is clickable again (it was positioned outside the card); messages inside a post can be pinned and listed from a pin button in the post header (works for polls too).
+- Forum: posts no longer count as text-channel threads (no thread-list button in a forum, no thread dot on it). New activity in a forum shows as an unread forum channel, an unread category when collapsed, and an unread dot on the post card; the unread mark clears once the post or forum is opened (channel-level notices in a forum no longer stay unread forever, which kept the server marked until "mark as read").
+- Forwarded messages now jump to the original message in its channel, post or conversation when clicked.
+- Notification grid editor: ticking a cell no longer resets the scroll position or focus.
+- Notifications for a forum post open that post.
+
 #### Added
 - Notification grid: every user decides, per status (Online, Away, Busy, Invisible) and per kind of event (DM messages, DM mentions, channel messages, channel mentions, thread replies, calls, friend requests, pins and reminders), whether it plays a sound, shows a pop-up, shows in the PC tray and alerts on Android. Settings > Notifications on desktop and web, and the You tab on mobile and the Android app. Every status is editable, Online included (with a "not recommended" warning while Online differs from its defaults), "Copy from…" copies another status, and there are reset buttons per status and for everything. Saved on the server, so it follows you to every device. Muted servers and channels stay muted. The defaults match the old behavior (Busy and Invisible silent, the rest on).
 - Security: sign-up now always requires a captcha by default. Admin Panel > Security > Captcha has a separate mode for sign-in (default: after failed attempts) and sign-up (default: always), each Never / After failed attempts / Always, replacing the old shared mode and "Where" checkboxes; saved settings migrate automatically. Sign-in and sign-up failures are counted separately for the captcha, so failed logins no longer trigger a captcha at sign-up or the other way round; the failed-sign-in IP ban still counts both.

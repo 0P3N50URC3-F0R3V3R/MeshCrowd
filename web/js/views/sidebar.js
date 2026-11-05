@@ -1,6 +1,6 @@
 import { bus } from '../bus.js';
 import { api } from '../api.js';
-import { state, presenceFor, isUnread, removeDm, serverPrefFor, isChannelMuted, dmPrefFor, setDmPref, nameFor, isScopeMuted, setReadState, getKnownUser } from '../state.js';
+import { state, presenceFor, isUnread, removeDm, serverPrefFor, isChannelMuted, dmPrefFor, setDmPref, nameFor, isScopeMuted, setReadState, getKnownUser, forumHasUnreadPosts } from '../state.js';
 import { icons } from '../icons.js';
 import { avatarHtml, statusEmojiBadge, escapeHtml, toast, apiErrorMessage } from '../utils.js';
 import { has, PERMISSIONS, memberPermissionBits } from '../permissions.js';
@@ -45,6 +45,7 @@ export function mountChannelSidebar(container, detail) {
   const offRead = bus.on('state:readState', render);
   const offPrefs = bus.on('state:serverPrefs', (id) => { if (id === server.id) render(); });
   const offVoice = bus.on('state:serverVoice', render);
+  const offThreads = bus.on('state:threads', render);
 
   function render() {
     container.innerHTML = `
@@ -259,7 +260,7 @@ export function mountChannelSidebar(container, detail) {
     if (g.id === null) return g.channels.map(renderChannelRow).join('');
     const collapsed = collapsedCategories.has(g.id);
     return `
-      <div class="channel-category-header" data-cat-header="${g.id}" ${canManageChannels ? 'draggable="true"' : ''}>
+      <div class="channel-category-header${collapsed && g.channels.some(channelUnread) ? ' unread' : ''}" data-cat-header="${g.id}" ${canManageChannels ? 'draggable="true"' : ''}>
         ${collapsed ? icons.chevronRight(12) : icons.chevronDown(12)}
         <span class="cat-name">${escapeHtml(g.name)}</span>
         ${canManageChannels ? `<span class="ch-gear" data-cat-gear="${g.id}">${icons.gear(14)}</span>` : ''}
@@ -267,8 +268,13 @@ export function mountChannelSidebar(container, detail) {
       ${collapsed ? '' : g.channels.map(renderChannelRow).join('')}`;
   }
 
+  function channelUnread(ch) {
+    if (state.view.type === 'server' && state.view.channelId === ch.id) return false;
+    return isUnread('channel', ch.id, ch.last_message_id) || (ch.type === 'forum' && forumHasUnreadPosts(ch.id));
+  }
+
   function renderChannelRow(ch) {
-    const unread = state.view.type !== 'server' || state.view.channelId !== ch.id ? isUnread('channel', ch.id, ch.last_message_id) : false;
+    const unread = channelUnread(ch);
     return `
       <div class="channel-item ${state.view.type === 'server' && state.view.channelId === ch.id ? 'active' : ''} ${unread ? 'unread' : ''}"
            data-channel="${ch.id}" ${canManageChannels ? 'draggable="true"' : ''}>
@@ -372,7 +378,7 @@ export function mountChannelSidebar(container, detail) {
     });
   }
 
-  function destroy() { offMsg(); offRead(); offPrefs(); offVoice(); }
+  function destroy() { offMsg(); offRead(); offPrefs(); offVoice(); offThreads(); }
   return { destroy };
 }
 

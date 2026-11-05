@@ -7,7 +7,8 @@ import { mountChat } from './chat.js';
 import { forumCardHtml, matchesPost, sortPosts } from '../forumCard.js';
 import { t } from '../i18n.js';
 import { memberNameColor } from '../permissions.js';
-import { state } from '../state.js';
+import { state, threadUnread, getServerDetail, setReadState, isUnread } from '../state.js';
+import { mountPinnedPanel } from './pinnedPanel.js';
 import { canEditPost, canDeletePost } from '../threadPerms.mjs';
 import { editPost, deletePost } from './postActions.js';
 
@@ -21,6 +22,7 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
   let sort = 'activity';
   let openId = null;
   let openChat = null;
+  let pinsPanel = null;
 
   container.innerHTML = `
     <div class="forum-split">
@@ -58,6 +60,20 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
     if (post) { post.messageCount += 1; post.lastMessageAt = message.createdAt; render(); }
   });
 
+  // A forum never mounts a channel-level chat, so channel-scope messages here (system notices, forwards)
+  // would otherwise stay unread forever.
+  function markChannelRead() {
+    const ch = getServerDetail(serverId)?.channels.find((c) => c.id === channelId);
+    if (!ch?.last_message_id || !isUnread('channel', channelId, ch.last_message_id)) return;
+    const id = ch.last_message_id;
+    api.markRead('channel', channelId, id).then(() => setReadState('channel', channelId, id)).catch(() => {});
+  }
+  markChannelRead();
+  const offChannelMsg = bus.on('ws:message_create', ({ message }) => {
+    if (message.scopeType === 'channel' && message.scopeId === channelId) queueMicrotask(markChannelRead);
+  });
+  const offThreadsUnread = bus.on('state:threads', () => { if (!loading) render(); });
+
   load();
 
   async function load() {
@@ -94,7 +110,7 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
       return;
     }
     const shown = sortPosts(posts.filter((p) => matchesPost(p, query)), sort);
-    listEl.innerHTML = shown.map((p) => forumCardHtml(p, { customEmoji, active: p.id === openId, colorFor, canPin: canManage })).join('')
+    listEl.innerHTML = shown.map((p) => forumCardHtml(p, { customEmoji, active: p.id === openId, colorFor, canPin: canManage, unread: threadUnread(p.id) && p.id !== openId })).join('')
       || `<div class="forum-nomatch">${t('forum.noMatches')}</div>`;
     listEl.querySelectorAll('.forum-card').forEach((node) => {
       node.addEventListener('click', async (e) => {
@@ -117,19 +133,49 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
     openChat?.destroy?.();
     openChat = null;
     openId = null;
+    state.openForumPostId = null;
+    pinsPanel?.destroy?.();
+    pinsPanel = null;
     const pane = container.querySelector('#forum-pane');
     pane.hidden = true;
     pane.innerHTML = '';
     render();
   }
 
+  function mountPostChat(post, jumpToMessageId) {
+    openChat?.destroy?.();
+    openChat = mountChat(container.querySelector('#forum-pane-body'), {
+      kind: 'thread', serverId, channelId, threadId: post.id, jumpToMessageId,
+      canSend: canSend && !post.archived, canManage, channels, customEmoji, stickers, rawHtmlEnabled,
+    }, { emptyTitle: t('shell.startOfThread'), emptyBody: '' });
+  }
+
+  function togglePins(post) {
+    const pane = container.querySelector('#forum-pane');
+    const existing = pane.querySelector('.forum-pins');
+    if (existing) { pinsPanel?.destroy?.(); pinsPanel = null; existing.remove(); return; }
+    const host = document.createElement('div');
+    host.className = 'forum-pins';
+    pane.appendChild(host);
+    const close = () => { pinsPanel?.destroy?.(); pinsPanel = null; host.remove(); };
+    pinsPanel = mountPinnedPanel(host, 'thread', post.id, {
+      canManage,
+      onJump: (messageId) => { close(); mountPostChat(post, messageId); },
+      onClose: close,
+    });
+  }
+
   function openPost(post) {
     openChat?.destroy?.();
+    pinsPanel?.destroy?.();
+    pinsPanel = null;
     openId = post.id;
+    state.openForumPostId = post.id;
     const pane = container.querySelector('#forum-pane');
     pane.hidden = false;
     pane.innerHTML = `
       <div class="forum-pane-head"><span class="fpane-title">${escapeHtml(post.title)}</span>
+        <button class="btn-icon" id="forum-pane-pins" title="${escapeHtml(t('shell.pinnedMessagesTitle'))}" aria-label="${escapeHtml(t('shell.pinnedMessagesTitle'))}">${icons.pin(16)}</button>
         ${canEditPost(post, state.me) ? `<button class="btn-icon" id="forum-pane-edit" title="${escapeHtml(t('forum.editPost'))}" aria-label="${escapeHtml(t('forum.editPost'))}">${icons.edit(16)}</button>` : ''}
         ${canDeletePost(post, state.me, { canManage }) ? `<button class="btn-icon" id="forum-pane-delete" title="${escapeHtml(t('forum.deletePost'))}" aria-label="${escapeHtml(t('forum.deletePost'))}" style="color:var(--danger)">${icons.trash(16)}</button>` : ''}
         <button class="btn-icon" id="forum-pane-close" aria-label="${t('common.close')}">${icons.x(18)}</button></div>
@@ -138,10 +184,8 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
     pane.querySelector('#forum-pane-close').addEventListener('click', closePost);
     pane.querySelector('#forum-pane-edit')?.addEventListener('click', () => editPost(serverId, channelId, post.id));
     pane.querySelector('#forum-pane-delete')?.addEventListener('click', () => deletePost(serverId, channelId, post));
-    openChat = mountChat(pane.querySelector('#forum-pane-body'), {
-      kind: 'thread', serverId, channelId, threadId: post.id,
-      canSend: canSend && !post.archived, canManage, channels, customEmoji, stickers, rawHtmlEnabled,
-    }, { emptyTitle: t('shell.startOfThread'), emptyBody: '' });
+    pane.querySelector('#forum-pane-pins').addEventListener('click', () => togglePins(post));
+    mountPostChat(post);
     render();
   }
 
@@ -177,8 +221,10 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
   }
 
   function destroy() {
-    offCreate(); offUpdate(); offDelete(); offMessage();
+    offCreate(); offUpdate(); offDelete(); offMessage(); offThreadsUnread(); offChannelMsg();
     openChat?.destroy?.();
+    pinsPanel?.destroy?.();
+    if (state.openForumPostId === openId) state.openForumPostId = null;
   }
 
   return { destroy };

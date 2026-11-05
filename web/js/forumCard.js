@@ -31,16 +31,16 @@ export function sortPosts(posts, mode) {
   return posts.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(key(b)) - new Date(key(a)));
 }
 
-export function forumCardHtml(p, { customEmoji, active = false, tag = 'div', colorFor, canPin = false } = {}) {
+export function forumCardHtml(p, { customEmoji, active = false, tag = 'div', colorFor, canPin = false, unread = false } = {}) {
   const author = p.preview?.author || p.createdBy?.displayName || '';
   const color = colorFor ? colorFor(p.preview?.authorId ?? p.createdBy?.id) : null;
   const authorStyle = color ? ` style="color:${escapeHtml(color)}"` : '';
   const body = p.preview?.content ? `<span class="fc-author"${authorStyle}>${escapeHtml(author)}</span>: ${escapeHtml(p.preview.content)}` : '';
   const pinLabel = escapeHtml(t(p.pinned ? 'forum.unpinPost' : 'forum.pinPost'));
-  return `<${tag} class="forum-card${p.archived ? ' archived' : ''}${p.pinned ? ' pinned' : ''}${active ? ' active' : ''}" data-id="${p.id}">
+  return `<${tag} class="forum-card${p.archived ? ' archived' : ''}${p.pinned ? ' pinned' : ''}${unread ? ' unread' : ''}${active ? ' active' : ''}" data-id="${p.id}">
     <div class="fc-main">
       ${p.pinned ? `<div class="fc-pinned">${icons.pin(12)} ${t('forum.pinnedBadge')}</div>` : ''}
-      <div class="fc-title">${escapeHtml(p.title)}${p.archived ? ` <span class="fc-badge">${icons.lock(11)} ${t('forum.closedBadge')}</span>` : ''}</div>
+      <div class="fc-title">${unread ? '<span class="fc-unread-dot"></span>' : ''}${escapeHtml(p.title)}${p.archived ? ` <span class="fc-badge">${icons.lock(11)} ${t('forum.closedBadge')}</span>` : ''}</div>
       ${body ? `<div class="fc-preview">${body}</div>` : ''}
       <div class="fc-foot">
         ${p.reactionCount ? `<span class="fc-react">${glyph(p.topEmoji, customEmoji)} ${p.reactionCount}</span>` : ''}

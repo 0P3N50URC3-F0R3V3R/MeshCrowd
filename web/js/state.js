@@ -295,8 +295,20 @@ export function isChannelMuted(serverId, channelId) {
 // Unlike setReadState this may move the pointer backwards ("mark as unread from here").
 // Unread-thread dot: a thread stops counting once the user's read pointer reaches its newest message.
 export function threadUnread(threadId) { return state.threadsUnread.has(threadId); }
+// Forum posts are threads too but belong to the forum itself, not to the "threads" list of a text channel.
 export function channelHasUnreadThreads(channelId) {
-  for (const th of state.threadsUnread.values()) if (th.channelId === channelId) return true;
+  for (const th of state.threadsUnread.values()) if (th.channelId === channelId && !th.forum) return true;
+  return false;
+}
+export function forumHasUnreadPosts(channelId) {
+  for (const th of state.threadsUnread.values()) if (th.channelId === channelId && th.forum) return true;
+  return false;
+}
+function isForumChannel(channelId) {
+  for (const d of state.serverDetail.values()) {
+    const ch = d.channels?.find((c) => c.id === channelId);
+    if (ch) return ch.type === 'forum';
+  }
   return false;
 }
 function settleThread(scopeType, scopeId, messageId) {
@@ -307,9 +319,9 @@ function settleThread(scopeType, scopeId, messageId) {
 
 bus.on('ws:message_create', ({ message, channelId }) => {
   if (message?.scopeType !== 'thread' || !state.me || message.author?.id === state.me.id || !channelId) return;
-  if (state.view.threadId === message.scopeId && !document.hidden) return; // being read right now
+  if ((state.view.threadId === message.scopeId || state.openForumPostId === message.scopeId) && !document.hidden) return; // being read right now
   if ((state.readState.get(`thread:${message.scopeId}`) || 0) >= message.id) return;
-  state.threadsUnread.set(message.scopeId, { channelId, lastId: message.id });
+  state.threadsUnread.set(message.scopeId, { channelId, lastId: message.id, forum: isForumChannel(channelId) });
   bus.emit('state:threads', message.scopeId);
 });
 bus.on('ws:thread_delete', ({ threadId }) => { if (state.threadsUnread.delete(threadId)) bus.emit('state:threads', threadId); });
@@ -324,7 +336,7 @@ export function forceReadState(scopeType, scopeId, messageId) {
 export function setReadStateBulk(rows, pinsUnseen = [], threadsUnread = []) {
   state.readState = new Map(rows.map((r) => [`${r.scopeType}:${r.scopeId}`, r.lastReadMessageId]));
   state.pinsUnseen = new Map(pinsUnseen.map((p) => [`${p.scopeType}:${p.scopeId}`, p.latest]));
-  state.threadsUnread = new Map(threadsUnread.map((th) => [th.threadId, { channelId: th.channelId, lastId: th.lastMessageId }]));
+  state.threadsUnread = new Map(threadsUnread.map((th) => [th.threadId, { channelId: th.channelId, lastId: th.lastMessageId, forum: !!th.forum }]));
   bus.emit('state:pins');
   bus.emit('state:threads');
 }

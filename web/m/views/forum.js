@@ -4,7 +4,7 @@ import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
 import { escapeHtml, apiErrorMessage, toast } from '../../js/utils.js';
 import { forumCardHtml, matchesPost, sortPosts } from '../../js/forumCard.js';
-import { state } from '../../js/state.js';
+import { state, threadUnread, getServerDetail, setReadState, isUnread } from '../../js/state.js';
 import { PERMISSIONS, has, memberPermissionBits, channelPermissionBits, memberNameColor } from '../../js/permissions.js';
 import { nav } from '../router.js';
 import { ensureServerDetail } from '../data.js';
@@ -42,7 +42,7 @@ export function mountForum(el, params) {
       return;
     }
     const shown = sortPosts(posts.filter((p) => matchesPost(p, query)), sort);
-    list.innerHTML = shown.map((p) => forumCardHtml(p, { customEmoji, tag: 'button', colorFor, canPin })).join('')
+    list.innerHTML = shown.map((p) => forumCardHtml(p, { customEmoji, tag: 'button', colorFor, canPin, unread: threadUnread(p.id) })).join('')
       || `<div class="m-empty">${t('forum.noMatches')}</div>`;
   }
 
@@ -72,6 +72,7 @@ export function mountForum(el, params) {
     } catch (err) { handleError(err, 'm.loadFailed'); posts = []; }
     loading = false;
     paint();
+    markChannelRead();
   }
 
   function openNewPost() {
@@ -117,7 +118,17 @@ export function mountForum(el, params) {
   });
   el.querySelector('#m-new').addEventListener('click', openNewPost);
 
+  function markChannelRead() {
+    const ch = getServerDetail(serverId)?.channels.find((c) => c.id === channelId);
+    if (!ch?.last_message_id || !isUnread('channel', channelId, ch.last_message_id)) return;
+    const id = ch.last_message_id;
+    api.markRead('channel', channelId, id).then(() => setReadState('channel', channelId, id)).catch(() => {});
+  }
+  markChannelRead();
+
   const offs = [
+    bus.on('ws:message_create', ({ message }) => { if (message.scopeType === 'channel' && message.scopeId === channelId) queueMicrotask(markChannelRead); }),
+    bus.on('state:threads', () => { if (!loading) paint(); }),
     bus.on('ws:thread_create', (p) => { if (p.channelId === channelId) upsert(p.thread); }),
     bus.on('ws:thread_update', (p) => { if (p.channelId === channelId) upsert(p.thread); }),
     bus.on('ws:thread_delete', (p) => { if (p.channelId === channelId) { posts = posts.filter((x) => x.id !== p.threadId); paint(); } }),
