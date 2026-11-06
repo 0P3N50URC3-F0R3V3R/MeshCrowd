@@ -125,13 +125,22 @@ function roleOrder(roles, id) {
 // A member's per-member color override (server/routes/servers.js's name_color column) beats
 // their highest-position colored role, which beats no color at all. Used anywhere a member's
 // name is rendered - chat messages, the member list, profile cards.
-// Same precedence as memberNameColor, plus the personal text effect, which only shows when the
-// personal color does (no role or moderator color in the way).
+// Same precedence as memberNameColor, plus the text effect: a moderator override is a plain color, a
+// colored role brings its own effect, and only with neither does the person's own look show.
 export function memberNameFx(roles, member) {
-  const color = memberNameColor(roles, member);
-  const personal = member?.user?.nameColor || null;
-  const effect = color && color === personal ? (member.user.nameEffect || '') : (!color ? (member?.user?.nameEffect || '') : '');
-  return { color, effect };
+  if (!member) return {};
+  if (member.nameColor) return { color: member.nameColor, effect: '' };
+  const topRole = [...roles]
+    .filter((r) => !r.is_default && r.color && r.color !== '#99aab5')
+    .sort((a, b) => b.position - a.position)
+    .find((r) => (member.roleIds || []).includes(r.id));
+  if (topRole) {
+    let fx = {};
+    try { fx = topRole.name_fx ? JSON.parse(topRole.name_fx) : {}; } catch { fx = {}; }
+    return { color: topRole.color, effect: topRole.name_effect || '', colors: fx.colors || [], speed: fx.speed };
+  }
+  const u = member.user || {};
+  return { color: u.nameColor || null, effect: u.nameEffect || '', colors: u.nameFx?.colors || [], speed: u.nameFx?.speed };
 }
 
 export function memberNameColor(roles, member) {

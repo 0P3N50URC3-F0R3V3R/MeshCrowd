@@ -294,7 +294,13 @@
     "nameEffect_pulse": "Pulse",
     "nameEffect_shimmer": "Shimmer",
     "nameEffect_fire": "Fire",
-    "nameEffect_wave": "Wave"
+    "nameEffect_wave": "Wave",
+    "nameFxAdvanced": "Customize the effect",
+    "nameFxColorsHint": "Pick your own colors for the effect (rainbow, gradient, shimmer, fire): two colors make a two-color blend, up to five are allowed. Leave empty for the default colors.",
+    "nameFxAddColor": "Add color",
+    "nameFxRemoveColor": "Remove this color",
+    "nameFxDefaultColors": "Default colors",
+    "nameFxSpeed": "Speed (seconds per cycle)"
   },
   "federation": {
     "heading": "Federation",
@@ -1824,7 +1830,9 @@
     "auditActionReactionRoleDelete": "removed a reaction role",
     "auditActionTemplateCreate": "created a server template",
     "auditActionTemplateSync": "updated a server template",
-    "auditActionTemplateDelete": "deleted a server template"
+    "auditActionTemplateDelete": "deleted a server template",
+    "roleEffectLabel": "Name effect",
+    "roleEffectHint": "Members whose top colored role is this one get this animated effect on their name in this server. The role color is the base color."
   },
   "chat": {
     "slashAfkDesc": "Set your status to idle with an optional AFK message.",

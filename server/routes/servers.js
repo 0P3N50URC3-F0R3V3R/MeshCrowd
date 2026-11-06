@@ -1039,7 +1039,10 @@ router.post('/:id/roles', requireMember, requirePerm(PERMISSIONS.MANAGE_ROLES), 
 router.patch('/:id/roles/:roleId', requireMember, requirePerm(PERMISSIONS.MANAGE_ROLES), (req, res) => {
   const role = db.prepare('SELECT * FROM roles WHERE id = ? AND server_id = ?').get(req.params.roleId, req.server.id);
   if (!role) return res.status(404).json({ error: 'role not found' });
-  const { name, color, permissions, position, iconEmoji } = req.body || {};
+  const { name, color, permissions, position, iconEmoji, nameEffect, nameFx } = req.body || {};
+  if (nameEffect !== undefined && !require('../lib/nameFx').validEffect(nameEffect)) return res.status(400).json({ error: 'invalid nameEffect' });
+  const cleanedFx = nameFx === undefined ? undefined : require('../lib/nameFx').cleanFx(nameFx);
+  if (nameFx !== undefined && !cleanedFx) return res.status(400).json({ error: 'invalid nameFx' });
   if (iconEmoji !== undefined && iconEmoji !== null && iconEmoji !== '' && (typeof iconEmoji !== 'string' || !ROLE_EMOJI_RE.test(iconEmoji))) {
     return res.status(400).json({ error: 'iconEmoji must be a single emoji' });
   }
@@ -1055,6 +1058,8 @@ router.patch('/:id/roles/:roleId', requireMember, requirePerm(PERMISSIONS.MANAGE
   const updates = []; const params = [];
   if (name !== undefined && !role.is_default) { updates.push('name = ?'); params.push(singleLine(name, 50)); }
   if (color !== undefined) { updates.push('color = ?'); params.push(String(color)); }
+  if (nameEffect !== undefined) { updates.push('name_effect = ?'); params.push(nameEffect || null); }
+  if (cleanedFx !== undefined) { updates.push('name_fx = ?'); params.push(JSON.stringify(cleanedFx)); }
   if (permissions !== undefined) { updates.push('permissions = ?'); params.push(Number(permissions) || 0); }
   if (position !== undefined && !role.is_default) { updates.push('position = ?'); params.push(Number(position) || 0); }
   if (iconEmoji !== undefined && !role.is_default) {

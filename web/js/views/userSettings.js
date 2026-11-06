@@ -10,7 +10,7 @@ import {
 import { icons } from '../icons.js';
 import { cropImage } from '../cropEditor.js';
 import { renderBio } from '../bioMarkup.mjs';
-import { nameColorPickerHtml, wireNameColorPicker, readNameColor, readNameEffect } from '../nameColorPicker.js';
+import { nameColorPickerHtml, wireNameColorPicker, readNameColor, readNameEffect, readNameFx } from '../nameColorPicker.js';
 import { bioToolbarHtml, wireBioToolbar } from '../bioEditor.js';
 import { avatarHtml, BIO_MAX, colorForId, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle, navScroll, restoreNavScroll } from '../utils.js';
 import { openAdminPanel } from './admin.js';
@@ -132,7 +132,7 @@ export function openUserSettings(initialTab = 'account') {
       </div>
       <div class="field">
         <label>${t('userSettings.nameColorLabel')}</label>
-        ${nameColorPickerHtml(me.nameColor, me.nameEffect)}
+        ${nameColorPickerHtml(me.nameColor, me.nameEffect, me.nameFx)}
         <div class="hint">${t('userSettings.nameColorHint')}</div>
       </div>
       <div class="field">
@@ -292,7 +292,7 @@ export function openUserSettings(initialTab = 'account') {
       const bio = bioInput.value;
       const errBox = inner.querySelector('#acc-err');
       errBox.textContent = '';
-      const payload = { displayName, bio, nameColor: readNameColor(inner), nameEffect: readNameEffect(inner) };
+      const payload = { displayName, bio, nameColor: readNameColor(inner), nameEffect: readNameEffect(inner), nameFx: readNameFx(inner) };
       if (bannerColorTouched) payload.bannerColor = pendingBannerColor;
       if (cardColorTouched) payload.cardColor = pendingCardColor;
       if (avatarBgTouched) payload.avatarBackground = pendingAvatarBg;

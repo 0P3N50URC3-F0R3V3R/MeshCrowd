@@ -68,7 +68,7 @@ A szerepkörök jogosultsági jelzők halmazai. Mindenki megkapja a beépített 
 
 ### Szerepkörszínek és ikonok
 
-Minden szerepkörnek van színe és **szerepkör-ikonja**: emoji vagy feltöltött kép. A tag legmagasabb, ikonnal rendelkező szerepkörének ikonja jelenik meg a neve mellett a csevegésben és a taglistában. A tagonkénti **névszín** felülbírálása erősebb a szerepkörszínnél.
+Minden szerepkörnek van színe, opcionális animált **néveffektje** (ugyanazok az effektek és színek, mint a személyes néveffekteknél: akiknek ez a legmagasabb színes szerepkörük, azok kapják ezen a szerveren a nevükön) és **szerepkör-ikonja**: emoji vagy feltöltött kép. A tag legmagasabb, ikonnal rendelkező szerepkörének ikonja jelenik meg a neve mellett a csevegésben és a taglistában. A tagonkénti **névszín** felülbírálása erősebb a szerepkörszínnél.
 
 ### Csatorna-felülbírálások
 
@@ -90,3 +90,7 @@ Az üdvözlőképernyő kiemelt csatornákat listáz az új tagoknak. Az **időz
 
 - Tedd a szabályokat az újonnan érkezők elé a [Közösségi eszközökkel](community-tools.html).
 - Tarts rendet a [Moderáció és biztonság](moderation.html) segítségével.
+
+## Emoji, matricák és hangok
+
+A **Szerverbeállításokban** az Emoji, Matricák és Hangtár oldalon egyenként vagy **Tömeges feltöltéssel** egyszerre többet is feltölthetsz: minden fájlból a fájl nevéről elnevezett elem lesz (betűkre, számokra és aláhúzásra tisztítva, egyedivé téve). A névre kattintva helyben átnevezheted. Az üzenetmező **hangjegy** gombja minden szerveres csatornában listázza a szerver hangjait: egy kattintás lejátssza neked, vagy az egész szobának, ha a szerveren hanghívásban vagy.

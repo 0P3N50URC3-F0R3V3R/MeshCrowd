@@ -37,7 +37,7 @@ const uploadAvatar = multer({
 });
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
-const NAME_EFFECTS = ['rainbow', 'gradient', 'glow', 'neon', 'pulse', 'shimmer', 'fire', 'wave'];
+const { EFFECTS: NAME_EFFECTS, cleanFx } = require('../lib/nameFx');
 
 // Same upload shape as the avatar (folder + column differ) — shared by the profile card's
 // customizable top ("banner") and bottom ("card") background images.
@@ -67,7 +67,7 @@ function syncProfile(userId) {
 }
 
 router.patch('/me', requireAuth, (req, res) => {
-  const { displayName, nameColor, nameEffect, bio, dmPrivacy, profilePrivacy, discoverable, bannerColor, cardColor, avatarBackground, avatarBgColor } = req.body || {};
+  const { displayName, nameColor, nameEffect, nameFx, bio, dmPrivacy, profilePrivacy, discoverable, bannerColor, cardColor, avatarBackground, avatarBgColor } = req.body || {};
   const updates = [];
   const params = [];
 
@@ -99,6 +99,11 @@ router.patch('/me', requireAuth, (req, res) => {
   if (nameEffect !== undefined) {
     if (nameEffect !== '' && nameEffect !== null && !NAME_EFFECTS.includes(nameEffect)) return res.status(400).json({ error: 'invalid nameEffect' });
     updates.push('name_effect = ?'); params.push(nameEffect || null);
+  }
+  if (nameFx !== undefined) {
+    const cleaned = cleanFx(nameFx);
+    if (!cleaned) return res.status(400).json({ error: 'invalid nameFx' });
+    updates.push('name_fx = ?'); params.push(JSON.stringify(cleaned));
   }
   if (bio !== undefined) {
     updates.push('bio = ?'); params.push(clipBio(bio));

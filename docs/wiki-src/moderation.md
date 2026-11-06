@@ -68,7 +68,7 @@ From a member's right-click menu or **Server Settings, Members**:
 
 ## Reports
 
-Any member can report a message or a person. Reports go to a queue that site administrators with the reports permission can resolve from the admin panel.
+Any member can report a message or a person. Reports go to a queue that site administrators with the reports permission work from the admin panel. Reports are grouped by the reported person with Pending, Resolved, Rejected and All tabs. A pending report stays editable: change the reason and keep **admin-only notes** on the case. Resolving or rejecting records who and when, a closed report can be reopened, and only a resolved or rejected report can be deleted (**Clear closed** removes them in bulk, per person or for everyone; pending reports are never touched).
 
 ## Audit log
 

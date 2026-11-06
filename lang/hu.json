@@ -294,7 +294,13 @@
     "nameEffect_pulse": "Pulzálás",
     "nameEffect_shimmer": "Csillogás",
     "nameEffect_fire": "Tűz",
-    "nameEffect_wave": "Hullám"
+    "nameEffect_wave": "Hullám",
+    "nameFxAdvanced": "Az effekt testreszabása",
+    "nameFxColorsHint": "Válassz saját színeket az effekthez (szivárvány, színátmenet, csillogás, tűz): két szín kétszínű átmenetet ad, legfeljebb öt engedélyezett. Hagyd üresen az alapértelmezett színekhez.",
+    "nameFxAddColor": "Szín hozzáadása",
+    "nameFxRemoveColor": "Szín eltávolítása",
+    "nameFxDefaultColors": "Alapszínek",
+    "nameFxSpeed": "Sebesség (másodperc ciklusonként)"
   },
   "federation": {
     "heading": "Föderáció",
@@ -1824,7 +1830,9 @@
     "auditActionReactionRoleDelete": "reakció szerepkört távolított el",
     "auditActionTemplateCreate": "szerversablont hozott létre",
     "auditActionTemplateSync": "frissített egy szerversablont",
-    "auditActionTemplateDelete": "törölt egy szerversablont"
+    "auditActionTemplateDelete": "törölt egy szerversablont",
+    "roleEffectLabel": "Néveffekt",
+    "roleEffectHint": "Azok a tagok, akiknek ez a legmagasabb színes szerepköre, ezt az animált effektet kapják a nevükön ezen a szerveren. A szerepkör színe az alapszín."
   },
   "chat": {
     "slashAfkDesc": "Beállítja a státuszodat távollévőre, opcionális AFK-üzenettel.",

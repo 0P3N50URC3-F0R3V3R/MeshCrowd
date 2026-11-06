@@ -39,6 +39,7 @@ function toPublicUser(user, { viewerIsSelf = false, areFriends = false } = {}) {
     isBot: !!user.is_bot,
     nameColor: user.name_color || null,
     nameEffect: user.name_effect || '',
+    nameFx: require('./nameFx').parseStored(user.name_fx),
   };
 
   const canSeeProfile =

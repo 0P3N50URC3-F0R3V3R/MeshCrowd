@@ -3,7 +3,7 @@ import { bus } from '../../js/bus.js';
 import { t } from '../../js/i18n.js';
 import { renderBio } from '../../js/bioMarkup.mjs';
 import { bioToolbarHtml, wireBioToolbar } from '../../js/bioEditor.js';
-import { nameColorPickerHtml, wireNameColorPicker, readNameColor, readNameEffect } from '../../js/nameColorPicker.js';
+import { nameColorPickerHtml, wireNameColorPicker, readNameColor, readNameEffect, readNameFx } from '../../js/nameColorPicker.js';
 import { escapeHtml, toast, avatarHtml, colorForId, BIO_MAX } from '../../js/utils.js';
 import { state } from '../../js/state.js';
 import { handleError } from './errors.js';
@@ -14,7 +14,7 @@ export function openEditProfile() {
   openSheet({
     title: t('m.profile'),
     html: `<label class="m-field">${t('m.displayName')}<input class="m-input" id="p-name" maxlength="32" value="${escapeHtml(state.me.displayName)}"></label>
-      <div class="m-field"><span>${t('userSettings.nameColorLabel')}</span>${nameColorPickerHtml(state.me.nameColor, state.me.nameEffect)}</div>
+      <div class="m-field"><span>${t('userSettings.nameColorLabel')}</span>${nameColorPickerHtml(state.me.nameColor, state.me.nameEffect, state.me.nameFx)}</div>
       <label class="m-field"><span style="display:flex;justify-content:space-between">${t('m.bio')}<small id="p-bio-count"></small></span>${bioToolbarHtml()}<textarea class="m-input" id="p-bio" rows="3" maxlength="${BIO_MAX}">${escapeHtml(state.me.bio || '')}</textarea></label>
       <div class="pp-bio" id="p-bio-prev" style="margin-bottom:8px"></div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span id="p-av-prev">${avatarHtml(state.me, 56)}</span>
@@ -54,7 +54,7 @@ export function openEditProfile() {
       });
       body.querySelector('#p-save').addEventListener('click', async () => {
         try {
-          const res = await api.updateMe({ displayName: body.querySelector('#p-name').value.trim(), nameColor: readNameColor(body), nameEffect: readNameEffect(body), bio: body.querySelector('#p-bio').value, avatarBackground: bgBox.checked, ...(colorTouched ? { avatarBgColor: colorBox.value } : {}) });
+          const res = await api.updateMe({ displayName: body.querySelector('#p-name').value.trim(), nameColor: readNameColor(body), nameEffect: readNameEffect(body), nameFx: readNameFx(body), bio: body.querySelector('#p-bio').value, avatarBackground: bgBox.checked, ...(colorTouched ? { avatarBgColor: colorBox.value } : {}) });
           Object.assign(state.me, res.user); bus.emit('state:me'); toast(t('m.profileSaved')); close();
         } catch (err) { handleError(err); }
       });

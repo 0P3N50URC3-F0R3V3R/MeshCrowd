@@ -1,3 +1,4 @@
+import { nameFxControlsHtml, wireNameFxControls, readNameEffect, readNameFx } from '../nameColorPicker.js';
 import { bulkUploadHtml, wireBulkUpload, wireInlineRename } from '../assetBulk.js';
 import { bus } from '../bus.js';
 import { api } from '../api.js';
@@ -758,6 +759,11 @@ function buildServerSettings(serverId, opts) {
           </label>
         </div>
       </div>
+      ${role.is_default ? '' : `<div class="field">
+        <label>${t('serverSettings.roleEffectLabel')}</label>
+        ${nameFxControlsHtml(role.name_effect || '', (() => { try { return role.name_fx ? JSON.parse(role.name_fx) : {}; } catch { return {}; } })())}
+        <div class="hint">${t('serverSettings.roleEffectHint')}</div>
+      </div>`}
       <div class="field">
         <label>${t('serverSettings.permissionsLabel')}</label>
         <div class="perm-grid" id="perm-grid">
@@ -779,11 +785,13 @@ function buildServerSettings(serverId, opts) {
 
     let pendingColor = role.color;
     let pendingBits = role.permissions;
+    const repaintFx = wireNameFxControls(editorEl, () => pendingColor);
 
     editorEl.querySelectorAll('[data-color]').forEach((n) => n.addEventListener('click', () => {
       pendingColor = n.dataset.color;
       editorEl.querySelectorAll('[data-color]').forEach((x) => x.classList.toggle('selected', x === n));
       customSwatch.classList.remove('selected');
+      repaintFx();
     }));
     const customSwatch = editorEl.querySelector('.color-swatch-custom');
     editorEl.querySelector('#r-color-custom').addEventListener('input', (e) => {
@@ -791,6 +799,7 @@ function buildServerSettings(serverId, opts) {
       editorEl.querySelectorAll('[data-color]').forEach((x) => x.classList.remove('selected'));
       customSwatch.classList.add('selected');
       customSwatch.style.background = pendingColor;
+      repaintFx();
     });
     editorEl.querySelectorAll('[data-flag]').forEach((n) => n.addEventListener('click', () => {
       const flag = Number(n.dataset.flag);
@@ -818,6 +827,7 @@ function buildServerSettings(serverId, opts) {
 
     editorEl.querySelector('#r-save').addEventListener('click', async () => {
       const payload = { color: pendingColor, permissions: pendingBits };
+      if (!role.is_default) { payload.nameEffect = readNameEffect(editorEl); payload.nameFx = readNameFx(editorEl); }
       if (!role.is_default) payload.name = editorEl.querySelector('#r-name').value.trim() || role.name;
       const emojiInput = editorEl.querySelector('#r-icon-emoji');
       if (emojiInput && emojiInput.value.trim() !== (role.icon_emoji || '')) payload.iconEmoji = emojiInput.value.trim();

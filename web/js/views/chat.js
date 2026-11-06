@@ -16,7 +16,7 @@ import { confirmModal, promptModal, openModal } from './modal.js';
 import { MAX_TEXT_FILE_BYTES, textByteLength, textToFile } from '../longText.js';
 import { openInviteModal } from './sidebar.js';
 import { memberNameColor, memberNameFx } from '../permissions.js';
-import { nameAttrs } from '../nameStyle.js';
+import { nameAttrs, personalFx } from '../nameStyle.js';
 import { memberRoleIcon, roleIconHtml } from '../roleIcon.js';
 import { isAgeGateError, renderAgeGate } from '../ageGate.js';
 import { usageOf, parseInvocation, missingRequired } from '../slashCommands.js';
@@ -409,7 +409,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
 
   // Color + personal effect for a name: a role/moderator color hides the effect, DMs use the person's own look.
   function authorFx(authorId, author) {
-    if (!scope.serverId) return scope.kind === 'dm' ? { color: author?.nameColor || null, effect: author?.nameEffect || '' } : {};
+    if (!scope.serverId) return scope.kind === 'dm' ? personalFx(author) : {};
     const detail = getServerDetail(scope.serverId);
     const member = detail?.members.find((x) => x.user.id === authorId);
     return detail && member ? memberNameFx(detail.roles, member) : {};

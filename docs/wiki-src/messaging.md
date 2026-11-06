@@ -44,7 +44,7 @@ The **microphone** button in the composer records up to five minutes. A red bar 
 
 ## Scheduled messages
 
-The **clock** button next to the composer opens **Send later** for what you typed. Pick a time or a preset such as tomorrow at 9:00. The message is posted as you at that moment with the same checks as a normal message, so it can still be refused, for example if you are timed out or AutoMod objects. Failures stay in your list with the reason, and you can cancel anything you scheduled. On the phone interface hold the send button.
+The **clock** button next to the composer opens **Send later** for what you typed. Pick a time or a preset such as in 3 hours, tonight or tomorrow at 9:00; the editor shows your time zone, how long until it is sent and a character counter. A pending message can be edited (text and time) or cancelled from the list. The message is posted as you at that moment with the same checks as a normal message, so it can still be refused, for example if you are timed out or AutoMod objects. Failures stay in your list with the reason, and you can cancel anything you scheduled. On the phone interface hold the send button.
 
 Notes channels and DMs with people on other servers cannot be scheduled.
 

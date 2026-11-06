@@ -60,6 +60,12 @@ A felület magyarul és angolul beszél. A nyelvet a beállításokban, vagy a b
 
 A szerver adhat neked **becenevet**, amely csak ott látszik. A szerveradminok tagonkénti névszínt állíthatnak be, ami felülírja a szerepkörszínt.
 
+### Saját névszín és effekt
+
+A **Beállítások, Fiókom** oldalon (telefonon **Te, Profil**) választhatsz **névszínt** az előre megadottak közül vagy a szabad színválasztóval, és opcionálisan **szövegeffektet**: szivárvány, színátmenet, ragyogás, neon, pulzálás, csillogás, tűz vagy hullám. Élő előnézet mutatja az eredményt. Az **Az effekt testreszabása** alatt saját színeket adhatsz meg (legfeljebb ötöt: két szín a teljes szivárvány helyett kétszínű átmenetet ad) és a sebességet másodperc/ciklusban. Akik a csökkentett mozgást kérik, az animáció nélkül látják a színeket.
+
+Hol látszik: a **profilkártyádon** és a **privát üzenetekben** mindig a saját megjelenésed szerepel. **Szerveren** a színes **szerepkör** erősebb: az ő színe és effektje (lásd a Szerepköröket a [Szerverek és csatornák](servers-channels.html) oldalon) felülírja a tiédet, és a moderátortól kapott szín is. Színes szerepkör nélkül a saját színed és effekted látszik.
+
 ## Szinkron az eszközök között
 
 A beállítások automatikusan követik a fiókodat. A téma, az elrendezés, a nyelv, az értesítési szintek, a privát üzenetek beállításai, a mappák, a becenevek, a barátok és a privát csatornák az összes bejelentkezett eszközödön módosulnak pár pillanat alatt, újratöltés nélkül. Az offline vagy háttérben lévő eszköz újracsatlakozáskor, illetve az előtérbe kerüléskor zárkózik fel. A beállításokban a **Többi eszközöm frissítése** gomb csak kézi tartalék.

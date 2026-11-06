@@ -44,7 +44,7 @@ Az üzenetmező **mikrofon** gombja legfeljebb öt percet rögzít. Egy piros s�
 
 ## Időzített üzenetek
 
-Az üzenetmező melletti **óra** gomb megnyitja a **Küldés később** ablakot a beírt szöveghez. Válassz időpontot vagy egy előbeállítást, például holnap 9:00-t. Az üzenet abban a pillanatban a nevedben megy ki, ugyanazokkal az ellenőrzésekkel, mint egy normál üzenet, így még elutasítható, például ha időkizárt vagy az AutoMod kifogásolja. A sikertelenek a listádban maradnak az okukkal, és bármit megszakíthatsz, amit időzítettél. A telefonos felületen tartsd lenyomva a küldés gombot.
+Az üzenetmező melletti **óra** gomb megnyitja a **Küldés később** ablakot a beírt szöveghez. Válassz időpontot vagy egy előbeállítást, például 3 óra múlvát, ma estét vagy holnap 9:00-t; a szerkesztő mutatja az időzónádat, mennyi idő van hátra a küldésig, és karakterszámlálót. A függőben lévő üzenet a listából szerkeszthető (szöveg és idő) vagy törölhető. Az üzenet abban a pillanatban a nevedben megy ki, ugyanazokkal az ellenőrzésekkel, mint egy normál üzenet, így még elutasítható, például ha időkizárt vagy az AutoMod kifogásolja. A sikertelenek a listádban maradnak az okukkal, és bármit megszakíthatsz, amit időzítettél. A telefonos felületen tartsd lenyomva a küldés gombot.
 
 A Jegyzetcsatornák és a más szervereken lévő partnerekkel folytatott privát üzenetek nem időzíthetők.
 

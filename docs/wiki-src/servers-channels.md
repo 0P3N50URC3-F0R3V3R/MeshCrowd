@@ -68,7 +68,7 @@ Roles are sets of permission flags. Everyone has the built-in **@everyone** role
 
 ### Role colors and icons
 
-Each role has a color, and a **role icon**: an emoji or an uploaded image. The icon of a member's highest role that has one is shown next to their name in chat and in the member list. A per-member **name color** override beats the role color.
+Each role has a color, an optional animated **name effect** (the same effects and color stops as personal name effects: members whose top colored role has one get it on their name in that server) and a **role icon**: an emoji or an uploaded image. The icon of a member's highest role that has one is shown next to their name in chat and in the member list. A per-member **name color** override beats the role color.
 
 ### Channel overrides
 
@@ -90,3 +90,7 @@ The welcome screen lists highlighted channels for new members. **Scheduled event
 
 - Put the rules in front of newcomers with [Community tools](community-tools.html).
 - Keep order with [Moderation and safety](moderation.html).
+
+## Emoji, stickers and sounds
+
+In **Server Settings** the Emoji, Stickers and Soundboard pages take one file at a time or many at once with **Bulk upload**: each file becomes an item named after its file (cleaned to letters, numbers and underscore, and made unique). Click a name to rename it in place. The **music note** button in the message box of every server channel lists the server's sounds: a click plays the sound for you, or for the whole room if you are in a voice call on that server.

@@ -6,7 +6,7 @@ import {
 } from '../../js/utils.js';
 import { nameFor } from '../../js/state.js';
 import { memberNameFx } from '../../js/permissions.js';
-import { nameAttrs } from '../../js/nameStyle.js';
+import { nameAttrs, personalFx } from '../../js/nameStyle.js';
 import { memberRoleIcon, roleIconHtml } from '../../js/roleIcon.js';
 import { shouldCompact } from '../lib/messageList.mjs';
 import { pollHtml } from './pollCard.js';
@@ -63,7 +63,7 @@ export function messageHtml(msg, ctx) {
   if (msg.eventType) return `<div class="m-event" data-id="${msg.id}">${escapeHtml(serverEventText(msg) || msg.content || '')}</div>`;
   const compact = shouldCompact(ctx.prev, msg);
   const member = ctx.detail?.members?.find((m) => m.user.id === msg.author.id);
-  const fx = member ? memberNameFx(ctx.detail.roles, member) : (ctx.detail ? {} : { color: msg.author.nameColor || null, effect: msg.author.nameEffect || '' });
+  const fx = member ? memberNameFx(ctx.detail.roles, member) : (ctx.detail ? {} : personalFx(msg.author));
   const text = (msg.content ? `<div class="m-text${isEmojiOnly(msg.content, ctx.detail?.customEmoji) ? ' m-emoji-only' : ''}">${renderMessageContent(msg.content, { channels: ctx.detail?.channels, customEmoji: ctx.detail?.customEmoji, rawHtmlEnabled: !!ctx.detail?.server?.raw_html_enabled })}</div>` : '');
   return `
   <div class="m-msg${compact ? ' compact' : ''}${msg.author.id === ctx.meId ? ' mine' : ''}" data-id="${msg.id}">

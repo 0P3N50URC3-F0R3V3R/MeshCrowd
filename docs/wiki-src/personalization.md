@@ -60,6 +60,12 @@ The interface speaks English and Hungarian. Change it in your settings, or from 
 
 A server can give you a **nickname** that only shows there. Server admins can set a per-member name color that beats the role color.
 
+### Your own name color and effect
+
+In **Settings, My Account** (or **You, Profile** on the phone) pick a **name color** from the presets or with the free color picker, and optionally a **text effect**: rainbow, gradient, glow, neon, pulse, shimmer, fire or wave. A live preview shows the result. Under **Customize the effect** you can choose your own color stops (up to five: two colors give a two-color blend instead of the full rainbow) and the speed in seconds per cycle. People who prefer reduced motion see the colors without the animation.
+
+Where it shows: your **profile card** and your names in **DMs** always use your own look. In a **server**, a colored **role** wins: its color and its effect (see Roles in [Servers and channels](servers-channels.html)) replace yours, and so does a color a moderator gave you. With no colored role, your own color and effect show.
+
 ## Syncing between devices
 
 Settings follow your account automatically. Theme, layout, language, notification levels, DM preferences, folders, nicknames, friends and private channels change on all your signed-in devices within a moment, in place, without a reload. A device that was offline or in the background catches up when it reconnects or comes back to the foreground. **Refresh my other devices** in Settings is only a manual fallback.
