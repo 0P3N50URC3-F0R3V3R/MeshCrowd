@@ -1278,7 +1278,9 @@
     "pushStarted": "Push is starting",
     "openSite": "Open site",
     "saveImage": "Save image",
-    "fileBlockedType": "\"{name}\" was not added: executables and scripts are not permitted."
+    "fileBlockedType": "\"{name}\" was not added: executables and scripts are not permitted.",
+    "saveImageFailed": "Could not save the image",
+    "imageSaved": "Saved to Downloads"
   },
   "activityPanel": {
     "heading": "Activity",

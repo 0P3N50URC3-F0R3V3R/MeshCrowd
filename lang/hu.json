@@ -1278,7 +1278,9 @@
     "pushStarted": "A push elindul",
     "openSite": "Webhely megnyitása",
     "saveImage": "Kép mentése",
-    "fileBlockedType": "\"{name}\" nem lett hozzáadva: futtatható és szkript fájlok nem engedélyezettek."
+    "fileBlockedType": "\"{name}\" nem lett hozzáadva: futtatható és szkript fájlok nem engedélyezettek.",
+    "saveImageFailed": "A kép mentése nem sikerült",
+    "imageSaved": "Mentve a Letöltések mappába"
   },
   "activityPanel": {
     "heading": "Aktivitás",

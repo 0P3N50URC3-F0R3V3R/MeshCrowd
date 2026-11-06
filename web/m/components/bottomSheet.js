@@ -1,4 +1,4 @@
-import { escapeHtml } from '../../js/utils.js';
+import { escapeHtml, toast } from '../../js/utils.js';
 import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
 
@@ -149,9 +149,32 @@ export function openImageViewer(url, name = '') {
         if (scale <= 1) { scale = 1; x = 0; y = 0; apply(); }
       });
       body.querySelector('.m-viewer-close').addEventListener('click', close);
-      body.querySelector('.m-viewer-save').addEventListener('click', () => {
-        const a = Object.assign(document.createElement('a'), { href: url, download: name || url.split('?')[0].split('/').pop() || 'image' });
-        document.body.appendChild(a); a.click(); a.remove();
+      // Android: hand the bytes to the app's own save bridge (an anchor download is ignored by the WebView); browsers: ordinary download.
+      body.querySelector('.m-viewer-save').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        try {
+          const res = await fetch(url, { credentials: 'include' });
+          if (!res.ok) throw new Error(String(res.status));
+          const blob = await res.blob();
+          const fileName = (name || url.split('?')[0].split('/').pop() || 'image').replace(/^[0-9a-f]{12,32}-/i, '');
+          if (typeof window.MeshCrowdAndroid?.saveFile === 'function') {
+            const b64 = await new Promise((resolve, reject) => {
+              const fr = new FileReader();
+              fr.onload = () => resolve(String(fr.result).split(',')[1] || '');
+              fr.onerror = reject;
+              fr.readAsDataURL(blob);
+            });
+            if (!window.MeshCrowdAndroid.saveFile(b64, fileName, blob.type || 'image/png')) throw new Error('save');
+            toast(t('m.imageSaved'));
+          } else {
+            const href = URL.createObjectURL(blob);
+            const a = Object.assign(document.createElement('a'), { href, download: fileName });
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(href), 60000);
+          }
+        } catch { toast(t('m.saveImageFailed'), { type: 'error' }); }
+        btn.disabled = false;
       });
     },
   });
