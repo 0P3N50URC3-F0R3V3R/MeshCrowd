@@ -11,7 +11,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Text selection and cursors: only message text, inputs, code and profile text can be highlighted now (no more selecting avatars, images, menus and buttons), and menus/buttons no longer show the text I-beam cursor.
 
 #### Added
-- Settings > Voice & Video: mute soundboard sounds from others or lower their volume (calls and sound messages, this device only).
+- Settings > Voice & Video: mute soundboard sounds from others or lower their volume (calls and sound messages, this device only). The soundboard popup has a quick mute button for the same setting.
 - Bio editor: emoji picker button in the formatting toolbar.
 - `/wipe <count>` (admins only: site administrators and server administrators): deletes the last N messages of the current channel (max 1000), including their files.
 - Local server console: `purge` resets the server to a factory state (accounts, servers, messages, DMs, uploads). Needs `purgePassword` in `data/config.json` and typing `PURGE`; makes a safety backup first, keeps config.json, certificates and backups, then restarts. `ban`, `unban`, `ipban`, `ipunban` and `ipbans` already existed.

@@ -55,7 +55,7 @@ Direct messages and group DMs support calls too. A DM call never appears on the 
 
 A server can have a soundboard of short clips that members with permission can play into the call. Manage it under **Server Settings, Soundboard**.
 
-If clips from other people annoy you, open **Settings, Voice & Video** and tick **Mute soundboard sounds from others**, or lower **Soundboard volume**. It applies to clips played in calls and to sound messages in chats, on this device only.
+If clips from other people annoy you, open **Settings, Voice & Video** and tick **Mute soundboard sounds from others**, or lower **Soundboard volume**. It applies to clips played in calls and to sound messages in chats, on this device only. The soundboard popup also has a speaker button for a quick mute.
 
 ## Noise suppression
 

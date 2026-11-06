@@ -11,7 +11,7 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 - Szövegkijelölés és kurzorok: csak az üzenetszöveg, a beviteli mezők, a kód és a profilszövegek jelölhetők ki (nem lehet többé avatárt, képeket, menüket és gombokat kijelölni), a menük és gombok pedig már nem mutatják a szövegkurzort.
 
 #### Hozzáadva
-- Beállítások > Hang és videó: mások hangtár-hangjainak némítása vagy hangerejük csökkentése (hívások és hangüzenetek, csak ezen az eszközön).
+- Beállítások > Hang és videó: mások hangtár-hangjainak némítása vagy hangerejük csökkentése (hívások és hangüzenetek, csak ezen az eszközön). A hangtár felugró ablakában gyors némítógomb is van ugyanehhez a beállításhoz.
 - Bemutatkozás-szerkesztő: emoji-választó gomb a formázósávban.
 - `/wipe <szám>` (csak adminoknak: oldal- és szerveradminisztrátorok): törli az aktuális csatorna utolsó N üzenetét (legfeljebb 1000), a fájlokkal együtt.
 - Helyi szerverkonzol: a `purge` gyári állapotba állítja a szervert (fiókok, szerverek, üzenetek, privát üzenetek, feltöltések). Kell hozzá a `purgePassword` a `data/config.json`-ban és a `PURGE` beírása; előtte biztonsági mentést készít, megtartja a config.json-t, a tanúsítványokat és a mentéseket, majd újraindul. A `ban`, `unban`, `ipban`, `ipunban` és `ipbans` már korábban is léteztek.

@@ -55,7 +55,7 @@ A privát és csoportos privát üzenetek is támogatnak hívásokat. Egy privá
 
 A szervernek lehet rövid hangklipekből álló hangpultja, amelyet a jogosult tagok lejátszhatnak a hívásba. A **Szerverbeállítások, Hangtár** alatt kezelheted.
 
-Ha zavarnak mások hangklipjei, a **Beállítások, Hang és videó** alatt pipáld be a **Mások hangtár-hangjainak némítása** opciót, vagy vedd lejjebb a **Hangtár hangerejét**. Ez a hívásokban lejátszott klipekre és a csevegésekben küldött hangüzenetekre vonatkozik, csak ezen az eszközön.
+Ha zavarnak mások hangklipjei, a **Beállítások, Hang és videó** alatt pipáld be a **Mások hangtár-hangjainak némítása** opciót, vagy vedd lejjebb a **Hangtár hangerejét**. Ez a hívásokban lejátszott klipekre és a csevegésekben küldött hangüzenetekre vonatkozik, csak ezen az eszközön. A hangtár felugró ablakában egy hangszóró gomb is van a gyors némításhoz.
 
 ## Zajszűrés
 

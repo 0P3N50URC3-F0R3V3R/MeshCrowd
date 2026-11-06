@@ -1,5 +1,6 @@
 import { escapeHtml } from '../utils.js';
 import { t } from '../i18n.js';
+import { soundboardPrefs } from '../soundboardPrefs.js';
 
 // Soundboard popover anchored above the voice panel's soundboard button. Picking a sound doesn't
 // play anything locally — `onPick(sound)` just sends the play request; the actual playback comes
@@ -33,14 +34,29 @@ export function openSoundboardPicker(anchorEl, sounds, onPick) {
   }
 
   picker.innerHTML = `
-    <div class="ep-search">
-      <input type="text" placeholder="${t('soundboardPicker.searchPlaceholder')}" id="sb-search-input">
+    <div class="ep-search" style="display:flex;gap:6px;align-items:center">
+      <input type="text" placeholder="${t('soundboardPicker.searchPlaceholder')}" id="sb-search-input" style="flex:1;min-width:0">
+      <button type="button" class="btn-icon" id="sb-mute-btn" style="font-size:18px"></button>
     </div>
     <div class="ep-list"></div>`;
 
   document.body.appendChild(picker);
   positionPicker();
   renderList();
+
+  const muteBtn = picker.querySelector('#sb-mute-btn');
+  function renderMute() {
+    const muted = soundboardPrefs.get().muted;
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    muteBtn.title = t('userSettings.soundboardMuteLabel');
+    muteBtn.setAttribute('aria-pressed', String(muted));
+    muteBtn.style.opacity = muted ? '0.6' : '1';
+  }
+  muteBtn.addEventListener('click', () => {
+    soundboardPrefs.set({ muted: !soundboardPrefs.get().muted });
+    renderMute();
+  });
+  renderMute();
 
   picker.querySelector('#sb-search-input').addEventListener('input', (e) => {
     query = e.target.value;
