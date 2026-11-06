@@ -6,7 +6,7 @@ const path = require('node:path');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const { db, DATA_DIR } = require('../../db');
-const { singleLine } = require('../textSanitize');
+const { singleLine, displayName } = require('../textSanitize');
 const { logAudit } = require('../auditLog');
 const { toPublicUser } = require('../publicUser');
 const { removeMember } = require('../channelAccess');
@@ -106,7 +106,7 @@ function parseFields(body, { current, siteAuthority }) {
   const b = body || {};
   const out = {};
   if (b.displayName !== undefined || !current) {
-    const name = singleLine(b.displayName, 32);
+    const name = displayName(b.displayName);
     if (name.length < 2) throw new AiError(400, 'bot name must be 2 to 32 characters');
     out.displayName = name;
   }

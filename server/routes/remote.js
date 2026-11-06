@@ -7,7 +7,7 @@ const { requireAuth } = require('../middleware/auth');
 const { callPeer } = require('../lib/federationRpc');
 const { singleLine } = require('../lib/textSanitize');
 const { load: loadConfig } = require('../lib/config');
-const { sanitizeFilename, attachmentFileFilter, fixUtf8Filename, effectiveMaxUploadMb } = require('../lib/uploads');
+const { sanitizeFilename, liveUpload, fixUtf8Filename, effectiveMaxUploadMb } = require('../lib/uploads');
 const { sanitizeRemoteMessage, remoteImageType, REMOTE_ATTACHMENT_MAX_BYTES } = require('../lib/remoteChannelEvents');
 const { maxMessageChars } = require('../lib/messageLimits');
 
@@ -21,11 +21,7 @@ const PASSTHROUGH_STATUSES = new Set([400, 403, 404, 413, 429]);
 const MEMBER_STATUSES = new Set(['online', 'idle', 'dnd', 'offline']);
 
 // Held in memory only long enough to forward to the owning instance, which stores the file.
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: Math.min(config.maxUploadMb * 1024 * 1024, REMOTE_ATTACHMENT_MAX_BYTES), files: 5 },
-  fileFilter: attachmentFileFilter,
-});
+const upload = liveUpload({ storage: multer.memoryStorage(), capBytes: REMOTE_ATTACHMENT_MAX_BYTES });
 
 router.get('/servers', (req, res) => {
   const rows = db.prepare(
@@ -208,7 +204,7 @@ router.post(messages, upload.array('files', 5), async (req, res) => {
   const content = String(req.body?.content || '').slice(0, maxMessageChars());
   const files = req.files || [];
   if (!content.trim() && files.length === 0) return res.status(400).json({ error: 'content required' });
-  const maxBytes = Math.min(effectiveMaxUploadMb(config.maxUploadMb) * 1024 * 1024, REMOTE_ATTACHMENT_MAX_BYTES);
+  const maxBytes = Math.min(effectiveMaxUploadMb() * 1024 * 1024, REMOTE_ATTACHMENT_MAX_BYTES);
   if (files.some((f) => f.size > maxBytes) || files.reduce((n, f) => n + f.size, 0) > REMOTE_ATTACHMENT_MAX_BYTES) {
     return res.status(400).json({ error: `attachments too large - max ${Math.floor(REMOTE_ATTACHMENT_MAX_BYTES / 1024 / 1024)}MB in total` });
   }

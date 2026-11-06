@@ -180,9 +180,28 @@ export function setFriends(friends) {
   bus.emit('state:friends');
 }
 
+const LAST_CHANNEL_KEY = 'meshcrowd:lastChannels';
+function readLastChannels() {
+  try { return JSON.parse(localStorage.getItem(LAST_CHANNEL_KEY) || '{}'); } catch { return {}; }
+}
+
+// The channel a server should open on when it is entered without a specific one: where the user left
+// off, if that channel still exists, else the first one.
+export function channelToOpen(serverId, channels) {
+  const remembered = readLastChannels()[`${state.me?.id || 0}:${serverId}`];
+  return channels.find((c) => c.id === remembered) || channels[0] || null;
+}
+
 export function setView(view) {
   state.view = view;
   if (view.type === 'server') state.lastServerId = view.serverId;
+  if (view.type === 'server' && view.channelId) {
+    try {
+      const all = readLastChannels();
+      all[`${state.me?.id || 0}:${view.serverId}`] = view.channelId;
+      localStorage.setItem(LAST_CHANNEL_KEY, JSON.stringify(all));
+    } catch { /* storage unavailable: falls back to the first channel */ }
+  }
   bus.emit('state:view', view);
 }
 

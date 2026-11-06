@@ -72,3 +72,38 @@ test('ordinary attachments still go through', async () => {
   const r = await send(w, 'notes.txt');
   assert.equal(r.status, 201);
 });
+
+test('the upload limit is one live setting shared by config and the uploads', async () => {
+  const cfg = require('../lib/config');
+  const before = cfg.load().maxUploadMb;
+  const w = world();
+  const sendBytes = async (n) => {
+    const fd = new FormData();
+    fd.append('content', 'x');
+    fd.append('files', new Blob([Buffer.alloc(n, 1)]), 'a.txt');
+    const res = await fetch(`${base}/api/servers/${w.sid}/channels/${w.ch}/messages`, { method: 'POST', headers: { 'x-uid': String(w.owner) }, body: fd });
+    return res.status;
+  };
+  try {
+    cfg.save({ maxUploadMb: 0.001 });
+    assert.equal(await sendBytes(5000), 400);
+    cfg.save({ maxUploadMb: 1 });
+    assert.equal(await sendBytes(5000), 201);
+    assert.equal(require('../lib/uploads').effectiveMaxUploadMb(), 1);
+  } finally { cfg.save({ maxUploadMb: before }); }
+});
+
+test('a legacy admin-panel cap is folded into the config value once', () => {
+  const cfg = require('../lib/config');
+  const siteSettings = require('../lib/siteSettings');
+  const uploads = require('../lib/uploads');
+  const before = cfg.load().maxUploadMb;
+  try {
+    cfg.save({ maxUploadMb: 25 });
+    siteSettings.set('max_upload_mb', 10);
+    uploads.migrateUploadLimit();
+    assert.equal(cfg.load().maxUploadMb, 10);
+    uploads.migrateUploadLimit();
+    assert.equal(cfg.load().maxUploadMb, 10);
+  } finally { cfg.save({ maxUploadMb: before }); }
+});

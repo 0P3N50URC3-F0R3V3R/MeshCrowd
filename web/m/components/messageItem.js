@@ -5,7 +5,8 @@ import {
   escapeHtml, avatarHtml, formatTimestamp, formatShortTime, renderMessageContent, isEmojiOnly, formatBytes, isImageMime, isVideoMime,
 } from '../../js/utils.js';
 import { nameFor } from '../../js/state.js';
-import { memberNameColor } from '../../js/permissions.js';
+import { memberNameFx } from '../../js/permissions.js';
+import { nameAttrs } from '../../js/nameStyle.js';
 import { memberRoleIcon, roleIconHtml } from '../../js/roleIcon.js';
 import { shouldCompact } from '../lib/messageList.mjs';
 import { pollHtml } from './pollCard.js';
@@ -62,14 +63,14 @@ export function messageHtml(msg, ctx) {
   if (msg.eventType) return `<div class="m-event" data-id="${msg.id}">${escapeHtml(serverEventText(msg) || msg.content || '')}</div>`;
   const compact = shouldCompact(ctx.prev, msg);
   const member = ctx.detail?.members?.find((m) => m.user.id === msg.author.id);
-  const color = member ? memberNameColor(ctx.detail.roles, member) : null;
+  const fx = member ? memberNameFx(ctx.detail.roles, member) : (ctx.detail ? {} : { color: msg.author.nameColor || null, effect: msg.author.nameEffect || '' });
   const text = (msg.content ? `<div class="m-text${isEmojiOnly(msg.content, ctx.detail?.customEmoji) ? ' m-emoji-only' : ''}">${renderMessageContent(msg.content, { channels: ctx.detail?.channels, customEmoji: ctx.detail?.customEmoji, rawHtmlEnabled: !!ctx.detail?.server?.raw_html_enabled })}</div>` : '');
   return `
   <div class="m-msg${compact ? ' compact' : ''}${msg.author.id === ctx.meId ? ' mine' : ''}" data-id="${msg.id}">
     <div class="m-msg-avatar" ${compact ? '' : `data-user="${msg.author.id}"`}>${compact ? '' : avatarHtml(msg.author, 36)}</div>
     <div class="m-msg-body">
       ${msg.interaction ? `<div class="m-interaction">${icons.messageSquare(12)} ${t('slash.usedCommand', { user: escapeHtml(msg.interaction.user?.displayName || '?'), command: escapeHtml(msg.interaction.command) })}</div>` : ''}
-      ${compact ? '' : `<div class="m-msg-head"><b class="m-msg-name" data-user="${msg.author.id}" ${color ? `style="color:${escapeHtml(color)}"` : ''}>${escapeHtml(authorDisplay(msg, ctx.detail))}</b>${member ? roleIconHtml(memberRoleIcon(ctx.detail.roles, member)) : ''}
+      ${compact ? '' : `<div class="m-msg-head"><b data-user="${msg.author.id}"${nameAttrs(fx, 'm-msg-name')}>${escapeHtml(authorDisplay(msg, ctx.detail))}</b>${member ? roleIconHtml(memberRoleIcon(ctx.detail.roles, member)) : ''}
         <time title="${escapeHtml(formatTimestamp(msg.createdAt))}">${formatShortTime(msg.createdAt)}</time>${msg.pinnedAt ? `<span class="m-pin" title="${t('m.pinnedBadge')}">${icons.pin(12)}</span>` : ''}</div>`}
       ${msg.forwardedFrom ? `<div class="m-forwarded">${icons.forward(12)} ${t('m.forwardedFrom')}</div>` : ''}
       ${replyHtml(msg.replyTo)}

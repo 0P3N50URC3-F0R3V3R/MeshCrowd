@@ -55,9 +55,9 @@ test('describe covers every default key, turn.secret is secret, ssh is restart-o
   assert.equal(d['logging.level'].restart, false);
 });
 
-test('set/get round trip persists and reports restart', async () => {
+test('set/get round trip persists and applies live', async () => {
   const out = await run('config set maxUploadMb 40');
-  assert.match(out, /restart required/);
+  assert.match(out, /applied live/);
   assert.equal(stored().maxUploadMb, 40);
   assert.equal((await run('config get maxUploadMb')).trim(), '40');
 });

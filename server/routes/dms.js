@@ -2,6 +2,7 @@
 
 const express = require('express');
 const { seal } = require('../lib/atRest');
+const { sealedDiskStorage, readAll } = require('../lib/fileSeal');
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -18,7 +19,7 @@ const voiceMessages = require('../lib/voiceMessages');
 const { dmClosedServerIds } = require('../lib/serverPrefs');
 const { searchMessages, parseFieldsParam } = require('../lib/search');
 const { load: loadConfig } = require('../lib/config');
-const { sanitizeFilename, attachmentFileFilter, rejectOversizedFiles } = require('../lib/uploads');
+const { sanitizeFilename, liveUpload, rejectOversizedFiles } = require('../lib/uploads');
 const { maybeFetchAndAttachEmbed } = require('../lib/linkPreview');
 const prune = require('../lib/prune');
 const { enqueueEvent } = require('../lib/federationOutbox');
@@ -74,7 +75,7 @@ function relayDmMessageCreate(dm, author, message, files) {
     attachments.push({
       fileName: f.originalname,
       mimeType: f.mimetype,
-      dataBase64: fs.readFileSync(path.join(DATA_DIR, 'attachments', `dm-${dm.id}`, f.filename)).toString('base64'),
+      dataBase64: readAll(f.path).toString('base64'),
     });
   }
   // Federated peers have no sticker concept: it crosses as an ordinary image attachment.
@@ -262,22 +263,16 @@ router.get('/:dmId/search', loadDm, (req, res) => {
   res.json({ messages });
 });
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(DATA_DIR, 'attachments', `dm-${req.dm.id}`);
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => cb(null, `${crypto.randomBytes(8).toString('hex')}-${sanitizeFilename(file.originalname)}`),
+// DM files are sealed while they stream to disk and stored under a random name; the real name lives
+// sealed in the database and the file is only served to conversation members (routes/dmFiles.js).
+const storage = sealedDiskStorage({
+  destination: (req) => path.join(DATA_DIR, 'attachments', `dm-${req.dm.id}`),
+  filename: () => `${crypto.randomBytes(12).toString('hex')}.bin`,
 });
-const upload = multer({
-  storage,
-  limits: { fileSize: config.maxUploadMb * 1024 * 1024, files: 5 },
-  fileFilter: attachmentFileFilter,
-});
+const upload = liveUpload({ storage });
 
 router.post('/:dmId/messages', loadDm, upload.array('files', 5), (req, res) => {
-  if (req.files?.length && rejectOversizedFiles(req, res, config.maxUploadMb)) return;
+  if (req.files?.length && rejectOversizedFiles(req, res)) return;
   if (!req.dm.is_group) {
     const otherRow = db.prepare(
       'SELECT user_id FROM dm_members WHERE dm_channel_id = ? AND user_id != ?'
@@ -313,7 +308,7 @@ router.post('/:dmId/messages', loadDm, upload.array('files', 5), (req, res) => {
   for (const f of req.files || []) {
     const rel = `/uploads/attachments/dm-${req.dm.id}/${f.filename}`;
     db.prepare('INSERT INTO attachments (message_id, file_path, file_name, mime_type, size_bytes, voice_ms) VALUES (?, ?, ?, ?, ?, ?)')
-      .run(info.lastInsertRowid, rel, f.originalname, voiceMs ? voiceMessages.cleanMime(f.mimetype) : f.mimetype, f.size, voiceMs);
+      .run(info.lastInsertRowid, rel, seal(sanitizeFilename(f.originalname)), voiceMs ? voiceMessages.cleanMime(f.mimetype) : f.mimetype, f.size, voiceMs);
   }
 
   const message = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(info.lastInsertRowid));

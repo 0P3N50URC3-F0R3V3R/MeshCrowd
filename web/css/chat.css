@@ -775,3 +775,23 @@
 .bio-toolbar button { min-width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border, rgba(128,128,128,.4)); background: var(--bg-input); color: var(--text-primary); cursor: pointer; padding: 0 6px; }
 .bio-toolbar .bio-swatch { min-width: 20px; width: 20px; height: 20px; padding: 0; border-radius: 50%; }
 .bio-toolbar input[type=color] { width: 28px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer; }
+
+.name-color-picker .nc-custom { width: 28px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%; }
+.name-color-picker .nc-custom.selected { outline: 2px solid var(--text-primary); outline-offset: 2px; }
+
+/* Personal name effects (web/js/nameStyle.js). --nc is the person's chosen color, if any. */
+.name-fx { display: inline-block; }
+.name-fx-rainbow, .name-fx-gradient, .name-fx-shimmer, .name-fx-fire { background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent !important; }
+.name-fx-rainbow { background-image: linear-gradient(90deg, #ff0040, #ff9a00, #f4e000, #19d36b, #00b7ff, #7a5cff, #ff0040); animation: nfx-slide 4s linear infinite; }
+.name-fx-gradient { background-image: linear-gradient(90deg, var(--nc, #3b82f6), #ec4899, var(--nc, #3b82f6)); animation: nfx-slide 5s linear infinite; }
+.name-fx-shimmer { background-image: linear-gradient(100deg, var(--nc, #cbd5e1) 30%, #ffffff 50%, var(--nc, #cbd5e1) 70%); animation: nfx-slide 2.5s linear infinite; }
+.name-fx-fire { background-image: linear-gradient(90deg, #ff3d00, #ffb300, #ff3d00); animation: nfx-slide 1.6s linear infinite; }
+.name-fx-glow { text-shadow: 0 0 6px var(--nc, currentColor), 0 0 14px var(--nc, currentColor); }
+.name-fx-neon { text-shadow: 0 0 3px #fff, 0 0 8px var(--nc, #0ff), 0 0 18px var(--nc, #0ff); animation: nfx-flicker 3s infinite; }
+.name-fx-pulse { animation: nfx-pulse 1.6s ease-in-out infinite; }
+.name-fx-wave { animation: nfx-wave 1.4s ease-in-out infinite; }
+@keyframes nfx-slide { to { background-position: -300% 0; } }
+@keyframes nfx-pulse { 50% { opacity: 0.45; } }
+@keyframes nfx-flicker { 0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; } 20%, 24%, 55% { opacity: 0.6; } }
+@keyframes nfx-wave { 50% { transform: translateY(-2px); } }
+@media (prefers-reduced-motion: reduce) { .name-fx { animation: none !important; } }

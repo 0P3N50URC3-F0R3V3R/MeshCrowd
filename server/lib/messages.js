@@ -46,7 +46,7 @@ function getPoll(messageId) {
   return {
     id: poll.id,
     multiSelect: !!poll.multi_select,
-    options: options.map((o) => ({ id: o.id, label: o.label, voterIds: votersByOption.get(o.id) || [] })),
+    options: options.map((o) => ({ id: o.id, label: open(o.label), voterIds: votersByOption.get(o.id) || [] })),
     totalVoters: new Set(votes.map((v) => v.user_id)).size,
   };
 }
@@ -58,7 +58,7 @@ function getForwardedFrom(id) {
   if (!row) return null;
   const author = db.prepare('SELECT * FROM users WHERE id = ?').get(row.author_id);
   const attachments = db.prepare('SELECT * FROM attachments WHERE message_id = ?').all(row.id).map((a) => ({
-    id: a.id, url: a.file_path, fileName: a.file_name, mimeType: a.mime_type, sizeBytes: a.size_bytes,
+    id: a.id, url: a.file_path, fileName: open(a.file_name), mimeType: a.mime_type, sizeBytes: a.size_bytes,
   }));
   return { id: row.id, author: toPublicUser(author, {}), content: open(row.content), createdAt: row.created_at, attachments, sticker: getSticker(row.sticker_id), origin: forwardOrigin(row) };
 }
@@ -101,7 +101,7 @@ function serializeMessage(row) {
   const attachments = db.prepare('SELECT * FROM attachments WHERE message_id = ?').all(row.id).map((a) => ({
     id: a.id,
     url: a.file_path,
-    fileName: a.file_name,
+    fileName: open(a.file_name),
     mimeType: a.mime_type,
     sizeBytes: a.size_bytes,
     voiceMs: a.voice_ms || null,

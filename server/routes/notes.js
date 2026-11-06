@@ -9,6 +9,7 @@ const { PERMISSIONS, has } = require('../lib/permissions');
 const { getChannelPermissionBits } = require('../lib/channelAccess');
 const { logAudit } = require('../lib/auditLog');
 const { load: loadConfig } = require('../lib/config');
+const { effectiveMaxUploadMb } = require('../lib/uploads');
 const { unlinkNoteFiles, noteFilePath } = require('../lib/noteFiles');
 
 const router = express.Router({ mergeParams: true });
@@ -106,7 +107,7 @@ router.post('/trim', (req, res) => {
 
 // Raw encrypted blob (iv || ciphertext). The server cannot tell what it is and only ever serves it
 // back to the uploader. Registered before /:noteId so "files" is never parsed as an id.
-router.post('/files', express.raw({ type: 'application/octet-stream', limit: `${config.maxUploadMb + 1}mb` }), (req, res) => {
+router.post('/files', (req, res, next) => express.raw({ type: 'application/octet-stream', limit: `${effectiveMaxUploadMb() + 1}mb` })(req, res, next), (req, res) => {
   const body = req.body;
   if (!Buffer.isBuffer(body) || body.length < 29) return res.status(400).json({ error: 'encrypted file body required' });
   const unsaved = db.prepare('SELECT COUNT(*) AS c FROM note_files WHERE user_id = ? AND channel_id = ? AND note_id IS NULL').get(req.user.id, req.channel.id).c;

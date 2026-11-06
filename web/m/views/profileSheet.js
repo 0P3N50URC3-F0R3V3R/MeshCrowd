@@ -1,6 +1,7 @@
 import { api } from '../../js/api.js';
 import { t } from '../../js/i18n.js';
 import { renderBio } from '../../js/bioMarkup.mjs';
+import { nameAttrs, personalFx } from '../../js/nameStyle.js';
 import { escapeHtml, avatarHtml, customStatusLabel, toast, bannerStyle, cardStyle, initials } from '../../js/utils.js';
 import { rankFor, nameColorFor } from '../../js/views/profile.js';
 import { state, setFriends, setDms, presenceFor } from '../../js/state.js';
@@ -69,7 +70,7 @@ export async function openProfileSheet(userId, { asStranger = false, serverId = 
               ${avatarHtml(user, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar')}
               <div class="status-dot ${status}" style="position:absolute;bottom:2px;right:-2px;width:14px;height:14px"></div>
             </div>
-            <div class="pp-name" ${nameColor ? `style="color:${escapeHtml(nameColor)}"` : ''}>${escapeHtml(user.displayName)}</div>
+            <div${nameAttrs(user.nameColor || user.nameEffect ? personalFx(user) : { color: nameColor }, 'pp-name')}>${escapeHtml(user.displayName)}</div>
             <div class="pp-username">@${escapeHtml(user.username)}${user.isBot ? `<span class="bot-badge">${t('bots.badge')}</span>` : ''}</div>
             ${customStatusLabel(user) ? `<div class="pp-username">${escapeHtml(customStatusLabel(user))}</div>` : ''}
             ${rank ? `<div class="pp-rank" ${rank.color ? `style="color:${rank.color}"` : ''}>${icons.shield(12)} ${escapeHtml(rank.label)}</div>` : ''}

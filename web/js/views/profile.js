@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { state, presenceFor, getServerDetail, annotationFor } from '../state.js';
 import { icons } from '../icons.js';
 import { renderBio } from '../bioMarkup.mjs';
+import { nameAttrs, personalFx } from '../nameStyle.js';
 import { avatarHtml, initials, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle } from '../utils.js';
 import { openModal, openContextMenu, confirmModal } from './modal.js';
 import { PERMISSIONS, has, memberPermissionBits, memberNameColor } from '../permissions.js';
@@ -84,7 +85,7 @@ export async function openProfileModal(userId, { serverId, anchor, asStranger = 
             ${avatarHtml(user, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar')}
             <div class="status-dot ${status}" style="position:absolute;bottom:2px;right:-2px;width:14px;height:14px"></div>
           </div>
-          <div class="pp-name" ${nameColor ? `style="color:${escapeHtml(nameColor)}"` : ''}>${escapeHtml(user.displayName)}</div>
+          <div${nameAttrs(user.nameColor || user.nameEffect ? personalFx(user) : { color: nameColor }, 'pp-name')}>${escapeHtml(user.displayName)}</div>
           <div class="pp-username">@${escapeHtml(user.username)}${user.isBot ? `<span class="bot-badge">${t('bots.badge')}</span>` : ''}</div>
           ${user.customStatusText ? `<div class="pp-username">${user.customStatusEmoji ? escapeHtml(user.customStatusEmoji) + ' ' : ''}${escapeHtml(user.customStatusText)}</div>` : ''}
           ${rank ? `<div class="pp-rank" ${rank.color ? `style="color:${rank.color}"` : ''}>${icons.shield(12)} ${escapeHtml(rank.label)}</div>` : ''}
@@ -332,10 +333,15 @@ function openSetColorModal(serverId, userId, user) {
           <div class="color-swatch-row">
             <div class="color-swatch ${!selected ? 'selected' : ''}" data-color="" title="${t('profile.noOverrideTitle')}" style="background:transparent;border:1px dashed var(--border-subtle);display:flex;align-items:center;justify-content:center;color:var(--text-muted)">${icons.x(14)}</div>
             ${NAME_COLORS.map((c) => `<div class="color-swatch ${selected?.toLowerCase() === c.toLowerCase() ? 'selected' : ''}" data-color="${c}" style="background:${c}"></div>`).join('')}
+            <input type="color" id="sc-custom" class="nc-custom" value="${selected || '#3b82f6'}" title="${t('userSettings.nameColorCustom')}">
           </div>
           <div class="hint">${t('profile.colorOverrideHint')}</div>
         </div>
         <div class="error-text" id="sc-err"></div>`;
+      body.querySelector('#sc-custom').addEventListener('input', (e) => {
+        selected = e.target.value;
+        body.querySelectorAll('[data-color]').forEach((x) => x.classList.remove('selected'));
+      });
       body.querySelectorAll('[data-color]').forEach((sw) => {
         sw.addEventListener('click', () => {
           selected = sw.dataset.color || null;

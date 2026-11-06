@@ -66,4 +66,9 @@ function open(text) {
 
 const sealFor = (scopeType, text) => (scopeType === 'dm' ? seal(text) : text);
 
-module.exports = { seal, open, isSealed, sealFor };
+// Separate keys for separate uses (DM files), all derived from the one server key.
+function deriveKey(label) {
+  return Buffer.from(crypto.hkdfSync('sha256', loadKey(), Buffer.alloc(0), label, 32));
+}
+
+module.exports = { seal, open, isSealed, sealFor, deriveKey };

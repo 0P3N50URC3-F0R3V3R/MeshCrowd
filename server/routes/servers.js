@@ -578,6 +578,34 @@ router.delete('/:id/sounds/:soundId', requireMember, requirePerm(PERMISSIONS.MAN
   res.json({ ok: true });
 });
 
+// Rename emoji, stickers and sounds in place. The names share one rule and are unique per server and
+// kind (case-insensitive). Other clients get the usual remove + add pair, which they already handle.
+const ASSET_KINDS = {
+  emoji: { table: 'custom_emoji', key: 'emoji', idKey: 'emojiId', audit: 'emoji' },
+  stickers: { table: 'stickers', key: 'sticker', idKey: 'stickerId', audit: 'sticker' },
+  sounds: { table: 'sounds', key: 'sound', idKey: 'soundId', audit: 'sound' },
+};
+for (const [route, kind] of Object.entries(ASSET_KINDS)) {
+  router.patch(`/:id/${route}/:assetId`, requireMember, requirePerm(PERMISSIONS.MANAGE_SERVER), (req, res) => {
+    const row = db.prepare(`SELECT * FROM ${kind.table} WHERE id = ? AND server_id = ?`).get(Number(req.params.assetId), req.server.id);
+    if (!row) return res.status(404).json({ error: 'not found' });
+    const name = String(req.body?.name ?? row.name);
+    if (!EMOJI_NAME_RE.test(name)) return res.status(400).json({ error: 'name must be 2-32 chars: letters, numbers, underscore' });
+    const clash = db.prepare(`SELECT id FROM ${kind.table} WHERE server_id = ? AND name = ? COLLATE NOCASE AND id != ?`).get(req.server.id, name, row.id);
+    if (clash) return res.status(409).json({ error: 'that name is already used on this server' });
+    const sets = ['name = ?'];
+    const params = [name];
+    if (route === 'stickers' && req.body?.description !== undefined) { sets.push('description = ?'); params.push(String(req.body.description).slice(0, 200)); }
+    if (route === 'sounds' && req.body?.emoji !== undefined) { sets.push('emoji = ?'); params.push(String(req.body.emoji).slice(0, 16)); }
+    db.prepare(`UPDATE ${kind.table} SET ${sets.join(', ')} WHERE id = ?`).run(...params, row.id);
+    const updated = db.prepare(`SELECT * FROM ${kind.table} WHERE id = ?`).get(row.id);
+    logAudit(req.server.id, req.user.id, `${kind.audit}_rename`, kind.audit, row.id, { from: row.name, to: name });
+    broadcastToServer(req.server.id, { type: `${kind.key}_remove`, serverId: req.server.id, [kind.idKey]: row.id });
+    broadcastToServer(req.server.id, { type: `${kind.key}_add`, [kind.key]: updated });
+    res.json({ [kind.key]: updated });
+  });
+}
+
 // Scheduled events — server-wide (not embedded in GET /:id since they're only needed when the
 // Events modal is actually opened, unlike emoji/stickers/sounds which the message/composer/voice
 // pipelines need on every server load). Creation/editing gated on MANAGE_SERVER, same as Welcome

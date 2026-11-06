@@ -5,7 +5,7 @@ const { OWNER_SITE_PERMISSIONS } = require('./permissions');
 const { postServerEvent } = require('./systemMessages');
 const { broadcastToServer } = require('../socket/hub');
 const { toPublicUser } = require('./publicUser');
-const { singleLine } = require('./textSanitize');
+const { displayName: cleanDisplayName } = require('./textSanitize');
 const { credentialProblem, credentialColumns } = require('./splitAuth');
 const { isValidBackupFor } = require('./passportCrypto');
 
@@ -72,7 +72,7 @@ function createAccountRows({ username, email, password, authKey, authSalt, displ
   // and no real registrant on a fresh instance would ever qualify as the first user/site owner.
   const isFirstUser = db.prepare("SELECT COUNT(*) AS c FROM users WHERE username != '__webhook__' AND is_bot = 0").get().c === 0;
   const cred = credentialColumns({ password, authKey, authSalt });
-  const name = (displayName && singleLine(displayName, 32)) || username;
+  const name = (displayName && cleanDisplayName(displayName)) || username;
 
   const info = passport
     ? db.prepare(

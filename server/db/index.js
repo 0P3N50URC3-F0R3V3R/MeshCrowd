@@ -117,6 +117,11 @@ const COLUMN_MIGRATIONS = [
   { table: 'roles', column: 'icon_path', ddl: 'ALTER TABLE roles ADD COLUMN icon_path TEXT' },
   { table: 'messages', column: 'interaction_command', ddl: 'ALTER TABLE messages ADD COLUMN interaction_command TEXT' },
   { table: 'messages', column: 'interaction_user_id', ddl: 'ALTER TABLE messages ADD COLUMN interaction_user_id INTEGER' },
+  { table: 'reports', column: 'admin_notes', ddl: "ALTER TABLE reports ADD COLUMN admin_notes TEXT NOT NULL DEFAULT ''" },
+  { table: 'reports', column: 'updated_at', ddl: 'ALTER TABLE reports ADD COLUMN updated_at TEXT' },
+  { table: 'reports', column: 'updated_by', ddl: 'ALTER TABLE reports ADD COLUMN updated_by INTEGER' },
+  { table: 'users', column: 'name_effect', ddl: 'ALTER TABLE users ADD COLUMN name_effect TEXT' },
+  { table: 'users', column: 'name_color', ddl: 'ALTER TABLE users ADD COLUMN name_color TEXT' },
   { table: 'users', column: 'notify_grid', ddl: 'ALTER TABLE users ADD COLUMN notify_grid TEXT' },
 ];
 for (const { table, column, ddl } of COLUMN_MIGRATIONS) {
@@ -280,6 +285,62 @@ if (!db.prepare("SELECT 1 FROM meta WHERE key = 'dm_at_rest_v1'").get()) {
     db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
     console.log(`[db] migrated: sealed ${rows.length} DM message(s) at rest`);
   }
+}
+
+// DM attachment files, their names, poll options and queued federation events were still in the clear
+// after the message text was sealed: seal them too, once. Files move to a random name; the real name
+// is kept sealed in the database.
+if (!db.prepare("SELECT 1 FROM meta WHERE key = 'dm_files_at_rest_v1'").get()) {
+  const { seal, isSealed } = require('../lib/atRest');
+  const { sealFileSync, isSealedFile } = require('../lib/fileSeal');
+  const crypto = require('node:crypto');
+  let files = 0;
+  const rows = db.prepare(
+    "SELECT a.id, a.file_path, a.file_name FROM attachments a JOIN messages m ON m.id = a.message_id WHERE m.scope_type = 'dm'"
+  ).all();
+  const updAtt = db.prepare('UPDATE attachments SET file_path = ?, file_name = ? WHERE id = ?');
+  for (const a of rows) {
+    const m = /^\/uploads\/attachments\/(dm-\d+)\/([A-Za-z0-9._-]+)$/.exec(a.file_path);
+    if (!m) continue;
+    const dir = path.join(DATA_DIR, 'attachments', m[1]);
+    const oldPath = path.join(dir, m[2]);
+    try {
+      let newName = m[2];
+      if (fs.existsSync(oldPath) && !isSealedFile(oldPath)) {
+        newName = `${crypto.randomBytes(12).toString('hex')}.bin`;
+        sealFileSync(oldPath, path.join(dir, newName));
+        fs.unlinkSync(oldPath);
+        files++;
+      }
+      updAtt.run(`/uploads/attachments/${m[1]}/${newName}`, isSealed(a.file_name) ? a.file_name : seal(a.file_name), a.id);
+    } catch (err) {
+      console.error(`[db] could not seal DM attachment ${a.id}: ${err.message}`);
+    }
+  }
+  const updOpt = db.prepare('UPDATE poll_options SET label = ? WHERE id = ?');
+  for (const o of db.prepare("SELECT o.id, o.label FROM poll_options o JOIN polls p ON p.id = o.poll_id JOIN messages m ON m.id = p.message_id WHERE m.scope_type = 'dm'").all()) {
+    if (!isSealed(o.label)) updOpt.run(seal(o.label), o.id);
+  }
+  const updEv = db.prepare('UPDATE federation_outbox SET payload_json = ? WHERE id = ?');
+  for (const e of db.prepare("SELECT id, payload_json FROM federation_outbox WHERE substr(type, 1, 3) = 'dm_'").all()) {
+    if (!isSealed(e.payload_json)) updEv.run(seal(e.payload_json), e.id);
+  }
+  db.prepare("INSERT INTO meta (key, value) VALUES ('dm_files_at_rest_v1', '1')").run();
+  if (files) { db.exec('VACUUM'); console.log(`[db] migrated: sealed ${files} DM attachment file(s) at rest`); }
+}
+
+// Display names are filtered to characters that cannot break layouts (lib/textSanitize.js displayName);
+// clean the ones stored before that existed, once.
+if (!db.prepare("SELECT 1 FROM meta WHERE key = 'display_names_clean_v1'").get()) {
+  const { displayName } = require('../lib/textSanitize');
+  let fixed = 0;
+  const upd = db.prepare('UPDATE users SET display_name = ? WHERE id = ?');
+  for (const u of db.prepare('SELECT id, username, display_name FROM users').all()) {
+    const clean = displayName(u.display_name) || u.username;
+    if (clean !== u.display_name) { upd.run(clean, u.id); fixed++; }
+  }
+  db.prepare("INSERT INTO meta (key, value) VALUES ('display_names_clean_v1', '1')").run();
+  if (fixed) console.log(`[db] migrated: cleaned ${fixed} display name(s)`);
 }
 
 // Reserved account webhook-posted messages attach to, purely to satisfy messages.author_id's

@@ -280,7 +280,21 @@
     "gradientEndLabel": "Átmenet végszíne",
     "gradientAngleLabel": "Átmenet szöge",
     "noiseSuppressionLabel": "Fejlett zajszűrés (RNNoise)",
-    "noiseSuppressionHint": "Egy kis, az eszközödön futó neurális hálóval szűri ki a billentyűzet, a ventilátor és a háttér zaját a mikrofonodból. Kicsit több processzort használ, és az első híváskor betölt egy 5 MB-os modult."
+    "noiseSuppressionHint": "Egy kis, az eszközödön futó neurális hálóval szűri ki a billentyűzet, a ventilátor és a háttér zaját a mikrofonodból. Kicsit több processzort használ, és az első híváskor betölt egy 5 MB-os modult.",
+    "nameColorLabel": "Névszín",
+    "nameColorHint": "A privát üzeneteidben és azokon a szervereken látszik, ahol egyik szerepköröd sem színes (a szerver szerepkörének színe mindig erősebb).",
+    "nameColorNone": "Nincs szín",
+    "nameColorCustom": "Egyéni szín",
+    "nameEffectNone": "Nincs effekt",
+    "nameEffectPreview": "A neved",
+    "nameEffect_rainbow": "Szivárvány",
+    "nameEffect_gradient": "Színátmenet",
+    "nameEffect_glow": "Ragyogás",
+    "nameEffect_neon": "Neon",
+    "nameEffect_pulse": "Pulzálás",
+    "nameEffect_shimmer": "Csillogás",
+    "nameEffect_fire": "Tűz",
+    "nameEffect_wave": "Hullám"
   },
   "federation": {
     "heading": "Föderáció",
@@ -411,7 +425,7 @@
     "couldNotSave": "Nem sikerült menteni.",
     "attachmentSettingsHeading": "Melléklet-beállítások",
     "maxAttachmentSizeLabel": "Maximális mellékletméret (MB)",
-    "maxAttachmentSizeHint": "Nem lépheti túl a szerver beállított kemény korlátját, amely a data/config.json fájlban van megadva (emeléséhez újraindítás szükséges).",
+    "maxAttachmentSizeHint": "A teljes szerver feltöltési korlátja. Ugyanaz az érték, mint a data/config.json és az SSH-konzol maxUploadMb beállítása, azonnal érvénybe lép, és a méretfigyelmeztetésben is ez látszik. Tartomány: 1-10240 MB; a szerver előtti fordított proxynak saját korlátja lehet.",
     "allowedExtensionsLabel": "Engedélyezett fájlkiterjesztések",
     "allowedExtensionsPlaceholder": "pl. .png, .jpg, .pdf, .zip",
     "allowedExtensionsHint": "Vesszővel elválasztva, vezető ponttal. Hagyd üresen, hogy mindent engedélyezz az ismerten veszélyes fájltípusok kivételével.",
@@ -740,7 +754,27 @@
       "closed": "Regisztráció kikapcsolva",
       "closedHint": "Senki sem hozhat létre fiókot. A meglévő felhasználókat nem érinti.",
       "saved": "Regisztrációs beállítás mentve."
-    }
+    },
+    "normalUserRole": "Normál felhasználó (nincs stábszerep)",
+    "normalUserShort": "Normál felhasználó",
+    "pendingTab": "Függőben",
+    "rejectedTab": "Elutasítva",
+    "allReportsTab": "Mind",
+    "clearClosedReports": "Lezárt jelentések törlése",
+    "clearClosedReportsConfirm": "Törlöd az összes megoldott és elutasított jelentést? A függőben lévők megmaradnak.",
+    "clearButton": "Törlés",
+    "reportsClearedToast": "{n} jelentés törölve.",
+    "reportCounts": "{pending} függőben / {total} összesen",
+    "clearClosedForUser": "Lezártak törlése",
+    "reopenButton": "Újranyitás",
+    "rejectButton": "Elutasítás",
+    "adminNotesLabel": "Jegyzetek (csak adminoknak)",
+    "adminNotesPlaceholder": "Jegyzetek az esethez...",
+    "saveNotesButton": "Jegyzetek mentése",
+    "reportReopenedToast": "Jelentés újranyitva.",
+    "notesSavedToast": "Jegyzetek mentve.",
+    "deleteReportTitle": "Jelentés törlése",
+    "deleteReportConfirm": "Véglegesen törlöd ezt a lezárt jelentést?"
   },
   "voice": {
     "goodConnection": "Jó kapcsolat",
@@ -1991,7 +2025,13 @@
     "none": "Nincs legutóbbi értesítés",
     "logout": "Kijelentkezés",
     "quit": "MeshCrowd bezárása",
-    "unread": "{count} olvasatlan"
+    "unread": "{count} olvasatlan",
+    "undo": "Visszavonás",
+    "redo": "Újra",
+    "cut": "Kivágás",
+    "copy": "Másolás",
+    "paste": "Beillesztés",
+    "selectAll": "Összes kijelölése"
   },
   "notes": {
     "placeholder": "Írj egy jegyzetet ide: {channel}",
@@ -2486,7 +2526,19 @@
     "failed": "nem lett elküldve: {reason}",
     "pickTime": "Válassz dátumot és időpontot.",
     "done": "Időzítve: {when}",
-    "error": "Az időzített üzenet módosítása nem sikerült"
+    "error": "Az időzített üzenet módosítása nem sikerült",
+    "in3h": "3 óra múlva",
+    "tonight": "Ma este 20:00",
+    "inThePast": "Ez az időpont már elmúlt",
+    "relative": "Küldés: {when} múlva",
+    "unitDay": "nap",
+    "unitHour": "óra",
+    "unitMin": "perc",
+    "emptyMessage": "Az üzenet üres.",
+    "mustBeFuture": "Legalább egy perccel későbbi időpontot válassz.",
+    "edit": "Szerkesztés",
+    "saveChanges": "Változtatások mentése",
+    "updated": "Az időzített üzenet frissítve."
   },
   "voiceMsg": {
     "record": "Hangüzenet felvétele",
@@ -3090,5 +3142,13 @@
     "italic": "Dőlt",
     "color": "Szövegszín",
     "customColor": "Egyéni szín"
+  },
+  "assetBulk": {
+    "button": "Tömeges feltöltés...",
+    "progress": "Feltöltés {done}/{total}: {name}",
+    "failed": "{n} fájl sikertelen",
+    "done": "{done}/{total} feltöltve.",
+    "renameHint": "Kattints az átnevezéshez",
+    "renameFailed": "Az átnevezés nem sikerült."
   }
 }

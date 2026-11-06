@@ -80,7 +80,7 @@ function decodeAttachments(list, bits) {
   if (list == null) return { files: [] };
   if (!Array.isArray(list) || list.length > 5) return fail(400, 'too many attachments');
   if (list.length && !has(bits, PERMISSIONS.ATTACH_FILES)) return fail(403, 'missing permission: Attach Files');
-  const maxBytes = Math.min(effectiveMaxUploadMb(config.maxUploadMb) * 1024 * 1024, REMOTE_ATTACHMENT_MAX_BYTES);
+  const maxBytes = Math.min(effectiveMaxUploadMb() * 1024 * 1024, REMOTE_ATTACHMENT_MAX_BYTES);
   const files = [];
   let total = 0;
   for (const att of list) {

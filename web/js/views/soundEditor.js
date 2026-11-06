@@ -2,12 +2,13 @@ import { icons } from '../icons.js';
 import { escapeHtml, toast, apiErrorMessage } from '../utils.js';
 import { openEmojiPicker } from './emojiPicker.js';
 import { t } from '../i18n.js';
+import { bulkUploadHtml, wireBulkUpload, wireInlineRename } from '../assetBulk.js';
 
 // Shared grid+upload-form UI for managing a server's soundboard — used by both Server Settings
 // (per-server MANAGE_SERVER) and the site Admin Panel (MANAGE_ANY_SERVER, any server). Mirrors
 // stickerEditor.js's shape, but each row gets a Play preview button instead of an image thumbnail
 // since there's nothing to show visually beyond the emoji the uploader picked for it.
-export function renderSoundEditor(container, { sounds, upload, remove, onChange }) {
+export function renderSoundEditor(container, { sounds, upload, remove, rename, onChange }) {
   let pendingEmoji = '';
   container.innerHTML = `
     <p class="hint" style="margin:0 0 16px">${t('soundEditor.hint')}</p>
@@ -23,6 +24,7 @@ export function renderSoundEditor(container, { sounds, upload, remove, onChange 
       <div class="hint" style="margin-top:6px">${t('soundEditor.fileHint')}</div>
       <div class="error-text" id="sn-err"></div>
       <button class="btn btn-primary" id="sn-upload-btn" style="margin-top:10px">${t('soundEditor.uploadButton')}</button>
+      ${bulkUploadHtml('audio/mpeg,audio/ogg,audio/wav,audio/webm', 'sn-bulk')}
     </div>
     <div class="divider"></div>
     <div class="field">
@@ -35,7 +37,7 @@ export function renderSoundEditor(container, { sounds, upload, remove, onChange 
     ? sounds.map((s) => `
         <div class="list-row" data-sound="${s.id}">
           <button class="btn-icon" data-sound-play="${s.id}" title="${t('soundEditor.previewTitle')}">${s.emoji ? escapeHtml(s.emoji) : icons.music(18)}</button>
-          <div class="lr-main"><div class="lr-title">${escapeHtml(s.name)}</div></div>
+          <div class="lr-main"><div class="lr-title" ${rename ? `data-rename-id="${s.id}" data-rename-name="${escapeHtml(s.name)}"` : ''}>${escapeHtml(s.name)}</div></div>
           <div class="lr-actions">
             <button class="btn-icon" data-sound-delete="${s.id}" title="${t('soundEditor.removeTitle')}">${icons.trash(16)}</button>
           </div>
@@ -54,6 +56,9 @@ export function renderSoundEditor(container, { sounds, upload, remove, onChange 
       catch (err) { toast(apiErrorMessage(err, t('soundEditor.removeError')), { type: 'error' }); }
     });
   });
+
+  wireBulkUpload(container, { existingNames: sounds.map((s) => s.name), upload: (name, file) => upload(name, '', file), onDone: async () => onChange() });
+  if (rename) wireInlineRename(container, { rename, onDone: async () => onChange() });
 
   let chosenFile = null;
   const fileInput = container.querySelector('#sn-file-input');

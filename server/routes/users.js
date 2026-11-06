@@ -15,7 +15,7 @@ const { syncUser, syncAfter } = require('../lib/userSync');
 const { clipBio } = require('../lib/bio');
 const { sanitizeServerLayout } = require('../lib/serverLayout');
 const { sanitizeTheme } = require('../lib/theme');
-const { singleLine, statusEmoji } = require('../lib/textSanitize');
+const { singleLine, statusEmoji, displayName: cleanDisplayName } = require('../lib/textSanitize');
 const { sanitizeCode, getLanguage } = require('../lib/languages');
 const { acknowledgeNsfw } = require('../lib/ageGate');
 const notifyGrid = require('../lib/notifyGrid');
@@ -37,6 +37,7 @@ const uploadAvatar = multer({
 });
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+const NAME_EFFECTS = ['rainbow', 'gradient', 'glow', 'neon', 'pulse', 'shimmer', 'fire', 'wave'];
 
 // Same upload shape as the avatar (folder + column differ) — shared by the profile card's
 // customizable top ("banner") and bottom ("card") background images.
@@ -66,7 +67,7 @@ function syncProfile(userId) {
 }
 
 router.patch('/me', requireAuth, (req, res) => {
-  const { displayName, bio, dmPrivacy, profilePrivacy, discoverable, bannerColor, cardColor, avatarBackground, avatarBgColor } = req.body || {};
+  const { displayName, nameColor, nameEffect, bio, dmPrivacy, profilePrivacy, discoverable, bannerColor, cardColor, avatarBackground, avatarBgColor } = req.body || {};
   const updates = [];
   const params = [];
 
@@ -87,9 +88,17 @@ router.patch('/me', requireAuth, (req, res) => {
     updates.push('card_color = ?'); params.push(String(cardColor));
   }
   if (displayName !== undefined) {
-    const v = singleLine(displayName, 32);
+    const v = cleanDisplayName(displayName);
     if (!v) return res.status(400).json({ error: 'displayName cannot be empty' });
     updates.push('display_name = ?'); params.push(v);
+  }
+  if (nameColor !== undefined) {
+    if (nameColor !== null && nameColor !== '' && !HEX_COLOR_RE.test(String(nameColor))) return res.status(400).json({ error: 'nameColor must be #rrggbb or empty' });
+    updates.push('name_color = ?'); params.push(nameColor ? String(nameColor).toLowerCase() : null);
+  }
+  if (nameEffect !== undefined) {
+    if (nameEffect !== '' && nameEffect !== null && !NAME_EFFECTS.includes(nameEffect)) return res.status(400).json({ error: 'invalid nameEffect' });
+    updates.push('name_effect = ?'); params.push(nameEffect || null);
   }
   if (bio !== undefined) {
     updates.push('bio = ?'); params.push(clipBio(bio));

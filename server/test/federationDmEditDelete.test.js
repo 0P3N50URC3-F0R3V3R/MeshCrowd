@@ -256,7 +256,7 @@ async function withMessagesServer(user, fn) {
 
 function latestOutboxPayload(peerId, type) {
   const row = db.prepare('SELECT * FROM federation_outbox WHERE peer_id = ? AND type = ? ORDER BY id DESC LIMIT 1').get(peerId, type);
-  return row ? JSON.parse(row.payload_json) : null;
+  return row ? JSON.parse(require('../lib/atRest').open(row.payload_json)) : null;
 }
 
 test('outbound: editing a locally-authored DM message relays dm_message_edit with the already-capped content', async () => {

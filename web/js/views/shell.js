@@ -4,7 +4,7 @@ import { ws } from '../ws.js';
 import { clearCachedIdentity } from '../e2ee/identity.js';
 import { icons } from '../icons.js';
 import {
-  state, setServers, setDms, setFriends, setView, upsertPresence,
+  state, setServers, setDms, setFriends, setView, channelToOpen, upsertPresence,
   setServerDetail, getServerDetail, upsertServer, removeServer, upsertDmPreview, upsertDm, removeDm,
   setWsConnected, setNotificationPrefs, setServerPrefs, setUserAnnotations, setDmPrefs, setDmPref, dmPrefFor, setBookmarkIds, nameFor, notificationPrefFor, setNotificationPref, setReadStateBulk, setReadState, isSelf,
   setFriendVoice, pushActivity, setServerLayout, shouldPlayNotifySound,
@@ -352,6 +352,7 @@ export async function mountShell(root) {
     window.dismeshClient?.setTrayLabels?.({
       open: t('trayMenu.open'), recent: t('trayMenu.recent'), none: t('trayMenu.none'),
       logout: t('trayMenu.logout'), quit: t('trayMenu.quit'), unread: t('trayMenu.unread', { count: '{count}' }),
+      undo: t('trayMenu.undo'), redo: t('trayMenu.redo'), cut: t('trayMenu.cut'), copy: t('trayMenu.copy'), paste: t('trayMenu.paste'), selectAll: t('trayMenu.selectAll'),
     });
   }
 
@@ -479,6 +480,7 @@ export async function mountShell(root) {
       setDms(dmsRes.dms);
       setFriends(friendsRes);
       refreshRemoteServers();
+      api.config().then((c) => Object.assign(state.config, c)).catch(() => {});
       if (state.view.type === 'server') await refreshServerDetailSilently(state.view.serverId);
     } catch { /* best-effort */ }
   }
@@ -516,7 +518,7 @@ export async function mountShell(root) {
         });
       }
       if (!view.channelId && !view.welcome) {
-        const first = detail.channels[0];
+        const first = channelToOpen(view.serverId, detail.channels);
         if (first) return navigate({ type: 'server', serverId: view.serverId, channelId: first.id });
       }
     }
@@ -526,7 +528,7 @@ export async function mountShell(root) {
 
   function navigateToServerDefault(serverId) {
     const detail = getServerDetail(serverId);
-    const first = detail?.channels[0];
+    const first = detail ? channelToOpen(serverId, detail.channels) : null;
     navigate(first ? { type: 'server', serverId, channelId: first.id } : { type: 'home' });
   }
 

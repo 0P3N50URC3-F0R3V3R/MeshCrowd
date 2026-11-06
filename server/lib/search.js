@@ -76,7 +76,16 @@ function searchMessages(scopeType, scopeIds, q, { limit = 25, fields = { text: t
           AND (u.username LIKE ? ESCAPE '\\' OR u.display_name LIKE ? ESCAPE '\\')`
     ).all(scopeType, ...scopeIds, like, like)) ids.add(row.id);
   }
-  if (fields.attachments) {
+  if (fields.attachments && scopeType === 'dm') {
+    // DM file names are sealed: decrypt and match here.
+    const needle = clean.toLowerCase();
+    for (const row of db.prepare(
+      `SELECT a.message_id AS id, a.file_name AS name FROM attachments a JOIN messages m ON m.id = a.message_id
+        WHERE m.scope_type = 'dm' AND m.scope_id IN (${placeholders}) ORDER BY a.id DESC LIMIT ${DM_SCAN_LIMIT}`
+    ).all(...scopeIds)) {
+      if (open(row.name).toLowerCase().includes(needle)) ids.add(row.id);
+    }
+  } else if (fields.attachments) {
     for (const row of db.prepare(
       `SELECT DISTINCT m.id AS id FROM messages m JOIN attachments a ON a.message_id = m.id
         WHERE m.scope_type = ? AND m.scope_id IN (${placeholders}) AND a.file_name LIKE ? ESCAPE '\\'`

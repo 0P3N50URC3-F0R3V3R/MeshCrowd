@@ -59,7 +59,7 @@ async function drainOnceInner(fetchImpl) {
     ).get(peer.id, now, ...(active ? [] : controlTypes));
     if (!row) return 0;
 
-    const payload = { event_id: row.event_id, type: row.type, origin_domain: ownDomain(), created_at: row.created_at, payload: JSON.parse(row.payload_json) };
+    const payload = { event_id: row.event_id, type: row.type, origin_domain: ownDomain(), created_at: row.created_at, payload: JSON.parse(require('./atRest').open(row.payload_json)) };
     const signature = signPayload(payload);
 
     let res;

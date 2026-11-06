@@ -2,6 +2,7 @@
 
 const express = require('express');
 const { seal } = require('../lib/atRest');
+const { sealBufferSync } = require('../lib/fileSeal');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -153,7 +154,7 @@ inboxHandlers.dm_message_create = (peer, payload) => {
   // An attachment that fails a check is dropped individually rather than discarding the whole
   // message, so one bad attachment in a batch doesn't also swallow otherwise-valid text content.
   const content = String(payload.content || '').slice(0, maxMessageChars());
-  const maxBytes = effectiveMaxUploadMb(config.maxUploadMb) * 1024 * 1024;
+  const maxBytes = effectiveMaxUploadMb() * 1024 * 1024;
   const validAttachments = (payload.attachments || []).slice(0, 5).filter((att) => {
     if (!att?.fileName || !isAllowedUpload(att.fileName)) return false;
     const size = Buffer.byteLength(att.dataBase64 || '', 'base64');
@@ -168,15 +169,15 @@ inboxHandlers.dm_message_create = (peer, payload) => {
     const dir = path.join(DATA_DIR, 'attachments', `dm-${dmChannelId}`);
     fs.mkdirSync(dir, { recursive: true });
     for (const att of validAttachments) {
-      const storedName = `${crypto.randomBytes(8).toString('hex')}-${sanitizeFilename(att.fileName)}`;
-      fs.writeFileSync(path.join(dir, storedName), Buffer.from(att.dataBase64, 'base64'));
+      const storedName = `${crypto.randomBytes(12).toString('hex')}.bin`;
+      sealBufferSync(Buffer.from(att.dataBase64, 'base64'), path.join(dir, storedName));
       // Matches the URL shape dms.js's own local upload path writes (`/uploads/attachments/dm-X/name`)
       // and that lib/messages.js's serializeMessage reads straight back as `attachment.url` — the
       // brief's `path.join('attachments', ...)` would instead store an OS-specific relative path
       // (backslashes on Windows) with no `/uploads/` prefix, breaking every attachment link.
       const relUrl = `/uploads/attachments/dm-${dmChannelId}/${storedName}`;
       db.prepare('INSERT INTO attachments (message_id, file_path, file_name, mime_type, size_bytes) VALUES (?, ?, ?, ?, ?)')
-        .run(info.lastInsertRowid, relUrl, sanitizeFilename(att.fileName), att.mimeType || 'application/octet-stream', Buffer.byteLength(att.dataBase64, 'base64'));
+        .run(info.lastInsertRowid, relUrl, seal(sanitizeFilename(att.fileName)), att.mimeType || 'application/octet-stream', Buffer.byteLength(att.dataBase64, 'base64'));
     }
   }
 

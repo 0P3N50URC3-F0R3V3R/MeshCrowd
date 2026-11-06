@@ -2,7 +2,9 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const multer = require('multer');
 const siteSettings = require('./siteSettings');
+const { load: loadConfig, save: saveConfig } = require('./config');
 
 const BLOCKED_EXTENSIONS = new Set([
   '.exe', '.bat', '.cmd', '.com', '.msi', '.ps1', '.psm1', '.sh', '.bash',
@@ -56,19 +58,40 @@ function attachmentFileFilter(req, file, cb) {
   cb(err);
 }
 
-// The live admin-configured cap, but never above config.json's maxUploadMb - that value sets
-// multer's actual upload limit (fixed at process start), so the admin setting can only tighten
-// it further at runtime, never loosen it without a restart.
-function effectiveMaxUploadMb(configMaxUploadMb) {
-  return Math.min(siteSettings.getMaxUploadMb(), configMaxUploadMb);
+// One upload limit for the whole server: config.json "maxUploadMb". The Admin Panel and the SSH
+// console both edit that same value, and it is re-read on every upload, so a change applies live.
+function effectiveMaxUploadMb() {
+  return loadConfig().maxUploadMb;
+}
+
+// Older versions kept a second, admin-panel-only cap that could only tighten config.json's value.
+// Fold it into the single setting once, then forget it.
+function migrateUploadLimit() {
+  const legacy = Number(siteSettings.get('max_upload_mb'));
+  if (!Number.isFinite(legacy) || legacy <= 0) return;
+  const current = loadConfig().maxUploadMb;
+  if (legacy < current) saveConfig({ maxUploadMb: Math.max(1, Math.round(legacy)) });
+  siteSettings.set('max_upload_mb', '');
+}
+
+// multer fixes its size limit when it is created; build it per request so the limit follows the setting.
+function liveUpload({ storage, capBytes = Infinity, files = 5 }) {
+  return {
+    array(field, max) {
+      return (req, res, next) => {
+        const fileSize = Math.floor(Math.min(effectiveMaxUploadMb() * 1024 * 1024, capBytes));
+        multer({ storage, fileFilter: attachmentFileFilter, limits: { fileSize, files } }).array(field, max)(req, res, next);
+      };
+    },
+  };
 }
 
 // multer's own `limits.fileSize` is fixed at process start from config.json, so it can't reflect
 // an admin-panel change made at runtime. Call this right after the upload.array(...) middleware,
 // before touching the DB - it deletes the temp files and sends the 400 itself. Returns true if it
 // did (caller should just `return`).
-function rejectOversizedFiles(req, res, configMaxUploadMb) {
-  const maxMb = effectiveMaxUploadMb(configMaxUploadMb);
+function rejectOversizedFiles(req, res) {
+  const maxMb = effectiveMaxUploadMb();
   const tooLarge = (req.files || []).some((f) => f.size > maxMb * 1024 * 1024);
   if (!tooLarge) return false;
   for (const f of req.files) { try { fs.unlinkSync(f.path); } catch { /* best-effort cleanup */ } }
@@ -78,5 +101,5 @@ function rejectOversizedFiles(req, res, configMaxUploadMb) {
 
 module.exports = {
   BLOCKED_EXTENSIONS, sanitizeFilename, isBlockedExtension, fixUtf8Filename,
-  isAllowedUpload, attachmentFileFilter, effectiveMaxUploadMb, rejectOversizedFiles,
+  isAllowedUpload, attachmentFileFilter, effectiveMaxUploadMb, migrateUploadLimit, liveUpload, rejectOversizedFiles,
 };

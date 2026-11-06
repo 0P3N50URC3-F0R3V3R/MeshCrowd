@@ -15,7 +15,8 @@ import { stickerRef, previewText } from '../stickers.mjs';
 import { confirmModal, promptModal, openModal } from './modal.js';
 import { MAX_TEXT_FILE_BYTES, textByteLength, textToFile } from '../longText.js';
 import { openInviteModal } from './sidebar.js';
-import { memberNameColor } from '../permissions.js';
+import { memberNameColor, memberNameFx } from '../permissions.js';
+import { nameAttrs } from '../nameStyle.js';
 import { memberRoleIcon, roleIconHtml } from '../roleIcon.js';
 import { isAgeGateError, renderAgeGate } from '../ageGate.js';
 import { usageOf, parseInvocation, missingRequired } from '../slashCommands.js';
@@ -27,6 +28,7 @@ import { offlineWindows } from '../offlineTracker.js';
 import { uploads } from '../uploadTracker.js';
 import { checkUploadFile } from '../uploadGuard.mjs';
 import { openScheduleModal } from './scheduled.js';
+import { openSoundboardPicker } from './soundboardPicker.js';
 import { canRecordVoice, openRecorderBar, voiceMessageHtml, wireVoicePlayers } from '../voiceMessage.js';
 
 const GROUP_WINDOW_MS = 7 * 60 * 1000;
@@ -397,12 +399,20 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
 
   // Per-member override beats their highest colored role - see permissions.js's memberNameColor.
   // Only meaningful for channel/thread scopes (DMs have no server roles/members to look up).
-  function authorColor(authorId) {
-    if (!scope.serverId) return null;
+  function authorColor(authorId, author) {
+    if (!scope.serverId) return scope.kind === 'dm' ? (author?.nameColor || null) : null; // DMs: anyone's own colour, no roles to outrank it
     const detail = getServerDetail(scope.serverId);
     if (!detail) return null;
     const member = detail.members.find((x) => x.user.id === authorId);
     return memberNameColor(detail.roles, member);
+  }
+
+  // Color + personal effect for a name: a role/moderator color hides the effect, DMs use the person's own look.
+  function authorFx(authorId, author) {
+    if (!scope.serverId) return scope.kind === 'dm' ? { color: author?.nameColor || null, effect: author?.nameEffect || '' } : {};
+    const detail = getServerDetail(scope.serverId);
+    const member = detail?.members.find((x) => x.user.id === authorId);
+    return detail && member ? memberNameFx(detail.roles, member) : {};
   }
 
   function authorRoleIcon(authorId) {
@@ -447,7 +457,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
             ${m.replyTo ? renderReplyPreview(m.replyTo) : ''}
             ${m.interaction ? `<div class="interaction-line">${icons.messageSquare(12)} ${t('slash.usedCommand', { user: escapeHtml(m.interaction.user?.displayName || '?'), command: escapeHtml(m.interaction.command) })}</div>` : ''}
             <div class="msg-head">
-              <span class="author-name" data-user="${m.author.id}" ${authorColor(m.author.id) ? `style="color:${escapeHtml(authorColor(m.author.id))}"` : ''}>${escapeHtml(m.author.displayName)}</span>${authorRoleIcon(m.author.id)}${m.author.isBot ? `<span class="bot-badge">${t('bots.badge')}</span>` : ''}
+              <span data-user="${m.author.id}"${nameAttrs(authorFx(m.author.id, m.author), 'author-name')}>${escapeHtml(m.author.displayName)}</span>${authorRoleIcon(m.author.id)}${m.author.isBot ? `<span class="bot-badge">${t('bots.badge')}</span>` : ''}
               <span class="timestamp">${formatTimestamp(m.createdAt)}</span>
             </div>`}
           ${renderMessageBody(m)}
@@ -1084,6 +1094,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
         <button type="button" class="composer-btn" id="btn-sticker" title="${t('admin.stickersTab')}">${icons.image(22)}</button>
         <button type="button" class="composer-btn" id="btn-emoji" title="${t('serverSettings.navEmoji')}">${icons.smile(22)}</button>
         ${scope.channelType === 'stage' || !canRecordVoice() ? '' : `<button type="button" class="composer-btn" id="btn-voice" title="${t('voiceMsg.record')}">${icons.mic(22)}</button>`}
+        ${scope.serverId ? `<button type="button" class="composer-btn" id="btn-sounds" title="${t('admin.soundboardTab')}">${icons.music(22)}</button>` : ''}
         ${scope.channelType === 'stage' ? '' : `<button type="button" class="composer-btn" id="btn-schedule" title="${t('chat.scheduleTitle')}">${icons.clock(22)}</button>`}
         <button type="button" class="composer-btn composer-btn-send" id="btn-send" title="${t('chat.sendTitle')}">${icons.send(20)}</button>
       </div>`;
@@ -1123,6 +1134,14 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       await openRecorderBar(host, {
         onSend: ({ file, durationMs }) => submit(undefined, { file, durationMs }),
         onError: () => toast(t('voiceMsg.noMic'), { type: 'error' }),
+      });
+    });
+    composerWrap.querySelector('#btn-sounds')?.addEventListener('click', (e) => {
+      const sounds = getServerDetail(scope.serverId)?.sounds || [];
+      openSoundboardPicker(e.currentTarget, sounds, (sound) => {
+        // In a call on this server the room hears it; otherwise it plays only for you, as a preview.
+        if (state.voice.channelId && state.voice.serverId === scope.serverId) ws.send({ type: 'voice_soundboard_play', channelId: state.voice.channelId, soundId: sound.id });
+        else new Audio(sound.audioPath).play().catch(() => {});
       });
     });
     composerWrap.querySelector('#btn-schedule')?.addEventListener('click', () => {

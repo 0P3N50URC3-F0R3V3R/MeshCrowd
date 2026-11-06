@@ -84,6 +84,7 @@ async function resync() {
   try {
     const [s, d, f, r] = await Promise.all([api.listServers(), api.listDms(), api.friends(), api.getReadState()]);
     setServers(s.servers); setDms(d.dms); setFriends(f); setReadStateBulk(r.state, r.pinsUnseen, r.threadsUnread);
+    api.config().then((c) => Object.assign(state.config, c)).catch(() => {});
     for (const id of [...state.serverDetail.keys()]) refreshServerDetailSilently(id);
   } catch (err) { if (err && err.status === 401) bus.emit('m:unauthorized'); }
 }

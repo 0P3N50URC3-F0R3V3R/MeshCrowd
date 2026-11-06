@@ -261,6 +261,7 @@ export const api = {
   listScheduled: () => get('/api/scheduled'),
   createScheduled: (body) => post('/api/scheduled', body),
   cancelScheduled: (id) => del(`/api/scheduled/${id}`),
+  updateScheduled: (id, body) => patch(`/api/scheduled/${id}`, body),
   listReactionRoles: (serverId) => get(`/api/servers/${serverId}/reaction-roles`),
   createReactionRole: (serverId, body) => post(`/api/servers/${serverId}/reaction-roles`, body),
   deleteReactionRole: (serverId, id) => del(`/api/servers/${serverId}/reaction-roles/${id}`),
@@ -299,6 +300,9 @@ export const api = {
     return postForm(`/api/servers/${serverId}/sounds`, fd);
   },
   deleteSound: (serverId, soundId) => del(`/api/servers/${serverId}/sounds/${soundId}`),
+  renameSound: (serverId, id, name) => patch(`/api/servers/${serverId}/sounds/${id}`, { name }),
+  renameSticker: (serverId, id, name) => patch(`/api/servers/${serverId}/stickers/${id}`, { name }),
+  renameEmoji: (serverId, id, name) => patch(`/api/servers/${serverId}/emoji/${id}`, { name }),
 
   // soundboard (site-admin, MANAGE_ANY_SERVER)
   adminListSounds: (serverId) => get(`/api/admin/servers/${serverId}/sounds`),
@@ -509,6 +513,9 @@ export const api = {
   adminUnassignSiteRole: (userId, roleId) => del(`/api/admin/users/${userId}/site-roles/${roleId}`),
   adminReports: (status) => get('/api/admin/reports', { status }),
   adminResolveReport: (id, status) => patch(`/api/admin/reports/${id}`, { status }),
+  adminUpdateReport: (id, body) => patch(`/api/admin/reports/${id}`, body),
+  adminDeleteReport: (id) => del(`/api/admin/reports/${id}`),
+  adminClearReports: (userId) => del(`/api/admin/reports${userId ? `?userId=${userId}` : ''}`),
 
   // admin data pruning (instance-wide, PRUNE_DATA)
   adminPruneServers: () => get('/api/admin/prune/servers'),

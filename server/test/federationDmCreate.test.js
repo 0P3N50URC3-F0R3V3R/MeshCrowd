@@ -95,7 +95,7 @@ test('outbound: posting a DM message relays dm_message_create with correctly-qua
 
   const outboxRow = db.prepare(`SELECT * FROM federation_outbox WHERE peer_id = ? AND type = 'dm_message_create'`).get(peerId);
   assert.ok(outboxRow);
-  const payload = JSON.parse(outboxRow.payload_json);
+  const payload = JSON.parse(require('../lib/atRest').open(outboxRow.payload_json));
   assert.equal(payload.fromRemoteId, aliceId);
   assert.equal(payload.fromUsername, 'aliceDm');
   assert.equal(payload.content, 'hello with attachment');
@@ -149,7 +149,7 @@ test('full relay round trip: the outbox payload, fed into the receiving inbox ha
     assert.equal(res.status, 201);
   });
   const outboxRow = db.prepare(`SELECT * FROM federation_outbox WHERE peer_id = ? AND type = 'dm_message_create' ORDER BY id DESC LIMIT 1`).get(peerId);
-  const payload = JSON.parse(outboxRow.payload_json);
+  const payload = JSON.parse(require('../lib/atRest').open(outboxRow.payload_json));
 
   // Delivered as the real receiver would see it: `peer.domain` is OUR domain, since that's how we
   // registered ourselves with them (see middleware/federationVerify.js: looked up by origin_domain).
@@ -282,8 +282,8 @@ test('an attachment with a blocked extension is dropped, not written to disk or 
 test('an attachment over the effective max upload size is dropped', () => {
   const localId = makeUser('sizeLocal');
   const peerId = db.prepare(`INSERT INTO federation_peers (domain, public_url, their_pubkey, status) VALUES ('bounds3.example', 'https://b3', 'PEM', 'active')`).run().lastInsertRowid;
-  const previousCap = siteSettings.getMaxUploadMb();
-  siteSettings.setMaxUploadMb(0.0001); // ~105 bytes
+  const previousCap = require('../lib/config').load().maxUploadMb;
+  require('../lib/config').save({ maxUploadMb: 0.0001 }); // ~105 bytes
   try {
     inboxHandlers.dm_message_create({ id: peerId, domain: 'bounds3.example' }, {
       fromRemoteId: 1, fromUsername: 'bigSender', displayName: 'Big',
@@ -292,7 +292,7 @@ test('an attachment over the effective max upload size is dropped', () => {
       dmMessageId: 'bounds-3',
     });
   } finally {
-    siteSettings.setMaxUploadMb(previousCap);
+    require('../lib/config').save({ maxUploadMb: previousCap });
   }
 
   const message = db.prepare(`SELECT * FROM messages WHERE federation_message_id = 'bounds-3'`).get();

@@ -6,7 +6,9 @@ import { t } from '../i18n.js';
 // (per-server MANAGE_SERVER) and the site Admin Panel (MANAGE_ANY_SERVER, any server, even ones
 // the site admin isn't a member of). The caller supplies the actual API calls so this stays
 // agnostic of which permission path is active.
-export function renderStickerEditor(container, { stickers, upload, remove, onChange }) {
+import { bulkUploadHtml, wireBulkUpload, wireInlineRename } from '../assetBulk.js';
+
+export function renderStickerEditor(container, { stickers, upload, remove, rename, onChange }) {
   container.innerHTML = `
     <p class="hint" style="margin:0 0 16px">${t('stickerEditor.hint')}</p>
     <div class="field">
@@ -20,6 +22,7 @@ export function renderStickerEditor(container, { stickers, upload, remove, onCha
       </div>
       <div class="error-text" id="st-err"></div>
       <button class="btn btn-primary" id="st-upload-btn" style="margin-top:10px">${t('stickerEditor.uploadButton')}</button>
+      ${bulkUploadHtml('image/png,image/jpeg,image/gif,image/webp', 'st-bulk')}
     </div>
     <div class="divider"></div>
     <div class="field">
@@ -32,7 +35,7 @@ export function renderStickerEditor(container, { stickers, upload, remove, onCha
     ? stickers.map((s) => `
         <div style="width:120px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px;text-align:center;border-radius:var(--radius-sm)" class="list-row">
           <img class="anim-hover" src="${escapeHtml(s.image_path)}" alt="${escapeHtml(s.name)}" style="width:64px;height:64px;object-fit:contain">
-          <div style="font-size:12px;font-weight:500;word-break:break-all">${escapeHtml(s.name)}</div>
+          <div style="font-size:12px;font-weight:500;word-break:break-all" ${rename ? `data-rename-id="${s.id}" data-rename-name="${escapeHtml(s.name)}"` : ''}>${escapeHtml(s.name)}</div>
           ${s.description ? `<div style="font-size:11px;color:var(--text-muted)">${escapeHtml(s.description)}</div>` : ''}
           <button class="btn-icon" data-sticker-delete="${s.id}" title="${t('stickerEditor.removeTitle')}">${icons.trash(14)}</button>
         </div>`).join('')
@@ -44,6 +47,9 @@ export function renderStickerEditor(container, { stickers, upload, remove, onCha
       catch (err) { toast(apiErrorMessage(err, t('stickerEditor.removeError')), { type: 'error' }); }
     });
   });
+
+  wireBulkUpload(container, { existingNames: stickers.map((s) => s.name), upload: (name, file) => upload(name, '', file), onDone: async () => onChange() });
+  if (rename) wireInlineRename(container, { rename, onDone: async () => onChange() });
 
   let chosenFile = null;
   const fileInput = container.querySelector('#st-file-input');

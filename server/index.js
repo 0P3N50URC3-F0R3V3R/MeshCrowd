@@ -96,6 +96,7 @@ app.use('/vendor/tinymce', express.static(path.join(__dirname, '..', 'node_modul
 // keep working — <img>/<video> embedding isn't affected by Content-Disposition, only direct
 // navigation/Save-As is, and raster formats can't carry script the way SVG/HTML can.
 const INLINE_SAFE_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico']);
+app.use('/uploads/attachments', require('./routes/dmFiles'));
 app.use('/uploads/attachments', express.static(path.join(DATA_DIR, 'attachments'), {
   setHeaders(res, filePath) {
     if (!INLINE_SAFE_EXT.has(path.extname(filePath).toLowerCase())) {
@@ -216,10 +217,11 @@ const { httpsLink } = require('./lib/httpsLink');
   app.use('/i', inviteLimit, invitePublic.page);
 }
 
+require('./lib/uploads').migrateUploadLimit();
 app.get('/api/config', (req, res) => {
   const dl = config.downloads || {};
   const downloads = { clientDesktop: httpsLink(dl.clientDesktop), clientAndroid: httpsLink(dl.clientAndroid), website: httpsLink(dl.website) };
-  res.json({ maxUploadMb: require('./lib/uploads').effectiveMaxUploadMb(config.maxUploadMb), maxMessageChars: require('./lib/messageLimits').maxMessageChars(), publicHost: config.publicHost, iceServers: turnManager.publicIceServers(), version: APP_VERSION, federationEnabled: !!(config.federation && config.federation.enabled), registrationMode: require('./lib/registration').getMode(), downloads });
+  res.json({ maxUploadMb: require('./lib/uploads').effectiveMaxUploadMb(), maxMessageChars: require('./lib/messageLimits').maxMessageChars(), publicHost: config.publicHost, iceServers: turnManager.publicIceServers(), version: APP_VERSION, federationEnabled: !!(config.federation && config.federation.enabled), registrationMode: require('./lib/registration').getMode(), downloads });
 });
 
 const WEB_DIR = path.join(__dirname, '..', 'web');

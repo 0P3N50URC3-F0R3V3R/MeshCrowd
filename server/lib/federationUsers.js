@@ -2,6 +2,7 @@
 
 const crypto = require('node:crypto');
 const { db } = require('../db');
+const { displayName: cleanDisplayName } = require('./textSanitize');
 
 // Cached local row for a remote person. A random, non-guessable local `username`/`email` are
 // used since neither is ever addressed directly for a remote user (federated_uid is the real
@@ -10,7 +11,7 @@ const { db } = require('../db');
 // path shape so a peer cannot point clients at arbitrary same-origin URLs.
 function cleanProfile(remoteUser) {
   const username = String(remoteUser.username ?? '').slice(0, 64);
-  const displayName = String(remoteUser.displayName ?? username).replace(/[\r\n]+/g, ' ').trim().slice(0, 32) || username;
+  const displayName = cleanDisplayName(remoteUser.displayName ?? username) || username;
   const avatarPath = typeof remoteUser.avatarPath === 'string' && /^\/uploads\/avatars\/[\w.-]+$/.test(remoteUser.avatarPath) ? remoteUser.avatarPath : null;
   return { ...remoteUser, username, displayName, avatarPath };
 }

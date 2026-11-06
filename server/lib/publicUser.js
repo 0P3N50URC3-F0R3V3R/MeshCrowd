@@ -37,6 +37,8 @@ function toPublicUser(user, { viewerIsSelf = false, areFriends = false } = {}) {
     e2eePublicKey: user.e2ee_public_key || null,
     passportId: user.passport_id || null,
     isBot: !!user.is_bot,
+    nameColor: user.name_color || null,
+    nameEffect: user.name_effect || '',
   };
 
   const canSeeProfile =

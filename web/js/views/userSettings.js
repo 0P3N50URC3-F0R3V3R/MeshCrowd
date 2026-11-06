@@ -10,6 +10,7 @@ import {
 import { icons } from '../icons.js';
 import { cropImage } from '../cropEditor.js';
 import { renderBio } from '../bioMarkup.mjs';
+import { nameColorPickerHtml, wireNameColorPicker, readNameColor, readNameEffect } from '../nameColorPicker.js';
 import { bioToolbarHtml, wireBioToolbar } from '../bioEditor.js';
 import { avatarHtml, BIO_MAX, colorForId, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle, navScroll, restoreNavScroll } from '../utils.js';
 import { openAdminPanel } from './admin.js';
@@ -130,6 +131,11 @@ export function openUserSettings(initialTab = 'account') {
         <input class="input" id="f-display" maxlength="32" value="${escapeHtml(me.displayName)}">
       </div>
       <div class="field">
+        <label>${t('userSettings.nameColorLabel')}</label>
+        ${nameColorPickerHtml(me.nameColor, me.nameEffect)}
+        <div class="hint">${t('userSettings.nameColorHint')}</div>
+      </div>
+      <div class="field">
         <label style="display:flex;justify-content:space-between;align-items:baseline">${t('userSettings.bioLabel')}<span class="hint" id="f-bio-count" style="margin:0"></span></label>
         ${bioToolbarHtml()}
         <textarea class="textarea" id="f-bio" maxlength="${BIO_MAX}" placeholder="${t('userSettings.bioPlaceholder')}">${escapeHtml(me.bio || '')}</textarea>
@@ -213,6 +219,7 @@ export function openUserSettings(initialTab = 'account') {
     const onBioChange = () => { inner.querySelector('#pp-bio-preview').innerHTML = renderBio(bioInput.value); paintBioCount(); };
     bioInput.addEventListener('input', onBioChange);
     wireBioToolbar(inner.querySelector('.bio-toolbar'), bioInput, onBioChange);
+    wireNameColorPicker(inner);
 
     inner.querySelector('#f-banner-color').addEventListener('input', (e) => {
       bannerColorTouched = true;
@@ -285,7 +292,7 @@ export function openUserSettings(initialTab = 'account') {
       const bio = bioInput.value;
       const errBox = inner.querySelector('#acc-err');
       errBox.textContent = '';
-      const payload = { displayName, bio };
+      const payload = { displayName, bio, nameColor: readNameColor(inner), nameEffect: readNameEffect(inner) };
       if (bannerColorTouched) payload.bannerColor = pendingBannerColor;
       if (cardColorTouched) payload.cardColor = pendingCardColor;
       if (avatarBgTouched) payload.avatarBackground = pendingAvatarBg;

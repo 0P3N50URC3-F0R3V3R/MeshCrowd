@@ -23,6 +23,6 @@ test('enqueue writes a pending row for an active peer, skips revoked peers', () 
   assert.equal(rows.length, 1);
   assert.equal(rows[0].peer_id, activeId);
   assert.equal(rows[0].status, 'pending');
-  assert.deepEqual(JSON.parse(rows[0].payload_json), { hello: 'world' });
+  assert.deepEqual(JSON.parse(require('../lib/atRest').open(rows[0].payload_json)), { hello: 'world' });
   assert.match(rows[0].event_id, /^[0-9a-f-]{36}$/);
 });

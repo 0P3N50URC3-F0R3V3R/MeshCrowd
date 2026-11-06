@@ -14,11 +14,13 @@ const { SITE_PERMISSIONS, hasSite, hasSiteStrict } = require('../lib/permissions
 const { getSitePermissionBits } = require('../lib/siteAuth');
 const { destroyAllSessionsForUser } = require('../lib/session');
 const { toPublicUser } = require('../lib/publicUser');
+const { effectiveMaxUploadMb } = require('../lib/uploads');
+const { save: saveConfig } = require('../lib/config');
 const siteSettings = require('../lib/siteSettings');
 const hub = require('../socket/hub');
 const { isOnline } = require('../lib/presence');
 const { clipBio } = require('../lib/bio');
-const { singleLine } = require('../lib/textSanitize');
+const { singleLine, displayName: cleanDisplayName } = require('../lib/textSanitize');
 const { uploadSticker, createSticker, deleteSticker } = require('../lib/stickers');
 const { uploadSound, createSound, deleteSound } = require('../lib/sounds');
 const prune = require('../lib/prune');
@@ -98,7 +100,7 @@ router.use('/security', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), re
 router.get('/settings', (req, res) => {
   res.json({
     sessionTtlDays: siteSettings.getSessionTtlDays(),
-    maxUploadMb: siteSettings.getMaxUploadMb(),
+    maxUploadMb: effectiveMaxUploadMb(),
     allowedAttachmentExtensions: siteSettings.getAllowedExtensions() || [],
     registrationMode: registration.getMode(),
   });
@@ -112,8 +114,8 @@ router.patch('/settings', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), 
   }
   if (req.body?.maxUploadMb !== undefined) {
     const mb = Number(req.body.maxUploadMb);
-    if (!Number.isFinite(mb) || mb <= 0) return res.status(400).json({ error: 'maxUploadMb must be a positive number' });
-    siteSettings.setMaxUploadMb(mb);
+    if (!Number.isFinite(mb) || mb < 1 || mb > 10240) return res.status(400).json({ error: 'maxUploadMb must be between 1 and 10240' });
+    saveConfig({ maxUploadMb: Math.round(mb) });
   }
   if (req.body?.allowedAttachmentExtensions !== undefined) {
     const list = req.body.allowedAttachmentExtensions;
@@ -124,7 +126,7 @@ router.patch('/settings', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), 
   }
   res.json({
     sessionTtlDays: siteSettings.getSessionTtlDays(),
-    maxUploadMb: siteSettings.getMaxUploadMb(),
+    maxUploadMb: effectiveMaxUploadMb(),
     allowedAttachmentExtensions: siteSettings.getAllowedExtensions() || [],
     registrationMode: registration.getMode(),
   });
@@ -246,7 +248,7 @@ router.post('/calls/detect-ip', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRA
 router.get('/stats', (req, res) => {
   const users = db.prepare("SELECT COUNT(*) AS c FROM users WHERE username != '__webhook__' AND is_bot = 0").get().c;
   const servers = db.prepare('SELECT COUNT(*) AS c FROM servers').get().c;
-  const messages = db.prepare('SELECT COUNT(*) AS c FROM messages').get().c;
+  const messages = db.prepare('SELECT COUNT(*) AS c FROM messages WHERE event_type IS NULL').get().c;
   res.json({ users, servers, messages });
 });
 
@@ -284,7 +286,7 @@ router.patch('/users/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_USERS), (req,
   }
 
   if (displayName !== undefined) {
-    const v = singleLine(displayName, 32);
+    const v = cleanDisplayName(displayName);
     if (!v) return res.status(400).json({ error: 'displayName cannot be empty' });
     db.prepare('UPDATE users SET display_name = ? WHERE id = ?').run(v, target.id);
   }
@@ -533,25 +535,73 @@ function shapeReport(r) {
     details: r.details,
     message: message ? shapeReportedMessage(message) : null,
     status: r.status,
+    adminNotes: r.admin_notes || '',
     createdAt: r.created_at,
     resolvedAt: r.resolved_at,
+    updatedAt: r.updated_at || null,
   };
 }
 
+const REPORT_STATUSES = ['open', 'resolved', 'dismissed'];
+const MAX_NOTES = 4000;
+
 router.get('/reports', requireSitePerm(SITE_PERMISSIONS.MANAGE_REPORTS), (req, res) => {
-  const status = ['open', 'resolved', 'dismissed'].includes(req.query.status) ? req.query.status : 'open';
-  const rows = db.prepare('SELECT * FROM reports WHERE status = ? ORDER BY id DESC').all(status);
+  const where = [];
+  const params = [];
+  if (REPORT_STATUSES.includes(req.query.status)) { where.push('status = ?'); params.push(req.query.status); }
+  const userId = Number(req.query.userId);
+  if (Number.isInteger(userId) && userId > 0) { where.push('reported_user_id = ?'); params.push(userId); }
+  const rows = db.prepare(`SELECT * FROM reports ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY id DESC LIMIT 1000`).all(...params);
   res.json({ reports: rows.map(shapeReport) });
 });
 
+// Pending reports stay editable (notes, reason, status). Closing records who and when; reopening clears it.
 router.patch('/reports/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_REPORTS), (req, res) => {
   const report = db.prepare('SELECT * FROM reports WHERE id = ?').get(req.params.id);
   if (!report) return res.status(404).json({ error: 'report not found' });
-  const status = req.body?.status;
-  if (!['resolved', 'dismissed'].includes(status)) return res.status(400).json({ error: 'status must be resolved or dismissed' });
-  db.prepare("UPDATE reports SET status = ?, resolved_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), resolved_by = ? WHERE id = ?")
-    .run(status, req.user.id, report.id);
+  const { status, adminNotes, reason } = req.body || {};
+  const sets = [];
+  const params = [];
+  if (status !== undefined) {
+    if (!REPORT_STATUSES.includes(status)) return res.status(400).json({ error: 'status must be open, resolved or dismissed' });
+    sets.push('status = ?');
+    params.push(status);
+    if (status === 'open') sets.push('resolved_at = NULL', 'resolved_by = NULL');
+    else { sets.push("resolved_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')", 'resolved_by = ?'); params.push(req.user.id); }
+  }
+  if (adminNotes !== undefined) {
+    if (typeof adminNotes !== 'string') return res.status(400).json({ error: 'adminNotes must be text' });
+    sets.push('admin_notes = ?');
+    params.push(adminNotes.slice(0, MAX_NOTES));
+  }
+  if (reason !== undefined) {
+    if (!['spam', 'harassment', 'other'].includes(reason)) return res.status(400).json({ error: 'invalid reason' });
+    sets.push('reason = ?');
+    params.push(reason);
+  }
+  if (!sets.length) return res.status(400).json({ error: 'nothing to update' });
+  sets.push("updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')", 'updated_by = ?');
+  params.push(req.user.id, report.id);
+  db.prepare(`UPDATE reports SET ${sets.join(', ')} WHERE id = ?`).run(...params);
   res.json({ report: shapeReport(db.prepare('SELECT * FROM reports WHERE id = ?').get(report.id)) });
+});
+
+// Only closed (resolved or rejected) reports can be deleted; a pending one is still a case to work.
+router.delete('/reports/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_REPORTS), (req, res) => {
+  const report = db.prepare('SELECT * FROM reports WHERE id = ?').get(req.params.id);
+  if (!report) return res.status(404).json({ error: 'report not found' });
+  if (report.status === 'open') return res.status(409).json({ error: 'resolve or reject the report before deleting it' });
+  db.prepare('DELETE FROM reports WHERE id = ?').run(report.id);
+  res.json({ ok: true });
+});
+
+// Clears every closed report, optionally just one reported user's. Pending reports are never touched.
+router.delete('/reports', requireSitePerm(SITE_PERMISSIONS.MANAGE_REPORTS), (req, res) => {
+  const userId = Number(req.query.userId);
+  const info = Number.isInteger(userId) && userId > 0
+    ? db.prepare("DELETE FROM reports WHERE status != 'open' AND reported_user_id = ?").run(userId)
+    : db.prepare("DELETE FROM reports WHERE status != 'open'").run();
+  res.json({ deleted: info.changes });
 });
 
 router.get('/site-roles', (req, res) => {

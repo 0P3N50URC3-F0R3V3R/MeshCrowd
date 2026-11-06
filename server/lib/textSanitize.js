@@ -30,4 +30,32 @@ function statusEmoji(value) {
   return g.length <= 32 && (EMOJI_RE.test(g) || isKeycap(g)) ? g : '';
 }
 
-module.exports = { singleLine, statusEmoji };
+// Display names allow any text (every script, emoji, symbols) but not characters that make the GUI or
+// the server logic misbehave: control and line characters, invisible/format characters (zero-width,
+// bidi overrides and isolates, tag characters, byte-order marks), unpaired surrogates, private-use
+// and non-characters. ZWJ and variation selectors stay because emoji sequences need them, and runs of
+// combining marks are capped so stacked "zalgo" text cannot spill out of its row. Length counts
+// characters (code points), not UTF-16 units, so an emoji is never cut in half.
+const BS = String.fromCharCode(92);
+const cp = (n) => `${BS}u{${n.toString(16)}}`;
+const charClass = (ranges) => `[${ranges.map(([a, b]) => (a === b ? cp(a) : `${cp(a)}-${cp(b)}`)).join('')}]`;
+const DISALLOWED_NAME_CHARS = new RegExp(charClass([
+  [0x0, 0x1f], [0x7f, 0x9f], [0xad, 0xad], [0x34f, 0x34f], [0x61c, 0x61c], [0x115f, 0x1160], [0x17b4, 0x17b5],
+  [0x180b, 0x180f], [0x200b, 0x200c], [0x200e, 0x200f], [0x2028, 0x202e], [0x2060, 0x206f], [0x2800, 0x2800],
+  [0x3164, 0x3164], [0xfeff, 0xfeff], [0xffa0, 0xffa0], [0xfff0, 0xffff], [0xe000, 0xf8ff],
+  [0xe0000, 0xe007f], [0xe0100, 0xe01ef], [0xf0000, 0x10ffff],
+]), 'gu');
+const COMBINING_RUN = new RegExp(`(${BS}p{M}{3})${BS}p{M}+`, 'gu');
+
+function displayName(value, maxLen = 32) {
+  const cleaned = String(value ?? '')
+    .toWellFormed()
+    .normalize('NFC')
+    .replace(DISALLOWED_NAME_CHARS, ' ')
+    .replace(COMBINING_RUN, '$1')
+    .replace(/\s+/gu, ' ')
+    .trim();
+  return Array.from(cleaned).slice(0, maxLen).join('').trim();
+}
+
+module.exports = { singleLine, displayName, statusEmoji };

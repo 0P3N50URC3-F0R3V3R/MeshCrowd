@@ -48,7 +48,7 @@ let pendingInvite = findMcrLink(process.argv); // an mcr:// link that started th
 let tray = null;
 const recentNotifications = []; // most-recent-first, capped — feeds the tray menu's "Recent" section
 let trayBadge = { status: 'online', count: 0 }; // last badge state pushed from the renderer
-let trayLabels = { open: 'Open MeshCrowd', recent: 'Recent', none: 'No recent notifications', logout: 'Log Out', quit: 'Quit MeshCrowd', unread: '{count} unread' };
+let trayLabels = { open: 'Open MeshCrowd', recent: 'Recent', none: 'No recent notifications', logout: 'Log Out', quit: 'Quit MeshCrowd', unread: '{count} unread', undo: 'Undo', redo: 'Redo', cut: 'Cut', copy: 'Copy', paste: 'Paste', selectAll: 'Select All' };
 app.isQuitting = false;
 
 function rebuildTrayMenu() {
@@ -299,11 +299,11 @@ function createWindow() {
     if (params.isEditable) {
       for (const s of params.dictionarySuggestions || []) items.push({ label: s, click: () => mainWindow.webContents.replaceMisspelling(s) });
       if (items.length) items.push({ type: 'separator' });
-      items.push({ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' });
+      items.push({ role: 'undo', label: trayLabels.undo }, { role: 'redo', label: trayLabels.redo }, { type: 'separator' }, { role: 'cut', label: trayLabels.cut }, { role: 'copy', label: trayLabels.copy }, { role: 'paste', label: trayLabels.paste }, { role: 'selectAll', label: trayLabels.selectAll });
     } else if (params.selectionText) {
-      items.push({ role: 'copy' }, { role: 'selectAll' });
+      items.push({ role: 'copy', label: trayLabels.copy }, { role: 'selectAll', label: trayLabels.selectAll });
     } else if (params.linkURL) {
-      items.push({ label: params.linkURL, enabled: false }, { role: 'copy' });
+      items.push({ label: params.linkURL, enabled: false }, { role: 'copy', label: trayLabels.copy });
     } else return;
     Menu.buildFromTemplate(items).popup({ window: mainWindow });
   });

@@ -125,6 +125,15 @@ function roleOrder(roles, id) {
 // A member's per-member color override (server/routes/servers.js's name_color column) beats
 // their highest-position colored role, which beats no color at all. Used anywhere a member's
 // name is rendered - chat messages, the member list, profile cards.
+// Same precedence as memberNameColor, plus the personal text effect, which only shows when the
+// personal color does (no role or moderator color in the way).
+export function memberNameFx(roles, member) {
+  const color = memberNameColor(roles, member);
+  const personal = member?.user?.nameColor || null;
+  const effect = color && color === personal ? (member.user.nameEffect || '') : (!color ? (member?.user?.nameEffect || '') : '');
+  return { color, effect };
+}
+
 export function memberNameColor(roles, member) {
   if (!member) return null;
   if (member.nameColor) return member.nameColor;
@@ -132,5 +141,7 @@ export function memberNameColor(roles, member) {
     .filter((r) => !r.is_default && r.color && r.color !== '#99aab5')
     .sort((a, b) => b.position - a.position);
   const topRole = colorRoles.find((r) => (member.roleIds || []).includes(r.id));
-  return topRole ? topRole.color : null;
+  if (topRole) return topRole.color;
+  // A server role colour outranks the person's own colour; with no coloured role theirs shows.
+  return member.user?.nameColor || null;
 }

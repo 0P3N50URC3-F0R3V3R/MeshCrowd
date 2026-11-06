@@ -1,3 +1,4 @@
+import { bulkUploadHtml, wireBulkUpload, wireInlineRename } from '../assetBulk.js';
 import { bus } from '../bus.js';
 import { api } from '../api.js';
 import { state, setServerDetail, getServerDetail } from '../state.js';
@@ -595,6 +596,7 @@ function buildServerSettings(serverId, opts) {
         </div>
         <div class="error-text" id="em-err"></div>
         <button class="btn btn-primary" id="em-upload-btn" style="margin-top:10px">${t('admin.uploadButton')}</button>
+        ${bulkUploadHtml('image/png,image/jpeg,image/gif,image/webp', 'em-bulk')}
       </div>
       <div class="divider"></div>
       <div class="field">
@@ -607,7 +609,7 @@ function buildServerSettings(serverId, opts) {
       ? emojiList.map((e) => `
           <div style="width:88px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px;text-align:center;border-radius:var(--radius-sm)" class="list-row">
             <img src="${escapeHtml(e.image_path)}" alt=":${escapeHtml(e.name)}:" style="width:40px;height:40px;object-fit:contain">
-            <div style="font-size:12px;color:var(--text-muted);word-break:break-all">:${escapeHtml(e.name)}:</div>
+            <div style="font-size:12px;color:var(--text-muted);word-break:break-all" data-rename-id="${e.id}" data-rename-name="${escapeHtml(e.name)}">:${escapeHtml(e.name)}:</div>
             <button class="btn-icon" data-emoji-delete="${e.id}" title="${t('stickerEditor.removeTitle')}">${icons.trash(14)}</button>
           </div>`).join('')
       : `<div class="empty-state" style="height:auto;padding:16px 0"><p>${t('serverSettings.noCustomEmojiYet')}</p></div>`;
@@ -618,6 +620,9 @@ function buildServerSettings(serverId, opts) {
         catch (err) { toast(apiErrorMessage(err, t('stickerEditor.removeError')), { type: 'error' }); }
       });
     });
+
+    wireBulkUpload(inner, { existingNames: emojiList.map((e) => e.name), upload: (name, file) => api.uploadCustomEmoji(serverId, name, file), onDone: refresh });
+    wireInlineRename(gridEl, { rename: (id, name) => api.renameEmoji(serverId, id, name), onDone: refresh, prefix: ':', suffix: ':' });
 
     let chosenFile = null;
     const fileInput = inner.querySelector('#em-file-input');
@@ -674,6 +679,7 @@ function buildServerSettings(serverId, opts) {
       stickers: d.stickers || [],
       upload: (name, description, file) => api.uploadSticker(serverId, name, description, file),
       remove: (stickerId) => api.deleteSticker(serverId, stickerId),
+      rename: (id, name) => api.renameSticker(serverId, id, name),
       onChange: refresh,
     });
   }
@@ -686,6 +692,7 @@ function buildServerSettings(serverId, opts) {
       sounds: d.sounds || [],
       upload: (name, emoji, file) => api.uploadSound(serverId, name, emoji, file),
       remove: (soundId) => api.deleteSound(serverId, soundId),
+      rename: (id, name) => api.renameSound(serverId, id, name),
       onChange: refresh,
     });
   }

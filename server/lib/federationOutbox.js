@@ -2,6 +2,7 @@
 
 const crypto = require('node:crypto');
 const { db } = require('../db');
+const { seal } = require('./atRest');
 
 // The only event types a not-yet-active (pending) or just-revoked peer may send or receive: they
 // complete or cancel a pairing, so they must flow before/after the peer is 'active'.
@@ -12,7 +13,7 @@ function enqueueEvent(peerId, type, payload) {
   const peer = db.prepare(`SELECT id FROM federation_peers WHERE id = ?${statusClause}`).get(peerId);
   if (!peer) return; // unknown peer, or a non-control event for a pending/revoked peer: nothing to send
   db.prepare('INSERT INTO federation_outbox (peer_id, event_id, type, payload_json) VALUES (?, ?, ?, ?)')
-    .run(peerId, crypto.randomUUID(), type, JSON.stringify(payload));
+    .run(peerId, crypto.randomUUID(), type, type.startsWith('dm_') ? seal(JSON.stringify(payload)) : JSON.stringify(payload));
   // Required lazily: the worker itself requires this module for CONTROL_EVENT_TYPES.
   if (type === 'remote_channel_event') setImmediate(() => require('./federationOutboxWorker').kickOutboxWorker());
 }

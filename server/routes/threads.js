@@ -16,7 +16,7 @@ const { onMessageCreated } = require('../lib/bots/events');
 const automod = require('../lib/automod');
 const voiceMessages = require('../lib/voiceMessages');
 const { load: loadConfig } = require('../lib/config');
-const { sanitizeFilename, attachmentFileFilter, fixUtf8Filename, rejectOversizedFiles } = require('../lib/uploads');
+const { sanitizeFilename, liveUpload, fixUtf8Filename, rejectOversizedFiles } = require('../lib/uploads');
 const { getMemberTimeout } = require('../lib/moderation');
 const { nsfwBlock } = require('../lib/ageGate');
 const { verificationBlock } = require('../lib/verification');
@@ -244,14 +244,10 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => cb(null, `${crypto.randomBytes(8).toString('hex')}-${sanitizeFilename(file.originalname)}`),
 });
-const upload = multer({
-  storage,
-  limits: { fileSize: config.maxUploadMb * 1024 * 1024, files: 5 },
-  fileFilter: attachmentFileFilter,
-});
+const upload = liveUpload({ storage });
 
 router.post('/:threadId/messages', loadThread, requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfTimedOut, upload.array('files', 5), (req, res) => {
-  if (req.files?.length && rejectOversizedFiles(req, res, config.maxUploadMb)) return;
+  if (req.files?.length && rejectOversizedFiles(req, res)) return;
   if (req.thread.archived) return res.status(403).json({ error: 'this thread is archived' });
   const content = String(req.body?.content || '').slice(0, maxMessageChars());
   let stickerId = null;

@@ -56,7 +56,18 @@ function buildAdminPanel() {
   overlay.style.zIndex = nextZIndex();
   document.body.appendChild(overlay);
 
+  // The overview numbers follow deletes and sign-ups while the panel is open.
+  const statsTimer = setInterval(async () => {
+    if (tab !== 'overview' || !overlay.isConnected) return;
+    try {
+      stats = await api.adminStats();
+      const nums = overlay.querySelectorAll('.admin-stat-card .num');
+      [stats.users, stats.servers, stats.messages].forEach((v, i) => { if (nums[i]) nums[i].textContent = v; });
+    } catch { /* keep the last numbers */ }
+  }, 10000);
+
   function close() {
+    clearInterval(statsTimer);
     overlay.remove();
     document.removeEventListener('keydown', onKey);
   }
@@ -664,7 +675,7 @@ function buildAdminPanel() {
       <h2>${t('admin.attachmentSettingsHeading')}</h2>
       <div class="field">
         <label>${t('admin.maxAttachmentSizeLabel')}</label>
-        <input class="input" id="ov-max-mb" type="number" min="1" value="${maxUploadMb}" style="max-width:160px">
+        <input class="input" id="ov-max-mb" type="number" min="1" max="10240" value="${maxUploadMb}" style="max-width:160px">
         <div class="hint">${t('admin.maxAttachmentSizeHint')}</div>
       </div>
       <div class="field">
@@ -698,6 +709,7 @@ function buildAdminPanel() {
       try {
         const res = await api.adminUpdateSettings({ maxUploadMb: mb, allowedAttachmentExtensions: extensions });
         settings = res;
+        state.config.maxUploadMb = res.maxUploadMb;
         toast(t('admin.attachmentSettingsSaved'));
       } catch (err) { inner.querySelector('#ov-attach-err').textContent = apiErrorMessage(err, t('admin.couldNotSave')); }
     });
@@ -717,7 +729,7 @@ function buildAdminPanel() {
         <tr>
           <td>${avatarHtml(u, 28)}</td>
           <td>${escapeHtml(u.displayName)}<br><span style="color:var(--text-muted);font-size:12px">@${escapeHtml(u.username)}</span></td>
-          <td>${roleNames.map((r) => `<span class="pill-static" style="margin-right:4px"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:${escapeHtml(r.color)};display:inline-block"></span>${escapeHtml(r.name)}</span>`).join('') || '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td>${roleNames.map((r) => `<span class="pill-static" style="margin-right:4px"><span class="dot" style="width:8px;height:8px;border-radius:50%;background:${escapeHtml(r.color)};display:inline-block"></span>${escapeHtml(r.name)}</span>`).join('') || `<span style="color:var(--text-muted)">${t('admin.normalUserShort')}</span>`}</td>
           <td>${u.isDisabled ? `<span style="color:var(--danger)">${t('admin.disabledStatus')}</span>` : `<span style="color:var(--green)">${t('admin.activeStatus')}</span>`}</td>
           <td>${u.online ? `<span style="color:var(--green)">${u.invisible ? t('admin.onlineInvisible') : t('admin.onlineNow')}</span>` : `<span style="color:var(--text-muted)">${t('admin.offlineNow')}</span>`}</td>
           <td style="text-align:right"><button class="btn-icon" data-menu="${u.id}">${icons.kebab(18)}</button></td>
@@ -730,6 +742,16 @@ function buildAdminPanel() {
   function openUserMenu(anchor, u) {
     const rect = anchor.getBoundingClientRect();
     const items = [];
+    const held = u.siteRoleIds || [];
+    items.push({
+      label: `${held.length ? '' : '✓ '}${t('admin.normalUserRole')}`,
+      onClick: async () => {
+        try {
+          for (const id of held) await api.adminUnassignSiteRole(u.id, id);
+          await loadAll();
+        } catch (err) { toast(apiErrorMessage(err, t('admin.couldNotUpdateRole')), { type: 'error' }); await loadAll(); }
+      },
+    });
     for (const r of siteRoles) {
       const assigned = (u.siteRoleIds || []).includes(r.id);
       items.push({
@@ -836,13 +858,16 @@ function buildAdminPanel() {
   // Byte-identical to profile.js's report-reason labels — reuse those keys rather than duplicate.
   const REPORT_REASON_LABELS = { spam: t('profile.reportReasonSpam'), harassment: t('profile.reportReasonHarassment'), other: t('profile.reportReasonOther') };
 
+  const statusLabels = () => ({ open: t('admin.pendingTab'), resolved: t('admin.resolvedTab'), dismissed: t('admin.rejectedTab') });
+
   function renderReports(inner) {
+    const labels = statusLabels();
     inner.innerHTML = `
       <h2>${t('admin.reportsTab')}</h2>
       <div class="tabs-row" style="margin-bottom:16px">
-        <button class="tab-btn ${reportsStatus === 'open' ? 'active' : ''}" data-rstatus="open">${t('admin.openTab')}</button>
-        <button class="tab-btn ${reportsStatus === 'resolved' ? 'active' : ''}" data-rstatus="resolved">${t('admin.resolvedTab')}</button>
-        <button class="tab-btn ${reportsStatus === 'dismissed' ? 'active' : ''}" data-rstatus="dismissed">${t('admin.dismissedTab')}</button>
+        ${['open', 'resolved', 'dismissed', ''].map((k) => `<button class="tab-btn ${reportsStatus === k ? 'active' : ''}" data-rstatus="${k}">${k ? labels[k] : t('admin.allReportsTab')}</button>`).join('')}
+        <span style="flex:1"></span>
+        <button class="btn btn-ghost" id="rp-clear">${t('admin.clearClosedReports')}</button>
       </div>
       <div id="rp-list"></div>`;
 
@@ -850,43 +875,96 @@ function buildAdminPanel() {
       reportsStatus = btn.dataset.rstatus;
       loadReports();
     }));
+    inner.querySelector('#rp-clear').addEventListener('click', () => confirmModal({
+      title: t('admin.clearClosedReports'),
+      message: t('admin.clearClosedReportsConfirm'),
+      confirmLabel: t('admin.clearButton'),
+      async onConfirm() {
+        try { const res = await api.adminClearReports(); toast(t('admin.reportsClearedToast', { n: res.deleted })); await loadReports(); }
+        catch (err) { toast(apiErrorMessage(err, t('admin.couldNotUpdateReport')), { type: 'error' }); }
+      },
+    }));
 
     const list = inner.querySelector('#rp-list');
     if (reports.length === 0) {
-      const statusLabel = { open: t('admin.openTab'), resolved: t('admin.resolvedTab'), dismissed: t('admin.dismissedTab') }[reportsStatus].toLowerCase();
+      const statusLabel = reportsStatus ? labels[reportsStatus].toLowerCase() : t('admin.allReportsTab').toLowerCase();
       list.innerHTML = `<div class="empty-state" style="padding:20px 0"><p>${t('admin.noReportsOfStatus', { status: statusLabel })}</p></div>`;
       return;
     }
+
+    // One block per reported user, the ones with the most pending reports first.
+    const byUser = new Map();
     for (const r of reports) {
-      const row = el(`
-        <div class="list-row" style="align-items:flex-start;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid var(--border-subtle)">
-          <div style="display:flex;align-items:center;gap:8px;width:100%">
-            ${avatarHtml(r.reportedUser, 28)}
-            <div style="flex:1">
-              <div><strong>${escapeHtml(r.reportedUser.displayName)}</strong> <span style="color:var(--text-muted);font-size:12px">@${escapeHtml(r.reportedUser.username)}</span></div>
-              <div style="color:var(--text-muted);font-size:12px">
-                ${t('admin.reportedByPrefix')} ${r.reporter ? `@${escapeHtml(r.reporter.username)}` : t('admin.deletedAccountFallback')} · ${REPORT_REASON_LABELS[r.reason] || r.reason} · ${new Date(r.createdAt).toLocaleString()}
-              </div>
-            </div>
-            ${reportsStatus === 'open' ? `
-              <button class="btn btn-secondary" data-dismiss="${r.id}">${t('admin.dismissButton')}</button>
-              <button class="btn btn-danger" data-resolve="${r.id}">${t('admin.resolveButton')}</button>` : ''}
+      if (!byUser.has(r.reportedUser.id)) byUser.set(r.reportedUser.id, { user: r.reportedUser, items: [] });
+      byUser.get(r.reportedUser.id).items.push(r);
+    }
+    const pendingOf = (g) => g.items.filter((x) => x.status === 'open').length;
+    const groups = [...byUser.values()].sort((a, b) => pendingOf(b) - pendingOf(a));
+    for (const g of groups) {
+      const block = el(`
+        <div class="report-group" style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:2px solid var(--border-subtle)">
+            ${avatarHtml(g.user, 32)}
+            <div style="flex:1"><strong>${escapeHtml(g.user.displayName)}</strong> <span style="color:var(--text-muted);font-size:12px">@${escapeHtml(g.user.username)}</span></div>
+            <span style="color:var(--text-muted);font-size:12px">${t('admin.reportCounts', { pending: pendingOf(g), total: g.items.length })}</span>
+            <button class="btn btn-ghost" data-clear-user="${g.user.id}">${t('admin.clearClosedForUser')}</button>
           </div>
-          ${r.details ? `<div style="color:var(--text-secondary);font-size:13px;white-space:pre-wrap">${escapeHtml(r.details)}</div>` : ''}
-          ${r.message ? `<div class="reply-preview" style="max-width:100%"><em>${t('admin.reportedMessageLabel')}</em> ${escapeHtml(r.message.content).slice(0, 4000)}</div>` : ''}
+          <div class="report-items"></div>
         </div>`);
-      row.querySelector('[data-resolve]')?.addEventListener('click', () => resolveReport(r.id, 'resolved'));
-      row.querySelector('[data-dismiss]')?.addEventListener('click', () => resolveReport(r.id, 'dismissed'));
-      list.appendChild(row);
+      block.querySelector('[data-clear-user]').addEventListener('click', async () => {
+        try { const res = await api.adminClearReports(g.user.id); toast(t('admin.reportsClearedToast', { n: res.deleted })); await loadReports(); }
+        catch (err) { toast(apiErrorMessage(err, t('admin.couldNotUpdateReport')), { type: 'error' }); }
+      });
+      const itemsEl = block.querySelector('.report-items');
+      for (const r of g.items) itemsEl.appendChild(reportRow(r, labels));
+      list.appendChild(block);
     }
   }
 
-  async function resolveReport(id, status) {
-    try {
-      await api.adminResolveReport(id, status);
-      await loadReports();
-      toast(status === 'resolved' ? t('admin.reportResolvedToast') : t('admin.reportDismissedToast'));
-    } catch (err) { toast(apiErrorMessage(err, t('admin.couldNotUpdateReport')), { type: 'error' }); }
+  function reportRow(r, labels) {
+    const closed = r.status !== 'open';
+    const statusColor = r.status === 'open' ? 'var(--yellow)' : r.status === 'resolved' ? 'var(--green)' : 'var(--text-muted)';
+    const buttons = closed
+      ? `<button class="btn btn-secondary" data-reopen>${t('admin.reopenButton')}</button><button class="btn btn-danger" data-delete>${t('admin.deleteButton')}</button>`
+      : `<button class="btn btn-secondary" data-dismiss>${t('admin.rejectButton')}</button><button class="btn btn-primary" data-resolve>${t('admin.resolveButton')}</button>`;
+    const row = el(`
+      <div class="list-row" style="align-items:flex-start;flex-direction:column;gap:8px;padding:12px 0;border-bottom:1px solid var(--border-subtle)">
+        <div style="display:flex;align-items:center;gap:8px;width:100%;flex-wrap:wrap">
+          <span class="pill-static" style="color:${statusColor}">${labels[r.status]}</span>
+          <select class="select" data-reason style="width:auto">${Object.entries(REPORT_REASON_LABELS).map(([k, v]) => `<option value="${k}" ${k === r.reason ? 'selected' : ''}>${v}</option>`).join('')}</select>
+          <span style="flex:1;color:var(--text-muted);font-size:12px">
+            ${t('admin.reportedByPrefix')} ${r.reporter ? `@${escapeHtml(r.reporter.username)}` : t('admin.deletedAccountFallback')} · ${new Date(r.createdAt).toLocaleString()}${r.resolvedAt ? ` · ${new Date(r.resolvedAt).toLocaleString()}` : ''}
+          </span>
+          ${buttons}
+        </div>
+        ${r.details ? `<div style="color:var(--text-secondary);font-size:13px;white-space:pre-wrap">${escapeHtml(r.details)}</div>` : ''}
+        ${r.message ? `<div class="reply-preview" style="max-width:100%"><em>${t('admin.reportedMessageLabel')}</em> ${escapeHtml(r.message.content).slice(0, 4000)}</div>` : ''}
+        <div style="width:100%">
+          <label style="font-size:12px;color:var(--text-muted)">${t('admin.adminNotesLabel')}</label>
+          <textarea class="input textarea" data-notes rows="2" maxlength="4000" placeholder="${t('admin.adminNotesPlaceholder')}">${escapeHtml(r.adminNotes)}</textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:4px"><button class="btn btn-ghost" data-save-notes>${t('admin.saveNotesButton')}</button></div>
+        </div>
+      </div>`);
+    const notes = () => row.querySelector('[data-notes]').value;
+    const update = async (body, okMsg) => {
+      try { await api.adminUpdateReport(r.id, body); await loadReports(); if (okMsg) toast(okMsg); }
+      catch (err) { toast(apiErrorMessage(err, t('admin.couldNotUpdateReport')), { type: 'error' }); }
+    };
+    row.querySelector('[data-resolve]')?.addEventListener('click', () => update({ status: 'resolved', adminNotes: notes() }, t('admin.reportResolvedToast')));
+    row.querySelector('[data-dismiss]')?.addEventListener('click', () => update({ status: 'dismissed', adminNotes: notes() }, t('admin.reportDismissedToast')));
+    row.querySelector('[data-reopen]')?.addEventListener('click', () => update({ status: 'open' }, t('admin.reportReopenedToast')));
+    row.querySelector('[data-save-notes]').addEventListener('click', () => update({ adminNotes: notes() }, t('admin.notesSavedToast')));
+    row.querySelector('[data-reason]').addEventListener('change', (e) => update({ reason: e.target.value }));
+    row.querySelector('[data-delete]')?.addEventListener('click', () => confirmModal({
+      title: t('admin.deleteReportTitle'),
+      message: t('admin.deleteReportConfirm'),
+      confirmLabel: t('admin.deleteButton'),
+      async onConfirm() {
+        try { await api.adminDeleteReport(r.id); await loadReports(); }
+        catch (err) { toast(apiErrorMessage(err, t('admin.couldNotUpdateReport')), { type: 'error' }); }
+      },
+    }));
+    return row;
   }
 
   function renderRoles(inner) {

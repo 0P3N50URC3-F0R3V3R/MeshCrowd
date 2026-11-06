@@ -2,7 +2,8 @@ import { bus } from '../bus.js';
 import { state, presenceFor } from '../state.js';
 import { icons } from '../icons.js';
 import { avatarHtml, statusEmojiBadge, escapeHtml } from '../utils.js';
-import { memberNameColor } from '../permissions.js';
+import { memberNameColor, memberNameFx } from '../permissions.js';
+import { nameAttrs } from '../nameStyle.js';
 import { memberRoleIcon, roleIconHtml } from '../roleIcon.js';
 import { t } from '../i18n.js';
 import { openContextMenu } from './modal.js';
@@ -116,7 +117,7 @@ function renderMember(m, server, roles) {
         ${statusEmojiBadge(u)}
       </div>
       <div class="m-meta">
-        <div class="m-name" ${color ? `style="color:${escapeHtml(color)}"` : ''}>${isOwner ? '👑 ' : ''}${escapeHtml(name)}${roleIconHtml(memberRoleIcon(roles, m))}${u.isBot ? `<span class="bot-badge">${t('bots.badge')}</span>` : ''}</div>
+        <div${nameAttrs(memberNameFx(roles, m), 'm-name')}>${isOwner ? '👑 ' : ''}${escapeHtml(name)}${roleIconHtml(memberRoleIcon(roles, m))}${u.isBot ? `<span class="bot-badge">${t('bots.badge')}</span>` : ''}</div>
         ${u.customStatusText ? `<div class="m-status">${u.customStatusEmoji ? escapeHtml(u.customStatusEmoji) + ' ' : ''}${escapeHtml(u.customStatusText)}</div>` : ''}
       </div>
       ${state.serverVoice.has(u.id) ? `<span class="m-in-call" title="${t('memberList.inVoiceChannel')}">${icons.headphones(14)}</span>` : ''}

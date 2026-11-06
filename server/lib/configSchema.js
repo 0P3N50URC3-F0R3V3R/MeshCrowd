@@ -3,7 +3,7 @@
 const { DEFAULTS } = require('./config');
 
 // registrationMode is re-read from the config on every request; the logging keys go through the logger.
-const LIVE = new Set(['registrationMode', 'logging.level', 'logging.keepDays', 'logging.maxFileMb']);
+const LIVE = new Set(['registrationMode', 'maxUploadMb', 'logging.level', 'logging.keepDays', 'logging.maxFileMb']);
 const SECRET = new Set(['turn.secret']);
 
 const port = { min: 1, max: 65535 };

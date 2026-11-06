@@ -40,7 +40,7 @@ router.post('/', (req, res) => {
   const pollInfo = db.prepare('INSERT INTO polls (message_id, multi_select) VALUES (?, ?)').run(messageId, multiSelect ? 1 : 0);
   const pollId = pollInfo.lastInsertRowid;
   cleanOptions.forEach((label, i) => {
-    db.prepare('INSERT INTO poll_options (poll_id, position, label) VALUES (?, ?, ?)').run(pollId, i, label);
+    db.prepare('INSERT INTO poll_options (poll_id, position, label) VALUES (?, ?, ?)').run(pollId, i, sealFor(scopeType, label));
   });
 
   const message = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(messageId));

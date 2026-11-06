@@ -280,7 +280,21 @@
     "gradientEndLabel": "Gradient End",
     "gradientAngleLabel": "Gradient Angle",
     "noiseSuppressionLabel": "Advanced noise suppression (RNNoise)",
-    "noiseSuppressionHint": "Filters keyboard, fan and background noise out of your microphone with a small neural network that runs on your device. Uses a little extra CPU and loads a 5 MB module the first time you join a call."
+    "noiseSuppressionHint": "Filters keyboard, fan and background noise out of your microphone with a small neural network that runs on your device. Uses a little extra CPU and loads a 5 MB module the first time you join a call.",
+    "nameColorLabel": "Name color",
+    "nameColorHint": "Shown on your messages in DMs, and in servers where none of your roles has a color (a server role color always wins).",
+    "nameColorNone": "No color",
+    "nameColorCustom": "Custom color",
+    "nameEffectNone": "No effect",
+    "nameEffectPreview": "Your name",
+    "nameEffect_rainbow": "Rainbow",
+    "nameEffect_gradient": "Gradient",
+    "nameEffect_glow": "Glow",
+    "nameEffect_neon": "Neon",
+    "nameEffect_pulse": "Pulse",
+    "nameEffect_shimmer": "Shimmer",
+    "nameEffect_fire": "Fire",
+    "nameEffect_wave": "Wave"
   },
   "federation": {
     "heading": "Federation",
@@ -411,7 +425,7 @@
     "couldNotSave": "Could not save.",
     "attachmentSettingsHeading": "Attachment Settings",
     "maxAttachmentSizeLabel": "Maximum attachment size (MB)",
-    "maxAttachmentSizeHint": "Cannot exceed this server's configured hard limit, set in data/config.json (requires a restart to raise).",
+    "maxAttachmentSizeHint": "The upload limit for the whole server. It is the same value as maxUploadMb in data/config.json and in the SSH console, takes effect immediately and is shown to users in the size warning. Range 1-10240 MB; a reverse proxy in front of the server may have its own limit.",
     "allowedExtensionsLabel": "Allowed file extensions",
     "allowedExtensionsPlaceholder": "e.g. .png, .jpg, .pdf, .zip",
     "allowedExtensionsHint": "Comma-separated, with the leading dot. Leave empty to allow anything except known-dangerous file types.",
@@ -740,7 +754,27 @@
       "closed": "Registration off",
       "closedHint": "Nobody can create an account. Existing users are unaffected.",
       "saved": "Registration setting saved."
-    }
+    },
+    "normalUserRole": "Normal user (no staff role)",
+    "normalUserShort": "Normal user",
+    "pendingTab": "Pending",
+    "rejectedTab": "Rejected",
+    "allReportsTab": "All",
+    "clearClosedReports": "Clear closed reports",
+    "clearClosedReportsConfirm": "Delete every resolved and rejected report? Pending reports are kept.",
+    "clearButton": "Clear",
+    "reportsClearedToast": "{n} report(s) cleared.",
+    "reportCounts": "{pending} pending / {total} total",
+    "clearClosedForUser": "Clear closed",
+    "reopenButton": "Reopen",
+    "rejectButton": "Reject",
+    "adminNotesLabel": "Notes (admins only)",
+    "adminNotesPlaceholder": "Add notes about this case...",
+    "saveNotesButton": "Save notes",
+    "reportReopenedToast": "Report reopened.",
+    "notesSavedToast": "Notes saved.",
+    "deleteReportTitle": "Delete report",
+    "deleteReportConfirm": "Delete this closed report permanently?"
   },
   "voice": {
     "goodConnection": "Good connection",
@@ -1991,7 +2025,13 @@
     "none": "No recent notifications",
     "logout": "Log Out",
     "quit": "Quit MeshCrowd",
-    "unread": "{count} unread"
+    "unread": "{count} unread",
+    "undo": "Undo",
+    "redo": "Redo",
+    "cut": "Cut",
+    "copy": "Copy",
+    "paste": "Paste",
+    "selectAll": "Select All"
   },
   "notes": {
     "placeholder": "Write a note in {channel}",
@@ -2486,7 +2526,19 @@
     "failed": "not sent: {reason}",
     "pickTime": "Pick a date and time.",
     "done": "Scheduled for {when}",
-    "error": "Could not change the scheduled message"
+    "error": "Could not change the scheduled message",
+    "in3h": "In 3 hours",
+    "tonight": "Tonight 20:00",
+    "inThePast": "That time has already passed",
+    "relative": "Sends in {when}",
+    "unitDay": "d",
+    "unitHour": "h",
+    "unitMin": "min",
+    "emptyMessage": "The message is empty.",
+    "mustBeFuture": "Pick a time at least a minute from now.",
+    "edit": "Edit",
+    "saveChanges": "Save changes",
+    "updated": "Scheduled message updated."
   },
   "voiceMsg": {
     "record": "Record a voice message",
@@ -3090,5 +3142,13 @@
     "italic": "Italic",
     "color": "Text color",
     "customColor": "Custom color"
+  },
+  "assetBulk": {
+    "button": "Bulk upload...",
+    "progress": "Uploading {done}/{total}: {name}",
+    "failed": "{n} file(s) failed",
+    "done": "Uploaded {done} of {total}.",
+    "renameHint": "Click to rename",
+    "renameFailed": "Could not rename."
   }
 }
