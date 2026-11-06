@@ -71,6 +71,7 @@ A konzol egy szöveges felület annak, aki a szervert üzemelteti. Elindul a sze
 | `ipban`, `ipunban` | IP-cím, tartomány vagy CIDR tiltása, kívánság szerint néhány percre |
 | `config list/get/set/reset/path` | A `data/config.json` olvasása és módosítása ellenőrzéssel |
 | `backup create/list/delete/verify/keep/auto/restore` | Mentések (lásd lent) |
+| `purge` | A szervert gyári állapotba állítja: minden fiók, szerver, üzenet, privát üzenet és feltöltés törlődik, majd újraindul. Csak a szerverablakban. Kell hozzá a `purgePassword` a `data/config.json`-ban (üresen letiltott), ezt és a `PURGE` beírását kéri, és előtte biztonsági mentést készít. A konfiguráció, a tanúsítványok és a mentések megmaradnak |
 | `server stop`, `server restart`, `server cancel` | Leállítás vagy újraindítás, opcionális másodperces visszaszámlálással |
 | `status`, `list`, `stats`, `stats watch` | Verzió, üzemidő, bejelentkezett felhasználók, terhelés, statisztika |
 | `announce <szöveg>` | Értesítés minden bejelentkezett felhasználónak |

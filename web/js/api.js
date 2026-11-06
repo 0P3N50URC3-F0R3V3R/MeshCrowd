@@ -340,8 +340,8 @@ export const api = {
   // messages (channel scope)
   listChannelMessages: (serverId, channelId, { before, after, limit, around } = {}) =>
     get(`/api/servers/${serverId}/channels/${channelId}/messages`, { before, after, limit, around }),
-  sendChannelMessage: (serverId, channelId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal }) =>
-    uploadMessage(`/api/servers/${serverId}/channels/${channelId}/messages`, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal),
+  sendChannelMessage: (serverId, channelId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal, soundId }) =>
+    uploadMessage(`/api/servers/${serverId}/channels/${channelId}/messages`, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal, soundId),
   globalSearch: (q, serverId, { limit } = {}) => get('/api/search', { q, serverId, limit }),
   searchServerMessages: (serverId, q, { channelId, limit, fields } = {}) =>
     get(`/api/servers/${serverId}/search`, { q, channelId, limit, fields }),
@@ -378,8 +378,8 @@ export const api = {
   },
   listThreadMessages: (serverId, channelId, threadId, { before, after, limit, around } = {}) =>
     get(`/api/servers/${serverId}/channels/${channelId}/threads/${threadId}/messages`, { before, after, limit, around }),
-  sendThreadMessage: (serverId, channelId, threadId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal }) =>
-    uploadMessage(`/api/servers/${serverId}/channels/${channelId}/threads/${threadId}/messages`, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal),
+  sendThreadMessage: (serverId, channelId, threadId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal, soundId }) =>
+    uploadMessage(`/api/servers/${serverId}/channels/${channelId}/threads/${threadId}/messages`, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal, soundId),
 
   // DMs
   listRemoteServers: () => get('/api/remote/servers'),
@@ -411,6 +411,7 @@ export const api = {
   // messages (generic)
   editMessage: (id, content) => patch(`/api/messages/${id}`, { content }),
   deleteMessage: (id) => del(`/api/messages/${id}`),
+  wipeMessages: (serverId, channelId, count) => post(`/api/servers/${serverId}/channels/${channelId}/messages/wipe`, { count }),
   addReaction: (id, emoji) => put(`/api/messages/${id}/reactions/${encodeURIComponent(emoji)}`),
   removeReaction: (id, emoji) => del(`/api/messages/${id}/reactions/${encodeURIComponent(emoji)}`),
   pinMessage: (id) => put(`/api/messages/${id}/pin`),
@@ -540,8 +541,9 @@ export const api = {
 };
 
 // Uses XHR (not fetch) so we can report upload progress for attachments.
-function uploadMessage(url, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal) {
+function uploadMessage(url, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal, soundId) {
   const fd = new FormData();
+  if (soundId) fd.append('soundId', soundId);
   if (voiceDurationMs) fd.append('voiceDurationMs', String(Math.round(voiceDurationMs)));
   fd.append('content', content || '');
   if (replyToMessageId) fd.append('replyToMessageId', replyToMessageId);

@@ -71,6 +71,7 @@ The console is a text interface for the person who runs the server. It starts in
 | `ipban`, `ipunban` | Ban an IP, range or CIDR, optionally for some minutes |
 | `config list/get/set/reset/path` | Read and change `data/config.json` with validation |
 | `backup create/list/delete/verify/keep/auto/restore` | Backups (see below) |
+| `purge` | Resets the server to a factory state: all accounts, servers, messages, DMs and uploads are deleted, then it restarts. Server window only. Needs `purgePassword` in `data/config.json` (empty means disabled), asks for it and for you to type `PURGE`, and makes a safety backup first. Configuration, certificates and backups are kept |
 | `server stop`, `server restart`, `server cancel` | Stop or restart with an optional countdown in seconds |
 | `status`, `list`, `stats`, `stats watch` | Version, uptime, online users, load and statistics |
 | `announce <text>` | Show a notice to every online user |

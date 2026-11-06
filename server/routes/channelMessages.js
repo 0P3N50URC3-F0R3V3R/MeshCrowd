@@ -6,7 +6,8 @@ const crypto = require('node:crypto');
 const multer = require('multer');
 const { db, DATA_DIR } = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { PERMISSIONS, has } = require('../lib/permissions');
+const fs = require('node:fs');
+const { PERMISSIONS, SITE_PERMISSIONS, has, hasSite } = require('../lib/permissions');
 const { getChannelPermissionBits } = require('../lib/channelAccess');
 const { listMessages, serializeMessage } = require('../lib/messages');
 const { broadcastToChannel } = require('../socket/hub');
@@ -74,6 +75,26 @@ function blockIfRestricted(req, res, next) {
   next();
 }
 
+router.post('/wipe', (req, res) => {
+  const isAdmin = hasSite(req.sitePermissions || 0, SITE_PERMISSIONS.SITE_ADMINISTRATOR)
+    || (getChannelPermissionBits(req.channel, req.user.id) & PERMISSIONS.ADMINISTRATOR) !== 0;
+  if (!isAdmin) return res.status(403).json({ error: 'administrators only' });
+  const count = Math.floor(Number(req.body?.count));
+  if (!Number.isFinite(count) || count < 1 || count > 1000) return res.status(400).json({ error: 'count must be between 1 and 1000' });
+
+  const rows = db.prepare('SELECT id FROM messages WHERE scope_type = ? AND scope_id = ? ORDER BY id DESC LIMIT ?').all('channel', req.channel.id, count);
+  for (const { id } of rows) {
+    for (const a of db.prepare('SELECT file_path FROM attachments WHERE message_id = ?').all(id)) {
+      fs.unlink(path.join(DATA_DIR, a.file_path.replace(/^\/uploads\//, '')), () => {});
+    }
+    db.prepare('DELETE FROM attachments WHERE message_id = ?').run(id);
+    db.prepare('DELETE FROM messages WHERE id = ?').run(id);
+    broadcastToChannel(req.channel, { type: 'message_delete', messageId: id, scopeType: 'channel', scopeId: req.channel.id });
+    relayRemoteChannelEvent(req.channel, 'message_delete', { messageId: id });
+  }
+  res.json({ deleted: rows.length });
+});
+
 router.post('/', requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfRestricted, upload.array('files', 5), (req, res) => {
   if (req.files?.length && rejectOversizedFiles(req, res)) return;
   const content = String(req.body?.content || '').slice(0, maxMessageChars());
@@ -83,8 +104,14 @@ router.post('/', requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfRestricte
     if (!sticker) return res.status(400).json({ error: 'sticker not found on this server' });
     stickerId = sticker.id;
   }
-  if (!content.trim() && (!req.files || req.files.length === 0) && !stickerId) {
-    return res.status(400).json({ error: 'message must have content, an attachment, or a sticker' });
+  let soundId = null;
+  if (req.body?.soundId) {
+    const sound = db.prepare('SELECT id FROM sounds WHERE id = ? AND server_id = ?').get(Number(req.body.soundId), req.channel.server_id);
+    if (!sound) return res.status(400).json({ error: 'sound not found on this server' });
+    soundId = sound.id;
+  }
+  if (!content.trim() && (!req.files || req.files.length === 0) && !stickerId && !soundId) {
+    return res.status(400).json({ error: 'message must have content, an attachment, a sticker, or a sound' });
   }
   if (req.files && req.files.length > 0 && !has(getChannelPermissionBits(req.channel, req.user.id), PERMISSIONS.ATTACH_FILES)) {
     return res.status(403).json({ error: 'missing permission: Attach Files' });
@@ -105,8 +132,8 @@ router.post('/', requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfRestricte
       .get(Number(req.body.replyToMessageId), 'channel', req.channel.id);
     if (parent) replyToId = parent.id;
   }
-  const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, reply_to_message_id, sticker_id) VALUES (?, ?, ?, ?, ?, ?)')
-    .run('channel', req.channel.id, req.user.id, content, replyToId, stickerId);
+  const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, reply_to_message_id, sticker_id, sound_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run('channel', req.channel.id, req.user.id, content, replyToId, stickerId, soundId);
 
   for (const f of req.files || []) {
     const rel = `/uploads/attachments/channel-${req.channel.id}/${f.filename}`;

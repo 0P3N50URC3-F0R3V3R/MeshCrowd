@@ -16,6 +16,7 @@ import { avatarHtml, BIO_MAX, colorForId, escapeHtml, toast, apiErrorMessage, ba
 import { openAdminPanel } from './admin.js';
 import { nextZIndex } from '../zstack.js';
 import { voicePrefs, keyLabel } from '../voicePrefs.js';
+import { soundboardPrefs } from '../soundboardPrefs.js';
 import { statusEmojiFieldHtml, bindStatusEmojiField } from './statusEmojiField.js';
 import { startMicMeter } from '../micMeter.js';
 import { notifySound, CUSTOM_MAX_BYTES, CUSTOM_MAX_SECONDS } from '../notifySound.js';
@@ -466,6 +467,7 @@ export function openUserSettings(initialTab = 'account') {
     const inputs = devices.filter((d) => d.kind === 'audioinput');
     const outputs = devices.filter((d) => d.kind === 'audiooutput');
     const prefs = voicePrefs.get();
+    const sbPrefs = soundboardPrefs.get();
     let capturingKey = false;
 
     inner.innerHTML = `
@@ -498,6 +500,12 @@ export function openUserSettings(initialTab = 'account') {
       <div class="field">
         <label class="checkbox-row"><input type="checkbox" id="f-noise-suppression" ${prefs.noiseSuppression ? 'checked' : ''}><span>${t('userSettings.noiseSuppressionLabel')}</span></label>
         <div class="hint">${t('userSettings.noiseSuppressionHint')}</div>
+      </div>
+      <div class="field">
+        <label class="checkbox-row"><input type="checkbox" id="f-sb-mute" ${sbPrefs.muted ? 'checked' : ''}><span>${t('userSettings.soundboardMuteLabel')}</span></label>
+        <label>${t('userSettings.soundboardVolumeLabel')} <span id="sb-vol-val">${Math.round(sbPrefs.volume * 100)}</span>%</label>
+        <input type="range" id="f-sb-volume" min="0" max="100" value="${Math.round(sbPrefs.volume * 100)}" style="accent-color:var(--brand)">
+        <div class="hint">${t('userSettings.soundboardHint')}</div>
       </div>
       <div class="divider"></div>
       <div class="field">
@@ -545,6 +553,11 @@ export function openUserSettings(initialTab = 'account') {
     inner.querySelector('#f-output-volume').addEventListener('input', (e) => {
       inner.querySelector('#output-vol-val').textContent = e.target.value;
       voicePrefs.set({ outputVolume: Number(e.target.value) / 100 });
+    });
+    inner.querySelector('#f-sb-mute').addEventListener('change', (e) => soundboardPrefs.set({ muted: e.target.checked }));
+    inner.querySelector('#f-sb-volume').addEventListener('input', (e) => {
+      inner.querySelector('#sb-vol-val').textContent = e.target.value;
+      soundboardPrefs.set({ volume: Number(e.target.value) / 100 });
     });
     inner.querySelectorAll('input[name="f-input-mode"]').forEach((r) => r.addEventListener('change', (e) => {
       voicePrefs.set({ vadEnabled: e.target.value === 'vad', pttEnabled: e.target.value === 'ptt' });
@@ -599,6 +612,10 @@ export function openUserSettings(initialTab = 'account') {
         <input type="checkbox" id="f-invite-links" ${settings.handleInviteLinks ? 'checked' : ''}>
         <span>${t('userSettings.handleInviteLinksCheckbox')}</span>
       </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="f-f11" ${settings.f11Fullscreen !== false ? 'checked' : ''}>
+        <span>${t('userSettings.f11FullscreenCheckbox')}</span>
+      </label>
       <div class="hint" style="margin-top:8px">${t('userSettings.trayRightClickHint')}</div>
       <div class="divider"></div>
       <h2>${t('userSettings.trayIconHeading')}</h2>
@@ -628,6 +645,9 @@ export function openUserSettings(initialTab = 'account') {
     });
     inner.querySelector('#f-start-minimized').addEventListener('change', async (e) => {
       await window.dismeshClient.setAppSettings({ startMinimized: e.target.checked });
+    });
+    inner.querySelector('#f-f11').addEventListener('change', async (e) => {
+      await window.dismeshClient.setAppSettings({ f11Fullscreen: e.target.checked });
     });
     inner.querySelector('#f-start-windows').addEventListener('change', async (e) => {
       await window.dismeshClient.setAppSettings({ startWithWindows: e.target.checked });

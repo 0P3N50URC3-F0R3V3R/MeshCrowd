@@ -55,6 +55,8 @@ Direct messages and group DMs support calls too. A DM call never appears on the 
 
 A server can have a soundboard of short clips that members with permission can play into the call. Manage it under **Server Settings, Soundboard**.
 
+If clips from other people annoy you, open **Settings, Voice & Video** and tick **Mute soundboard sounds from others**, or lower **Soundboard volume**. It applies to clips played in calls and to sound messages in chats, on this device only.
+
 ## Noise suppression
 
 **Settings, Voice, Advanced noise suppression (RNNoise)** runs your microphone through a small neural network compiled to WebAssembly, which removes keyboard, fan and background noise. It works on your own device, adds about ten milliseconds of delay and is off by default. The module (about 5 MB) is only downloaded the first time a call starts with it on. If it cannot start, the call simply continues without it.

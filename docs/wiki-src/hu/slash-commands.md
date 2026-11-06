@@ -22,6 +22,7 @@ Gépelj `/` jelet egy szervercsatornában, hogy lásd a használható parancsoka
 | `/dm`, `/msg <felhasználónév> [üzenet]` | Privát üzenetet nyit vagy ír |
 | `/afk [üzenet]` | Üzenettel tétlenre állít |
 | `/invite` | Meghívót mutat |
+| `/wipe <szám>` | Csak adminoknak: törli az aktuális csatorna utolsó N üzenetét (1-1000), a fájlokkal együtt |
 | `/ping`, `/help` | Kapcsolatellenőrzés és a parancsok listája |
 
 ## Egy bot parancsának használata

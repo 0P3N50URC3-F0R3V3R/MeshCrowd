@@ -77,7 +77,21 @@ body {
   font-size: 15px;
   line-height: 1.375rem;
   -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
 }
+
+input, textarea, code, pre, kbd, samp, [contenteditable="true"], .msg-line, .msg-line *, .link-embed-title, .link-embed-desc, .link-embed-site,
+.pp-bio, .pp-bio *, .fp-field, .fp-field *, .passport-id, .poll-option-label, .f-name, .rp-snippet,
+.selectable, .selectable * {
+  -webkit-user-select: text;
+  user-select: text;
+}
+input, textarea, .msg-line, .msg-line * { cursor: text; }
+.msg-line a, .msg-line .mention, .msg-line .channel-ref, .msg-line .md-spoiler:not(.revealed), .msg-line button { cursor: pointer; }
+img, svg, video, canvas { -webkit-user-drag: none; }
+button, [role="button"], [role="menuitem"], select, summary, label, a[href] { cursor: pointer; }
+input[type="checkbox"], input[type="radio"], input[type="range"], input[type="color"], input[type="file"] { cursor: pointer; }
 
 #app {
   height: 100vh;

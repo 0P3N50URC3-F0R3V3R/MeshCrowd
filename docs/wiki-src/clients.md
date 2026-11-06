@@ -24,6 +24,7 @@ A portable app: unzip it and run `MeshCrowd.exe`. On the first launch it asks fo
 - A **tray icon** with a live unread badge colored by your presence. Colors are customizable under **Settings, Desktop App, Tray Icon**.
 - A **connecting screen** with a spinner while the server answers. If it cannot be reached (or takes over 20 seconds) it offers **Retry** and **Change server** instead of a blank window.
 - **Native notifications**, close to tray and start with Windows.
+- **F11 fullscreen**, which can be switched off under **Settings, Desktop App**.
 - **Window memory**: size, position and a maximized state are restored on the next start.
 - The operating system's **screen and window picker** for screen sharing.
 - **Invite links**: `mcr://` links from an invite page open in the app. The app registers itself for them on every start, which also repairs the entry after you move the folder; switch it off under **Settings, Desktop App**. Links always ask before switching server and before joining. `register-mcr-protocol.bat` and `unregister-mcr-protocol.bat` next to `MeshCrowd.exe` do the same by hand.

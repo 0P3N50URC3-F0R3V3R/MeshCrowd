@@ -29,6 +29,7 @@ import { uploads } from '../uploadTracker.js';
 import { checkUploadFile } from '../uploadGuard.mjs';
 import { openScheduleModal } from './scheduled.js';
 import { openSoundboardPicker } from './soundboardPicker.js';
+import { playSoundboardAudio } from '../soundboardPrefs.js';
 import { canRecordVoice, openRecorderBar, voiceMessageHtml, wireVoicePlayers } from '../voiceMessage.js';
 
 const GROUP_WINDOW_MS = 7 * 60 * 1000;
@@ -37,7 +38,7 @@ const maxChars = () => state.config.maxMessageChars || 15000;
 // Shown as a picker above the composer while typing a command name (Discord's own slash-command
 // popup), and doubles as the one place this list needs to stay in sync with handleSlashCommand.
 // The list itself lives in builtinSlash.js so the mobile UI shares it.
-const slashCommands = builtinSlashCommands;
+const slashCommands = () => builtinSlashCommands(!!state.me?.isSiteAdmin);
 
 // Mounts the shared chat pane (message list + composer) for a server channel, a DM, or a thread.
 // `scope`: {kind:'channel', serverId, channelId, canSend, canManage, channelType}
@@ -490,6 +491,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       parts.push(`<div class="msg-line ${emojiOnly ? 'msg-emoji-only' : ''}">${renderMessageContent(m.content, { channels: scope.channels, customEmoji: scope.customEmoji, rawHtmlEnabled: scope.rawHtmlEnabled })}${m.editedAt ? `<span class="edited-tag">${t('chat.editedTag')}</span>` : ''}</div>`);
     }
     if (m.sticker) parts.push(`<img class="sticker-message anim-limit" src="${escapeHtml(m.sticker.imagePath)}" alt="${escapeHtml(m.sticker.name)}" title="${escapeHtml(m.sticker.name)}">`);
+    if (m.sound) parts.push(`<div class="sound-message"><button type="button" class="btn sound-play" data-sound-src="${escapeHtml(m.sound.audioPath)}" title="${escapeHtml(m.sound.name)}">${icons.music(18)} ${m.sound.emoji ? `${escapeHtml(m.sound.emoji)} ` : ''}${escapeHtml(m.sound.name)}</button></div>`);
     if (m.poll) parts.push(renderPoll(m));
     if (m.attachments && m.attachments.length) {
       parts.push(`<div class="attachments">${m.attachments.map(renderAttachment).join('')}</div>`);
@@ -618,6 +620,12 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   }
 
   function onListClick(e) {
+    const soundBtn = e.target.closest('[data-sound-src]');
+    if (soundBtn) {
+      playSoundboardAudio(soundBtn.dataset.soundSrc);
+      return;
+    }
+
     const ignoredStub = e.target.closest('[data-reveal-ignored]');
     if (ignoredStub) {
       revealedIgnored.add(Number(ignoredStub.dataset.revealIgnored));
@@ -1141,7 +1149,8 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       openSoundboardPicker(e.currentTarget, sounds, (sound) => {
         // In a call on this server the room hears it; otherwise it plays only for you, as a preview.
         if (state.voice.channelId && state.voice.serverId === scope.serverId) ws.send({ type: 'voice_soundboard_play', channelId: state.voice.channelId, soundId: sound.id });
-        else new Audio(sound.audioPath).play().catch(() => {});
+        else if (scope.kind === 'dm') new Audio(sound.audioPath).play().catch(() => {});
+        else submit(undefined, undefined, sound);
       });
     });
     composerWrap.querySelector('#btn-schedule')?.addEventListener('click', () => {
@@ -1673,6 +1682,16 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       } catch (err) { toast(apiErrorMessage(err, t('chat.couldNotChangeTopicError')), { type: 'error' }); }
       return { handled: true };
     }
+    if (cmd === '/wipe') {
+      if (scope.kind !== 'channel') { toast(t('chat.wipeOnlyInChannelError'), { type: 'error' }); return { handled: true }; }
+      const count = Number(rest);
+      if (!Number.isInteger(count) || count < 1) { toast(t('chat.wipeUsageError'), { type: 'error' }); return { handled: true }; }
+      try {
+        const res = await api.wipeMessages(scope.serverId, scope.channelId, count);
+        toast(t('chat.wipeDoneToast', { count: res.deleted }));
+      } catch (err) { toast(apiErrorMessage(err, t('chat.wipeFailedError')), { type: 'error' }); }
+      return { handled: true };
+    }
     if (cmd === '/me') {
       if (!rest) return { handled: true };
       return { handled: false, replaceContent: `*${rest}*` };
@@ -1702,13 +1721,13 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     return dmStickers;
   }
 
-  async function submit(sentSticker, voice) {
+  async function submit(sentSticker, voice, sentSound) {
     const input = composerWrap.querySelector('#composer-input');
     let content = voice ? '' : input.value.trim();
-    if (!content && uploadFiles.length === 0 && !sentSticker && !voice) return;
+    if (!content && uploadFiles.length === 0 && !sentSticker && !voice && !sentSound) return;
     if (sending) return;
 
-    if (content.startsWith('/') && uploadFiles.length === 0 && !sentSticker) {
+    if (content.startsWith('/') && uploadFiles.length === 0 && !sentSticker && !sentSound) {
       const result = await handleSlashCommand(content);
       if (result.handled) { if (!result.keepInput) { input.value = ''; autoGrow(input); } focusComposer(); return; }
       if (result.replaceContent) content = result.replaceContent;
@@ -1751,6 +1770,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       uploadProgress: files.length ? 0 : undefined,
       replyTo: replySnapshot ? { id: replySnapshot.id, author: replySnapshot.author, content: replySnapshot.content, sticker: replySnapshot.sticker || null } : null,
       sticker: stickerRef(sentSticker),
+      sound: sentSound || null,
     };
     Object.assign(optimistic, { key: tempId, scopeKey: `${scopeType}:${scopeId}`, files });
     messages.push(optimistic);
@@ -1759,9 +1779,10 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
 
     sending = true;
     uploads.add(optimistic);
-    optimistic._retry = { content, files, sticker: sentSticker };
+    optimistic._retry = { content, files, sticker: sentSticker, sound: sentSound };
     const onProgress = files.length ? (p) => uploads.progress(optimistic, p) : undefined;
     const stickerId = sentSticker?.id;
+    const soundId = sentSound?.id;
     const signal = optimistic.controller.signal;
     const voiceDurationMs = voice?.durationMs;
     (async () => {
@@ -1769,8 +1790,8 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
         const res = scope.kind === 'dm'
           ? await api.sendDmMessage(scope.dmId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal })
           : scope.kind === 'thread'
-            ? await api.sendThreadMessage(scope.serverId, scope.channelId, scope.threadId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal })
-            : await api.sendChannelMessage(scope.serverId, scope.channelId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal });
+            ? await api.sendThreadMessage(scope.serverId, scope.channelId, scope.threadId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal, soundId })
+            : await api.sendChannelMessage(scope.serverId, scope.channelId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal, soundId });
         uploads.finish(optimistic, { res });
       } catch (err) {
         uploads.finish(optimistic, { err });
@@ -1823,7 +1844,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       input.value = msg._retry?.content || msg.content || '';
       uploadFiles = msg._retry?.files || [];
       renderUploadTray();
-      submit(msg._retry?.sticker);
+      submit(msg._retry?.sticker, undefined, msg._retry?.sound);
     }
   }
 

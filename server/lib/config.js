@@ -95,6 +95,9 @@ const DEFAULTS = {
     maxAllocationsPerUser: 20,
     maxKbps: 0, // per allocation, 0 = unlimited
   },
+  // Password the local console's `purge` command asks for before resetting the server to a factory
+  // state. Empty = purge is disabled.
+  purgePassword: '',
   logging: { level: 'info', keepDays: 30, maxFileMb: 10 },
   ssh: { enabled: false, port: 2222, listenAddress: '127.0.0.1', maxSessions: 3, idleTimeoutMinutes: 15, allowPublicKeys: false },
   backup: { keep: 7, schedule: '', maxFileMb: 5, includeSecrets: false, preRestoreKeep: 3 },

@@ -1,6 +1,6 @@
 'use strict';
 
-const MODULES = ['core', 'account', 'moderation', 'config', 'backup', 'server', 'log', 'ssh'];
+const MODULES = ['core', 'account', 'moderation', 'config', 'backup', 'purge', 'server', 'log', 'ssh'];
 
 function registerAll(registry) {
   for (const name of MODULES) require(`./commands/${name}`)(registry);

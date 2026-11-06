@@ -4,7 +4,7 @@ import { t } from './i18n.js';
 export const SHRUG = '¯\\\\_(ツ)\\_/¯';
 
 // Command names/usage stay untranslated (literal syntax the user types), only descriptions localize.
-export function builtinSlashCommands() {
+export function builtinSlashCommands(isAdmin = false) {
   return [
     { name: 'afk', usage: '/afk [message]', description: t('chat.slashAfkDesc') },
     { name: 'dm', usage: '/dm <username> [message]', description: t('chat.slashDmDesc') },
@@ -20,5 +20,6 @@ export function builtinSlashCommands() {
     { name: 'thread', usage: '/thread <name>', description: t('chat.slashThreadDesc') },
     { name: 'topic', usage: '/topic [text]', description: t('chat.slashTopicDesc') },
     { name: 'unflip', usage: '/unflip [message]', description: t('chat.slashUnflipDesc') },
+    ...(isAdmin ? [{ name: 'wipe', usage: '/wipe <count>', description: t('chat.slashWipeDesc') }] : []),
   ];
 }

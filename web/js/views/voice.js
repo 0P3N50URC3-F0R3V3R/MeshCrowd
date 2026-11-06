@@ -7,6 +7,7 @@ import { avatarHtml, escapeHtml, toast } from '../utils.js';
 import { voicePrefs, keyLabel } from '../voicePrefs.js';
 import { createDenoiser } from '../noiseSuppression.js';
 import { openSoundboardPicker } from './soundboardPicker.js';
+import { playSoundboardAudio } from '../soundboardPrefs.js';
 import { t } from '../i18n.js';
 import { createWhiteboard } from '../whiteboard.js';
 import { tuneOpusSdp, voiceQualityPreset, DEFAULT_VOICE_QUALITY } from '../voiceQuality.js';
@@ -436,10 +437,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   // Deafened means "hear nothing", soundboard clips included — same rule real Discord follows.
   function playSoundboardClip(sound) {
     if (deafened) return;
-    const audioEl = new Audio(sound.audioPath);
-    audioEl.volume = voicePrefs.get().outputVolume;
-    applySinkId(audioEl);
-    audioEl.play().catch(() => {}); // autoplay can be blocked before the user's first interaction on the page — silently drop rather than surface an error for background playback
+    playSoundboardAudio(sound.audioPath, voicePrefs.get().outputVolume, applySinkId);
   }
 
   function onPrefsChanged() {

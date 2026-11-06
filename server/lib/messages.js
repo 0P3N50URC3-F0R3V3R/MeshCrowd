@@ -126,6 +126,7 @@ function serializeMessage(row) {
     poll: getPoll(row.id),
     forwardedFrom: row.forwarded_from_message_id ? getForwardedFrom(row.forwarded_from_message_id) : null,
     sticker: getSticker(row.sticker_id),
+    sound: getSound(row.sound_id),
     interaction: row.interaction_command ? getInteraction(row) : null,
   };
 }
@@ -139,6 +140,12 @@ function getSticker(stickerId) {
   if (!stickerId) return null;
   const row = db.prepare('SELECT id, name, image_path FROM stickers WHERE id = ?').get(stickerId);
   return row ? { id: row.id, name: row.name, imagePath: row.image_path } : null;
+}
+
+function getSound(soundId) {
+  if (!soundId) return null;
+  const row = db.prepare('SELECT id, name, emoji, audio_path FROM sounds WHERE id = ?').get(soundId);
+  return row ? { id: row.id, name: row.name, emoji: row.emoji, audioPath: row.audio_path } : null;
 }
 
 function listMessages(scopeType, scopeId, { before, after, limit = 50, around } = {}) {

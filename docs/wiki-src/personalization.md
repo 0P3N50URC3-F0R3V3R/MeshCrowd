@@ -7,7 +7,7 @@ order: 5
 
 ## Your profile
 
-Open **Settings** from the gear in the bottom left. You can set an avatar, a banner image or color, a bio and a display name. A profile card pops up next to a name or member when someone clicks it. Clicking your own name shows your own card with an **Edit Profile** button. On someone else's card there is a **Message** button, and a quick-message field when they can be messaged (a friend, or their privacy settings allow it): type, press Enter, and the message is sent in your existing conversation with them, or a new one if you have none yet.
+Open **Settings** from the gear in the bottom left. You can set an avatar, a banner image or color, a bio and a display name. The bio editor has bold, italic, color and **emoji** buttons. A profile card pops up next to a name or member when someone clicks it. Clicking your own name shows your own card with an **Edit Profile** button. On someone else's card there is a **Message** button, and a quick-message field when they can be messaged (a friend, or their privacy settings allow it): type, press Enter, and the message is sent in your existing conversation with them, or a new one if you have none yet.
 
 ![A profile card](../assets/img/profile.jpg)
 

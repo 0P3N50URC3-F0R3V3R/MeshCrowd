@@ -22,6 +22,7 @@ Type `/` in a server channel to see the commands you can use. The list mixes the
 | `/dm`, `/msg <username> [message]` | Opens or writes a direct message |
 | `/afk [message]` | Sets you to idle with a message |
 | `/invite` | Shows an invite |
+| `/wipe <count>` | Admins only: deletes the last N messages (1-1000) of the current channel, files included |
 | `/ping`, `/help` | Connectivity check and the command list |
 
 ## Using a bot's command

@@ -285,14 +285,18 @@ function createWindow() {
   // DevTools (what most people mean by "the console") only open when launched with -dev/--dev —
   // blocks the shortcut outright rather than just not auto-opening, so it can't be reached by
   // accident in a normal production run.
-  if (!isDev) {
-    mainWindow.webContents.on('before-input-event', (event, input) => {
-      const isF12 = input.key === 'F12';
-      const isCtrlShiftI = input.control && input.shift && input.key.toLowerCase() === 'i';
-      const isCmdOptI = input.meta && input.alt && input.key.toLowerCase() === 'i';
-      if (isF12 || isCtrlShiftI || isCmdOptI) event.preventDefault();
-    });
-  }
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && input.key === 'F11') {
+      event.preventDefault();
+      if (clientConfig.f11Fullscreen !== false) mainWindow.setFullScreen(!mainWindow.isFullScreen());
+      return;
+    }
+    if (isDev) return;
+    const isF12 = input.key === 'F12';
+    const isCtrlShiftI = input.control && input.shift && input.key.toLowerCase() === 'i';
+    const isCmdOptI = input.meta && input.alt && input.key.toLowerCase() === 'i';
+    if (isF12 || isCtrlShiftI || isCmdOptI) event.preventDefault();
+  });
 
   mainWindow.webContents.on('context-menu', (event, params) => {
     const items = [];
@@ -470,6 +474,7 @@ ipcMain.handle('dismesh:get-app-settings', () => ({
   startMinimized: !!clientConfig.startMinimized,
   startWithWindows: !!clientConfig.startWithWindows,
   handleInviteLinks: clientConfig.handleInviteLinks !== false,
+  f11Fullscreen: clientConfig.f11Fullscreen !== false,
   trayIconColor: clientConfig.trayIconColor || null,
   trayBadgeColors: clientConfig.trayBadgeColors || {},
 }));
@@ -480,7 +485,7 @@ const TRAY_BADGE_STATES = ['online', 'idle', 'dnd', 'offline'];
 // Whitelist of keys the renderer is allowed to touch here — anything else in the payload is
 // silently dropped rather than merged into clientConfig, so a new settings key can't be added to
 // this object without an explicit decision about whether the renderer should control it.
-const APP_SETTINGS_KEYS = ['closeToTray', 'startMinimized', 'startWithWindows', 'trayIconColor', 'trayBadgeColors', 'handleInviteLinks'];
+const APP_SETTINGS_KEYS = ['closeToTray', 'startMinimized', 'startWithWindows', 'trayIconColor', 'trayBadgeColors', 'handleInviteLinks', 'f11Fullscreen'];
 
 ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
   if (!settings || typeof settings !== 'object') return { ok: false, error: 'invalid settings' };
@@ -492,6 +497,7 @@ ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
       clientConfig.startWithWindows = !!settings.startWithWindows;
       app.setLoginItemSettings({ openAtLogin: clientConfig.startWithWindows });
     }
+    if (key === 'f11Fullscreen') clientConfig.f11Fullscreen = !!settings.f11Fullscreen;
     if (key === 'handleInviteLinks') {
       clientConfig.handleInviteLinks = !!settings.handleInviteLinks;
       setProtocolRegistered(clientConfig.handleInviteLinks);
@@ -521,6 +527,7 @@ ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
     startMinimized: !!clientConfig.startMinimized,
     startWithWindows: !!clientConfig.startWithWindows,
     handleInviteLinks: clientConfig.handleInviteLinks !== false,
+    f11Fullscreen: clientConfig.f11Fullscreen !== false,
     trayIconColor: clientConfig.trayIconColor || null,
     trayBadgeColors: clientConfig.trayBadgeColors || {},
   };

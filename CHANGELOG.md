@@ -6,7 +6,16 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 #### Removed
 - End-to-end encrypted DMs are gone: the per-conversation "enable encryption" flow, the ratchet, safety numbers / verify sheets, encrypted DM files and the "message cannot be decrypted" state. This also removes the bugs where your own encrypted messages could not be decrypted and where DM notifications stuck after switching a conversation to encrypted. Existing end-to-end encrypted DM history was ciphertext only the clients could read, so it is deleted from the server at the next start (a one-time migration). Your passport and encrypted Notes channels are unchanged. DMs are ordinary messages again, so editing, forwarding, polls, scheduling, search, bots and attachments work in every conversation.
 
+#### Fixed
+- Soundboard in normal channels and threads: picking a sound now posts it as a playable sound message (click to play for everyone) instead of doing nothing. In a call on the same server it still plays for the room.
+- Text selection and cursors: only message text, inputs, code and profile text can be highlighted now (no more selecting avatars, images, menus and buttons), and menus/buttons no longer show the text I-beam cursor.
+
 #### Added
+- Settings > Voice & Video: mute soundboard sounds from others or lower their volume (calls and sound messages, this device only).
+- Bio editor: emoji picker button in the formatting toolbar.
+- `/wipe <count>` (admins only: site administrators and server administrators): deletes the last N messages of the current channel (max 1000), including their files.
+- Local server console: `purge` resets the server to a factory state (accounts, servers, messages, DMs, uploads). Needs `purgePassword` in `data/config.json` and typing `PURGE`; makes a safety backup first, keeps config.json, certificates and backups, then restarts. `ban`, `unban`, `ipban`, `ipunban` and `ipbans` already existed.
+- Desktop app: Settings > Desktop app has a switch to turn the F11 fullscreen shortcut on or off.
 - Admin Panel reports: grouped by reported user, with Pending / Resolved / Rejected / All tabs. A pending report stays editable (reason, admin-only notes); resolving or rejecting records who and when, a closed report can be reopened, and a report can only be deleted once it is resolved or rejected ("Clear closed" does this in bulk, per user or for everyone; pending reports are never touched).
 - Admin Panel users: a "Normal user (no staff role)" entry in the user menu removes every staff role at once, and users without a staff role show as "Normal user".
 - Name color: everyone can pick their own name color (presets plus a free color picker) in Settings > My Account and in the phone profile editor. A server role color always wins in a server, the moderator-assigned per-member color still wins over both, and in DMs the personal color is used.

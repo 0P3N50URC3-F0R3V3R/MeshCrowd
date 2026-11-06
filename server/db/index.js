@@ -79,6 +79,7 @@ const COLUMN_MIGRATIONS = [
   { table: 'servers', column: 'welcome_enabled', ddl: 'ALTER TABLE servers ADD COLUMN welcome_enabled INTEGER NOT NULL DEFAULT 0' },
   { table: 'servers', column: 'welcome_message', ddl: "ALTER TABLE servers ADD COLUMN welcome_message TEXT NOT NULL DEFAULT ''" },
   { table: 'messages', column: 'sticker_id', ddl: 'ALTER TABLE messages ADD COLUMN sticker_id INTEGER REFERENCES stickers(id) ON DELETE SET NULL' },
+  { table: 'messages', column: 'sound_id', ddl: 'ALTER TABLE messages ADD COLUMN sound_id INTEGER REFERENCES sounds(id) ON DELETE SET NULL' },
   { table: 'messages', column: 'webhook_id', ddl: 'ALTER TABLE messages ADD COLUMN webhook_id INTEGER REFERENCES webhooks(id) ON DELETE SET NULL' },
   { table: 'users', column: 'home_instance_id', ddl: 'ALTER TABLE users ADD COLUMN home_instance_id INTEGER REFERENCES federation_peers(id) ON DELETE SET NULL' },
   { table: 'users', column: 'remote_user_id', ddl: 'ALTER TABLE users ADD COLUMN remote_user_id INTEGER' },

@@ -7,7 +7,7 @@ order: 5
 
 ## A profilod
 
-Nyisd meg a **Beállításokat** a bal alsó fogaskerékkel. Beállíthatsz avatárt, bannerképet vagy -színt, bemutatkozást és megjelenített nevet. A névre vagy tagra kattintva a profilkártya a név mellett jelenik meg. A saját nevedre kattintva a saját kártyád nyílik meg egy **Profil szerkesztése** gombbal. Másvalaki kártyáján **Üzenet** gomb van, és egy gyors üzenet mező, ha neki lehet üzenni (barát, vagy az adatvédelmi beállításai engedik): írj, nyomj Entert, és az üzenet a vele meglévő beszélgetésben megy el, vagy újban, ha még nincs.
+Nyisd meg a **Beállításokat** a bal alsó fogaskerékkel. Beállíthatsz avatárt, bannerképet vagy -színt, bemutatkozást és megjelenített nevet. A bemutatkozás szerkesztőjében van félkövér, dőlt, szín és **emoji** gomb. A névre vagy tagra kattintva a profilkártya a név mellett jelenik meg. A saját nevedre kattintva a saját kártyád nyílik meg egy **Profil szerkesztése** gombbal. Másvalaki kártyáján **Üzenet** gomb van, és egy gyors üzenet mező, ha neki lehet üzenni (barát, vagy az adatvédelmi beállításai engedik): írj, nyomj Entert, és az üzenet a vele meglévő beszélgetésben megy el, vagy újban, ha még nincs.
 
 ![Profilkártya](../assets/img/profile.jpg)
 

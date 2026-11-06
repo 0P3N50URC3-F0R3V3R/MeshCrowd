@@ -55,6 +55,8 @@ A privát és csoportos privát üzenetek is támogatnak hívásokat. Egy privá
 
 A szervernek lehet rövid hangklipekből álló hangpultja, amelyet a jogosult tagok lejátszhatnak a hívásba. A **Szerverbeállítások, Hangtár** alatt kezelheted.
 
+Ha zavarnak mások hangklipjei, a **Beállítások, Hang és videó** alatt pipáld be a **Mások hangtár-hangjainak némítása** opciót, vagy vedd lejjebb a **Hangtár hangerejét**. Ez a hívásokban lejátszott klipekre és a csevegésekben küldött hangüzenetekre vonatkozik, csak ezen az eszközön.
+
 ## Zajszűrés
 
 A **Beállítások, Hang és videó, Fejlett zajszűrés (RNNoise)** a mikrofonodat egy WebAssemblyre fordított kis neurális hálózaton engedi át, ami eltávolítja a billentyűzet-, ventilátor- és háttérzajt. A saját eszközödön működik, nagyjából tíz milliszekundum késleltetést ad, és alapból ki van kapcsolva. A modul (kb. 5 MB) csak akkor töltődik le, amikor először indul hívás bekapcsolt állapotban. Ha nem tud elindulni, a hívás egyszerűen nélküle folytatódik.

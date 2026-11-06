@@ -256,8 +256,14 @@ router.post('/:threadId/messages', loadThread, requireChannelPerm(PERMISSIONS.SE
     if (!sticker) return res.status(400).json({ error: 'sticker not found on this server' });
     stickerId = sticker.id;
   }
-  if (!content.trim() && (!req.files || req.files.length === 0) && !stickerId) {
-    return res.status(400).json({ error: 'message must have content, an attachment, or a sticker' });
+  let soundId = null;
+  if (req.body?.soundId) {
+    const sound = db.prepare('SELECT id FROM sounds WHERE id = ? AND server_id = ?').get(Number(req.body.soundId), req.channel.server_id);
+    if (!sound) return res.status(400).json({ error: 'sound not found on this server' });
+    soundId = sound.id;
+  }
+  if (!content.trim() && (!req.files || req.files.length === 0) && !stickerId && !soundId) {
+    return res.status(400).json({ error: 'message must have content, an attachment, a sticker, or a sound' });
   }
   if (req.files && req.files.length > 0 && !has(getChannelPermissionBits(req.channel, req.user.id), PERMISSIONS.ATTACH_FILES)) {
     return res.status(403).json({ error: 'missing permission: Attach Files' });
@@ -278,8 +284,8 @@ router.post('/:threadId/messages', loadThread, requireChannelPerm(PERMISSIONS.SE
       .get(Number(req.body.replyToMessageId), 'thread', req.thread.id);
     if (parent) replyToId = parent.id;
   }
-  const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, reply_to_message_id, sticker_id) VALUES (?, ?, ?, ?, ?, ?)')
-    .run('thread', req.thread.id, req.user.id, content, replyToId, stickerId);
+  const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, reply_to_message_id, sticker_id, sound_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run('thread', req.thread.id, req.user.id, content, replyToId, stickerId, soundId);
 
   for (const f of req.files || []) {
     const rel = `/uploads/attachments/thread-${req.thread.id}/${f.filename}`;
