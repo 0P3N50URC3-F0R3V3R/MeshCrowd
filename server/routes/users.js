@@ -87,7 +87,7 @@ router.patch('/me', requireAuth, (req, res) => {
     updates.push('card_color = ?'); params.push(String(cardColor));
   }
   if (displayName !== undefined) {
-    const v = singleLine(displayName, 64);
+    const v = singleLine(displayName, 32);
     if (!v) return res.status(400).json({ error: 'displayName cannot be empty' });
     updates.push('display_name = ?'); params.push(v);
   }

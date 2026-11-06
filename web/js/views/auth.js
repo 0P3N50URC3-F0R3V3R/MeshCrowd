@@ -111,7 +111,7 @@ export function renderAuth(root) {
           ${mode === 'register' ? `
             <div class="field">
               <label for="f-display">${t('auth.displayNameLabel')} <span class="hint">${t('auth.optional')}</span></label>
-              <input class="input" id="f-display" name="displayName" type="text" autocomplete="nickname">
+              <input class="input" id="f-display" name="displayName" type="text" maxlength="32" autocomplete="nickname">
             </div>` : ''}
           <div class="field" style="margin-bottom:8px">
             <label for="f-password">${t('auth.passwordLabel')}</label>

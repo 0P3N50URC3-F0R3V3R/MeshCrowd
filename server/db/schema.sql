@@ -491,21 +491,6 @@ CREATE TABLE IF NOT EXISTS attachments (
 );
 CREATE INDEX IF NOT EXISTS idx_attachments_message ON attachments(message_id);
 
--- Ciphertext blobs attached to encrypted 1:1 DM messages. blob_id is a client-chosen random id that
--- is also bound into the file's AEAD; name, type, size and key live only inside the ratchet-encrypted
--- message. message_id is NULL until the message referencing the upload is sent.
-CREATE TABLE IF NOT EXISTS dm_e2ee_files (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  blob_id     TEXT NOT NULL UNIQUE,
-  dm_id       INTEGER NOT NULL REFERENCES dm_channels(id) ON DELETE CASCADE,
-  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  message_id  INTEGER REFERENCES messages(id) ON DELETE CASCADE,
-  size        INTEGER NOT NULL,
-  created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
-);
-CREATE INDEX IF NOT EXISTS idx_dm_e2ee_files_message ON dm_e2ee_files(message_id);
-CREATE INDEX IF NOT EXISTS idx_dm_e2ee_files_dm ON dm_e2ee_files(dm_id);
-
 CREATE TABLE IF NOT EXISTS message_reactions (
   message_id  INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
   user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -704,13 +689,15 @@ CREATE INDEX IF NOT EXISTS idx_notifications_outbox_user ON notifications_outbox
 -- delete through the normal messages table automatically updates the index too.
 CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(content, content='messages', content_rowid='id');
 
-CREATE TRIGGER IF NOT EXISTS messages_fts_ai AFTER INSERT ON messages BEGIN
+-- DM text is stored sealed (lib/atRest.js), so DM rows are kept out of the index; DM search decrypts
+-- and scans instead (lib/search.js).
+CREATE TRIGGER IF NOT EXISTS messages_fts_ai AFTER INSERT ON messages WHEN new.scope_type != 'dm' BEGIN
   INSERT INTO messages_fts(rowid, content) VALUES (new.id, new.content);
 END;
-CREATE TRIGGER IF NOT EXISTS messages_fts_ad AFTER DELETE ON messages BEGIN
+CREATE TRIGGER IF NOT EXISTS messages_fts_ad AFTER DELETE ON messages WHEN old.scope_type != 'dm' BEGIN
   INSERT INTO messages_fts(messages_fts, rowid, content) VALUES('delete', old.id, old.content);
 END;
-CREATE TRIGGER IF NOT EXISTS messages_fts_au AFTER UPDATE ON messages BEGIN
+CREATE TRIGGER IF NOT EXISTS messages_fts_au AFTER UPDATE ON messages WHEN old.scope_type != 'dm' BEGIN
   INSERT INTO messages_fts(messages_fts, rowid, content) VALUES('delete', old.id, old.content);
   INSERT INTO messages_fts(rowid, content) VALUES (new.id, new.content);
 END;

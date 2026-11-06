@@ -31,7 +31,7 @@ function compute(serverId, days, now = new Date()) {
   const since7 = `${dayList(7, now)[0]}T00:00:00.000Z`;
   const scope = `((m.scope_type = 'channel' AND m.scope_id IN (SELECT id FROM channels WHERE server_id = @s))
     OR (m.scope_type = 'thread' AND m.scope_id IN (SELECT t.id FROM threads t JOIN channels c ON c.id = t.channel_id WHERE c.server_id = @s)))`;
-  const real = `m.event_type IS NULL AND m.is_encrypted = 0 AND m.webhook_id IS NULL
+  const real = `m.event_type IS NULL AND m.webhook_id IS NULL
     AND m.author_id IN (SELECT id FROM users WHERE is_bot = 0)`;
   const q = (sql, extra = {}) => db.prepare(sql).all({ s: serverId, ...extra });
 

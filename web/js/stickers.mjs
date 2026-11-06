@@ -1,6 +1,4 @@
-// Pure helpers for stickers outside the per-server channel flow (DMs, previews). An encrypted DM
-// carries the sticker as a reference inside its ratchet-encrypted payload; the image itself is the
-// public server asset, so the peer's payload is re-validated before it becomes an <img src>.
+// Pure helpers for stickers outside the per-server channel flow (DMs, previews).
 const PATH_RE = /^\/uploads\/stickers\/[0-9a-f]{20}\.(png|jpg|gif|webp)$/;
 const NAME_RE = /^[a-zA-Z0-9_]{2,32}$/;
 
@@ -17,7 +15,7 @@ export function normalizeSticker(raw) {
   return { id: raw.id, name: raw.name, imagePath: raw.imagePath };
 }
 
-// One-line text for a message in lists, previews and notifications. `text` is already decrypted.
+// One-line text for a message in lists, previews and notifications.
 export function previewText({ text, sticker, hasAttachments }, labels) {
   if (text) return text;
   if (sticker) return labels.sticker;

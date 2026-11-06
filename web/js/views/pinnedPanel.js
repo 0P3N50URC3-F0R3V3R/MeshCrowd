@@ -4,7 +4,6 @@ import { avatarHtml, escapeHtml, formatTimestamp, renderMessageContent, toast, a
 import { confirmModal } from './modal.js';
 import { t } from '../i18n.js';
 import { state } from '../state.js';
-import { decryptMessages } from '../e2ee/dmCrypto.js';
 
 // Discord-style pinned-messages panel: docked in the right rail (same slot as the member list),
 // listing every pinned message top to bottom with a click-to-jump. Not a floating popover — it
@@ -17,8 +16,6 @@ export function mountPinnedPanel(container, scopeType, scopeId, { canManage = fa
   async function load() {
     try {
       const { messages } = await api.listPins(scopeType, scopeId);
-      const dm = scopeType === 'dm' ? state.dms.find((d) => d.id === scopeId) : null;
-      if (dm && messages.some((m) => m.isEncrypted)) await decryptMessages(dm, state.me, messages);
       if (!destroyed) render(messages);
     } catch (err) {
       if (!destroyed) container.innerHTML = `<div class="pinned-panel"><div class="pinned-panel-head"><h3>${t('pinnedPanel.heading')}</h3>${closeBtnHtml()}</div><p style="padding:0 12px;color:var(--danger)">${escapeHtml(apiErrorMessage(err, t('pinnedPanel.loadError')))}</p></div>`;

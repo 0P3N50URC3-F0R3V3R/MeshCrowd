@@ -8,7 +8,6 @@ import { toast } from '../js/utils.js';
 import { readDetail, writeDetail } from './lib/stateCache.js';
 import { notifySound } from '../js/notifySound.js';
 import { eventNotice } from '../js/notifyEvent.mjs';
-import { peekPlaintext } from '../js/e2ee/dmCrypto.js';
 import { refreshRemoteServers } from '../js/views/remoteServer.js';
 import {
   state, setServers, setDms, setFriends, setNotificationPrefs, setServerPrefs, setUserAnnotations, setDmPrefs, setBookmarkIds,
@@ -91,10 +90,6 @@ async function resync() {
 
 function notifyBody(payload) {
   const m = payload.message;
-  if (m.isEncrypted) {
-    const plain = peekPlaintext(state.me.id, m.id);
-    return plain?.text || (plain?.sticker ? t('m.dmPreviewSticker') : '') || t('m.dmPreviewEncrypted');
-  }
   return m.content || (m.sticker ? t('m.dmPreviewSticker') : '') || (m.attachments?.length ? t('m.dmPreviewAttachment') : '');
 }
 

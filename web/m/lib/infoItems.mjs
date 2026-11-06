@@ -10,7 +10,7 @@ export function collectItems(messages) {
       const mime = a.mimeType || '';
       (mime.startsWith('image/') || mime.startsWith('video/') ? media : files).push({ url: a.url, mimeType: mime, fileName: a.fileName, sizeBytes: a.sizeBytes });
     }
-    if (m.decryptFailed || !m.content) continue;
+    if (!m.content) continue;
     for (const url of m.content.match(URL_RE) || []) {
       if (!seen.has(url)) { seen.add(url); links.push(url); }
     }

@@ -96,13 +96,6 @@ app.use('/vendor/tinymce', express.static(path.join(__dirname, '..', 'node_modul
 // keep working — <img>/<video> embedding isn't affected by Content-Disposition, only direct
 // navigation/Save-As is, and raster formats can't carry script the way SVG/HTML can.
 const INLINE_SAFE_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico']);
-// Encrypted-DM blobs live under attachments/e2ee but are only ever served by routes/dms.js.
-app.use('/uploads/attachments', (req, res, next) => {
-  let first;
-  try { first = path.posix.normalize(`/${decodeURIComponent(req.path).replace(/\\/g, '/')}`).split('/').filter(Boolean)[0]; } catch { return res.status(400).end(); }
-  if (first && first.toLowerCase().replace(/[. ]+$/, '') === 'e2ee') return res.status(404).end();
-  next();
-});
 app.use('/uploads/attachments', express.static(path.join(DATA_DIR, 'attachments'), {
   setHeaders(res, filePath) {
     if (!INLINE_SAFE_EXT.has(path.extname(filePath).toLowerCase())) {
@@ -179,7 +172,6 @@ const remoteWriteLimit = rateLimit({ windowMs: 60_000, max: 60 });
 app.use('/api/remote', rateLimit({ windowMs: 60_000, max: 600 }),
   (req, res, next) => (req.method === 'GET' ? next() : remoteWriteLimit(req, res, next)),
   require('./routes/remote'));
-require('./lib/dmFiles').sweepDmFiles();
 app.use('/api/dms', require('./routes/dms'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/polls', require('./routes/polls'));
@@ -227,7 +219,7 @@ const { httpsLink } = require('./lib/httpsLink');
 app.get('/api/config', (req, res) => {
   const dl = config.downloads || {};
   const downloads = { clientDesktop: httpsLink(dl.clientDesktop), clientAndroid: httpsLink(dl.clientAndroid), website: httpsLink(dl.website) };
-  res.json({ maxUploadMb: config.maxUploadMb, maxMessageChars: require('./lib/messageLimits').maxMessageChars(), publicHost: config.publicHost, iceServers: turnManager.publicIceServers(), version: APP_VERSION, federationEnabled: !!(config.federation && config.federation.enabled), registrationMode: require('./lib/registration').getMode(), downloads });
+  res.json({ maxUploadMb: require('./lib/uploads').effectiveMaxUploadMb(config.maxUploadMb), maxMessageChars: require('./lib/messageLimits').maxMessageChars(), publicHost: config.publicHost, iceServers: turnManager.publicIceServers(), version: APP_VERSION, federationEnabled: !!(config.federation && config.federation.enabled), registrationMode: require('./lib/registration').getMode(), downloads });
 });
 
 const WEB_DIR = path.join(__dirname, '..', 'web');

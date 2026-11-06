@@ -198,7 +198,7 @@ test('the outbox is pruned to the newest rows per user, oldest first dropped', (
   assert.equal(row.c, 200, 'outbox should be capped at 200 rows per user');
 
   const oldest = db.prepare('SELECT message_json FROM notifications_outbox WHERE user_id = ? ORDER BY id ASC LIMIT 1').get(otherId);
-  assert.equal(JSON.parse(oldest.message_json).content, 'msg 5', 'the oldest 5 rows should have been pruned away');
+  assert.equal(JSON.parse(require('../lib/atRest').open(oldest.message_json)).content, 'msg 5', 'the oldest 5 rows should have been pruned away');
 });
 
 function pinFixture(tag) {

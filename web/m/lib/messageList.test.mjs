@@ -4,20 +4,19 @@ import { mergeMessages, applyUpdate, applyDelete, shouldCompact, reconcileLatest
 
 const m = (id, extra = {}) => ({ id, author: { id: 1 }, createdAt: `2026-01-01T00:0${id}:00Z`, content: `c${id}`, ...extra });
 
-test('mergeMessages sorts ascending and existing ids win (no duplicates, no ciphertext overwrite)', () => {
-  const list = [m(3, { content: 'plain', decryptFailed: false })];
-  const out = mergeMessages(list, [m(1), m(3, { content: 'CIPHER', isEncrypted: true }), m(2)]);
+test('mergeMessages sorts ascending and existing ids win (no duplicates)', () => {
+  const list = [m(3, { content: 'plain' })];
+  const out = mergeMessages(list, [m(1), m(3, { content: 'other' }), m(2)]);
   assert.deepEqual(out.map((x) => x.id), [1, 2, 3]);
   assert.equal(out[2].content, 'plain');
 });
 
-test('applyUpdate for an unknown id returns the same list; encrypted updates reset decryptFailed', () => {
-  const list = [m(1, { decryptFailed: false })];
+test('applyUpdate for an unknown id returns the same list; updates merge into the entry', () => {
+  const list = [m(1)];
   assert.equal(applyUpdate(list, m(9)), list);
-  const next = applyUpdate(list, m(1, { isEncrypted: true, content: 'CIPHER2' }));
-  assert.equal(next[0].content, 'CIPHER2');
-  assert.equal(next[0].decryptFailed, undefined);
-  assert.equal(list[0].decryptFailed, false);
+  const next = applyUpdate(list, m(1, { content: 'edited' }));
+  assert.equal(next[0].content, 'edited');
+  assert.equal(list[0].content, 'c1');
 });
 
 test('applyDelete removes by id and is a no-op for unknown ids', () => {

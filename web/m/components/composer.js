@@ -1,4 +1,5 @@
 import { icons } from '../../js/icons.js';
+import { checkUploadFile } from '../../js/uploadGuard.mjs';
 import { t } from '../../js/i18n.js';
 import { escapeHtml, toast } from '../../js/utils.js';
 import { state, nameFor } from '../../js/state.js';
@@ -53,9 +54,9 @@ export function mountComposer(host, opts) {
   };
 
   function addFiles(list) {
-    const max = (state.config.maxUploadMb || 25) * 1024 * 1024;
     for (const f of list) {
-      if (f.size > max) { toast(t('m.fileTooBig', { mb: state.config.maxUploadMb || 25 }), { type: 'error' }); continue; }
+      const check = checkUploadFile(f, state.config.maxUploadMb || 25);
+      if (!check.ok) { toast(check.reason === 'blocked' ? t('m.fileBlockedType', { name: f.name }) : t('m.fileTooBig', { mb: state.config.maxUploadMb || 25 }), { type: 'error', ttl: 8000 }); continue; }
       files.push(f);
     }
     refresh();

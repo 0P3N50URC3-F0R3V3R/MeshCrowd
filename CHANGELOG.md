@@ -2,6 +2,22 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-06
+#### Removed
+- End-to-end encrypted DMs are gone: the per-conversation "enable encryption" flow, the ratchet, safety numbers / verify sheets, encrypted DM files and the "message cannot be decrypted" state. This also removes the bugs where your own encrypted messages could not be decrypted and where DM notifications stuck after switching a conversation to encrypted. Existing end-to-end encrypted DM history was ciphertext only the clients could read, so it is deleted from the server at the next start (a one-time migration). Your passport and encrypted Notes channels are unchanged. DMs are ordinary messages again, so editing, forwarding, polls, scheduling, search, bots and attachments work in every conversation.
+
+#### Added
+- DM text is now encrypted at rest on the server: message text, link-preview embeds, scheduled DMs and queued Android notifications for DMs are stored sealed with AES-256-GCM, and DM text is no longer in the search index (DM search decrypts and scans the newest 5000 messages of the conversation). This protects the database file, its backups and the write-ahead log; the running server still reads DMs (search, bots, moderation reports). It needs no setting and works in every conversation. The key is `DISMESH_DM_KEY` (base64, 32 bytes) or, if unset, a random key created at `data/dm-at-rest.key` - **back it up together with the database; without it sealed DMs cannot be read**. On the first start after updating, existing DMs are sealed once, the search index is cleaned and the database is compacted (this can take a while on a large database). Not covered yet: attachment file names and files, poll options and messages relayed to federated servers.
+
+#### Fixed
+- Desktop app: right-click menus (Cut / Copy / Paste / Select All, spelling suggestions, Copy for links) now work in every input field and on selected text anywhere.
+- Accepting a friend request moves the person to the friend list immediately on desktop and mobile; the Messages tab on mobile shows a badge on the Friends button while requests are waiting.
+- Mobile / Android: the image viewer has pinch and double-tap zoom, panning, a close button and a Save button.
+- "Mark as unread" now draws the new-messages line inside the open conversation straight away (desktop and mobile); on mobile it also marked one message too late.
+- Display names are limited to 32 characters (sign-up, profile, admin edit, federated users) and the inputs enforce it.
+- Attachments: executables and scripts (exe, com, bat, cmd, ...) and files over the upload limit are refused with a clear message before upload; the server rejects blocked file types with an error instead of silently dropping the file and posting the message without it. /api/config now reports the limit currently in force.
+- Uploads keep running when you switch channel or window; the upload is shown again, with its progress, when you return, and you get a notice when it finishes or fails. Uploads show a progress bar and can be cancelled.
+
 ### 2026-11-05
 #### Fixed
 - Forum and chats no longer close, reload or lose a half-typed message when the window regains focus, the socket reconnects, or a role/member/channel event arrives: the open view is only rebuilt when something it shows actually changed, and a reconnect now catches up on missed messages in place.

@@ -17,8 +17,6 @@ const { stickersForUser, userCanUseSticker } = require('../lib/stickers');
 test.after(() => { db.close(); fs.rmSync(tmpDir, { recursive: true, force: true }); });
 
 const KEY = Buffer.alloc(32, 7).toString('base64');
-const NONCE = Buffer.alloc(24, 1).toString('base64');
-const envelope = () => JSON.stringify({ v: 1, chainIndex: 0, nonce: NONCE, ciphertext: Buffer.from('ciphertext-body-0123456789' + 'x'.repeat(16)).toString('base64') });
 
 function makeUser(username) {
   return db.prepare('INSERT INTO users (username, email, password_hash, display_name, e2ee_public_key) VALUES (?, ?, ?, ?, ?)')
@@ -116,18 +114,6 @@ test('group DMs accept stickers the sender can use, regardless of the other memb
   await withApp(async (call) => {
     assert.equal((await call(alice, 'POST', `/api/dms/${dm}/messages`, { content: 'hi', stickerId: stA })).status, 201);
     assert.equal((await call(carol, 'POST', `/api/dms/${dm}/messages`, { content: 'hi', stickerId: stA })).status, 400);
-  });
-});
-
-test('encrypted DMs never take a server-side sticker reference; it rides inside the envelope', async () => {
-  const dm = makeDm(alice, bob);
-  db.prepare('UPDATE dm_channels SET e2ee_enabled = 1 WHERE id = ?').run(dm);
-  await withApp(async (call) => {
-    const bad = await call(bob, 'POST', `/api/dms/${dm}/messages`, { content: envelope(), stickerId: stA });
-    assert.equal(bad.status, 400);
-    const ok = await call(bob, 'POST', `/api/dms/${dm}/messages`, { content: envelope() });
-    assert.equal(ok.status, 201);
-    assert.equal((await ok.json()).message.sticker, null);
   });
 });
 

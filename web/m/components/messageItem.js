@@ -8,14 +8,12 @@ import { nameFor } from '../../js/state.js';
 import { memberNameColor } from '../../js/permissions.js';
 import { memberRoleIcon, roleIconHtml } from '../../js/roleIcon.js';
 import { shouldCompact } from '../lib/messageList.mjs';
-import { messageText } from '../lib/dmPreview.mjs';
-import { e2eeFileKind } from '../lib/e2eeFiles.mjs';
 import { pollHtml } from './pollCard.js';
 import { voiceMessageHtml } from '../../js/voiceMessage.js';
 
 function replyHtml(r) {
   if (!r) return '';
-  const body = r.isEncrypted ? t('m.dmPreviewEncrypted') : (r.content || (r.sticker ? t('m.dmPreviewSticker') : t('m.dmPreviewAttachment')));
+  const body = r.content || (r.sticker ? t('m.dmPreviewSticker') : t('m.dmPreviewAttachment'));
   return `<div class="m-reply" data-goto="${r.id}">${icons.reply(12)}<b>${escapeHtml(r.author?.displayName || '')}</b><span>${escapeHtml(String(body).slice(0, 120))}</span></div>`;
 }
 
@@ -28,10 +26,6 @@ function attachmentsHtml(msg) {
     else if (isVideoMime(a.mimeType)) out.push(`<video class="m-att-video" src="${url}" controls preload="metadata" playsinline></video>`);
     else if ((a.mimeType || '').startsWith('audio/')) out.push(`<audio class="m-att-audio" src="${url}" controls preload="none"></audio>`);
     else out.push(`<a class="m-att-file" href="${url}" download="${escapeHtml(a.fileName)}">${icons.file(18)}<span class="m-grow"><b>${escapeHtml(a.fileName)}</b><small>${formatBytes(a.sizeBytes)}</small></span></a>`);
-  }
-  for (const f of msg.e2eeFiles || []) {
-    if (e2eeFileKind(f) === 'image') out.push(`<img class="m-att-img" data-e2ee-img="${escapeHtml(f.id)}" alt="${escapeHtml(f.name)}">`);
-    else out.push(`<button class="m-att-file" data-e2ee-dl="${escapeHtml(f.id)}">${icons.lock(16)}<span class="m-grow"><b>${escapeHtml(f.name)}</b><small>${formatBytes(f.size)}</small></span></button>`);
   }
   return out.length ? `<div class="m-atts">${out.join('')}</div>` : '';
 }
@@ -69,10 +63,7 @@ export function messageHtml(msg, ctx) {
   const compact = shouldCompact(ctx.prev, msg);
   const member = ctx.detail?.members?.find((m) => m.user.id === msg.author.id);
   const color = member ? memberNameColor(ctx.detail.roles, member) : null;
-  const hidden = messageText(msg, null) === null;
-  const text = hidden
-    ? `<i class="m-decrypt-failed">${t('m.decryptFailed')}</i>`
-    : (msg.content ? `<div class="m-text${isEmojiOnly(msg.content, ctx.detail?.customEmoji) ? ' m-emoji-only' : ''}">${renderMessageContent(msg.content, { channels: ctx.detail?.channels, customEmoji: ctx.detail?.customEmoji, rawHtmlEnabled: !!ctx.detail?.server?.raw_html_enabled })}</div>` : '');
+  const text = (msg.content ? `<div class="m-text${isEmojiOnly(msg.content, ctx.detail?.customEmoji) ? ' m-emoji-only' : ''}">${renderMessageContent(msg.content, { channels: ctx.detail?.channels, customEmoji: ctx.detail?.customEmoji, rawHtmlEnabled: !!ctx.detail?.server?.raw_html_enabled })}</div>` : '');
   return `
   <div class="m-msg${compact ? ' compact' : ''}${msg.author.id === ctx.meId ? ' mine' : ''}" data-id="${msg.id}">
     <div class="m-msg-avatar" ${compact ? '' : `data-user="${msg.author.id}"`}>${compact ? '' : avatarHtml(msg.author, 36)}</div>
@@ -95,6 +86,7 @@ export function pendingHtml(p, me) {
     <div class="m-msg-body">${p.text ? `<div class="m-text">${escapeHtml(p.text)}</div>` : ''}
       ${p.sticker ? `<img class="m-sticker" src="${escapeHtml(p.sticker.imagePath)}" alt="${escapeHtml(p.sticker.name)}">` : ''}
       ${p.files?.length ? `<div class="m-atts">${p.files.map((f) => `<div class="m-att-file">${icons.file(16)}<span class="m-grow"><b>${escapeHtml(f.name)}</b></span></div>`).join('')}</div>` : ''}
+      ${!p.failed && p.files?.length ? `<div class="m-up"><div class="m-up-bar"><i style="width:${Math.round((p.progress || 0) * 100)}%"></i></div><div class="m-up-row"><span class="m-up-pct">${Math.round((p.progress || 0) * 100)}%</span><button class="m-link" data-abort="${p.key}">${t('chat.cancelUpload')}</button></div></div>` : ''}
       ${p.failed ? `<div class="m-failed"><span>${escapeHtml(p.error || t('m.sendFailed'))}. ${t('m.tapToRetry')}</span>
         <button class="btn btn-secondary" data-retry="${p.key}">${t('m.retry')}</button>
         <button class="btn btn-secondary" data-cancel="${p.key}">${t('m.cancel')}</button></div>` : ''}

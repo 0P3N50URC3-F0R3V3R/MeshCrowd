@@ -2,6 +2,7 @@
 
 const { db } = require('../db');
 const { serializeMessage } = require('./messages');
+const { open } = require('./atRest');
 
 // Turns free-typed user input into a safe FTS5 MATCH expression: each word becomes its own
 // quoted prefix term (implicitly AND-ed together by FTS5). Quoting neutralizes FTS5's query
@@ -13,6 +14,8 @@ function buildFtsQuery(q) {
   if (!terms.length) return null;
   return terms.map((t) => `"${t.replace(/"/g, '""')}"*`).join(' ');
 }
+
+const DM_SCAN_LIMIT = 5000;
 
 function likeEscape(s) {
   return String(s).replace(/[\\%_]/g, (c) => `\\${c}`);
@@ -45,7 +48,16 @@ function searchMessages(scopeType, scopeIds, q, { limit = 25, fields = { text: t
   }
   if (!clean) return fields.everything ? finalize(ids, cap) : [];
 
-  if (fields.text) {
+  if (fields.text && scopeType === 'dm') {
+    // DM text is sealed, so it is not in the FTS index: decrypt the newest messages and match here.
+    const terms = clean.toLowerCase().split(/\s+/).filter(Boolean).slice(0, 8)
+      .map((t) => new RegExp(`(^|[^\\p{L}\\p{N}_])${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'iu'));
+    for (const row of db.prepare(
+      `SELECT id, content FROM messages WHERE scope_type = 'dm' AND scope_id IN (${placeholders}) AND event_type IS NULL ORDER BY id DESC LIMIT ${DM_SCAN_LIMIT}`
+    ).all(...scopeIds)) {
+      if (terms.every((re) => re.test(open(row.content)))) ids.add(row.id);
+    }
+  } else if (fields.text) {
     const match = buildFtsQuery(clean);
     if (match) {
       try {
@@ -76,10 +88,12 @@ function searchMessages(scopeType, scopeIds, q, { limit = 25, fields = { text: t
     if (name) {
       // Same token shape parseMentions() uses, so a hit is exactly a message that pinged this user.
       const re = new RegExp(`(^|[^a-zA-Z0-9_.])@${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-zA-Z0-9_.])`, 'i');
-      for (const row of db.prepare(
-        `SELECT id, content FROM messages WHERE scope_type = ? AND scope_id IN (${placeholders}) AND content LIKE ? ESCAPE '\\'`
-      ).all(scopeType, ...scopeIds, `%@${likeEscape(name)}%`)) {
-        if (re.test(row.content)) ids.add(row.id);
+      const sealed = scopeType === 'dm';
+      const rows = sealed
+        ? db.prepare(`SELECT id, content FROM messages WHERE scope_type = ? AND scope_id IN (${placeholders}) ORDER BY id DESC LIMIT ${DM_SCAN_LIMIT}`).all(scopeType, ...scopeIds)
+        : db.prepare(`SELECT id, content FROM messages WHERE scope_type = ? AND scope_id IN (${placeholders}) AND content LIKE ? ESCAPE '\\'`).all(scopeType, ...scopeIds, `%@${likeEscape(name)}%`);
+      for (const row of rows) {
+        if (re.test(open(row.content))) ids.add(row.id);
       }
     }
   }
@@ -91,7 +105,7 @@ function finalize(ids, cap) {
   if (ids.size === 0) return [];
   const idList = [...ids];
   const placeholders = idList.map(() => '?').join(',');
-  const rows = db.prepare(`SELECT * FROM messages WHERE id IN (${placeholders}) AND is_encrypted = 0 ORDER BY id DESC LIMIT ?`).all(...idList, cap);
+  const rows = db.prepare(`SELECT * FROM messages WHERE id IN (${placeholders}) ORDER BY id DESC LIMIT ?`).all(...idList, cap);
   return rows.map(serializeMessage);
 }
 

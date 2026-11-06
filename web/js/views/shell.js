@@ -48,8 +48,6 @@ import { t } from '../i18n.js';
 import { parseInviteHash } from '../inviteHash.mjs';
 import { peekInvite } from '../inviteLink.js';
 import { previewText } from '../stickers.mjs';
-import { ensureOwnKeyPublished, peekPlaintext, trustView } from '../e2ee/dmCrypto.js';
-import { openVerifyModal } from './dmVerify.js';
 import { openScreeningModal } from './onboarding.js';
 import { eventNotice, entryTarget } from '../notifyEvent.mjs';
 
@@ -103,7 +101,6 @@ export async function mountShell(root) {
   let currentSidebar = null;
   let currentMembers = null;
   let currentVoice = null;
-  let offDmHeader = null;
   let hasConnectedOnce = false;
   // Which scope currently has its pinned-messages or search panel docked open in the #s-members
   // slot — survives the full renderMain() a pin-jump triggers (jumping navigates within the same
@@ -283,11 +280,7 @@ export async function mountShell(root) {
     const title = notice ? notice.title : payload.scopeType === 'dm'
       ? author.displayName
       : `${author.displayName} in #${payload.channelName}${payload.serverName ? ` (${payload.serverName})` : ''}`;
-    // The server only ever sends a generic text for encrypted DMs; a message this device already
-    // decrypted can show its real text, anything else stays generic and localized.
-    const body = notice ? notice.body : payload.message.isEncrypted
-      ? (previewText(peekPlaintext(state.me.id, payload.message.id) || {}, noticeLabels) || t('dmEncryption.notifyBody'))
-      : previewText({ text: payload.message.content, sticker: payload.message.sticker, hasAttachments: !!payload.message.attachments?.length }, noticeLabels);
+    const body = notice ? notice.body : previewText({ text: payload.message.content, sticker: payload.message.sticker, hasAttachments: !!payload.message.attachments?.length }, noticeLabels);
 
     const target = notice || payload.message.scopeType === 'thread' ? {
       threadId: payload.message.scopeType === 'thread' ? payload.message.scopeId : null, messageId: payload.message.id,
@@ -317,7 +310,7 @@ export async function mountShell(root) {
   // A message-reminder the user set from the message context menu. Always surfaces: they asked for it.
   function onReminder(payload) {
     if (shouldPlayNotifySound('pinReminder')) notifySound.play();
-    const body = payload.encrypted ? t('msgMenu.reminderEncryptedBody') : payload.snippet || t('sidebar.sentAnAttachment');
+    const body = payload.snippet || t('sidebar.sentAnAttachment');
     const title = t('msgMenu.reminderTitle', { name: payload.author?.displayName || '' });
     toast(`${title}: ${body}`.slice(0, 160));
     const target = payload.scopeType === 'dm'
@@ -756,34 +749,7 @@ export async function mountShell(root) {
     }
   }
 
-  function openEnableEncryptionModal(dm) {
-    const other = dm.members[0];
-    confirmModal({
-      title: t('dmEncryption.panelTitle'),
-      message: ['panelIntro', 'panelPermanent', 'panelNoEditForward', 'panelSearch', 'panelKeyLoss', 'panelSafetyNumbers']
-        .map((k) => escapeHtml(t(`dmEncryption.${k}`))).join('<br><br>'),
-      confirmLabel: t('dmEncryption.panelConfirm'),
-      danger: false,
-      async onConfirm() {
-        try {
-          if (!(await ensureOwnKeyPublished(state.me))) { toast(t('dmEncryption.needPassport'), { type: 'error' }); return; }
-          await api.enableDmEncryption(dm.id);
-          dm.e2eeEnabled = true;
-          bus.emit('state:dms');
-        } catch (err) {
-          const code = err.body?.code;
-          const text = code === 'e2ee_peer_key_missing' ? t('dmEncryption.peerNotReady', { name: other?.displayName || '' })
-            : code === 'e2ee_federated' ? t('dmEncryption.federatedUnsupported')
-              : apiErrorMessage(err, t('dmEncryption.enableFailed'));
-          toast(text, { type: 'error', ttl: 8000 });
-        }
-      },
-    });
-  }
-
   function renderMain() {
-    offDmHeader?.();
-    offDmHeader = null;
     currentChat?.destroy?.();
     currentChat = null;
     currentMembers?.destroy?.();
@@ -831,7 +797,6 @@ export async function mountShell(root) {
         <div class="chat-header">
           <span class="ch-icon">${icons.users(20)}</span>
           <span class="ch-title">${escapeHtml(name || t('shell.directMessageFallback'))}</span>
-          <span id="dm-e2ee-slot"></span>
           <div class="spacer"></div>
           <div class="header-actions">
             <button class="btn-icon" id="dm-call-btn" title="${t('shell.startCallTitle')}">${icons.phone(18)}</button>
@@ -853,26 +818,6 @@ export async function mountShell(root) {
         titleEl.title = t('fullProfile.modalTitle');
         titleEl.addEventListener('click', () => openFullProfile(dm.members[0].id));
       }
-      const e2eeSlot = mainEl.querySelector('#dm-e2ee-slot');
-      const paintE2ee = () => {
-        const cur = state.dms.find((d) => d.id === view.dmId);
-        if (cur?.e2eeEnabled) {
-          const view = trustView(cur.id);
-          const shield = view?.status === 'changed' ? 'changed' : view?.verified ? 'verified' : 'unverified';
-          e2eeSlot.innerHTML = `<span class="dm-e2ee-badge" title="${escapeHtml(t('dmEncryption.enabledTitle'))}">${icons.lock(14)} ${t('dmEncryption.enabledLabel')}</span>`
-            + (view?.verified ? `<span class="dm-e2ee-badge dm-e2ee-verified" title="${escapeHtml(t('dmVerify.verifiedBadgeTitle'))}">${icons.check(14)} ${escapeHtml(t('dmVerify.verifiedBadge'))}</span>` : '')
-            + `<button class="btn-icon dm-verify-btn ${shield}" id="dm-verify-btn" title="${escapeHtml(t(`dmVerify.shieldTitle_${shield}`))}">${icons.shield(18)}</button>`;
-          e2eeSlot.querySelector('#dm-verify-btn').addEventListener('click', () => openVerifyModal(cur));
-        } else if (cur?.e2eeEligible) {
-          e2eeSlot.innerHTML = `<button class="btn-icon" id="dm-e2ee-btn" title="${escapeHtml(t('dmEncryption.enableButtonTitle'))}">${icons.lock(18)}</button>`;
-          e2eeSlot.querySelector('#dm-e2ee-btn').addEventListener('click', () => openEnableEncryptionModal(cur));
-        } else {
-          e2eeSlot.innerHTML = '';
-        }
-      };
-      paintE2ee();
-      const offHeaderEvents = [bus.on('state:dms', paintE2ee), bus.on('e2ee:trust', ({ dmId }) => { if (dmId === view.dmId) paintE2ee(); })];
-      offDmHeader = () => offHeaderEvents.forEach((off) => off());
       mainEl.querySelector('#dm-prune-btn')?.addEventListener('click', () => openDmPruneModal(dm));
       wirePanelToggles(membersEl, 'dm', view.dmId, [
         {

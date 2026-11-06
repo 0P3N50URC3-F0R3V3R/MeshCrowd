@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { stickerRef, normalizeSticker, previewText } from './stickers.mjs';
-import { buildPayload } from './e2ee/dmFiles.mjs';
 
 const good = { id: 7, name: 'wave_1', imagePath: '/uploads/stickers/0123456789abcdef0123.gif' };
 
@@ -30,9 +29,4 @@ test('previewText prefers text, then sticker, then attachment', () => {
   assert.equal(previewText({ text: '', sticker: good, hasAttachments: true }, labels), 'Sent a sticker');
   assert.equal(previewText({ text: '', sticker: null, hasAttachments: true }, labels), 'Sent an attachment');
   assert.equal(previewText({ text: '', sticker: null, hasAttachments: false }, labels), '');
-});
-
-test('buildPayload adds a sticker only when there is one', () => {
-  assert.deepEqual(buildPayload('hi', null, []), { text: 'hi', embed: null });
-  assert.deepEqual(buildPayload('', null, [], good), { text: '', embed: null, sticker: good });
 });

@@ -158,13 +158,13 @@ test('a bot cannot post in another server, a private channel it cannot see, or N
   assert.equal(rows.n, 0);
 });
 
-test('DMs: only a 1:1, unencrypted conversation with a bot that accepts DMs', async () => {
+test('DMs: only a 1:1 conversation with a bot that accepts DMs', async () => {
   const owner = mkUser('own10');
   const human = mkUser('human10');
   const sid = mkServer(owner);
   const { bot, token } = mkApiBot(sid, owner);
-  const mkDm = (e2ee = 0, group = 0) => {
-    const id = Number(db.prepare('INSERT INTO dm_channels (is_group, e2ee_enabled, created_by) VALUES (?, ?, ?)').run(group, e2ee, human).lastInsertRowid);
+  const mkDm = (group = 0) => {
+    const id = Number(db.prepare('INSERT INTO dm_channels (is_group, created_by) VALUES (?, ?)').run(group, human).lastInsertRowid);
     db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?)').run(id, human);
     db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?)').run(id, bot.userId);
     return id;
@@ -175,8 +175,7 @@ test('DMs: only a 1:1, unencrypted conversation with a bot that accepts DMs', as
   db.prepare('UPDATE bots SET dm_enabled = 1 WHERE id = ?').run(bot.id);
   assert.equal((await post(dm)).status, 201);
   assert.equal((await post(mkDm(1))).status, 403);
-  assert.equal((await post(mkDm(0, 1))).status, 403);
-  const stranger = Number(db.prepare('INSERT INTO dm_channels (is_group, e2ee_enabled, created_by) VALUES (0, 0, ?)').run(human).lastInsertRowid);
+  const stranger = Number(db.prepare('INSERT INTO dm_channels (is_group, created_by) VALUES (0, ?)').run(human).lastInsertRowid);
   db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?)').run(stranger, human);
   assert.equal((await post(stranger)).status, 403);
   const read = await call('GET', `/api/bot/messages?scopeType=dm&scopeId=${dm}`, token);

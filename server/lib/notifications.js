@@ -1,5 +1,6 @@
 'use strict';
 
+const { open, sealFor } = require('./atRest');
 const { db } = require('../db');
 const { has, PERMISSIONS } = require('./permissions');
 const { getChannelPermissionBits } = require('./channelAccess');
@@ -31,7 +32,7 @@ function recordOutbox(userId, { scopeType, scopeId, serverId = null, serverName 
   db.prepare(
     `INSERT INTO notifications_outbox (user_id, scope_type, scope_id, server_id, server_name, channel_name, message_json, mentioned, kind, extra_json)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(userId, scopeType, scopeId, serverId, serverName, channelName, JSON.stringify(message), mentioned ? 1 : 0, kind, extra ? JSON.stringify(extra) : null);
+  ).run(userId, scopeType, scopeId, serverId, serverName, channelName, sealFor(scopeType, JSON.stringify(message)), mentioned ? 1 : 0, kind, extra ? JSON.stringify(extra) : null);
   db.prepare(
     `DELETE FROM notifications_outbox WHERE user_id = ? AND id NOT IN (
        SELECT id FROM notifications_outbox WHERE user_id = ? ORDER BY id DESC LIMIT ?
@@ -49,7 +50,7 @@ function pollOutbox(userId, sinceId = 0, limit = 50) {
   ).all(userId, sinceId, limit);
   const notifications = rows.map((r) => ({
     id: r.id, scopeType: r.scope_type, scopeId: r.scope_id, serverId: r.server_id, serverName: r.server_name,
-    channelName: r.channel_name, message: JSON.parse(r.message_json), mentioned: !!r.mentioned, createdAt: r.created_at,
+    channelName: r.channel_name, message: JSON.parse(open(r.message_json)), mentioned: !!r.mentioned, createdAt: r.created_at,
     ...(r.kind ? { kind: r.kind, ...JSON.parse(r.extra_json || '{}') } : {}),
   }));
   const maxRow = db.prepare('SELECT MAX(id) AS maxId FROM notifications_outbox WHERE user_id = ?').get(userId);
@@ -139,14 +140,7 @@ function notifyChannelMessage(channel, message, mentions) {
   }
 }
 
-// Ciphertext must never become a preview: an encrypted DM notifies with a generic text and no
-// reply/embed context; a foregrounded client may swap in its own locally decrypted text.
-function redactEncrypted(message) {
-  return { ...message, content: `New encrypted message from ${message.author.displayName}`, embed: null, replyTo: null };
-}
-
-function notifyDmMessage(dm, rawMessage) {
-  const message = dm.e2ee_enabled || rawMessage.isEncrypted ? redactEncrypted(rawMessage) : rawMessage;
+function notifyDmMessage(dm, message) {
   const members = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(dm.id);
   // A conversation someone "closed" comes back to their list as soon as anything new is said.
   db.prepare('UPDATE dm_prefs SET hidden = 0 WHERE dm_id = ? AND hidden = 1').run(dm.id);
@@ -182,10 +176,9 @@ function notifyPin(rawMessage, actor) {
   const { channel, dm, threadId } = eventTarget(rawMessage);
   const extra = { actor: { id: actor.id, displayName: actor.displayName }, ...(threadId ? { threadId } : {}) };
   if (dm) {
-    const message = dm.e2ee_enabled || rawMessage.isEncrypted ? redactEncrypted(rawMessage) : rawMessage;
     for (const m of db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(dm.id)) {
       if (m.user_id === actor.id || isIgnoring(m.user_id, actor.id) || getPref(m.user_id, 'dm', dm.id) !== 'all') continue;
-      deliverEvent(m.user_id, 'pin', { scopeType: 'dm', scopeId: dm.id, message, mentioned: false }, extra);
+      deliverEvent(m.user_id, 'pin', { scopeType: 'dm', scopeId: dm.id, message: rawMessage, mentioned: false }, extra);
     }
     return;
   }

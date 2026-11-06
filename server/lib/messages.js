@@ -2,6 +2,7 @@
 
 const { db } = require('../db');
 const { toPublicUser } = require('./publicUser');
+const { open } = require('./atRest');
 
 // Reactions are returned as raw {emoji, userIds} aggregates rather than a per-viewer "did I
 // react" flag — a single serialized message is broadcast to every viewer over WS, so "did I
@@ -27,7 +28,7 @@ function getReplyTo(replyToId) {
   const row = db.prepare('SELECT * FROM messages WHERE id = ?').get(replyToId);
   if (!row) return null;
   const author = db.prepare('SELECT * FROM users WHERE id = ?').get(row.author_id);
-  return { id: row.id, author: toPublicUser(author, {}), content: row.content, isEncrypted: !!row.is_encrypted, sticker: getSticker(row.sticker_id) };
+  return { id: row.id, author: toPublicUser(author, {}), content: open(row.content), sticker: getSticker(row.sticker_id) };
 }
 
 // Raw per-option voter id aggregates, same "let the client compute did-I-vote" pattern as
@@ -59,7 +60,7 @@ function getForwardedFrom(id) {
   const attachments = db.prepare('SELECT * FROM attachments WHERE message_id = ?').all(row.id).map((a) => ({
     id: a.id, url: a.file_path, fileName: a.file_name, mimeType: a.mime_type, sizeBytes: a.size_bytes,
   }));
-  return { id: row.id, author: toPublicUser(author, {}), content: row.content, createdAt: row.created_at, attachments, sticker: getSticker(row.sticker_id), origin: forwardOrigin(row) };
+  return { id: row.id, author: toPublicUser(author, {}), content: open(row.content), createdAt: row.created_at, attachments, sticker: getSticker(row.sticker_id), origin: forwardOrigin(row) };
 }
 
 // Where a forwarded message came from, so the forward can link back to it.
@@ -111,8 +112,7 @@ function serializeMessage(row) {
     scopeId: row.scope_id,
     author: authorPublic,
     isWebhook: !!webhook,
-    content: row.content,
-    isEncrypted: !!row.is_encrypted,
+    content: open(row.content),
     eventType: row.event_type || null,
     eventData: parseEventData(row.event_data),
     createdAt: row.created_at,
@@ -122,7 +122,7 @@ function serializeMessage(row) {
     replyTo: getReplyTo(row.reply_to_message_id),
     pinnedAt: row.pinned_at || null,
     pinnedBy: row.pinned_by ? toPublicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(row.pinned_by), {}) : null,
-    embed: row.embed ? JSON.parse(row.embed) : null,
+    embed: row.embed ? JSON.parse(open(row.embed)) : null,
     poll: getPoll(row.id),
     forwardedFrom: row.forwarded_from_message_id ? getForwardedFrom(row.forwarded_from_message_id) : null,
     sticker: getSticker(row.sticker_id),

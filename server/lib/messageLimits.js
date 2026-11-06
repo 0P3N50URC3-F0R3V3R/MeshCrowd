@@ -9,7 +9,6 @@ const DEFAULT_CHARS = 15000;
 let cached = null;
 
 // Per-message character cap for plaintext content. Restart-only (config.json: maxMessageChars);
-// encrypted DM envelopes keep their own fixed bound (see lib/e2ee).
 function maxMessageChars() {
   if (cached === null) {
     const n = Math.floor(Number(load().maxMessageChars));

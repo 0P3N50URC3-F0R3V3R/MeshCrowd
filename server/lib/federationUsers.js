@@ -10,7 +10,7 @@ const { db } = require('../db');
 // path shape so a peer cannot point clients at arbitrary same-origin URLs.
 function cleanProfile(remoteUser) {
   const username = String(remoteUser.username ?? '').slice(0, 64);
-  const displayName = String(remoteUser.displayName ?? username).replace(/[\r\n]+/g, ' ').trim().slice(0, 100) || username;
+  const displayName = String(remoteUser.displayName ?? username).replace(/[\r\n]+/g, ' ').trim().slice(0, 32) || username;
   const avatarPath = typeof remoteUser.avatarPath === 'string' && /^\/uploads\/avatars\/[\w.-]+$/.test(remoteUser.avatarPath) ? remoteUser.avatarPath : null;
   return { ...remoteUser, username, displayName, avatarPath };
 }

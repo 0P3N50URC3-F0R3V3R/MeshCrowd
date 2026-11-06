@@ -2,6 +2,7 @@
 
 const dns = require('node:dns').promises;
 const http = require('node:http');
+const { sealFor } = require('./atRest');
 const https = require('node:https');
 const { db } = require('../db');
 const { serializeMessage } = require('./messages');
@@ -115,7 +116,7 @@ async function fetchEmbed(url) {
 // slow or hanging remote host can't delay the response — the embed just pops in via WS once
 // (if ever) it resolves.
 async function maybeFetchAndAttachEmbed(message, broadcast) {
-  if (message.eventType || message.isEncrypted) return;
+  if (message.eventType) return;
   const url = extractFirstUrl(message.content);
   if (!url) return;
 
@@ -126,7 +127,7 @@ async function maybeFetchAndAttachEmbed(message, broadcast) {
   const stillExists = db.prepare('SELECT id FROM messages WHERE id = ?').get(message.id);
   if (!stillExists) return;
 
-  db.prepare('UPDATE messages SET embed = ? WHERE id = ?').run(JSON.stringify(embed), message.id);
+  db.prepare('UPDATE messages SET embed = ? WHERE id = ?').run(sealFor(message.scopeType, JSON.stringify(embed)), message.id);
   const updated = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(message.id));
   broadcast({ type: 'message_update', message: updated });
 }

@@ -9,7 +9,7 @@ export function applyUpdate(list, message) {
   const i = list.findIndex((m) => m.id === message.id);
   if (i === -1) return list;
   const next = list.slice();
-  next[i] = { ...list[i], ...message, ...(message.isEncrypted ? { decryptFailed: undefined } : {}) };
+  next[i] = { ...list[i], ...message };
   return next;
 }
 
@@ -24,7 +24,7 @@ export function shouldCompact(prev, cur, windowMs = 5 * 60 * 1000) {
   return new Date(cur.createdAt) - new Date(prev.createdAt) < windowMs;
 }
 
-// After a reconnect: `page` is the freshly fetched (and decrypted) newest page. Edits and deletes
+// After a reconnect: `page` is the freshly fetched newest page. Edits and deletes
 // inside its range replace what we hold; older history is kept; a gap or whole-history page resets.
 export function reconcileLatest(list, page, pageSize) {
   if (!page.length || page.length < pageSize) return page;

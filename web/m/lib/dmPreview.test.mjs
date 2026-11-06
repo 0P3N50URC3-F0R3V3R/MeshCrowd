@@ -1,19 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dmPreview, dmTitle, messageText } from './dmPreview.mjs';
+import { dmPreview, dmTitle } from './dmPreview.mjs';
 
-const labels = { encryptedLabel: 'Encrypted message', attachmentLabel: 'Sent an attachment' };
+const labels = { attachmentLabel: 'Sent an attachment', stickerLabel: 'Sent a sticker' };
 
 test('plain messages show their text, attachment-only messages show the attachment label', () => {
-  assert.equal(dmPreview({ lastMessage: { id: 1, content: 'hi' } }, { peek: () => null, ...labels }), 'hi');
-  assert.equal(dmPreview({ lastMessage: { id: 1, content: '', attachments: [{}] } }, { peek: () => null, ...labels }), 'Sent an attachment');
-  assert.equal(dmPreview({ lastMessage: null }, { peek: () => null, ...labels }), '');
+  assert.equal(dmPreview({ lastMessage: { id: 1, content: 'hi' } }, labels), 'hi');
+  assert.equal(dmPreview({ lastMessage: { id: 1, content: '', attachments: [{}] } }, labels), 'Sent an attachment');
+  assert.equal(dmPreview({ lastMessage: null }, labels), '');
 });
 
-test('encrypted messages show cached plaintext or the generic label, never the ciphertext', () => {
-  const dm = { lastMessage: { id: 7, isEncrypted: true, content: 'v1:AAAA-ciphertext' } };
-  assert.equal(dmPreview(dm, { peek: (id) => (id === 7 ? { text: 'secret hello' } : null), ...labels }), 'secret hello');
-  assert.equal(dmPreview(dm, { peek: () => null, ...labels }), 'Encrypted message');
+test('sticker-only messages show the sticker label', () => {
+  assert.equal(dmPreview({ lastMessage: { id: 1, content: '', sticker: { id: 3 }, attachments: [] } }, labels), 'Sent a sticker');
 });
 
 test('dmTitle: group name, else joined member names; 1:1 uses the other member', () => {
@@ -21,21 +19,4 @@ test('dmTitle: group name, else joined member names; 1:1 uses the other member',
   assert.equal(dmTitle({ isGroup: true, name: 'Crew', members: [] }, nameFor), 'Crew');
   assert.equal(dmTitle({ isGroup: true, name: '', members: [{ displayName: 'A' }, { displayName: 'B' }] }, nameFor), 'A, B');
   assert.equal(dmTitle({ isGroup: false, members: [{ displayName: 'Zed' }] }, nameFor), 'Zed');
-});
-
-test('messageText never returns ciphertext: encrypted messages need decryptFailed === false', () => {
-  const fail = 'cannot decrypt';
-  assert.equal(messageText({ content: 'hi' }, fail), 'hi');
-  assert.equal(messageText({ content: '', attachments: [] }, fail), '');
-  assert.equal(messageText({ isEncrypted: true, decryptFailed: false, content: 'plain' }, fail), 'plain');
-  assert.equal(messageText({ isEncrypted: true, decryptFailed: true, content: 'v1:CIPHER' }, fail), fail);
-  assert.equal(messageText({ isEncrypted: true, decryptFailed: undefined, content: 'v1:CIPHER' }, fail), fail);
-});
-
-test('sticker-only messages show the sticker label, encrypted ones via the cached plaintext', () => {
-  const stickerLabels = { ...labels, stickerLabel: 'Sent a sticker' };
-  assert.equal(dmPreview({ lastMessage: { id: 1, content: '', sticker: { id: 3 }, attachments: [] } }, { peek: () => null, ...stickerLabels }), 'Sent a sticker');
-  const enc = { lastMessage: { id: 7, isEncrypted: true, content: 'v1:AAAA' } };
-  assert.equal(dmPreview(enc, { peek: () => ({ text: '', sticker: { id: 3 } }), ...stickerLabels }), 'Sent a sticker');
-  assert.equal(dmPreview(enc, { peek: () => null, ...stickerLabels }), 'Encrypted message');
 });

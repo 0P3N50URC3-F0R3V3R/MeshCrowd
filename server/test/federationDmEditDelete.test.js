@@ -1,5 +1,6 @@
 'use strict';
 const test = require('node:test');
+const { open } = require('../lib/atRest');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -51,7 +52,7 @@ test('edit/delete/reaction target the message via (peer, federation_message_id)'
     .run(dmChannelId, remoteAuthor, peerId).lastInsertRowid;
 
   inboxHandlers.dm_message_edit(peer, { originMessageId: 'msg-1', content: 'edited' });
-  assert.equal(db.prepare('SELECT content FROM messages WHERE id = ?').get(msgId).content, 'edited');
+  assert.equal(open(db.prepare('SELECT content FROM messages WHERE id = ?').get(msgId).content), 'edited');
 
   inboxHandlers.dm_reaction_add(peer, { originMessageId: 'msg-1', userUsername: 'rg', emoji: '👍' });
   assert.ok(db.prepare('SELECT 1 FROM message_reactions WHERE message_id = ? AND emoji = ?').get(msgId, '👍'));
@@ -76,7 +77,7 @@ test('a peer cannot edit or delete a message that originated from a different pe
     .run(dmChannelId, remoteAuthor, peerAId).lastInsertRowid;
 
   inboxHandlers.dm_message_edit(peerB, { originMessageId: 'shared-id', content: 'tampered by B' });
-  assert.equal(db.prepare('SELECT content FROM messages WHERE id = ?').get(msgId).content, 'from-a', 'peer B must not touch a message that originated from peer A');
+  assert.equal(open(db.prepare('SELECT content FROM messages WHERE id = ?').get(msgId).content), 'from-a', 'peer B must not touch a message that originated from peer A');
 
   inboxHandlers.dm_message_delete(peerB, { originMessageId: 'shared-id' });
   assert.ok(db.prepare('SELECT 1 FROM messages WHERE id = ?').get(msgId), 'peer B must not be able to delete peer A-origin message');
@@ -94,7 +95,7 @@ test('inbound edit content is capped at 15000 chars, same as the local PATCH rou
 
   const huge = 'x'.repeat(20000);
   inboxHandlers.dm_message_edit(peer, { originMessageId: 'cap-msg', content: huge });
-  const stored = db.prepare('SELECT content FROM messages WHERE id = ?').get(msgId).content;
+  const stored = open(db.prepare('SELECT content FROM messages WHERE id = ?').get(msgId).content);
   assert.equal(stored.length, 15000);
 });
 
@@ -109,7 +110,7 @@ test('inbound edit with empty-after-trim content is dropped, not applied', () =>
     .run(dmChannelId, remoteAuthor, peerId).lastInsertRowid;
 
   inboxHandlers.dm_message_edit(peer, { originMessageId: 'empty-msg', content: '   ' });
-  assert.equal(db.prepare('SELECT content FROM messages WHERE id = ?').get(msgId).content, 'keep-me');
+  assert.equal(open(db.prepare('SELECT content FROM messages WHERE id = ?').get(msgId).content), 'keep-me');
 });
 
 test('inbound reaction emoji is capped at 34 chars, same as the local PUT reactions route', () => {

@@ -1,5 +1,6 @@
 'use strict';
 
+const { open } = require('./atRest');
 const { db } = require('../db');
 const hub = require('../socket/hub');
 const { toPublicUser } = require('./publicUser');
@@ -34,8 +35,7 @@ function deliverDueReminders(now = new Date().toISOString()) {
       scopeId: message.scope_id,
       serverId: channel ? channel.server_id : null,
       channelId: channel ? channel.id : null,
-      encrypted: !!message.is_encrypted,
-      snippet: message.is_encrypted ? '' : String(message.content || '').slice(0, 200),
+      snippet: String(open(message.content) || '').slice(0, 200),
       author: author ? toPublicUser(author, {}) : null,
     });
     sent += 1;

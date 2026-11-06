@@ -1,6 +1,7 @@
 'use strict';
 
 const { db } = require('../../db');
+const { sealFor } = require('../atRest');
 const { serializeMessage } = require('../messages');
 const { canSendToScope } = require('../scopeAccess');
 const { parseMentions, notifyChannelMessage, notifyDmMessage } = require('../notifications');
@@ -28,7 +29,7 @@ function postAsBot(bot, { scopeType, scopeId, content, replyToMessageId, interac
   if (ctx.channel && ctx.channel.server_id !== bot.server_id) throw new BotPostError(403, 'a bot can only post in its own server');
   if (ctx.channel && ctx.channel.type === 'notes') throw new BotPostError(403, 'bots cannot post in Notes channels');
   if (ctx.channel && ctx.channel.type === 'forum' && scopeType === 'channel') throw new BotPostError(400, 'post into a thread of a forum channel');
-  if (ctx.dm && (ctx.dm.is_group || ctx.dm.e2ee_enabled || !bot.dm_enabled)) throw new BotPostError(403, 'this conversation does not accept bot messages');
+  if (ctx.dm && (ctx.dm.is_group || !bot.dm_enabled)) throw new BotPostError(403, 'this conversation does not accept bot messages');
 
   let replyTo = null;
   if (replyToMessageId !== undefined && replyToMessageId !== null) {
@@ -39,7 +40,7 @@ function postAsBot(bot, { scopeType, scopeId, content, replyToMessageId, interac
 
   const text = defuseBroadcast(content);
   const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, reply_to_message_id, interaction_command, interaction_user_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
-    .run(scopeType, scopeId, bot.user_id, text, replyTo, interaction ? interaction.command : null, interaction ? interaction.userId : null);
+    .run(scopeType, scopeId, bot.user_id, sealFor(scopeType, text), replyTo, interaction ? interaction.command : null, interaction ? interaction.userId : null);
   const message = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(info.lastInsertRowid));
   ctx.broadcast({ type: 'message_create', message });
   if (ctx.dm) {
@@ -65,7 +66,7 @@ function editOwnMessage(bot, messageId, content) {
     throw new BotPostError(400, `content is required (at most ${maxMessageChars()} characters)`);
   }
   const { row, ctx } = ownMessage(bot, messageId);
-  db.prepare("UPDATE messages SET content = ?, edited_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?").run(defuseBroadcast(content), row.id);
+  db.prepare("UPDATE messages SET content = ?, edited_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?").run(sealFor(row.scope_type, defuseBroadcast(content)), row.id);
   const message = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(row.id));
   ctx.broadcast({ type: 'message_update', message });
   return message;

@@ -72,7 +72,7 @@ function createAccountRows({ username, email, password, authKey, authSalt, displ
   // and no real registrant on a fresh instance would ever qualify as the first user/site owner.
   const isFirstUser = db.prepare("SELECT COUNT(*) AS c FROM users WHERE username != '__webhook__' AND is_bot = 0").get().c === 0;
   const cred = credentialColumns({ password, authKey, authSalt });
-  const name = (displayName && singleLine(displayName, 64)) || username;
+  const name = (displayName && singleLine(displayName, 32)) || username;
 
   const info = passport
     ? db.prepare(

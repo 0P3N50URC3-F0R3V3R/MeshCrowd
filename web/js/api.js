@@ -336,8 +336,8 @@ export const api = {
   // messages (channel scope)
   listChannelMessages: (serverId, channelId, { before, after, limit, around } = {}) =>
     get(`/api/servers/${serverId}/channels/${channelId}/messages`, { before, after, limit, around }),
-  sendChannelMessage: (serverId, channelId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs }) =>
-    uploadMessage(`/api/servers/${serverId}/channels/${channelId}/messages`, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs),
+  sendChannelMessage: (serverId, channelId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal }) =>
+    uploadMessage(`/api/servers/${serverId}/channels/${channelId}/messages`, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal),
   globalSearch: (q, serverId, { limit } = {}) => get('/api/search', { q, serverId, limit }),
   searchServerMessages: (serverId, q, { channelId, limit, fields } = {}) =>
     get(`/api/servers/${serverId}/search`, { q, channelId, limit, fields }),
@@ -374,8 +374,8 @@ export const api = {
   },
   listThreadMessages: (serverId, channelId, threadId, { before, after, limit, around } = {}) =>
     get(`/api/servers/${serverId}/channels/${channelId}/threads/${threadId}/messages`, { before, after, limit, around }),
-  sendThreadMessage: (serverId, channelId, threadId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs }) =>
-    uploadMessage(`/api/servers/${serverId}/channels/${channelId}/threads/${threadId}/messages`, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs),
+  sendThreadMessage: (serverId, channelId, threadId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal }) =>
+    uploadMessage(`/api/servers/${serverId}/channels/${channelId}/threads/${threadId}/messages`, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal),
 
   // DMs
   listRemoteServers: () => get('/api/remote/servers'),
@@ -399,24 +399,8 @@ export const api = {
   openGroupDm: (userIds, name) => post('/api/dms/group', { userIds, name }),
   listDmMessages: (dmId, { before, after, limit, around } = {}) => get(`/api/dms/${dmId}/messages`, { before, after, limit, around }),
   listAvailableStickers: () => get('/api/dms/stickers'),
-  sendDmMessage: (dmId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs }) =>
-    uploadMessage(`/api/dms/${dmId}/messages`, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs),
-  sendEncryptedDmMessage: (dmId, { content, replyToMessageId, fileIds }) => post(`/api/dms/${dmId}/messages`, { content, replyToMessageId, fileIds }),
-  uploadDmFile: async (dmId, blobId, bytes) => {
-    const res = await fetch(`/api/dms/${dmId}/e2ee-files/${blobId}`, {
-      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/octet-stream' }, body: bytes,
-    });
-    const body = await res.json().catch(() => null);
-    if (!res.ok) throw new ApiError(res.status, body);
-    return body;
-  },
-  downloadDmFile: async (dmId, blobId) => {
-    const res = await fetch(`/api/dms/${dmId}/e2ee-files/${blobId}`, { credentials: 'include' });
-    if (!res.ok) throw new ApiError(res.status, null);
-    return new Uint8Array(await res.arrayBuffer());
-  },
-  deleteDmFile: (dmId, blobId) => del(`/api/dms/${dmId}/e2ee-files/${blobId}`),
-  enableDmEncryption: (dmId) => post(`/api/dms/${dmId}/encryption/enable`),
+  sendDmMessage: (dmId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal }) =>
+    uploadMessage(`/api/dms/${dmId}/messages`, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal),
   linkPreview: (url) => post('/api/link-preview', { url }),
   searchDmMessages: (dmId, q, { limit, fields } = {}) => get(`/api/dms/${dmId}/search`, { q, limit, fields }),
 
@@ -549,7 +533,7 @@ export const api = {
 };
 
 // Uses XHR (not fetch) so we can report upload progress for attachments.
-function uploadMessage(url, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs) {
+function uploadMessage(url, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal) {
   const fd = new FormData();
   if (voiceDurationMs) fd.append('voiceDurationMs', String(Math.round(voiceDurationMs)));
   fd.append('content', content || '');
@@ -573,6 +557,8 @@ function uploadMessage(url, content, files, onProgress, replyToMessageId, sticke
       else reject(new ApiError(xhr.status, body));
     };
     xhr.onerror = () => reject(new ApiError(0, { error: 'network error' }));
+    xhr.onabort = () => reject(Object.assign(new ApiError(0, { error: 'cancelled' }), { cancelled: true }));
+    if (signal) { if (signal.aborted) return reject(Object.assign(new ApiError(0, { error: 'cancelled' }), { cancelled: true })); signal.addEventListener('abort', () => xhr.abort()); }
     xhr.send(fd);
   });
 }

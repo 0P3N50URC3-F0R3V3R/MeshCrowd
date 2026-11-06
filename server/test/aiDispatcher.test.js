@@ -89,12 +89,12 @@ test('cleanReply neutralizes mentions, caps length, and optionally defuses html'
   assert.ok(/<script/i.test(cleanReply('<script>x</script>')));
 });
 
-test('buildMessages: roles, persona, budget, skips system and encrypted messages', () => {
+test('buildMessages: roles, persona, budget, skips system messages', () => {
   const bot = { displayName: 'Helper', persona: 'Be brief', userId: 7 };
-  const h = (id, authorId, name, content, extra = {}) => ({ id, author: { id: authorId, displayName: name }, content, eventType: null, isEncrypted: false, ...extra });
+  const h = (id, authorId, name, content, extra = {}) => ({ id, author: { id: authorId, displayName: name }, content, eventType: null, ...extra });
   const out = buildMessages({
     bot, serverName: 'Srv', channelName: 'general', dmWith: null,
-    history: [h(1, 1, 'Alice', 'hi bot'), h(2, 7, 'Helper', 'hello'), h(3, 1, 'Alice', 'sys', { eventType: 'member_join' }), h(4, 1, 'Alice', 'cipher', { isEncrypted: true }), h(5, 2, 'Bob', 'and me'), h(6, 1, 'Alice', '   ')],
+    history: [h(1, 1, 'Alice', 'hi bot'), h(2, 7, 'Helper', 'hello'), h(3, 1, 'Alice', 'sys', { eventType: 'member_join' }), h(5, 2, 'Bob', 'and me'), h(6, 1, 'Alice', '   ')],
   });
   assert.equal(out[0].role, 'system');
   assert.match(out[0].content, /Be brief/);
@@ -186,7 +186,7 @@ test('thread messages work like channel messages', async () => {
   assert.equal(botMessages(w, 'thread', threadId).length, 1);
 });
 
-test('DM mode answers every message in a 1:1 DM, and not when dm is off, in groups, or E2EE', async () => {
+test('DM mode answers every message in a 1:1 DM, and not when dm is off or in groups', async () => {
   const w = world();
   const dm = Number(db.prepare('INSERT INTO dm_channels (is_group, created_by) VALUES (0, ?)').run(w.alice).lastInsertRowid);
   db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?), (?, ?)').run(dm, w.alice, dm, w.bot.userId);
@@ -205,12 +205,6 @@ test('DM mode answers every message in a 1:1 DM, and not when dm is off, in grou
   db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?), (?, ?)').run(dm3, grp.alice, dm3, grp.bot.userId);
   await dispatcher.maybeRespond(post('dm', dm3, grp.alice, 'group'));
   assert.equal(botMessages(grp, 'dm', dm3).length, 0);
-
-  const enc = world();
-  const dm4 = Number(db.prepare('INSERT INTO dm_channels (is_group, created_by, e2ee_enabled) VALUES (0, ?, 1)').run(enc.alice).lastInsertRowid);
-  db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?), (?, ?)').run(dm4, enc.alice, dm4, enc.bot.userId);
-  await dispatcher.maybeRespond(post('dm', dm4, enc.alice, 'secret'));
-  assert.equal(botMessages(enc, 'dm', dm4).length, 0);
 });
 
 test('a bot cannot answer in a channel it cannot view', async () => {

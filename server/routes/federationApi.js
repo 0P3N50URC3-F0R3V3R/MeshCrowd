@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const { seal } = require('../lib/atRest');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -161,7 +162,7 @@ inboxHandlers.dm_message_create = (peer, payload) => {
 
   const info = db.prepare(
     `INSERT INTO messages (scope_type, scope_id, author_id, content, federation_peer_id, federation_message_id) VALUES ('dm', ?, ?, ?, ?, ?)`
-  ).run(dmChannelId, author.id, content, peer.id, payload.dmMessageId);
+  ).run(dmChannelId, author.id, seal(content), peer.id, payload.dmMessageId);
 
   if (validAttachments.length > 0) {
     const dir = path.join(DATA_DIR, 'attachments', `dm-${dmChannelId}`);
@@ -220,7 +221,7 @@ inboxHandlers.dm_message_edit = (peer, payload) => {
   // route's 400 (there is no requester here to reject, so silently keep the prior content).
   const content = String(payload.content || '').slice(0, maxMessageChars());
   if (!content.trim()) return;
-  db.prepare(`UPDATE messages SET content = ?, edited_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`).run(content, msg.id);
+  db.prepare(`UPDATE messages SET content = ?, edited_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`).run(seal(content), msg.id);
   const updated = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(msg.id));
   broadcastToDm(msg.scope_id, { type: 'message_update', message: updated });
 };

@@ -125,7 +125,7 @@ export function openUserSettings(initialTab = 'account') {
       </div>
       <div class="field">
         <label>${t('userSettings.displayNameLabel')}</label>
-        <input class="input" id="f-display" value="${escapeHtml(me.displayName)}">
+        <input class="input" id="f-display" maxlength="32" value="${escapeHtml(me.displayName)}">
       </div>
       <div class="field">
         <label style="display:flex;justify-content:space-between;align-items:baseline">${t('userSettings.bioLabel')}<span class="hint" id="f-bio-count" style="margin:0"></span></label>

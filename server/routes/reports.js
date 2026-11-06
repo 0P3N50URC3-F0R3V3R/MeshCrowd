@@ -6,7 +6,6 @@ const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-const MAX_EVIDENCE_CHARS = 4000;
 const REASONS = new Set(['spam', 'harassment', 'other']);
 
 // Anyone can file a report about anyone else — filing one doesn't require any shared server/DM,
@@ -26,21 +25,14 @@ router.post('/', requireAuth, (req, res) => {
   if (!target) return res.status(404).json({ error: 'user not found' });
 
   let validMessageId = null;
-  let evidence = null;
   if (messageId !== null) {
-    const message = db.prepare('SELECT id, scope_type, scope_id, is_encrypted FROM messages WHERE id = ? AND author_id = ?').get(messageId, reportedUserId);
+    const message = db.prepare('SELECT id FROM messages WHERE id = ? AND author_id = ?').get(messageId, reportedUserId);
     if (message) validMessageId = message.id; // silently drop a stale/mismatched message reference rather than error
-    // Only a participant can have read the message, so only a participant's disclosure counts as evidence.
-    const raw = req.body?.plaintextEvidence;
-    if (message?.is_encrypted && typeof raw === 'string' && raw.trim()
-      && db.prepare('SELECT 1 FROM dm_members WHERE dm_channel_id = ? AND user_id = ?').get(message.scope_id, req.user.id)) {
-      evidence = raw.trim().slice(0, MAX_EVIDENCE_CHARS);
-    }
   }
 
   db.prepare(
-    'INSERT INTO reports (reporter_id, reported_user_id, message_id, reason, details, plaintext_evidence) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(req.user.id, reportedUserId, validMessageId, reason, details, evidence);
+    'INSERT INTO reports (reporter_id, reported_user_id, message_id, reason, details) VALUES (?, ?, ?, ?, ?)'
+  ).run(req.user.id, reportedUserId, validMessageId, reason, details);
   res.status(201).json({ ok: true });
 });
 

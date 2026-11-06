@@ -54,16 +54,15 @@ async function createThread(msg, ctx) {
 
 export async function openMessageSheet(msg, ctx) {
   const mine = msg.author.id === state.me.id;
-  const enc = !!ctx.dm?.e2eeEnabled;
   const marked = state.bookmarkIds.has(msg.id);
   const items = [
     { id: 'react', icon: icons.smile(20), label: t('m.actReact') },
     ctx.canSend && { id: 'reply', icon: icons.reply(20), label: t('m.actReply') },
-    !msg.decryptFailed && msg.content && { id: 'copy', icon: icons.copy(20), label: t('m.actCopy') },
-    mine && !enc && ctx.canSend && { id: 'edit', icon: icons.edit(20), label: t('m.actEdit') },
+    msg.content && { id: 'copy', icon: icons.copy(20), label: t('m.actCopy') },
+    mine && ctx.canSend && { id: 'edit', icon: icons.edit(20), label: t('m.actEdit') },
     (ctx.kind === 'dm' || ctx.canManage) && { id: msg.pinnedAt ? 'unpin' : 'pin', icon: icons.pin(20), label: msg.pinnedAt ? t('m.actUnpin') : t('m.actPin') },
     ctx.kind === 'channel' && ctx.canSend && { id: 'thread', icon: icons.messageSquare(20), label: t('m.actThread') },
-    !enc && { id: 'forward', icon: icons.forward(20), label: t('m.actForward') },
+    { id: 'forward', icon: icons.forward(20), label: t('m.actForward') },
     { id: marked ? 'unbookmark' : 'bookmark', icon: icons.bookmark(20), label: marked ? t('m.actUnbookmark') : t('m.actBookmark') },
     ctx.kind !== 'thread' && { id: 'unread', icon: icons.bell(20), label: t('m.actMarkUnread') },
     !mine && { id: 'report', icon: icons.flag(20), label: t('m.actReport') },
@@ -85,7 +84,7 @@ export async function openMessageSheet(msg, ctx) {
       case 'forward': await forward(msg); break;
       case 'bookmark': await api.addBookmark(msg.id); state.bookmarkIds.add(msg.id); break;
       case 'unbookmark': await api.removeBookmark(msg.id); state.bookmarkIds.delete(msg.id); break;
-      case 'unread': await api.markUnreadFrom(ctx.scopeType, ctx.scopeId, msg.id); break;
+      case 'unread': await api.markUnreadFrom(ctx.scopeType, ctx.scopeId, Math.max(0, msg.id - 1)); ctx.markUnreadFrom?.(msg); break;
       case 'report': await report(msg); break;
       case 'delete': if (await confirmSheet(t('m.deleteConfirm'))) await api.deleteMessage(msg.id); break;
       default: break;

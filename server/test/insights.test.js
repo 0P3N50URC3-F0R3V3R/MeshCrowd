@@ -25,8 +25,8 @@ const mkServer = (owner) => {
 };
 const mkChannel = (sid, name) => Number(db.prepare('INSERT INTO channels (server_id, name, type) VALUES (?, ?, ?)').run(sid, name, 'public').lastInsertRowid);
 const daysAgo = (d, hour = 12) => { const t = new Date(Date.now() - d * 86400_000); t.setUTCHours(hour, 30, 0, 0); return t.toISOString(); };
-const say = (scopeType, scopeId, author, at, extra = {}) => db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, created_at, event_type, is_encrypted, webhook_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-  .run(scopeType, scopeId, author, 'hi', at, extra.event ?? null, extra.enc ?? 0, extra.webhook ?? null);
+const say = (scopeType, scopeId, author, at, extra = {}) => db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, created_at, event_type, webhook_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
+  .run(scopeType, scopeId, author, 'hi', at, extra.event ?? null, extra.webhook ?? null);
 
 let server; let base;
 test.before(async () => {
@@ -83,7 +83,7 @@ test('counts messages per day and hour, fills empty days with zero and ranks cha
   assert.equal(ins.activeMembers.last7, 2);
 });
 
-test('threads of the server count, other servers, DMs, system events, webhooks, bots and encrypted messages do not', async () => {
+test('threads of the server count, other servers, DMs, system events, webhooks, and bots do not', async () => {
   const w = world();
   const thread = Number(db.prepare("INSERT INTO threads (channel_id, title, created_by) VALUES (?, 't', ?)").run(w.general, w.ann).lastInsertRowid);
   say('thread', thread, w.ann, daysAgo(0));
@@ -92,7 +92,6 @@ test('threads of the server count, other servers, DMs, system events, webhooks, 
   const dm = Number(db.prepare('INSERT INTO dm_channels (is_group, created_by) VALUES (0, ?)').run(w.ann).lastInsertRowid);
   say('dm', dm, w.ann, daysAgo(0));
   say('channel', w.general, w.ann, daysAgo(0), { event: 'member_join' });
-  say('channel', w.general, w.ann, daysAgo(0), { enc: 1 });
   const bot = mkUser('robot', 1);
   say('channel', w.general, bot, daysAgo(0));
   const ins = (await get(`/api/servers/${w.sid}/insights?days=7`, w.owner)).data.insights;

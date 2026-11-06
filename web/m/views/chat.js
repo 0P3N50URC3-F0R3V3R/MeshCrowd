@@ -4,9 +4,8 @@ import { ws } from '../../js/ws.js';
 import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
 import { avatarHtml, escapeHtml, toast } from '../../js/utils.js';
-import { state, pinUnseen, channelHasUnreadThreads, setReadState, nameFor, getKnownUser } from '../../js/state.js';
+import { state, pinUnseen, channelHasUnreadThreads, setReadState, forceReadState, nameFor, getKnownUser } from '../../js/state.js';
 import { PERMISSIONS, has, memberPermissionBits, channelPermissionBits } from '../../js/permissions.js';
-import { decryptMessages, encryptForSend, cacheSentPlaintext, uploadDmFile, fetchDmFile, trustView, refreshTrust, NO_IDENTITY, KEY_CHANGED } from '../../js/e2ee/dmCrypto.js';
 import { nav } from '../router.js';
 import { ensureServerDetail } from '../data.js';
 import { handleError } from '../lib/errors.js';
@@ -16,7 +15,6 @@ import { readMessages, writeMessages, deleteMessages } from '../lib/stateCache.j
 import { androidBridge } from '../lib/androidBridge.js';
 import { mergeMessages, applyUpdate, applyDelete, reconcileLatest, dropMatchingPending, windowReachesLatest } from '../lib/messageList.mjs';
 import { dmTitle } from '../lib/dmPreview.mjs';
-import { e2eeFileKind } from '../lib/e2eeFiles.mjs';
 import { messageHtml, pendingHtml, ephemeralHtml } from '../components/messageItem.js';
 import { mountComposer } from '../components/composer.js';
 import { openMessageSheet } from '../components/messageSheet.js';
@@ -30,7 +28,6 @@ import { MAX_TEXT_FILE_BYTES, textByteLength, textToFile } from '../../js/longTe
 import { openProfileSheet } from './profileSheet.js';
 import { pickSendTime } from '../components/scheduleSheet.js';
 import { wireVoicePlayers } from '../../js/voiceMessage.js';
-import { openVerifySheet } from './dmVerifySheet.js';
 import { isAgeGateError, renderAgeGate } from '../../js/ageGate.js';
 import { EMOJI_SHORTCODES } from '../../js/emojiShortcodes.js';
 import { usageOf, parseInvocation, missingRequired } from '../../js/slashCommands.js';
@@ -39,6 +36,7 @@ import { openDmWith } from '../lib/dmOpen.js';
 import { copyText } from './serversTab.js';
 import { unreadPrefs, firstUnreadIndex, anchorIndex, unreadEligible, unreadCount } from '../../js/unreadLine.mjs';
 import { offlineWindows } from '../../js/offlineTracker.js';
+import { uploads } from '../../js/uploadTracker.js';
 
 const MAX_WINDOW = 400;
 
@@ -56,11 +54,12 @@ export function mountChat(el, params) {
   let unreadUpTo = 0;
   let unreadUpToSet = false;
   const offlineAtOpen = offlineWindows();
-  const unreadOk = (m) => unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen })(m);
+  let forcedUnreadAfter = 0;
+  const unreadOk = (m) => (forcedUnreadAfter > 0 && m.id > forcedUnreadAfter) || unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen })(m);
   let firstLoad = true;
   let messages = [];
   const deleted = new Set(); // ids deleted over the websocket, so a racing create cannot bring them back
-  let pending = [];
+  let pending = uploads.forScope(scopeKey);
   let detail = null; let channel = null; let thread = null;
   let canSend = true; let canManage = false;
   let atStart = false; let isLatest = true; let loadingOlder = false; let destroyed = false; let stickToBottom = true;
@@ -70,7 +69,6 @@ export function mountChat(el, params) {
   let botCommands = [];
   const ephemerals = [];
   const dm = () => (kind === 'dm' ? state.dms.find((d) => d.id === params.dmId) : null);
-  const encrypted = () => !!dm()?.e2eeEnabled;
 
   const scope = {
     list: (q) => (kind === 'dm' ? api.listDmMessages(params.dmId, q)
@@ -88,7 +86,6 @@ export function mountChat(el, params) {
       <h1 id="m-title"></h1>
       <div id="m-actions" class="m-actions"></div>
     </div>
-    <div class="m-e2ee-banner" id="m-e2ee" hidden></div>
     <div class="m-chat-body">
       <div class="m-unread-banner" id="m-unread-banner" hidden></div>
       <div class="m-msgs m-scroll" id="m-msgs"></div>
@@ -136,40 +133,6 @@ export function mountChat(el, params) {
     return { placeholder: t('m.composerPhChannel', { name: channel.name }) };
   }
 
-  // ---------- encrypted attachments ----------
-  const e2eeUrls = new Map(); // blob id -> Promise<blob: URL | null>
-  const findE2eeFile = (id) => { for (const m of messages) { const f = m.e2eeFiles?.find((x) => x.id === id); if (f) return f; } return null; };
-  function e2eeUrl(f) {
-    let p = e2eeUrls.get(f.id);
-    if (!p) {
-      p = fetchDmFile(params.dmId, f).then((bytes) => (bytes ? URL.createObjectURL(new Blob([bytes], { type: f.type })) : null)).catch(() => null);
-      e2eeUrls.set(f.id, p);
-    }
-    return p;
-  }
-  function hydrateEncryptedImages() {
-    msgsEl.querySelectorAll('img[data-e2ee-img]').forEach((img) => {
-      const f = findE2eeFile(img.dataset.e2eeImg);
-      if (!f) return;
-      e2eeUrl(f).then((url) => {
-        if (!img.isConnected) return;
-        if (url) { img.src = url; img.dataset.viewer = url; return; }
-        e2eeUrls.delete(f.id);
-        img.replaceWith(Object.assign(document.createElement('div'), { className: 'm-text', textContent: t('dmEncryption.fileDecryptFailed') }));
-      });
-    });
-  }
-  async function downloadEncryptedFile(f) {
-    try {
-      const bytes = await fetchDmFile(params.dmId, f);
-      if (!bytes) throw new Error(t('dmEncryption.fileDecryptFailed'));
-      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
-      const a = Object.assign(document.createElement('a'), { href: url, download: f.name });
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
-    } catch (err) { handleError(err, 'm.sendFailed'); }
-  }
-
   // ---------- rendering ----------
   const ctxFor = (prev) => ({ prev, meId: state.me.id, detail });
   function paint({ keepScroll = false, anchor = false } = {}) {
@@ -188,7 +151,6 @@ export function mountChat(el, params) {
     if (keepScroll) msgsEl.scrollTop = top + (msgsEl.scrollHeight - before);
     const next = anchorId && [...msgsEl.querySelectorAll('[data-id]')].find((n) => n.dataset.id === anchorId);
     if (next) msgsEl.scrollTop += next.getBoundingClientRect().top - viewTop - anchorOffset;
-    hydrateEncryptedImages();
     paintUnreadBanner();
   }
   function paintUnreadBanner() {
@@ -245,20 +207,11 @@ export function mountChat(el, params) {
     return true;
   }
 
-  async function decryptList(list) {
-    const d = dm();
-    if (d && list.some((m) => m.isEncrypted)) {
-      await decryptMessages(d, state.me, list);
-      bus.emit('state:dms');
-    }
-    return list;
-  }
-
   const cacheKey = () => `${state.me.id}:${scopeKey}`;
-  // Last visit's newest messages, drawn before the network answers. Encrypted chats are never stored.
+  // Last visit's newest messages, drawn before the network answers. 
   let paintedFromCache = false;
   async function paintCached() {
-    if (encrypted() || params.jumpToMessageId) return;
+    if (params.jumpToMessageId) return;
     const cached = await readMessages(cacheKey());
     if (!cached || !cached.length || destroyed || messages.length) return;
     messages = cached;
@@ -267,7 +220,7 @@ export function mountChat(el, params) {
     scrollBottom();
   }
   function saveCached() {
-    if (encrypted() || !isLatest || params.jumpToMessageId || messages.some((m) => m.isEncrypted)) return;
+    if (!isLatest || params.jumpToMessageId) return;
     writeMessages(cacheKey(), messages);
   }
 
@@ -280,7 +233,7 @@ export function mountChat(el, params) {
       if (err && (err.status === 403 || err.status === 404)) { deleteMessages(cacheKey()); if (paintedFromCache) { messages = []; paint(); } }
       throw err;
     }
-    const list = await decryptList(res.messages);
+    const list = res.messages;
     if (paintedFromCache) { messages = []; paintedFromCache = false; }
     if (!unreadUpToSet) { unreadUpTo = list.reduce((mx, m) => Math.max(mx, m.id), 0); unreadUpToSet = true; }
     isLatest = !params.jumpToMessageId || windowReachesLatest(list, params.jumpToMessageId, PAGE);
@@ -301,7 +254,7 @@ export function mountChat(el, params) {
     loadingOlder = true;
     try {
       const res = await scope.list({ before: messages[0].id, limit: PAGE });
-      const list = await decryptList(res.messages);
+      const list = res.messages;
       if (list.length < PAGE) atStart = true;
       messages = mergeMessages(messages, list, deleted);
       if (messages.length > MAX_WINDOW && !pending.length) { messages = messages.slice(0, MAX_WINDOW); isLatest = false; }
@@ -314,7 +267,7 @@ export function mountChat(el, params) {
     loadingOlder = true;
     try {
       const res = await scope.list({ after: messages[messages.length - 1].id, limit: PAGE });
-      const list = await decryptList(res.messages);
+      const list = res.messages;
       if (list.length < PAGE) isLatest = true;
       messages = mergeMessages(messages, list, deleted);
       if (messages.length > MAX_WINDOW) { messages = messages.slice(-MAX_WINDOW); atStart = false; }
@@ -361,7 +314,6 @@ export function mountChat(el, params) {
     if (destroyed || !belongs(message) || messages.some((m) => m.id === message.id)) return;
     if (!isLatest) { jumpEl.hidden = false; return; } // would sit after a gap; the jump button reloads the latest page
     if (deleted.has(message.id)) return;
-    await decryptList([message]);
     pending = dropMatchingPending(pending, message, state.me.id, state.config.maxMessageChars);
     messages = mergeMessages(messages, [message], deleted);
     if (messages.length > MAX_WINDOW && stickToBottom) { messages = messages.slice(-MAX_WINDOW); atStart = false; }
@@ -374,9 +326,7 @@ export function mountChat(el, params) {
     if (destroyed || !belongs(message)) return;
     const current = messages.find((m) => m.id === message.id);
     if (!current) return;
-    // Decrypt a copy and swap it in afterwards, so the list never holds fresh ciphertext mid-await.
     const [next] = applyUpdate([current], message);
-    await decryptList([next]);
     const keep = msgsEl.scrollTop;
     messages = messages.map((m) => (m.id === next.id ? next : m));
     paint(); msgsEl.scrollTop = keep;
@@ -415,7 +365,7 @@ export function mountChat(el, params) {
   const refetchLatest = () => enqueue(async () => {
     if (!isLatest) return;
     const res = await scope.list({ limit: PAGE });
-    messages = reconcileLatest(messages, await decryptList(res.messages), PAGE);
+    messages = reconcileLatest(messages, res.messages, PAGE);
     for (const id of deleted) messages = applyDelete(messages, id);
     paint();
     if (stickToBottom) scrollBottom();
@@ -429,40 +379,51 @@ export function mountChat(el, params) {
   }
 
   // ---------- sending ----------
-  async function sendEncrypted(text, replyToMessageId, files = [], sticker = null) {
-    const d = dm();
-    const metas = [];
-    try {
-      for (const f of files) metas.push(await uploadDmFile(d.id, f));
-      const { content, plaintextObj } = await encryptForSend(d, state.me, text, null, metas, sticker);
-      const res = await api.sendEncryptedDmMessage(d.id, { content, replyToMessageId, fileIds: metas.length ? metas.map((m) => m.id) : undefined });
-      await cacheSentPlaintext(state.me.id, res.message.id, plaintextObj);
-      Object.assign(res.message, { content: plaintextObj.text, embed: plaintextObj.embed, e2eeFiles: metas, sticker, decryptFailed: false });
-      files.forEach((file, i) => { if (e2eeFileKind(metas[i]) === 'image') e2eeUrls.set(metas[i].id, Promise.resolve(URL.createObjectURL(file))); });
-      return res;
-    } catch (err) {
-      for (const m of metas) api.deleteDmFile(d.id, m.id).catch(() => {});
-      throw err;
-    }
-  }
-
   async function deliver(p) {
+    p.scopeKey = scopeKey;
+    uploads.add(p);
+    const onProgress = (x) => uploads.progress(p, x);
     try {
-      const res = encrypted() ? await sendEncrypted(p.text, p.replyToMessageId, p.files, p.sticker)
-        : await scope.send({ content: p.text, files: p.files, replyToMessageId: p.replyToMessageId, stickerId: p.sticker?.id, voiceDurationMs: p.voiceDurationMs });
-      pending = pending.filter((x) => x.key !== p.key);
-      if (!isLatest) { params = { ...params, jumpToMessageId: undefined }; await loadInitial(); return; }
-      if (!messages.some((m) => m.id === res.message.id)) messages = mergeMessages(messages, [res.message], deleted);
-      paint(); scrollBottom(); markReadSoon();
+      const res = await scope.send({ content: p.text, files: p.files, replyToMessageId: p.replyToMessageId, stickerId: p.sticker?.id, voiceDurationMs: p.voiceDurationMs, onProgress, signal: p.controller.signal });
+      uploads.finish(p, { res });
     } catch (err) {
-      if (err && err.status === 401) { bus.emit('m:unauthorized'); return; }
-      p.failed = true;
-      p.error = err.message === KEY_CHANGED ? t('dmVerify.sendBlocked') : err.message === NO_IDENTITY ? t('dmEncryption.needPassport') : null;
-      paint(); scrollBottom();
+      uploads.finish(p, { err });
     }
   }
 
-  const ctxForSheets = () => ({ kind, scopeType, scopeId, params, detail, channel, thread, canSend, canManage, dm: dm(), composer, scrollToMessage });
+  offs.push(bus.on('upload:progress', (p) => {
+    if (p.scopeKey !== scopeKey) return;
+    const node = msgsEl.querySelector(`[data-pending="${p.key}"]`);
+    if (!node) return;
+    const bar = node.querySelector('.m-up-bar i');
+    if (bar) bar.style.width = `${Math.round(p.progress * 100)}%`;
+    const pct = node.querySelector('.m-up-pct');
+    if (pct) pct.textContent = `${Math.round(p.progress * 100)}%`;
+  }));
+  offs.push(bus.on('upload:finished', async (ev) => {
+    const { item: p, res, err } = ev;
+    if (p.scopeKey !== scopeKey || destroyed) return;
+    ev.handled = true;
+    if (ev.cancelled) { pending = pending.filter((x) => x.key !== p.key); paint(); return; }
+    if (err) {
+      if (err.status === 401) { bus.emit('m:unauthorized'); return; }
+      p.failed = true;
+      p.error = (err.status === 400 && err.message) || null;
+      paint(); scrollBottom();
+      return;
+    }
+    pending = pending.filter((x) => x.key !== p.key);
+    if (!isLatest) { params = { ...params, jumpToMessageId: undefined }; await loadInitial(); return; }
+    if (!messages.some((m) => m.id === res.message.id)) messages = mergeMessages(messages, [res.message], deleted);
+    paint(); scrollBottom(); markReadSoon();
+  }));
+
+  function markUnreadFrom(msg) {
+    const before = Math.max(0, msg.id - 1);
+    forceReadState(scopeType, scopeId, before);
+    if (prefs.unreadLine !== 'off') { forcedUnreadAfter = unreadAfterId = before; bannerDismissed = false; paint({ anchor: true }); }
+  }
+  const ctxForSheets = () => ({ markUnreadFrom, kind, scopeType, scopeId, params, detail, channel, thread, canSend, canManage, dm: dm(), composer, scrollToMessage });
 
   async function boot() {
     let info;
@@ -479,7 +440,7 @@ export function mountChat(el, params) {
           if (typeof handled === 'string') text = handled;
           else if (handled !== null) return handled;
         }
-        if (text.length > (encrypted() ? 4000 : state.config.maxMessageChars || 15000)) {
+        if (text.length > (state.config.maxMessageChars || 15000)) {
           if (textByteLength(text) > MAX_TEXT_FILE_BYTES) { toast(t('chat.tooLargeForFile', { kb: Math.round(MAX_TEXT_FILE_BYTES / 1024) }), { type: 'error' }); return false; }
           const name = await promptSheet({ title: t('chat.longAsFileTitle'), placeholder: t('chat.longAsFilePlaceholder'), okLabel: t('chat.longAsFileConfirm'), allowEmpty: true });
           if (name === null) return false;
@@ -492,13 +453,13 @@ export function mountChat(el, params) {
         return true;
       },
       onEdit: async (msg, text) => { try { await api.editMessage(msg.id, text); return true; } catch (err) { handleError(err); return false; } },
-      onVoice: encrypted() ? null : async ({ file, durationMs, replyToMessageId }) => {
+      onVoice: async ({ file, durationMs, replyToMessageId }) => {
         const p = { key: `${Date.now()}${Math.random().toString(36).slice(2, 6)}`, text: '', files: [file], voiceDurationMs: durationMs, replyToMessageId };
         pending.push(p); paint(); scrollBottom();
         deliver(p);
       },
       onTyping: () => ws.sendTyping(scopeType, scopeId),
-      onSchedule: encrypted() ? null : async ({ text, replyToMessageId }) => {
+      onSchedule: async ({ text, replyToMessageId }) => {
         const at = await pickSendTime();
         if (!at) return false;
         try {
@@ -507,7 +468,7 @@ export function mountChat(el, params) {
           return true;
         } catch (err) { handleError(err, 'm.scheduleFailed'); return false; }
       },
-      onPoll: encrypted() ? null : () => openPollSheet(ctxForSheets()),
+      onPoll: () => openPollSheet(ctxForSheets()),
       onSticker: async () => {
         const sticker = await openStickerSheet(ctxForSheets());
         if (!sticker) return;
@@ -682,11 +643,9 @@ export function mountChat(el, params) {
     box.innerHTML = `<button class="m-icon-btn" id="m-search" aria-label="${t('m.searchAction')}">${icons.search(20)}</button>`
       + (kind === 'dm' ? `<button class="m-icon-btn" id="m-call" aria-label="${t('m.callAction')}">${icons.phone(20)}</button>` : '')
       + (kind === 'channel' ? `<button class="m-icon-btn${channelHasUnreadThreads(params.channelId) ? ' m-pin-dot' : ''}" id="m-threads" aria-label="${t('m.threads')}">${icons.messageSquare(20)}</button>` : '')
-      + (kind === 'dm' && encrypted() && !dm().isGroup ? `<button class="m-icon-btn" id="m-verify" aria-label="${t('dmVerify.title')}">${icons.lock(20)}</button>` : '')
       + (kind === 'thread' && thread && (canEditPost(thread, state.me) || canDeletePost(thread, state.me, { canManage })) ? `<button class="m-icon-btn" id="m-post-menu" aria-label="${t('forum.postActions')}">${icons.more(20)}</button>` : '')
       + `<button class="m-icon-btn${pinUnseen(kind, kind === 'dm' ? params.dmId : kind === 'thread' ? params.threadId : params.channelId) ? ' m-pin-dot' : ''}" id="m-info" aria-label="${t('m.infoMembers')}">${icons.users(20)}</button>`;
     box.querySelector('#m-call')?.addEventListener('click', () => nav.push('voice', { kind: 'dm', dmId: params.dmId }));
-    box.querySelector('#m-verify')?.addEventListener('click', () => openVerifySheet(dm()));
     box.querySelector('#m-search').addEventListener('click', () => nav.push('search', { serverId: params.serverId, channelId: params.channelId, dmId: params.dmId }));
     box.querySelector('#m-post-menu')?.addEventListener('click', openPostMenu);
     box.querySelector('#m-threads')?.addEventListener('click', () => nav.push('threads', { serverId: params.serverId, channelId: params.channelId }));
@@ -708,7 +667,7 @@ export function mountChat(el, params) {
   const findMsg = (node) => messages.find((m) => m.id === Number(node.closest('[data-id]')?.dataset.id));
   msgsEl.addEventListener('click', async (e) => {
     const img = e.target.closest('[data-viewer]');
-    if (img) return openImageViewer(img.dataset.viewer);
+    if (img) return openImageViewer(img.dataset.viewer, img.getAttribute('alt') || '');
     const goto = e.target.closest('[data-goto]');
     if (goto) { const id = Number(goto.dataset.goto); if (!scrollToMessage(id)) { params = { ...params, jumpToMessageId: id }; await loadInitial(); } return; }
     const ref = e.target.closest('.channel-ref[data-channel-id]');
@@ -725,11 +684,11 @@ export function mountChat(el, params) {
     const eph = e.target.closest('[data-eph-dismiss]');
     if (eph) { e.preventDefault(); const at = ephemerals.findIndex((x) => x.id === eph.dataset.ephDismiss); if (at !== -1) { ephemerals.splice(at, 1); paint(); } return; }
     const retry = e.target.closest('[data-retry]');
-    if (retry) { const p = pending.find((x) => x.key === retry.dataset.retry); if (p) { p.failed = false; paint(); deliver(p); } return; }
+    if (retry) { const p = pending.find((x) => x.key === retry.dataset.retry); if (p) { p.failed = false; p.progress = 0; paint(); deliver(p); } return; }
+    const abort = e.target.closest('[data-abort]');
+    if (abort) { uploads.abort(abort.dataset.abort); return; }
     const cancel = e.target.closest('[data-cancel]');
-    if (cancel) { pending = pending.filter((x) => x.key !== cancel.dataset.cancel); paint(); return; }
-    const dl = e.target.closest('[data-e2ee-dl]');
-    if (dl) { const f = findE2eeFile(dl.dataset.e2eeDl); if (f) downloadEncryptedFile(f); return; }
+    if (cancel) { uploads.remove(cancel.dataset.cancel); pending = pending.filter((x) => x.key !== cancel.dataset.cancel); paint(); return; }
     const react = e.target.closest('[data-react]');
     const msg = findMsg(e.target);
     if (react && msg) {
@@ -751,20 +710,10 @@ export function mountChat(el, params) {
     if (msg && dx < -70 && dy < 30 && canSend) composer.setReply(msg);
   }, { passive: true });
 
-  // Encrypted 1:1 DM: surface a changed peer key as a banner with a Review button.
-  const bannerEl = el.querySelector('#m-e2ee');
-  function paintBanner() {
-    const view = kind === 'dm' && encrypted() ? trustView(params.dmId) : null;
-    bannerEl.hidden = !view || view.status !== 'changed';
-    if (!bannerEl.hidden) bannerEl.innerHTML = `<span>${t('dmVerify.changedTitle')}</span><button class="btn btn-secondary" data-review>${t('dmVerify.review')}</button>`;
-  }
-  bannerEl.addEventListener('click', (e) => { if (e.target.closest('[data-review]')) openVerifySheet(dm()); });
-  offs.push(bus.on('e2ee:trust', ({ dmId }) => { if (dmId === params.dmId) paintBanner(); }));
-
   state.mOpenScope = scopeKey;
-  boot().then(() => { if (kind === 'dm' && encrypted()) refreshTrust(dm(), state.me).then(paintBanner).catch(() => {}); });
+  boot();
   return {
-    destroy() { destroyed = true; saveCached(); clearTimeout(readTimer); for (const p of e2eeUrls.values()) p.then((url) => url && URL.revokeObjectURL(url)); offs.forEach((off) => off()); if (state.mOpenScope === scopeKey) state.mOpenScope = null; },
+    destroy() { destroyed = true; saveCached(); clearTimeout(readTimer); offs.forEach((off) => off()); if (state.mOpenScope === scopeKey) state.mOpenScope = null; },
     onShow() { state.mOpenScope = scopeKey; markReadSoon(); },
     onHide() { if (state.mOpenScope === scopeKey) state.mOpenScope = null; },
   };

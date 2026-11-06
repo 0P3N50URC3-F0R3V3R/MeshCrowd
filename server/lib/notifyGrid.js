@@ -92,7 +92,7 @@ function classify({ scopeType, kind, mentioned, message, recipient }) {
     // Every DM arrives flagged as mentioned, so only an explicit @name counts as a DM mention. An
     // encrypted DM's text is redacted and never inspected.
     const name = recipient && recipient.username;
-    if (name && message && !message.isEncrypted && typeof message.content === 'string'
+    if (name && message && typeof message.content === 'string'
       && new RegExp(`(^|[^a-zA-Z0-9_.])@${escapeRe(name)}(?![a-zA-Z0-9_.])`, 'i').test(message.content)) return 'dmMention';
     return 'dmMessage';
   }

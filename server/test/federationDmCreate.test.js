@@ -1,5 +1,6 @@
 'use strict';
 const test = require('node:test');
+const { open } = require('../lib/atRest');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -37,7 +38,7 @@ test('inbound dm_message_create writes a message visible to the local participan
   ).get(localId, remote.id);
   assert.ok(dmChannel);
   const message = db.prepare(`SELECT * FROM messages WHERE scope_type = 'dm' AND scope_id = ?`).get(dmChannel.id);
-  assert.equal(message.content, 'hi from another instance');
+  assert.equal(open(message.content), 'hi from another instance');
   assert.equal(message.author_id, remote.id);
   assert.equal(message.federation_message_id, 'abc-123');
 });
@@ -164,7 +165,7 @@ test('full relay round trip: the outbox payload, fed into the receiving inbox ha
   ).get(finCache.id, graceReal.id);
   assert.ok(farDmChannel, 'both participants must have resolved — this is exactly what the backwards bare/qualified logic broke');
   const farMessage = db.prepare(`SELECT * FROM messages WHERE scope_type = 'dm' AND scope_id = ?`).get(farDmChannel.id);
-  assert.equal(farMessage.content, 'round trip hello');
+  assert.equal(open(farMessage.content), 'round trip hello');
   assert.equal(farMessage.author_id, finCache.id);
 });
 
@@ -258,7 +259,7 @@ test('inbound content longer than 15000 chars is truncated, matching the local P
 
   const message = db.prepare(`SELECT * FROM messages WHERE federation_message_id = 'bounds-1'`).get();
   assert.ok(message);
-  assert.equal(message.content.length, 15000);
+  assert.equal(open(message.content).length, 15000);
 });
 
 test('an attachment with a blocked extension is dropped, not written to disk or the DB', () => {

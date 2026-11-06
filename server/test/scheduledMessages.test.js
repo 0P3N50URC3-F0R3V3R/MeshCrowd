@@ -154,17 +154,16 @@ test('a message that is far overdue is not sent', () => {
   assert.equal(db.prepare('SELECT status FROM scheduled_messages WHERE id = ?').get(made.id).status, 'failed');
 });
 
-test('DMs: 1:1 works, encrypted conversations are refused, and delivery notifies the other person', async () => {
+test('DMs: 1:1 works and delivery notifies the other person', async () => {
   const a = mkUser('dm_a'); const b = mkUser('dm_b');
-  const mkDm = (e2ee) => {
-    const id = Number(db.prepare('INSERT INTO dm_channels (is_group, e2ee_enabled, created_by) VALUES (0, ?, ?)').run(e2ee, a).lastInsertRowid);
+  const mkDm = () => {
+    const id = Number(db.prepare('INSERT INTO dm_channels (is_group, created_by) VALUES (0, ?)').run(a).lastInsertRowid);
     db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?)').run(id, a);
     db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?)').run(id, b);
     return id;
   };
-  const plain = mkDm(0); const secret = mkDm(1);
+  const plain = mkDm();
   const post = (dmId) => call('POST', '/api/scheduled', a, { scopeType: 'dm', scopeId: dmId, content: 'later', sendAt: inMinutes(5) });
-  assert.equal((await post(secret)).status, 400);
   const ok = await post(plain);
   assert.equal(ok.status, 201);
   makeDue(ok.data.scheduled.id);

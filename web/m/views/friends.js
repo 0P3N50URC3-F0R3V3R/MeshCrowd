@@ -41,7 +41,12 @@ export function mountFriends(el) {
     const a = e.target.closest('[data-a]')?.dataset.a;
     try {
       if (a === 'dm') return openDmWith(id);
-      if (a === 'accept') await api.friendAccept(id);
+      if (a === 'accept') {
+        await api.friendAccept(id);
+        const f = state.friends;
+        const accepted = f.pending.find((x) => x.user.id === id);
+        if (accepted) setFriends({ ...f, pending: f.pending.filter((x) => x !== accepted), friends: [...f.friends, { ...accepted, status: 'accepted' }] });
+      }
       else if (a === 'remove') await api.friendRemove(id);
       else return openProfileSheet(id);
       setFriends(await api.friends());

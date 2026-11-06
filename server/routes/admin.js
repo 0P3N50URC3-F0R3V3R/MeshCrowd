@@ -284,7 +284,7 @@ router.patch('/users/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_USERS), (req,
   }
 
   if (displayName !== undefined) {
-    const v = singleLine(displayName, 64);
+    const v = singleLine(displayName, 32);
     if (!v) return res.status(400).json({ error: 'displayName cannot be empty' });
     db.prepare('UPDATE users SET display_name = ? WHERE id = ?').run(v, target.id);
   }
@@ -517,10 +517,8 @@ router.post('/prune/execute', requireSitePerm(SITE_PERMISSIONS.PRUNE_DATA), (req
   res.json(result);
 });
 
-// Ciphertext is never shown to admins: an encrypted message only has the text its reporter chose to disclose.
-function shapeReportedMessage(message, evidence) {
-  if (!message.is_encrypted) return { id: message.id, content: message.content, createdAt: message.created_at };
-  return { id: message.id, content: evidence || '', encrypted: true, hasEvidence: !!evidence, createdAt: message.created_at };
+function shapeReportedMessage(message) {
+  return { id: message.id, content: require('../lib/atRest').open(message.content), createdAt: message.created_at };
 }
 
 function shapeReport(r) {
@@ -533,7 +531,7 @@ function shapeReport(r) {
     reportedUser: toPublicUser(reported, {}),
     reason: r.reason,
     details: r.details,
-    message: message ? shapeReportedMessage(message, r.plaintext_evidence) : null,
+    message: message ? shapeReportedMessage(message) : null,
     status: r.status,
     createdAt: r.created_at,
     resolvedAt: r.resolved_at,

@@ -40,7 +40,7 @@ function buildPayload({ bot, trigger, message, ctx }) {
 // triggers so a bot with both jobs reacts to the same messages in both.
 function webhookTargets(message, ctx) {
   if (ctx.dm) {
-    if (ctx.dm.is_group || ctx.dm.e2ee_enabled) return [];
+    if (ctx.dm.is_group) return [];
     const other = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ? AND user_id != ?').get(ctx.dm.id, message.author.id);
     if (!other) return [];
     const bot = db.prepare(`${WEBHOOK_BOTS} AND b.user_id = ? AND b.dm_enabled = 1`).get(other.user_id);
@@ -60,7 +60,7 @@ function webhookTargets(message, ctx) {
 }
 
 function deliverWebhooks(message) {
-  if (!message || message.author?.isBot || message.isWebhook || message.eventType || message.isEncrypted) return;
+  if (!message || message.author?.isBot || message.isWebhook || message.eventType) return;
   const ctx = resolveScope(message.scopeType, message.scopeId);
   if (!ctx) return;
   for (const { bot, trigger } of webhookTargets(message, ctx)) {

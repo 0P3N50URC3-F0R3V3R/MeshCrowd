@@ -873,7 +873,7 @@ function buildAdminPanel() {
               <button class="btn btn-danger" data-resolve="${r.id}">${t('admin.resolveButton')}</button>` : ''}
           </div>
           ${r.details ? `<div style="color:var(--text-secondary);font-size:13px;white-space:pre-wrap">${escapeHtml(r.details)}</div>` : ''}
-          ${r.message ? `<div class="reply-preview" style="max-width:100%"><em>${r.message.encrypted ? t(r.message.hasEvidence ? 'dmEncryption.reportEncryptedEvidence' : 'dmEncryption.reportEncryptedNoEvidence') : t('admin.reportedMessageLabel')}</em> ${escapeHtml(r.message.content).slice(0, 4000)}</div>` : ''}
+          ${r.message ? `<div class="reply-preview" style="max-width:100%"><em>${t('admin.reportedMessageLabel')}</em> ${escapeHtml(r.message.content).slice(0, 4000)}</div>` : ''}
         </div>`);
       row.querySelector('[data-resolve]')?.addEventListener('click', () => resolveReport(r.id, 'resolved'));
       row.querySelector('[data-dismiss]')?.addEventListener('click', () => resolveReport(r.id, 'dismissed'));

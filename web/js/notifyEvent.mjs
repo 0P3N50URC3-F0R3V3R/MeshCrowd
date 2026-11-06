@@ -12,7 +12,7 @@ export function eventNotice(payload, t) {
     title = payload.scopeType === 'dm'
       ? t('shell.notifyPinnedDm', { name })
       : t('shell.notifyPinned', { name, channel: payload.channelName });
-    body = m.isEncrypted ? '' : m.content || (m.sticker ? t('sidebar.sentASticker') : '');
+    body = m.content || (m.sticker ? t('sidebar.sentASticker') : '');
   }
   if (payload.scopeType !== 'dm' && payload.serverName) title += ` (${payload.serverName})`;
   return { title, body };

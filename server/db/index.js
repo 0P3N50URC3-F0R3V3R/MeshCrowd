@@ -126,6 +126,20 @@ for (const { table, column, ddl } of COLUMN_MIGRATIONS) {
     console.log(`[db] migrated: added ${table}.${column}`);
   }
 }
+// End-to-end encrypted DMs were removed: their messages are ciphertext the server cannot read, so
+// they are dropped once. The e2ee_* columns stay for old databases but nothing reads them any more.
+{
+  const legacy = db.prepare('SELECT COUNT(*) AS n FROM dm_channels WHERE e2ee_enabled = 1').get().n
+    + db.prepare('SELECT COUNT(*) AS n FROM messages WHERE is_encrypted = 1').get().n;
+  if (legacy > 0) {
+    db.prepare("DELETE FROM messages WHERE is_encrypted = 1 OR event_type = 'e2ee_enabled'").run();
+    db.prepare('UPDATE dm_channels SET e2ee_enabled = 0 WHERE e2ee_enabled = 1').run();
+    console.log('[db] migrated: removed end-to-end encrypted DM history');
+  }
+  const hasFiles = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'dm_e2ee_files'").get();
+  if (hasFiles) db.exec('DROP TABLE dm_e2ee_files');
+  require('node:fs').rmSync(require('node:path').join(DATA_DIR, 'attachments', 'e2ee'), { recursive: true, force: true });
+}
 // bots.provider_id / model became nullable (an API-only bot has no AI). SQLite cannot drop NOT NULL
 // in place, so a DB created with the earlier schema gets the table rebuilt once.
 {
@@ -212,10 +226,60 @@ db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_messages_federation ON messages(f
   if (clipped) console.log(`[db] shortened ${clipped} bio(s) to ${BIO_MAX} characters`);
 }
 
-if (!db.prepare("SELECT 1 FROM meta WHERE key = 'messages_fts_backfilled'").get()) {
-  db.exec("INSERT INTO messages_fts(rowid, content) SELECT id, content FROM messages");
+const ftsWasBackfilled = !!db.prepare("SELECT 1 FROM meta WHERE key = 'messages_fts_backfilled'").get();
+if (!ftsWasBackfilled) {
+  db.exec("INSERT INTO messages_fts(rowid, content) SELECT id, content FROM messages WHERE scope_type != 'dm'");
   db.prepare("INSERT INTO meta (key, value) VALUES ('messages_fts_backfilled', '1')").run();
   console.log('[db] backfilled messages_fts');
+}
+
+// DM text is sealed at rest (lib/atRest.js). Older databases hold DM text in clear, in messages and
+// in the FTS index, so seal it once: the index entry is removed with the exact text that was indexed,
+// then the row is overwritten. The triggers are replaced first so the sealing writes never re-index.
+if (!db.prepare("SELECT 1 FROM meta WHERE key = 'dm_at_rest_v1'").get()) {
+  const { seal, isSealed } = require('../lib/atRest');
+  const ftsTrigger = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = 'messages_fts_au'").get();
+  if (ftsTrigger && !ftsTrigger.sql.includes("scope_type")) {
+    for (const name of ['messages_fts_ai', 'messages_fts_ad', 'messages_fts_au']) db.exec(`DROP TRIGGER IF EXISTS ${name}`);
+    db.exec(`
+      CREATE TRIGGER messages_fts_ai AFTER INSERT ON messages WHEN new.scope_type != 'dm' BEGIN
+        INSERT INTO messages_fts(rowid, content) VALUES (new.id, new.content);
+      END;
+      CREATE TRIGGER messages_fts_ad AFTER DELETE ON messages WHEN old.scope_type != 'dm' BEGIN
+        INSERT INTO messages_fts(messages_fts, rowid, content) VALUES('delete', old.id, old.content);
+      END;
+      CREATE TRIGGER messages_fts_au AFTER UPDATE ON messages WHEN old.scope_type != 'dm' BEGIN
+        INSERT INTO messages_fts(messages_fts, rowid, content) VALUES('delete', old.id, old.content);
+        INSERT INTO messages_fts(rowid, content) VALUES (new.id, new.content);
+      END;`);
+  }
+  const rows = db.prepare("SELECT id, content, embed FROM messages WHERE scope_type = 'dm'").all();
+  const sched = db.prepare("SELECT id, content FROM scheduled_messages WHERE scope_type = 'dm'").all();
+  db.exec('BEGIN');
+  try {
+    const unindex = db.prepare("INSERT INTO messages_fts(messages_fts, rowid, content) VALUES('delete', ?, ?)");
+    const update = db.prepare('UPDATE messages SET content = ?, embed = ? WHERE id = ?');
+    for (const r of rows) {
+      if (isSealed(r.content)) continue;
+      if (ftsWasBackfilled) unindex.run(r.id, r.content);
+      update.run(seal(r.content), r.embed && !isSealed(r.embed) ? seal(r.embed) : r.embed, r.id);
+    }
+    const updateSched = db.prepare('UPDATE scheduled_messages SET content = ? WHERE id = ?');
+    for (const r of sched) if (!isSealed(r.content)) updateSched.run(seal(r.content), r.id);
+    // Queued Android notifications carry the whole message; they are short-lived, so just drop the DM ones.
+    db.prepare("DELETE FROM notifications_outbox WHERE scope_type = 'dm'").run();
+    db.prepare("INSERT INTO meta (key, value) VALUES ('dm_at_rest_v1', '1')").run();
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+  if (rows.length || sched.length) {
+    db.exec("INSERT INTO messages_fts(messages_fts) VALUES('optimize')");
+    db.exec('VACUUM');
+    db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    console.log(`[db] migrated: sealed ${rows.length} DM message(s) at rest`);
+  }
 }
 
 // Reserved account webhook-posted messages attach to, purely to satisfy messages.author_id's

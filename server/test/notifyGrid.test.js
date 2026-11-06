@@ -53,7 +53,6 @@ test('classify sorts every event into one row', () => {
   assert.equal(g.classify(dm('hi there')), 'dmMessage');
   assert.equal(g.classify(dm('hey @alice look')), 'dmMention');
   assert.equal(g.classify(dm('hey @alicebob look')), 'dmMessage');
-  assert.equal(g.classify(dm('Encrypted for @alice', { isEncrypted: true })), 'dmMessage');
   const ch = (mentioned, message = { scopeType: 'channel' }, kind) => ({ scopeType: 'channel', mentioned, kind, message, recipient: alice });
   assert.equal(g.classify(ch(true)), 'channelMention');
   assert.equal(g.classify(ch(false)), 'channelMessage');

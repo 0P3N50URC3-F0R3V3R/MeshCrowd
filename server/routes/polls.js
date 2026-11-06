@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const { sealFor } = require('../lib/atRest');
 const { db } = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { serializeMessage } = require('../lib/messages');
@@ -31,10 +32,9 @@ router.post('/', (req, res) => {
 
   const access = canSendToScope(scopeType, scopeIdNum, req.user.id);
   if (!access.ok) return res.status(access.status).json({ error: access.error });
-  if (access.ctx.dm?.e2ee_enabled) return res.status(400).json({ error: 'polls are not supported in encrypted conversations' });
 
   const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content) VALUES (?, ?, ?, ?)')
-    .run(scopeType, scopeIdNum, req.user.id, cleanQuestion);
+    .run(scopeType, scopeIdNum, req.user.id, sealFor(scopeType, cleanQuestion));
   const messageId = info.lastInsertRowid;
 
   const pollInfo = db.prepare('INSERT INTO polls (message_id, multi_select) VALUES (?, ?)').run(messageId, multiSelect ? 1 : 0);

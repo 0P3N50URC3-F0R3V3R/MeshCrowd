@@ -130,22 +130,21 @@ test('a bot cannot hear channels it cannot view', async () => {
   assert.equal(hits.length, 0);
 });
 
-test('Notes channels and encrypted or group DMs are never sent out', async () => {
+test('Notes channels and group DMs are never sent out', async () => {
   const s = setup({ scope: 'all', dm: true });
   const notes = mkChannel(s.sid, 'mine', 'notes');
   events.deliverWebhooks(say('channel', notes, s.owner, 'private note'));
   const human = mkUser(`h${Math.random().toString(36).slice(2, 8)}`);
-  const mkDm = (e2ee, group) => {
-    const id = Number(db.prepare('INSERT INTO dm_channels (is_group, e2ee_enabled, created_by) VALUES (?, ?, ?)').run(group, e2ee, human).lastInsertRowid);
+  const mkDm = (group) => {
+    const id = Number(db.prepare('INSERT INTO dm_channels (is_group, created_by) VALUES (?, ?)').run(group, human).lastInsertRowid);
     db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?)').run(id, human);
     db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?)').run(id, s.bot.userId);
     return id;
   };
-  events.deliverWebhooks(say('dm', mkDm(1, 0), human, 'secret'));
-  events.deliverWebhooks(say('dm', mkDm(0, 1), human, 'group'));
+  events.deliverWebhooks(say('dm', mkDm(1), human, 'group'));
   await new Promise((r) => setTimeout(r, 150));
   assert.equal(hits.length, 0);
-  events.deliverWebhooks(say('dm', mkDm(0, 0), human, 'hello bot'));
+  events.deliverWebhooks(say('dm', mkDm(0), human, 'hello bot'));
   assert.ok(await waitFor(() => hits.length === 1));
   assert.equal(hits[0].json.trigger, 'dm');
   assert.ok(hits[0].json.dmId);

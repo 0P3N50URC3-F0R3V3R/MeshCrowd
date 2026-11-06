@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const { sealFor } = require('../lib/atRest');
 const path = require('node:path');
 const fs = require('node:fs');
 const { db, DATA_DIR } = require('../db');
@@ -9,7 +10,6 @@ const { PERMISSIONS, SITE_PERMISSIONS, has, hasSite } = require('../lib/permissi
 const { getChannelPermissionBits, isPendingMember } = require('../lib/channelAccess');
 const reactionRoles = require('../lib/reactionRoles');
 const { serializeMessage } = require('../lib/messages');
-const { unlinkDmFilesOfMessage } = require('../lib/dmFiles');
 const { broadcastToChannel, broadcastToDm } = require('../socket/hub');
 const { getMemberTimeout } = require('../lib/moderation');
 const { canSendToScope, resolveScope } = require('../lib/scopeAccess');
@@ -30,11 +30,6 @@ function getChannel(id) {
 function getThreadChannel(threadId) {
   const thread = db.prepare('SELECT * FROM threads WHERE id = ?').get(threadId);
   return thread ? getChannel(thread.channel_id) : null;
-}
-
-function inEncryptedDm(message) {
-  return message.is_encrypted === 1
-    || (message.scope_type === 'dm' && !!db.prepare('SELECT e2ee_enabled FROM dm_channels WHERE id = ?').get(message.scope_id)?.e2ee_enabled);
 }
 
 // Authors of channel/thread messages must still be able to view the channel: a kicked member or
@@ -147,7 +142,6 @@ function deleteAttachmentFiles(messageId) {
     fs.unlink(abs, () => {}); // best-effort; a missing file shouldn't block the delete
   }
   db.prepare('DELETE FROM attachments WHERE message_id = ?').run(messageId);
-  unlinkDmFilesOfMessage(messageId);
 }
 
 router.patch('/:id', requireAuth, (req, res) => {
@@ -158,7 +152,6 @@ router.patch('/:id', requireAuth, (req, res) => {
   if ((message.scope_type === 'channel' || message.scope_type === 'thread') && !canViewScope(message, req)) {
     return res.status(403).json({ error: 'no access to this channel' });
   }
-  if (inEncryptedDm(message)) return res.status(400).json({ error: 'encrypted messages cannot be edited' });
 
   const content = String(req.body?.content || '').slice(0, maxMessageChars());
   if (!content.trim() && !message.sticker_id) return res.status(400).json({ error: 'content cannot be empty' });
@@ -169,7 +162,7 @@ router.patch('/:id', requireAuth, (req, res) => {
   }
 
   db.prepare("UPDATE messages SET content = ?, edited_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?")
-    .run(content, message.id);
+    .run(sealFor(message.scope_type, content), message.id);
   const updated = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(message.id));
   broadcast(message, { type: 'message_update', message: updated });
   relayMessageMutation(message, 'message_edit', { content });
@@ -201,7 +194,6 @@ router.post('/:id/forward', requireAuth, (req, res) => {
   const original = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
   if (!original) return res.status(404).json({ error: 'message not found' });
   if (!canViewScope(original, req)) return res.status(403).json({ error: 'cannot forward this message' });
-  if (inEncryptedDm(original)) return res.status(400).json({ error: 'encrypted messages cannot be forwarded' });
 
   const { scopeType, scopeId, comment } = req.body || {};
   if (!['channel', 'thread', 'dm'].includes(scopeType)) return res.status(400).json({ error: 'invalid target' });
@@ -210,12 +202,11 @@ router.post('/:id/forward', requireAuth, (req, res) => {
 
   const access = canSendToScope(scopeType, scopeIdNum, req.user.id);
   if (!access.ok) return res.status(access.status).json({ error: access.error });
-  if (access.ctx.dm?.e2ee_enabled) return res.status(400).json({ error: 'cannot forward into an encrypted conversation' });
 
   const content = comment ? String(comment).slice(0, 1000) : '';
   const info = db.prepare(
     'INSERT INTO messages (scope_type, scope_id, author_id, content, forwarded_from_message_id) VALUES (?, ?, ?, ?, ?)'
-  ).run(scopeType, scopeIdNum, req.user.id, content, original.id);
+  ).run(scopeType, scopeIdNum, req.user.id, sealFor(scopeType, content), original.id);
 
   const message = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(info.lastInsertRowid));
   access.ctx.broadcast({ type: 'message_create', message });

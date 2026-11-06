@@ -1,5 +1,6 @@
 'use strict';
 
+const { open, sealFor } = require('./atRest');
 const { db } = require('../db');
 const { serializeMessage } = require('./messages');
 const { maxMessageChars } = require('./messageLimits');
@@ -34,7 +35,7 @@ function shape(row) {
       : db.prepare('SELECT c.name FROM threads t JOIN channels c ON c.id = t.channel_id WHERE t.id = ?').get(row.scope_id);
     where = ch ? `#${ch.name}` : null;
   }
-  return { id: row.id, scopeType: row.scope_type, scopeId: row.scope_id, where, content: row.content, replyToMessageId: row.reply_to_message_id, sendAt: row.send_at, status: row.status === 'sending' ? 'pending' : row.status, error: row.error };
+  return { id: row.id, scopeType: row.scope_type, scopeId: row.scope_id, where, content: open(row.content), replyToMessageId: row.reply_to_message_id, sendAt: row.send_at, status: row.status === 'sending' ? 'pending' : row.status, error: row.error };
 }
 
 function parseSendAt(raw) {
@@ -60,7 +61,6 @@ function checkTarget(user, scopeType, scopeId, replyToMessageId) {
   const { ctx } = access;
   if (ctx.channel && (ctx.channel.type === 'notes' || (scopeType === 'channel' && ctx.channel.type === 'forum'))) throw new ScheduleError(400, 'messages cannot be scheduled here');
   if (ctx.dm) {
-    if (ctx.dm.e2ee_enabled) throw new ScheduleError(400, 'messages in an end-to-end encrypted conversation cannot be scheduled');
     if (db.prepare('SELECT 1 FROM dm_members m JOIN users u ON u.id = m.user_id WHERE m.dm_channel_id = ? AND u.home_instance_id IS NOT NULL').get(ctx.dm.id)) {
       throw new ScheduleError(400, 'messages to contacts on another instance cannot be scheduled');
     }
@@ -76,7 +76,7 @@ function create(user, { scopeType, scopeId, content, sendAt, replyToMessageId })
   checkTarget(user, scopeType, scopeId, replyToMessageId);
   if (db.prepare("SELECT COUNT(*) AS n FROM scheduled_messages WHERE user_id = ? AND status != 'failed'").get(user.id).n >= MAX_PENDING) throw new ScheduleError(409, `you can have at most ${MAX_PENDING} scheduled messages`);
   const info = db.prepare('INSERT INTO scheduled_messages (user_id, scope_type, scope_id, content, reply_to_message_id, send_at) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(user.id, scopeType, scopeId, content, replyToMessageId ?? null, at);
+    .run(user.id, scopeType, scopeId, sealFor(scopeType, content), replyToMessageId ?? null, at);
   return shape(db.prepare('SELECT * FROM scheduled_messages WHERE id = ?').get(Number(info.lastInsertRowid)));
 }
 
@@ -87,10 +87,10 @@ function list(userId) {
 function update(user, id, { content, sendAt }) {
   const row = db.prepare("SELECT * FROM scheduled_messages WHERE id = ? AND user_id = ? AND status = 'pending'").get(id, user.id);
   if (!row) throw new ScheduleError(404, 'scheduled message not found');
-  const nextContent = content !== undefined ? content : row.content;
+  const nextContent = content !== undefined ? content : open(row.content);
   checkContent(nextContent);
   const at = sendAt !== undefined ? parseSendAt(sendAt) : row.send_at;
-  db.prepare('UPDATE scheduled_messages SET content = ?, send_at = ? WHERE id = ?').run(nextContent, at, id);
+  db.prepare('UPDATE scheduled_messages SET content = ?, send_at = ? WHERE id = ?').run(sealFor(row.scope_type, nextContent), at, id);
   return shape(db.prepare('SELECT * FROM scheduled_messages WHERE id = ?').get(id));
 }
 
@@ -108,15 +108,15 @@ function send(row) {
   if (!access.ok) throw new Refused(access.error === 'not found' ? 'the conversation no longer exists' : access.error);
   const { ctx } = access;
   if (ctx.channel && ctx.channel.type === 'notes') throw new Refused('messages cannot be sent here');
-  if (ctx.dm && (ctx.dm.e2ee_enabled || db.prepare('SELECT 1 FROM dm_members m JOIN users u ON u.id = m.user_id WHERE m.dm_channel_id = ? AND u.home_instance_id IS NOT NULL').get(ctx.dm.id))) throw new Refused('this conversation cannot receive scheduled messages');
+  if (ctx.dm && (db.prepare('SELECT 1 FROM dm_members m JOIN users u ON u.id = m.user_id WHERE m.dm_channel_id = ? AND u.home_instance_id IS NOT NULL').get(ctx.dm.id))) throw new Refused('this conversation cannot receive scheduled messages');
   if (ctx.channel) {
-    const blocked = automod.evaluate({ channel: ctx.channel, user, content: row.content });
+    const blocked = automod.evaluate({ channel: ctx.channel, user, content: open(row.content) });
     if (blocked) throw new Refused(blocked.message);
   }
   let replyTo = null;
   if (row.reply_to_message_id && db.prepare('SELECT 1 FROM messages WHERE id = ? AND scope_type = ? AND scope_id = ?').get(row.reply_to_message_id, row.scope_type, row.scope_id)) replyTo = row.reply_to_message_id;
 
-  const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, reply_to_message_id) VALUES (?, ?, ?, ?, ?)').run(row.scope_type, row.scope_id, user.id, row.content, replyTo);
+  const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, reply_to_message_id) VALUES (?, ?, ?, ?, ?)').run(row.scope_type, row.scope_id, user.id, sealFor(row.scope_type, open(row.content)), replyTo);
   const message = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(info.lastInsertRowid));
   ctx.broadcast({ type: 'message_create', message });
   maybeFetchAndAttachEmbed(message, (payload) => ctx.broadcast(payload)).catch(() => {});
@@ -126,7 +126,7 @@ function send(row) {
     if (row.scope_type === 'channel') relayRemoteChannelEvent(ctx.channel, 'message_create', { message: serializeRemoteMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(message.id)) });
     const candidateUsers = db.prepare('SELECT u.id, u.username FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id = ?').all(ctx.channel.server_id);
     const roles = db.prepare('SELECT id, name FROM roles WHERE server_id = ?').all(ctx.channel.server_id);
-    notifyChannelMessage(ctx.channel, message, parseMentions(row.content, { candidateUsers, roles }));
+    notifyChannelMessage(ctx.channel, message, parseMentions(open(row.content), { candidateUsers, roles }));
   }
   onMessageCreated(message);
 }

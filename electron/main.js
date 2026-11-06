@@ -294,6 +294,20 @@ function createWindow() {
     });
   }
 
+  mainWindow.webContents.on('context-menu', (event, params) => {
+    const items = [];
+    if (params.isEditable) {
+      for (const s of params.dictionarySuggestions || []) items.push({ label: s, click: () => mainWindow.webContents.replaceMisspelling(s) });
+      if (items.length) items.push({ type: 'separator' });
+      items.push({ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' });
+    } else if (params.selectionText) {
+      items.push({ role: 'copy' }, { role: 'selectAll' });
+    } else if (params.linkURL) {
+      items.push({ label: params.linkURL, enabled: false }, { role: 'copy' });
+    } else return;
+    Menu.buildFromTemplate(items).popup({ window: mainWindow });
+  });
+
   // Posted links render with target="_blank" (see web/js/utils.js renderMessageContent) — open
   // those in the system browser instead of a second Electron window, and refuse any attempt to
   // navigate the main window itself away from the configured server.

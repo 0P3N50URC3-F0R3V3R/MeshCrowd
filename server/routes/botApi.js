@@ -87,7 +87,7 @@ router.get('/channels', (req, res) => {
 
 function checkDm(bot, ctx, res) {
   if (!ctx.dm) return true;
-  if (ctx.dm.is_group || ctx.dm.e2ee_enabled || !bot.dm_enabled) {
+  if (ctx.dm.is_group || !bot.dm_enabled) {
     res.status(403).json({ error: 'this conversation does not accept bot access' });
     return false;
   }

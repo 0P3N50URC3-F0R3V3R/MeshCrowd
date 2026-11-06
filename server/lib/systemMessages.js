@@ -45,7 +45,6 @@ function formatMinutes(minutes) {
 }
 
 const DM_EVENT_TEXT = {
-  e2ee_enabled: () => 'End-to-end encryption was enabled for this conversation.',
 };
 
 // Announcement-type channels double as a Discord-style server log: membership changes, moderation

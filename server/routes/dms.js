@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const { seal } = require('../lib/atRest');
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -17,11 +18,8 @@ const voiceMessages = require('../lib/voiceMessages');
 const { dmClosedServerIds } = require('../lib/serverPrefs');
 const { searchMessages, parseFieldsParam } = require('../lib/search');
 const { load: loadConfig } = require('../lib/config');
-const { sanitizeFilename, isAllowedUpload, fixUtf8Filename, rejectOversizedFiles, effectiveMaxUploadMb } = require('../lib/uploads');
-const { BLOB_ID_RE, dmFilePath } = require('../lib/dmFiles');
+const { sanitizeFilename, attachmentFileFilter, rejectOversizedFiles } = require('../lib/uploads');
 const { maybeFetchAndAttachEmbed } = require('../lib/linkPreview');
-const { isValidEnvelope } = require('../lib/e2eeEnvelope');
-const { postDmEvent } = require('../lib/systemMessages');
 const prune = require('../lib/prune');
 const { enqueueEvent } = require('../lib/federationOutbox');
 const { ownDomain } = require('../lib/federationOutboxWorker');
@@ -59,7 +57,6 @@ function federatedDmParticipants(dmChannelId, destinationPeerId) {
 const MAX_FEDERATED_ATTACHMENT_BYTES = 6 * 1024 * 1024; // ~8 MB once base64-encoded
 
 function relayDmMessageCreate(dm, author, message, files) {
-  if (dm.e2ee_enabled) return; // defensive: an encrypted conversation can have no remote member
   const remoteHomeIds = db.prepare(
     `SELECT DISTINCT u.home_instance_id AS id FROM dm_members m JOIN users u ON u.id = m.user_id
       WHERE m.dm_channel_id = ? AND u.home_instance_id IS NOT NULL`
@@ -99,14 +96,6 @@ function relayDmMessageCreate(dm, author, message, files) {
       participants: federatedDmParticipants(dm.id, peerId), content, attachments, dmMessageId: String(message.id),
     });
   }
-}
-
-// A 1:1 conversation whose members both live on this instance; the only kind that can be encrypted.
-function isE2eeEligible(dm) {
-  if (dm.is_group) return false;
-  return !db.prepare(
-    'SELECT 1 FROM dm_members m JOIN users u ON u.id = m.user_id WHERE m.dm_channel_id = ? AND u.home_instance_id IS NOT NULL'
-  ).get(dm.id);
 }
 
 function canDm(fromUser, toUser) {
@@ -153,7 +142,7 @@ router.get('/', (req, res) => {
       'SELECT user_id AS userId, COALESCE(seen_id, last_read_message_id) AS lastReadMessageId FROM read_state WHERE scope_type = ? AND scope_id = ? AND user_id != ?'
     ).all('dm', id, req.user.id);
     const closer = dm.closed_by ? db.prepare('SELECT * FROM users WHERE id = ?').get(dm.closed_by) : null;
-    return { id: dm.id, closedBy: closer ? toPublicUser(closer, {}) : null, isGroup: !!dm.is_group, name: dm.name, createdBy: dm.created_by, e2eeEnabled: !!dm.e2ee_enabled, e2eeEligible: isE2eeEligible(dm), members, lastMessage: last ? serializeMessage(last) : null, readStates };
+    return { id: dm.id, closedBy: closer ? toPublicUser(closer, {}) : null, isGroup: !!dm.is_group, name: dm.name, createdBy: dm.created_by, members, lastMessage: last ? serializeMessage(last) : null, readStates };
   });
   res.json({ dms });
 });
@@ -189,7 +178,7 @@ router.post('/', (req, res) => {
     .run(dmId, req.user.id, dmId, target.id);
   notifyUser(target.id, {
     type: 'dm_create',
-    dm: { id: dmId, isGroup: false, name: null, e2eeEnabled: false, e2eeEligible: isE2eeEligible({ id: dmId, is_group: 0 }), members: [toPublicUser(req.user, {})], lastMessage: null, readStates: [] },
+    dm: { id: dmId, isGroup: false, name: null, members: [toPublicUser(req.user, {})], lastMessage: null, readStates: [] },
   });
   res.status(201).json({ dmId });
 });
@@ -223,7 +212,7 @@ router.post('/group', (req, res) => {
     const members = db.prepare(
       `SELECT u.* FROM dm_members dm JOIN users u ON u.id = dm.user_id WHERE dm.dm_channel_id = ? AND dm.user_id != ?`
     ).all(dmId, t.id).map((u) => toPublicUser(u, {}));
-    notifyUser(t.id, { type: 'dm_create', dm: { id: dm.id, isGroup: true, name: dm.name, createdBy: dm.created_by, e2eeEnabled: !!dm.e2ee_enabled, e2eeEligible: isE2eeEligible(dm), members, lastMessage: null, readStates: [] } });
+    notifyUser(t.id, { type: 'dm_create', dm: { id: dm.id, isGroup: true, name: dm.name, createdBy: dm.created_by, members, lastMessage: null, readStates: [] } });
   }
   res.status(201).json({ dmId });
 });
@@ -258,28 +247,6 @@ router.delete('/:dmId', loadDm, requireGroupCreator, (req, res) => {
   res.json({ ok: true });
 });
 
-// One-way by construction: nothing in this router ever writes e2ee_enabled back to 0.
-router.post('/:dmId/encryption/enable', loadDm, (req, res) => {
-  if (req.dm.is_group) return res.status(400).json({ error: 'only 1:1 conversations can be encrypted', code: 'e2ee_group' });
-  const members = db.prepare(
-    'SELECT u.id, u.home_instance_id, u.e2ee_public_key FROM dm_members m JOIN users u ON u.id = m.user_id WHERE m.dm_channel_id = ?'
-  ).all(req.dm.id);
-  if (members.length !== 2 || members.some((u) => u.home_instance_id)) {
-    return res.status(400).json({ error: 'conversations with remote users cannot be encrypted', code: 'e2ee_federated' });
-  }
-  if (req.dm.e2ee_enabled) return res.json({ ok: true, e2eeEnabled: true });
-  const mine = members.find((u) => u.id === req.user.id);
-  if (!mine.e2ee_public_key) return res.status(400).json({ error: 'publish your encryption key first', code: 'e2ee_own_key_missing' });
-  if (members.some((u) => !u.e2ee_public_key)) {
-    return res.status(400).json({ error: 'the other user has not set up encryption yet', code: 'e2ee_peer_key_missing' });
-  }
-  db.prepare("UPDATE dm_channels SET e2ee_enabled = 1, e2ee_enabled_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), e2ee_enabled_by = ? WHERE id = ?")
-    .run(req.user.id, req.dm.id);
-  postDmEvent(req.dm.id, 'e2ee_enabled', req.user.id);
-  broadcastToDm(req.dm.id, { type: 'dm_update', dm: { id: req.dm.id, e2eeEnabled: true } });
-  res.json({ ok: true, e2eeEnabled: true });
-});
-
 router.get('/stickers', (req, res) => {
   res.json({ stickers: stickersForUser(req.user.id) });
 });
@@ -306,81 +273,10 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: config.maxUploadMb * 1024 * 1024, files: 5 },
-  fileFilter: (req, file, cb) => {
-    file.originalname = fixUtf8Filename(file.originalname);
-    cb(null, isAllowedUpload(file.originalname));
-  },
+  fileFilter: attachmentFileFilter,
 });
 
-function rejectEncryptedUpload(req, res, next) {
-  if (req.dm.e2ee_enabled && req.is('multipart/form-data')) {
-    return res.status(400).json({ error: 'attachments are not supported in encrypted conversations' });
-  }
-  next();
-}
-
-const MAX_E2EE_FILES_PER_MESSAGE = 5;
-const MAX_UNSENT_E2EE_FILES = 10;
-const E2EE_FILE_OVERHEAD = 28; // AES-GCM iv (12) + tag (16)
-
-function requireEncryptedDm(req, res, next) {
-  if (!req.dm.e2ee_enabled) return res.status(400).json({ error: 'conversation is not encrypted' });
-  next();
-}
-
-// Opaque ciphertext only (iv || AES-GCM ciphertext). The blob id is chosen by the client because it
-// is bound into the file's AEAD before upload; the name, type, size and key travel inside the
-// ratchet-encrypted message, so this route never sees them.
-router.post('/:dmId/e2ee-files/:blobId', loadDm, requireEncryptedDm,
-  express.raw({ type: 'application/octet-stream', limit: `${config.maxUploadMb + 1}mb` }), (req, res) => {
-    const blobId = req.params.blobId;
-    if (!BLOB_ID_RE.test(blobId)) return res.status(400).json({ error: 'invalid blob id' });
-    const body = req.body;
-    if (!Buffer.isBuffer(body) || body.length < E2EE_FILE_OVERHEAD) return res.status(400).json({ error: 'encrypted file body required' });
-    const maxMb = effectiveMaxUploadMb(config.maxUploadMb);
-    if (body.length > maxMb * 1024 * 1024 + E2EE_FILE_OVERHEAD) return res.status(413).json({ error: `attachment too large - max ${maxMb}MB` });
-    const unsent = db.prepare('SELECT COUNT(*) AS c FROM dm_e2ee_files WHERE dm_id = ? AND user_id = ? AND message_id IS NULL').get(req.dm.id, req.user.id).c;
-    if (unsent >= MAX_UNSENT_E2EE_FILES) return res.status(429).json({ error: 'too many unsent uploads' });
-    if (db.prepare('SELECT 1 FROM dm_e2ee_files WHERE blob_id = ?').get(blobId)) return res.status(409).json({ error: 'blob id already used' });
-    fs.writeFileSync(dmFilePath(req.dm.id, blobId), body);
-    db.prepare('INSERT INTO dm_e2ee_files (blob_id, dm_id, user_id, size) VALUES (?, ?, ?, ?)').run(blobId, req.dm.id, req.user.id, body.length);
-    res.status(201).json({ file: { id: blobId, size: body.length } });
-  });
-
-// Sent blobs are readable by every member of this conversation; unsent ones only by the uploader.
-router.get('/:dmId/e2ee-files/:blobId', loadDm, (req, res) => {
-  const f = db.prepare('SELECT * FROM dm_e2ee_files WHERE blob_id = ? AND dm_id = ? AND (message_id IS NOT NULL OR user_id = ?)')
-    .get(String(req.params.blobId), req.dm.id, req.user.id);
-  if (!f) return res.status(404).json({ error: 'file not found' });
-  res.type('application/octet-stream')
-    .set({ 'Cache-Control': 'private, no-store', 'Content-Disposition': 'attachment', 'X-Content-Type-Options': 'nosniff' })
-    .sendFile(dmFilePath(f.dm_id, f.blob_id));
-});
-
-// Only for uploads not yet sent; sent blobs go away with their message.
-router.delete('/:dmId/e2ee-files/:blobId', loadDm, (req, res) => {
-  const f = db.prepare('SELECT id FROM dm_e2ee_files WHERE blob_id = ? AND dm_id = ? AND user_id = ? AND message_id IS NULL')
-    .get(String(req.params.blobId), req.dm.id, req.user.id);
-  if (!f) return res.status(404).json({ error: 'file not found' });
-  try { fs.unlinkSync(dmFilePath(req.dm.id, String(req.params.blobId))); } catch { /* already gone */ }
-  db.prepare('DELETE FROM dm_e2ee_files WHERE id = ?').run(f.id);
-  res.json({ ok: true });
-});
-
-// The blob ids an encrypted message references: each must be the sender's own unsent upload here.
-function cleanE2eeFileIds(req) {
-  const raw = req.body?.fileIds;
-  if (raw === undefined) return [];
-  if (!Array.isArray(raw) || raw.length > MAX_E2EE_FILES_PER_MESSAGE) return null;
-  const ids = [...new Set(raw)];
-  for (const id of ids) {
-    if (typeof id !== 'string' || !BLOB_ID_RE.test(id)) return null;
-    if (!db.prepare('SELECT 1 FROM dm_e2ee_files WHERE blob_id = ? AND dm_id = ? AND user_id = ? AND message_id IS NULL').get(id, req.dm.id, req.user.id)) return null;
-  }
-  return ids;
-}
-
-router.post('/:dmId/messages', loadDm, rejectEncryptedUpload, upload.array('files', 5), (req, res) => {
+router.post('/:dmId/messages', loadDm, upload.array('files', 5), (req, res) => {
   if (req.files?.length && rejectOversizedFiles(req, res, config.maxUploadMb)) return;
   if (!req.dm.is_group) {
     const otherRow = db.prepare(
@@ -391,16 +287,9 @@ router.post('/:dmId/messages', loadDm, rejectEncryptedUpload, upload.array('file
       return res.status(403).json({ error: 'you cannot message this user' });
     }
   }
-  const encrypted = !!req.dm.e2ee_enabled;
-  if (encrypted && (req.body?.content === undefined || !isValidEnvelope(req.body.content))) {
-    return res.status(400).json({ error: 'encrypted conversations only accept encrypted messages' });
-  }
-  const e2eeFileIds = encrypted ? cleanE2eeFileIds(req) : [];
-  if (!e2eeFileIds) return res.status(400).json({ error: 'invalid encrypted attachments' });
-  const content = encrypted ? req.body.content : String(req.body?.content || '').slice(0, maxMessageChars());
+  const content = String(req.body?.content || '').slice(0, maxMessageChars());
   let stickerId = null;
   if (req.body?.stickerId) {
-    if (encrypted) return res.status(400).json({ error: 'in encrypted conversations a sticker travels inside the encrypted message' });
     if (!userCanUseSticker(req.user.id, req.body.stickerId)) return res.status(400).json({ error: 'sticker not available' });
     stickerId = Number(req.body.stickerId);
   }
@@ -408,11 +297,9 @@ router.post('/:dmId/messages', loadDm, rejectEncryptedUpload, upload.array('file
     return res.status(400).json({ error: 'message must have content, an attachment, or a sticker' });
   }
   let voiceMs = null;
-  if (!encrypted) {
-    try { voiceMs = voiceMessages.parseVoiceUpload(req.body, req.files); } catch (err) {
-      voiceMessages.discardFiles(req.files);
-      return res.status(err.status || 400).json({ error: err.message });
-    }
+  try { voiceMs = voiceMessages.parseVoiceUpload(req.body, req.files); } catch (err) {
+    voiceMessages.discardFiles(req.files);
+    return res.status(err.status || 400).json({ error: err.message });
   }
   let replyToId = null;
   if (req.body?.replyToMessageId) {
@@ -420,23 +307,20 @@ router.post('/:dmId/messages', loadDm, rejectEncryptedUpload, upload.array('file
       .get(Number(req.body.replyToMessageId), 'dm', req.dm.id);
     if (parent) replyToId = parent.id;
   }
-  const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, reply_to_message_id, is_encrypted, sticker_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
-    .run('dm', req.dm.id, req.user.id, content, replyToId, encrypted ? 1 : 0, stickerId);
+  const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, reply_to_message_id, sticker_id) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('dm', req.dm.id, req.user.id, seal(content), replyToId, stickerId);
 
   for (const f of req.files || []) {
     const rel = `/uploads/attachments/dm-${req.dm.id}/${f.filename}`;
     db.prepare('INSERT INTO attachments (message_id, file_path, file_name, mime_type, size_bytes, voice_ms) VALUES (?, ?, ?, ?, ?, ?)')
       .run(info.lastInsertRowid, rel, f.originalname, voiceMs ? voiceMessages.cleanMime(f.mimetype) : f.mimetype, f.size, voiceMs);
   }
-  for (const id of e2eeFileIds) {
-    db.prepare('UPDATE dm_e2ee_files SET message_id = ? WHERE blob_id = ?').run(info.lastInsertRowid, id);
-  }
 
   const message = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(info.lastInsertRowid));
   broadcastToDm(req.dm.id, { type: 'message_create', message });
   relayDmMessageCreate(req.dm, req.user, message, req.files);
   notifyDmMessage(req.dm, message);
-  if (!encrypted) onMessageCreated(message);
+  onMessageCreated(message);
   maybeFetchAndAttachEmbed(message, (payload) => broadcastToDm(req.dm.id, payload)).catch(() => {});
   res.status(201).json({ message });
 });

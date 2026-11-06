@@ -1,4 +1,5 @@
 import { escapeHtml } from '../../js/utils.js';
+import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
 
 let current = null; // { back, onClose }
@@ -104,6 +105,54 @@ export function promptSheet({ title = '', placeholder = '', okLabel, value = '',
   });
 }
 
-export function openImageViewer(url) {
-  openSheet({ full: true, html: `<img class="m-viewer-img" src="${escapeHtml(url)}" alt="">` });
+export function openImageViewer(url, name = '') {
+  openSheet({
+    full: true,
+    html: `<div class="m-viewer"><img class="m-viewer-img" src="${escapeHtml(url)}" alt="" draggable="false">
+      <button class="m-viewer-btn m-viewer-close" aria-label="${t('m.cancel')}">${icons.x(22)}</button>
+      <button class="m-viewer-btn m-viewer-save" aria-label="${t('m.saveImage')}">${icons.download(22)}</button></div>`,
+    onMount: (body, close) => {
+      const stage = body.querySelector('.m-viewer');
+      const img = body.querySelector('.m-viewer-img');
+      let scale = 1; let x = 0; let y = 0;
+      const apply = () => { img.style.transform = `translate(${x}px, ${y}px) scale(${scale})`; };
+      const clamp = () => {
+        const maxX = Math.max(0, (img.clientWidth * scale - stage.clientWidth) / 2);
+        const maxY = Math.max(0, (img.clientHeight * scale - stage.clientHeight) / 2);
+        x = Math.min(maxX, Math.max(-maxX, x)); y = Math.min(maxY, Math.max(-maxY, y));
+      };
+      const dist = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      let pinch = null; let drag = null; let lastTap = 0;
+      stage.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.m-viewer-btn')) return;
+        if (e.touches.length === 2) { pinch = { d: dist(e.touches[0], e.touches[1]), scale }; drag = null; }
+        else if (e.touches.length === 1) {
+          const now = Date.now();
+          if (now - lastTap < 300) { scale = scale > 1 ? 1 : 2.5; x = 0; y = 0; apply(); }
+          lastTap = now;
+          drag = { px: e.touches[0].clientX, py: e.touches[0].clientY };
+        }
+      }, { passive: true });
+      stage.addEventListener('touchmove', (e) => {
+        if (pinch && e.touches.length === 2) {
+          scale = Math.min(6, Math.max(1, pinch.scale * dist(e.touches[0], e.touches[1]) / pinch.d));
+          clamp(); apply();
+        } else if (drag && e.touches.length === 1 && scale > 1) {
+          x += e.touches[0].clientX - drag.px; y += e.touches[0].clientY - drag.py;
+          drag.px = e.touches[0].clientX; drag.py = e.touches[0].clientY;
+          clamp(); apply();
+        }
+      }, { passive: true });
+      stage.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) pinch = null;
+        if (e.touches.length === 0) drag = null;
+        if (scale <= 1) { scale = 1; x = 0; y = 0; apply(); }
+      });
+      body.querySelector('.m-viewer-close').addEventListener('click', close);
+      body.querySelector('.m-viewer-save').addEventListener('click', () => {
+        const a = Object.assign(document.createElement('a'), { href: url, download: name || url.split('?')[0].split('/').pop() || 'image' });
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+    },
+  });
 }

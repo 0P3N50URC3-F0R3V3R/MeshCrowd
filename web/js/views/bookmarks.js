@@ -5,7 +5,6 @@ import { previewText } from '../stickers.mjs';
 import { avatarHtml, escapeHtml, formatTimestamp, toast, apiErrorMessage } from '../utils.js';
 import { openModal } from './modal.js';
 import { t } from '../i18n.js';
-import { decryptMessage } from '../e2ee/dmCrypto.js';
 import { icons } from '../icons.js';
 
 function jumpTarget(b) {
@@ -24,10 +23,6 @@ export async function openBookmarksModal() {
   let bookmarks;
   try {
     bookmarks = (await api.getBookmarks()).bookmarks;
-    for (const b of bookmarks) {
-      const dm = b.scopeType === 'dm' ? state.dms.find((d) => d.id === b.scopeId) : null;
-      if (dm && b.message.isEncrypted) { try { await decryptMessage(dm, state.me, b.message); } catch { /* shown as encrypted */ } }
-    }
   } catch (err) {
     m.body.innerHTML = `<p style="color:var(--danger)">${escapeHtml(apiErrorMessage(err, t('bookmarks.loadError')))}</p>`;
     return;
@@ -44,7 +39,7 @@ export async function openBookmarksModal() {
       const where = b.scopeType === 'dm'
         ? t('bookmarks.inDm', { name: state.dms.find((d) => d.id === b.scopeId)?.members.map((x) => x.displayName).join(', ') || '' })
         : b.label || '';
-      const text = msg.isEncrypted && !msg.content ? t('dmEncryption.encryptedPreview') : previewText({ text: msg.content, sticker: msg.sticker, hasAttachments: !!msg.attachments?.length }, { sticker: t('sidebar.sentASticker'), attachment: t('sidebar.sentAnAttachment') });
+      const text = previewText({ text: msg.content, sticker: msg.sticker, hasAttachments: !!msg.attachments?.length }, { sticker: t('sidebar.sentASticker'), attachment: t('sidebar.sentAnAttachment') });
       return `
         <div class="list-row bookmark-row" data-i="${i}" style="cursor:pointer;align-items:flex-start">
           ${avatarHtml(msg.author, 36)}

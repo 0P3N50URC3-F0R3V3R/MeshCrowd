@@ -17,7 +17,7 @@ const { nsfwBlock } = require('../lib/ageGate');
 const { verificationBlock } = require('../lib/verification');
 const voiceMessages = require('../lib/voiceMessages');
 const { load: loadConfig } = require('../lib/config');
-const { sanitizeFilename, isAllowedUpload, fixUtf8Filename, rejectOversizedFiles } = require('../lib/uploads');
+const { sanitizeFilename, attachmentFileFilter, fixUtf8Filename, rejectOversizedFiles } = require('../lib/uploads');
 const { getMemberTimeout, slowmodeRetryAfter } = require('../lib/moderation');
 const { maybeFetchAndAttachEmbed } = require('../lib/linkPreview');
 const { serializeRemoteMessage, relayRemoteChannelEvent } = require('../lib/remoteChannelEvents');
@@ -56,10 +56,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: config.maxUploadMb * 1024 * 1024, files: 5 },
-  fileFilter: (req, file, cb) => {
-    file.originalname = fixUtf8Filename(file.originalname);
-    cb(null, isAllowedUpload(file.originalname));
-  },
+  fileFilter: attachmentFileFilter,
 });
 
 router.use(requireAuth, loadChannel);

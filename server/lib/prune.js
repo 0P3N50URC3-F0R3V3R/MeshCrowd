@@ -4,7 +4,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { db, DATA_DIR, WEBHOOK_SYSTEM_USER_ID } = require('../db');
 const { serializeMessage } = require('./messages');
-const { unlinkDmFilesOfMessage, unlinkDmFilesOfDm } = require('./dmFiles');
 const { broadcastToChannel, broadcastToDm } = require('../socket/hub');
 
 const GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
@@ -27,8 +26,7 @@ function resolveScopePairs(scopeKind, ids) {
 
 // Unchecked "delete attachments" means messages carrying an attachment are left alone entirely
 // (skipped, regardless of date) — only attachment-free messages before the cutoff are counted.
-// Encrypted-DM blobs count as attachments too.
-const NO_ATTACHMENTS = 'AND NOT EXISTS (SELECT 1 FROM attachments a WHERE a.message_id = m.id) AND NOT EXISTS (SELECT 1 FROM dm_e2ee_files f WHERE f.message_id = m.id)';
+const NO_ATTACHMENTS = 'AND NOT EXISTS (SELECT 1 FROM attachments a WHERE a.message_id = m.id)';
 
 function pairsWhereClause(pairs) {
   return pairs.map(() => '(scope_type = ? AND scope_id = ?)').join(' OR ');
@@ -51,12 +49,7 @@ function previewPrune(pairs, cutoffAt, purgeAttachments) {
        FROM attachments a JOIN messages m ON m.id = a.message_id
       WHERE (${pairsWhereClause(pairs)}) AND m.created_at < ?`
   ).get(...pairsParams(pairs), cutoffAt);
-  const e2ee = db.prepare(
-    `SELECT COUNT(*) AS n, COALESCE(SUM(f.size), 0) AS bytes
-       FROM dm_e2ee_files f JOIN messages m ON m.id = f.message_id
-      WHERE (${pairsWhereClause(pairs)}) AND m.created_at < ?`
-  ).get(...pairsParams(pairs), cutoffAt);
-  return { messageCount, attachmentCount: row.n + e2ee.n, attachmentBytes: row.bytes + e2ee.bytes };
+  return { messageCount, attachmentCount: row.n, attachmentBytes: row.bytes };
 }
 
 function unlinkAttachmentFile(filePath) {
@@ -80,11 +73,6 @@ function deletePrune(pairs, cutoffAt, purgeAttachments) {
         WHERE (${pairsWhereClause(pairs)}) AND m.created_at < ?`
     ).all(...pairsParams(pairs), cutoffAt);
     for (const f of files) unlinkAttachmentFile(f.file_path);
-    const e2eeMessages = db.prepare(
-      `SELECT DISTINCT f.message_id FROM dm_e2ee_files f JOIN messages m ON m.id = f.message_id
-        WHERE (${pairsWhereClause(pairs)}) AND m.created_at < ?`
-    ).all(...pairsParams(pairs), cutoffAt);
-    for (const r of e2eeMessages) unlinkDmFilesOfMessage(r.message_id);
   }
 
   // Grabbed before the DELETE so any client with the scope open right now can drop them live,
@@ -175,7 +163,6 @@ function wipeScope(scopeType, scopeId) {
     'SELECT a.file_path FROM attachments a JOIN messages m ON m.id = a.message_id WHERE m.scope_type = ? AND m.scope_id = ?'
   ).all(scopeType, scopeId);
   for (const f of files) unlinkAttachmentFile(f.file_path);
-  if (scopeType === 'dm') unlinkDmFilesOfDm(scopeId);
   db.prepare('DELETE FROM messages WHERE scope_type = ? AND scope_id = ?').run(scopeType, scopeId);
 }
 

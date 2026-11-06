@@ -15,10 +15,10 @@ test('pin in a channel names the actor and the channel', () => {
   assert.equal(n.body, 'hello');
 });
 
-test('pin in a DM has no channel and hides encrypted text', () => {
-  const n = eventNotice({ ...base, kind: 'pin', scopeType: 'dm', message: { id: 1, content: 'ciphertext', isEncrypted: true } }, t);
+test('pin in a DM has no channel and shows the text', () => {
+  const n = eventNotice({ ...base, kind: 'pin', scopeType: 'dm', message: { id: 1, content: 'hello' } }, t);
   assert.equal(n.title, 'shell.notifyPinnedDm|name=Peter');
-  assert.equal(n.body, '');
+  assert.equal(n.body, 'hello');
 });
 
 test('thread start shows the thread title', () => {

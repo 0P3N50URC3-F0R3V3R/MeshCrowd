@@ -6,7 +6,6 @@ import { escapeHtml, avatarHtml, statusEmojiBadge, formatShortTime, toast } from
 import {
   state, isUnread, nameFor, dmPrefFor, setDmPrefs, removeDm, setReadState, setNotificationPref as setPrefState, notificationPrefFor, presenceFor,
 } from '../../js/state.js';
-import { peekPlaintext } from '../../js/e2ee/dmCrypto.js';
 import { nav } from '../router.js';
 import { handleError } from '../lib/errors.js';
 import { onLongPress } from '../lib/longPress.js';
@@ -18,7 +17,7 @@ export function mountMessagesTab(host) {
   host.innerHTML = `
     <div class="m-page-head">
       <div class="m-page-title">${t('m.messagesTitle')}</div>
-      <button class="m-icon-btn" id="m-friends" aria-label="${t('m.friends')}">${icons.users(22)}</button>
+      <button class="m-icon-btn" id="m-friends" style="position:relative" aria-label="${t('m.friends')}">${icons.users(22)}<i class="m-badge hidden" id="m-friends-badge"></i></button>
       <button class="btn btn-secondary m-pill" id="m-addfriend">${icons.plus(14)} ${t('m.addFriend')}</button>
     </div>
     <div class="m-searchbar"><input class="m-input" id="m-filter" type="search" enterkeyhint="search" placeholder="${t('m.searchConversations')}"></div>
@@ -40,7 +39,7 @@ export function mountMessagesTab(host) {
       return `<button class="m-row m-dm${unread ? ' unread' : ''}" data-dm="${d.id}">
         <span class="m-dm-avatar">${avatarHtml(d.isGroup ? { id: d.id, displayName: dmTitle(d, nameFor) } : who, 44)}${status}</span>
         <span class="m-grow"><b>${escapeHtml(dmTitle(d, nameFor))}</b>
-          <small>${d.e2eeEnabled ? `${icons.lock(11)} ` : ''}${escapeHtml(dmPreview(d, { peek: (id) => peekPlaintext(state.me.id, id), encryptedLabel: t('m.dmPreviewEncrypted'), attachmentLabel: t('m.dmPreviewAttachment'), stickerLabel: t('m.dmPreviewSticker') }))}</small></span>
+          <small>${escapeHtml(dmPreview(d, { attachmentLabel: t('m.dmPreviewAttachment'), stickerLabel: t('m.dmPreviewSticker') }))}</small></span>
         <span class="m-dm-meta">${d.lastMessage ? `<small>${formatShortTime(d.lastMessage.createdAt)}</small>` : ''}${unread ? '<i class="m-dot"></i>' : ''}</span></button>`;
     }).join('') : `<div class="m-empty">${t('m.noDms')}</div>`;
   }
@@ -77,7 +76,15 @@ export function mountMessagesTab(host) {
     try { await api.friendRequest(username); toast(t('m.friendRequestSent')); } catch (err) { handleError(err); }
   });
 
+  const friendsBadge = host.querySelector('#m-friends-badge');
+  function paintFriendsBadge() {
+    const n = state.friends.pending.filter((f) => f.direction === 'incoming').length;
+    friendsBadge.textContent = n > 99 ? '99+' : String(n);
+    friendsBadge.classList.toggle('hidden', !n);
+  }
+  paintFriendsBadge();
+  const offFriends = bus.on('state:friends', paintFriendsBadge);
   const offs = ['state:dms', 'state:readState', 'state:presence'].map((ev) => bus.on(ev, paint));
   paint();
-  return { destroy: () => offs.forEach((off) => off()) };
+  return { destroy: () => { offs.forEach((off) => off()); offFriends(); } };
 }

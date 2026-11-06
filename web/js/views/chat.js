@@ -24,23 +24,13 @@ import { t } from '../i18n.js';
 import { serverEventText } from '../eventText.js';
 import { unreadPrefs, firstUnreadIndex, anchorIndex, unreadEligible, unreadCount } from '../unreadLine.mjs';
 import { offlineWindows } from '../offlineTracker.js';
-import { decryptMessages, encryptForSend, cacheSentPlaintext, NO_IDENTITY, KEY_CHANGED, trustView, refreshTrust, acceptPeerKey, uploadDmFile, fetchDmFile } from '../e2ee/dmCrypto.js';
-import { openVerifyModal } from './dmVerify.js';
+import { uploads } from '../uploadTracker.js';
+import { checkUploadFile } from '../uploadGuard.mjs';
 import { openScheduleModal } from './scheduled.js';
 import { canRecordVoice, openRecorderBar, voiceMessageHtml, wireVoicePlayers } from '../voiceMessage.js';
 
 const GROUP_WINDOW_MS = 7 * 60 * 1000;
-const MAX_ENCRYPTED_CHARS = 4000;
 const maxChars = () => state.config.maxMessageChars || 15000;
-const LINK_PREVIEW_WAIT_MS = 5000;
-// Raster types only: a peer-chosen type such as text/html or image/svg+xml must never back a blob: URL.
-const E2EE_INLINE_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
-const E2EE_INLINE_MAX_BYTES = 16 * 1024 * 1024;
-
-function extractFirstUrl(text) {
-  const m = String(text || '').match(/https?:\/\/[^\s<>"')]+/i);
-  return m ? m[0].replace(/[.,!?)\]}'"]+$/, '') : null;
-}
 
 // Shown as a picker above the composer while typing a command name (Discord's own slash-command
 // popup), and doubles as the one place this list needs to stay in sync with handleSlashCommand.
@@ -66,20 +56,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   const typingUsers = new Map(); // userId -> {name, expiresAt}
   let typingTimer = null;
 
-  // Encrypted DMs: ciphertext is swapped for plaintext right after it arrives (see dmCrypto.js), so
-  // everything below renders ordinary message objects, plus `decryptFailed` for what could not be opened.
-  const currentDm = () => (scope.kind === 'dm' ? state.dms.find((d) => d.id === scope.dmId) : null);
-  const isEncryptedDm = () => !!currentDm()?.e2eeEnabled;
-  async function decryptList(list) {
-    const dm = currentDm();
-    if (dm && list.some((m) => m.isEncrypted)) {
-      await decryptMessages(dm, state.me, list);
-      bus.emit('state:dms'); // sidebar previews read the plaintext cache this just filled
-    }
-    return list;
-  }
   let wsQueue = Promise.resolve();
-  let lastEncryptedState = null;
 
   const scopeType = scope.kind === 'dm' ? 'dm' : scope.kind === 'thread' ? 'thread' : 'channel';
   const scopeId = scope.kind === 'dm' ? scope.dmId : scope.kind === 'thread' ? scope.threadId : scope.channelId;
@@ -93,7 +70,8 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   let unreadUpTo = 0;
   let unreadUpToSet = false;
   const offlineAtOpen = offlineWindows();
-  const unreadOk = (m) => unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen })(m);
+  let forcedUnreadAfter = 0;
+  const unreadOk = (m) => (forcedUnreadAfter > 0 && m.id > forcedUnreadAfter) || unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen })(m);
 
   container.innerHTML = `
     <div class="message-scroll" id="msg-scroll">
@@ -102,7 +80,6 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       <div id="msg-list"></div>
     </div>
     <div class="typing-indicator" id="typing-indicator"></div>
-    <div id="e2ee-banner" hidden></div>
     <div class="composer-wrap" id="composer-wrap"></div>`;
 
   const scrollEl = container.querySelector('#msg-scroll');
@@ -110,7 +87,6 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   wireVoicePlayers(listEl);
   const typingEl = container.querySelector('#typing-indicator');
   const composerWrap = container.querySelector('#composer-wrap');
-  const bannerEl = container.querySelector('#e2ee-banner');
   const unreadBannerEl = container.querySelector('#unread-banner');
 
   function paintUnreadBanner() {
@@ -138,54 +114,6 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     }
   });
 
-  const keyNotices = []; // local-only system notices, never sent or stored
-  let noticedKey = null;
-
-  function paintKeyBanner() {
-    const view = isEncryptedDm() ? trustView(scope.dmId) : null;
-    const name = currentDm()?.members[0]?.displayName || '';
-    if (view && view.status !== 'changed' && view.ownMismatch) {
-      bannerEl.hidden = false;
-      bannerEl.innerHTML = `
-        <div class="e2ee-banner" role="alert">
-          <span class="e2ee-banner-icon">${icons.shield(20)}</span>
-          <div class="e2ee-banner-text"><strong>${escapeHtml(t('dmVerify.ownKeyTitle'))}</strong><span>${escapeHtml(t('dmVerify.ownKeyBody', { name }))}</span></div>
-          <button class="btn btn-ghost" data-review>${escapeHtml(t('dmVerify.review'))}</button>
-        </div>`;
-      bannerEl.querySelector('[data-review]').addEventListener('click', () => openVerifyModal(currentDm()));
-      return;
-    }
-    if (!view || view.status !== 'changed') { bannerEl.hidden = true; bannerEl.innerHTML = ''; return; }
-    bannerEl.hidden = false;
-    bannerEl.innerHTML = `
-      <div class="e2ee-banner" role="alert">
-        <span class="e2ee-banner-icon">${icons.shield(20)}</span>
-        <div class="e2ee-banner-text"><strong>${escapeHtml(t('dmVerify.changedTitle'))}</strong><span>${escapeHtml(t('dmVerify.changedBody', { name }))}</span></div>
-        <button class="btn btn-ghost" data-review>${escapeHtml(t('dmVerify.review'))}</button>
-        <button class="btn btn-danger" data-accept>${escapeHtml(t('dmVerify.acceptKey'))}</button>
-      </div>`;
-    bannerEl.querySelector('[data-review]').addEventListener('click', () => openVerifyModal(currentDm()));
-    bannerEl.querySelector('[data-accept]').addEventListener('click', async (e) => {
-      const btn = e.currentTarget;
-      btn.disabled = true;
-      try { await acceptPeerKey(currentDm(), state.me); } catch (err) { btn.disabled = false; toast(apiErrorMessage(err, t('dmVerify.actionFailed')), { type: 'error' }); }
-    });
-  }
-
-  function onTrust(view) {
-    paintKeyBanner();
-    if (view?.status === 'changed' && view.serverKey !== noticedKey) {
-      noticedKey = view.serverKey;
-      keyNotices.push({ id: `local-key-${keyNotices.length}`, eventType: 'e2ee_key_changed', createdAt: new Date().toISOString() });
-      if (editingId === null && messages.length) renderAll();
-    }
-  }
-
-  const offTrust = scope.kind === 'dm' ? bus.on('e2ee:trust', ({ dmId, view }) => { if (dmId === scope.dmId) onTrust(view); }) : null;
-  const offAccepted = scope.kind === 'dm' ? bus.on('e2ee:accepted', ({ dmId }) => { if (dmId === scope.dmId && !loading) loadInitial(); }) : null;
-  if (isEncryptedDm()) refreshTrust(currentDm(), state.me).then(onTrust).catch(() => {});
-
-  lastEncryptedState = isEncryptedDm();
   renderComposer();
   loadInitial();
 
@@ -206,7 +134,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     if (loading || hasNewer) return;
     try {
       const res = await fetchMessages({ limit: prefs.initialMessages });
-      const fetched = await decryptList(res.messages);
+      const fetched = res.messages;
       const byId = new Map(fetched.map((m) => [m.id, m]));
       const known = new Set(messages.map((m) => m.id));
       messages = messages.map((m) => byId.get(m.id) || m);
@@ -233,13 +161,6 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   });
   // Only matters for a DM: the other member's read pointer moving is what drives the "Seen" tag.
   const offDms = scope.kind === 'dm' ? bus.on('state:dms', () => {
-    const encrypted = isEncryptedDm();
-    if (encrypted !== lastEncryptedState) {
-      lastEncryptedState = encrypted;
-      if (encrypted) refreshTrust(currentDm(), state.me).then(onTrust).catch(() => {});
-      renderComposer();
-      setComposerConnected(state.wsConnected);
-    }
     if (editingId === null) renderAll();
   }) : null;
   setComposerConnected(state.wsConnected);
@@ -264,13 +185,12 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     const jumpId = scope.jumpToMessageId;
     try {
       const res = await fetchMessages(jumpId ? { around: jumpId } : { limit: prefs.initialMessages });
-      const fetched = await decryptList(res.messages);
+      const fetched = res.messages;
       const lastFetchedId = res.messages.reduce((mx, m) => Math.max(mx, m.id), 0);
       if (!unreadUpToSet) { unreadUpTo = lastFetchedId; unreadUpToSet = true; }
       const fetchedIds = new Set(res.messages.map((m) => m.id));
-      // WS creates that landed while the (possibly slow, encrypted) list was decrypting
       const arrived = jumpId ? [] : messages.filter((m) => !fetchedIds.has(m.id) && m.id > lastFetchedId);
-      messages = fetched.concat(arrived);
+      messages = fetched.concat(arrived, jumpId ? [] : uploads.forScope(myUploadScope).filter((u) => !messages.includes(u)));
       // An "around" page doesn't say how much lies beyond either edge, so assume both and let the
       // first edge fetch correct it (a short page clears the flag).
       hasMore = jumpId ? true : res.messages.length >= prefs.initialMessages;
@@ -350,7 +270,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       const res = await fetchMessages({ before, limit: PAGE_SIZE });
       if (res.messages.length < PAGE_SIZE) hasMore = false;
       const have = new Set(messages.map((m) => m.id));
-      messages = [...await decryptList(res.messages.filter((m) => !have.has(m.id))), ...messages];
+      messages = [...res.messages.filter((m) => !have.has(m.id)), ...messages];
       if (messages.length > MAX_LOADED && !hasPending()) {
         messages = messages.slice(0, MAX_LOADED);
         hasNewer = true;
@@ -373,7 +293,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       const have = new Set(messages.map((m) => m.id));
       const fresh = res.messages.filter((m) => !have.has(m.id));
       if (!fresh.length) hasNewer = false; // server ignored `after` (federated scope) or nothing newer: don't loop
-      messages = [...messages, ...await decryptList(fresh)];
+      messages = [...messages, ...fresh];
       if (messages.length > MAX_LOADED) {
         messages = messages.slice(messages.length - MAX_LOADED);
         hasMore = true;
@@ -439,11 +359,9 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       html += renderGroup(m, continued, m.id === opId);
       prev = m;
     }
-    for (const notice of keyNotices) html += renderGroup(notice, false);
     for (const e of ephemerals) html += renderEphemeral(e);
     html += renderSeenTag();
     listEl.innerHTML = html;
-    hydrateEncryptedImages();
   }
 
   // 1:1 DMs get a plain "Seen" text tag (matches real Discord's own DM read-state UI); group DMs
@@ -475,8 +393,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     </div>`;
   }
 
-  const EVENT_ICON = { member_join: icons.userPlus || icons.users, member_leave: icons.users, member_kick: icons.users, member_ban: icons.ban, member_unban: icons.userPlus || icons.users, category_create: icons.hash, category_rename: icons.edit, category_delete: icons.trash, member_greeting: icons.star, member_timeout: icons.clock, member_timeout_clear: icons.clock, member_role_add: icons.shield, member_role_remove: icons.shield, role_create: icons.shield, role_delete: icons.shield, channel_create: icons.hash, channel_rename: icons.edit, channel_topic: icons.edit, channel_delete: icons.trash, server_rename: icons.flag, e2ee_enabled: icons.lock, e2ee_key_changed: icons.shield };
-  const EVENT_TEXT = { e2ee_enabled: () => t('dmEncryption.enabledEvent'), e2ee_key_changed: () => t('dmVerify.changedEvent', { name: currentDm()?.members[0]?.displayName || '' }) };
+  const EVENT_ICON = { member_join: icons.userPlus || icons.users, member_leave: icons.users, member_kick: icons.users, member_ban: icons.ban, member_unban: icons.userPlus || icons.users, category_create: icons.hash, category_rename: icons.edit, category_delete: icons.trash, member_greeting: icons.star, member_timeout: icons.clock, member_timeout_clear: icons.clock, member_role_add: icons.shield, member_role_remove: icons.shield, role_create: icons.shield, role_delete: icons.shield, channel_create: icons.hash, channel_rename: icons.edit, channel_topic: icons.edit, channel_delete: icons.trash, server_rename: icons.flag };
 
   // Per-member override beats their highest colored role - see permissions.js's memberNameColor.
   // Only meaningful for channel/thread scopes (DMs have no server roles/members to look up).
@@ -499,7 +416,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
 
   function renderGroup(m, continued, isThreadOp = false) {
     if (m.eventType) {
-      const logText = EVENT_TEXT[m.eventType] ? escapeHtml(EVENT_TEXT[m.eventType]()) : (() => { const s = serverEventText(m); return s ? escapeHtml(s) : renderMessageContent(m.content); })();
+      const logText = (() => { const s = serverEventText(m); return s ? escapeHtml(s) : renderMessageContent(m.content); })();
       return `
       <div class="msg-system" data-id="${m.id}">
         <span class="msg-system-icon">${(EVENT_ICON[m.eventType] || icons.users)(14)}</span>
@@ -516,8 +433,6 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     const canEdit = isSelf(m.author.id);
     const canDelete = isSelf(m.author.id) || scope.canManage;
     const canPinHere = scope.kind === 'dm' || scope.canManage;
-    const locked = isEncryptedDm() || m.isEncrypted;
-    const lockedBtn = (action, icon, titleKey) => `<button class="btn-icon disabled" disabled aria-disabled="true" data-locked="${action}" title="${escapeHtml(t(titleKey))}">${icon}</button>`;
 
     return `
       <div class="msg-group ${continued ? 'continued' : ''} ${m.pending ? 'pending' : ''} ${m.errored ? 'errored' : ''} ${isThreadOp ? 'thread-op' : ''}" data-id="${m.id}" data-author="${m.author.id}">
@@ -544,9 +459,8 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
             <button class="btn-icon" data-action="emoji-react" title="${t('chat.reactActionTitle')}">${icons.smile(16)}</button>
             ${scope.kind === 'channel' && scope.canSend ? `<button class="btn-icon" data-action="create-thread" title="${t('chat.createThreadActionTitle')}">${icons.messageSquare(16)}</button>` : ''}
             ${canPinHere ? `<button class="btn-icon ${m.pinnedAt ? 'active' : ''}" data-action="pin" title="${m.pinnedAt ? t('chat.unpinMessageTitle') : t('chat.pinMessageTitle')}">${icons.pin(16)}</button>` : ''}
-            ${locked ? lockedBtn('forward', icons.forward(16), 'dmEncryption.forwardDisabledTitle') : `<button class="btn-icon" data-action="forward" title="${t('chat.forwardActionTitle')}">${icons.forward(16)}</button>`}
-            ${canEdit ? (locked ? lockedBtn('edit', icons.edit(16), 'dmEncryption.editDisabledTitle') : `<button class="btn-icon" data-action="edit" title="${t('events.editTitle')}">${icons.edit(16)}</button>`) : ''}
-            ${locked && !canEdit && !m.decryptFailed ? `<button class="btn-icon" data-action="report" title="${t('dmEncryption.reportActionTitle')}">${icons.flag(16)}</button>` : ''}
+            <button class="btn-icon" data-action="forward" title="${t('chat.forwardActionTitle')}">${icons.forward(16)}</button>
+            ${canEdit ? `<button class="btn-icon" data-action="edit" title="${t('events.editTitle')}">${icons.edit(16)}</button>` : ''}
             ${canDelete ? `<button class="btn-icon danger" data-action="delete" title="${t('admin.deleteButton')}">${icons.trash(16)}</button>` : ''}
           </div>` : ''}
       </div>`;
@@ -561,9 +475,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
         <span class="rp-snippet">${escapeHtml((m.forwardedFrom.content || (m.forwardedFrom.sticker ? t('chat.stickerFallback') : t('chat.noTextFallback'))).replace(/\s+/g, ' ').slice(0, 150))}</span>
       </div>`);
     }
-    if (m.decryptFailed) {
-      parts.push(`<div class="msg-line msg-undecryptable">${icons.lock(14)} ${t('dmEncryption.unableToDecrypt')}</div>`);
-    } else if (m.content) {
+    if (m.content) {
       const emojiOnly = isEmojiOnly(m.content, scope.customEmoji) && !m.poll;
       parts.push(`<div class="msg-line ${emojiOnly ? 'msg-emoji-only' : ''}">${renderMessageContent(m.content, { channels: scope.channels, customEmoji: scope.customEmoji, rawHtmlEnabled: scope.rawHtmlEnabled })}${m.editedAt ? `<span class="edited-tag">${t('chat.editedTag')}</span>` : ''}</div>`);
     }
@@ -572,14 +484,11 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     if (m.attachments && m.attachments.length) {
       parts.push(`<div class="attachments">${m.attachments.map(renderAttachment).join('')}</div>`);
     }
-    if (m.e2eeFiles && m.e2eeFiles.length) {
-      parts.push(`<div class="attachments">${m.e2eeFiles.map(renderEncryptedFile).join('')}</div>`);
-    }
     if (m.embed) {
       parts.push(renderEmbed(m.embed));
     }
     if (m.pending && m.uploadProgress !== undefined && m.uploadProgress < 1) {
-      parts.push(`<div class="msg-edit-hint">${t('chat.uploadingProgress', { pct: Math.round(m.uploadProgress * 100) })}</div>`);
+      parts.push(`<div class="upload-progress"><div class="up-bar"><i style="width:${Math.round(m.uploadProgress * 100)}%"></i></div><div class="msg-edit-hint"><span class="up-pct">${t('chat.uploadingProgress', { pct: Math.round(m.uploadProgress * 100) })}</span> <span class="link-btn" data-action="cancel-upload">${t('chat.cancelUpload')}</span></div></div>`);
     }
     if (m.errored) {
       parts.push(`<div class="msg-edit-hint" style="color:var(--danger)">${t('chat.failedToSend')}<span class="link-btn" data-action="retry">${t('chat.clickToRetry')}</span></div>`);
@@ -588,7 +497,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   }
 
   function renderReplyPreview(replyTo) {
-    const snippet = replyTo.content ? replyTo.content.replace(/\s+/g, ' ').slice(0, 100) : replyTo.sticker ? t('chat.stickerFallback') : (replyTo.isEncrypted ? t('dmEncryption.encryptedPreview') : t('chat.noTextFallback'));
+    const snippet = replyTo.content ? replyTo.content.replace(/\s+/g, ' ').slice(0, 100) : replyTo.sticker ? t('chat.stickerFallback') : t('chat.noTextFallback');
     return `<div class="reply-preview" data-reply-jump="${replyTo.id}">
       ${icons.reply(12)}
       <span class="rp-name">${escapeHtml(replyTo.author?.displayName || t('chat.unknownUserFallback'))}</span>
@@ -676,72 +585,6 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     </a>`;
   }
 
-  const isInlineE2eeImage = (f) => E2EE_INLINE_IMAGE_TYPES.has(f.type) && f.size <= E2EE_INLINE_MAX_BYTES;
-
-  // Encrypted attachments: the image is filled in by hydrateEncryptedImages() once downloaded and
-  // decrypted; everything else is a download chip that decrypts on click.
-  function renderEncryptedFile(f) {
-    if (isInlineE2eeImage(f)) {
-      return `<div class="attachment-image" data-action="e2ee-lightbox" data-e2ee-id="${escapeHtml(f.id)}">
-        <img data-e2ee-img="${escapeHtml(f.id)}" alt="${escapeHtml(f.name)}">
-      </div>`;
-    }
-    return `<a class="attachment-file" href="#" data-action="e2ee-download" data-e2ee-id="${escapeHtml(f.id)}">
-      <span class="f-icon">${icons.file(22)}</span>
-      <span class="f-meta"><div class="f-name">${escapeHtml(f.name)}</div><div class="f-size" title="${escapeHtml(t('dmEncryption.fileLabel'))}">${icons.lock(10)} ${formatBytes(f.size)}</div></span>
-    </a>`;
-  }
-
-  const e2eeImageUrls = new Map(); // blob id -> Promise<blob: URL | null>
-
-  function findEncryptedFile(id) {
-    for (const m of messages) {
-      const f = m.e2eeFiles?.find((x) => x.id === id);
-      if (f) return f;
-    }
-    return null;
-  }
-
-  function encryptedImageUrl(f) {
-    let p = e2eeImageUrls.get(f.id);
-    if (!p) {
-      p = fetchDmFile(scope.dmId, f)
-        .then((bytes) => (bytes ? URL.createObjectURL(new Blob([bytes], { type: f.type })) : null))
-        .catch(() => null);
-      e2eeImageUrls.set(f.id, p);
-    }
-    return p;
-  }
-
-  function hydrateEncryptedImages() {
-    listEl.querySelectorAll('img[data-e2ee-img]').forEach((img) => {
-      const f = findEncryptedFile(img.dataset.e2eeImg);
-      if (!f) return;
-      encryptedImageUrl(f).then((url) => {
-        if (!img.isConnected) return;
-        if (url) { img.src = url; return; }
-        e2eeImageUrls.delete(f.id);
-        img.closest('.attachment-image')?.replaceWith(Object.assign(document.createElement('div'), {
-          className: 'msg-line msg-undecryptable', textContent: t('dmEncryption.fileDecryptFailed'),
-        }));
-      });
-    });
-  }
-
-  // Always handed to the browser as an opaque download, whatever type the sender claimed.
-  async function downloadEncryptedFile(f) {
-    try {
-      const bytes = await fetchDmFile(scope.dmId, f);
-      if (!bytes) { toast(t('dmEncryption.fileDecryptFailed'), { type: 'error' }); return; }
-      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
-      const a = document.createElement('a');
-      a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
-    } catch (err) {
-      toast(apiErrorMessage(err, t('dmEncryption.fileError')), { type: 'error' });
-    }
-  }
-
   function toggleGifPlayback(btn) {
     const img = btn.closest('.attachment-image')?.querySelector('img');
     if (!img) return;
@@ -826,19 +669,13 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     if (action === 'edit') startEdit(msg, groupEl);
     else if (action === 'delete') doDelete(msg);
     else if (action === 'retry') retrySend(msg);
+    else if (action === 'cancel-upload') uploads.abort(msg.key);
     else if (action === 'emoji-react') openReactionPicker(actionBtn, msg);
     else if (action === 'create-thread') openCreateThreadPrompt(msg);
     else if (action === 'reply') startReply(msg);
     else if (action === 'pin') togglePin(msg);
     else if (action === 'forward') openForwardModal(msg);
     else if (action === 'report') openMessageReportModal(msg);
-    else if (action === 'e2ee-download' || action === 'e2ee-lightbox') {
-      e.preventDefault();
-      const f = msg.e2eeFiles?.find((x) => x.id === actionBtn.dataset.e2eeId);
-      if (!f) return;
-      if (action === 'e2ee-download') downloadEncryptedFile(f);
-      else encryptedImageUrl(f).then((url) => url && openLightbox(url, f.name));
-    }
   }
 
   const QUICK_REACTIONS = ['\u{1F44D}', '\u{2764}\u{FE0F}', '\u{1F62D}', '\u{1F64F}'];
@@ -872,7 +709,11 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   function markUnreadFrom(msg) {
     const scopeType = scope.kind === 'dm' ? 'dm' : 'channel';
     const scopeId = scope.kind === 'dm' ? scope.dmId : scope.channelId;
-    api.markUnreadFrom(scopeType, scopeId, Math.max(0, msg.id - 1)).then(() => forceReadState(scopeType, scopeId, Math.max(0, msg.id - 1)))
+    api.markUnreadFrom(scopeType, scopeId, Math.max(0, msg.id - 1)).then(() => {
+      const before = Math.max(0, msg.id - 1);
+      forceReadState(scopeType, scopeId, before);
+      if (prefs.unreadLine !== 'off') { forcedUnreadAfter = unreadAfterId = before; bannerDismissed = false; renderKeepingPosition(); }
+    })
       .catch((err) => toast(apiErrorMessage(err, t('msgMenu.couldNotMarkUnread')), { type: 'error' }));
   }
 
@@ -899,8 +740,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     e.preventDefault();
 
     const mine = isSelf(msg.author.id);
-    const locked = isEncryptedDm() || msg.isEncrypted;
-    const text = msg.content && !msg.decryptFailed ? msg.content : '';
+    const text = msg.content || '';
     const canMarkUnread = scope.kind !== 'thread';
     // The custom menu replaces the browser's own, so a highlighted passage has to be picked up here.
     const sel = window.getSelection?.();
@@ -910,7 +750,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       { label: t('msgMenu.addReaction'), onClick: () => openReactionPicker(groupEl.querySelector('.body') || groupEl, msg) },
       'sep',
       ...(scope.canSend ? [{ label: t('chat.replyActionTitle'), onClick: () => startReply(msg) }] : []),
-      ...(!locked ? [{ label: t('chat.forwardActionTitle'), onClick: () => openForwardModal(msg) }] : []),
+      { label: t('chat.forwardActionTitle'), onClick: () => openForwardModal(msg) },
       ...(scope.kind === 'channel' && scope.canSend ? [{ label: t('chat.createThreadActionTitle'), onClick: () => openCreateThreadPrompt(msg) }] : []),
       'sep',
       ...(selected ? [{ label: t('msgMenu.copySelection'), onClick: () => copyToClipboard(selected, 'msgMenu.textCopiedToast') }] : []),
@@ -921,7 +761,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       { label: t('msgMenu.copyLink'), onClick: () => copyToClipboard(messageLink(msg), 'msgMenu.linkCopiedToast') },
       ...(text ? [{ label: t('msgMenu.readAloud'), onClick: () => readAloud(text) }] : []),
       ...((scope.kind === 'dm' || scope.canManage) ? [{ label: msg.pinnedAt ? t('chat.unpinMessageTitle') : t('chat.pinMessageTitle'), onClick: () => togglePin(msg) }] : []),
-      ...(mine && !locked ? [{ label: t('events.editTitle'), onClick: () => startEdit(msg, groupEl) }] : []),
+      ...(mine ? [{ label: t('events.editTitle'), onClick: () => startEdit(msg, groupEl) }] : []),
       ...(mine || scope.canManage ? [{ label: t('admin.deleteButton'), danger: true, onClick: () => doDelete(msg) }] : []),
       ...(!mine ? ['sep', { label: t('msgMenu.report'), danger: true, onClick: () => openMessageReportModal(msg) }] : []),
     ];
@@ -929,12 +769,11 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   }
 
   function openMessageReportModal(msg) {
-    const encrypted = !!(msg.isEncrypted || isEncryptedDm());
     const m = openModal({
-      title: t(encrypted ? 'dmEncryption.reportModalTitle' : 'msgMenu.reportModalTitle', { name: msg.author.displayName }),
+      title: t('msgMenu.reportModalTitle', { name: msg.author.displayName }),
       render(body) {
         body.innerHTML = `
-          <p style="color:var(--text-secondary);font-size:14px;margin:0 0 16px">${t(encrypted ? 'dmEncryption.reportEvidenceNote' : 'msgMenu.reportNote')}</p>
+          <p style="color:var(--text-secondary);font-size:14px;margin:0 0 16px">${t('msgMenu.reportNote')}</p>
           <div class="field">
             <label>${t('profile.reasonLabel')}</label>
             <select class="select" id="mr-reason">
@@ -1214,10 +1053,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     const composer = composerWrap.querySelector('.composer');
     if (!composer) return; // no-permission banner is shown instead — nothing to toggle
     composer.classList.toggle('disconnected', !connected);
-    const encrypted = isEncryptedDm();
-    composer.querySelectorAll('textarea, button').forEach((el) => {
-      el.disabled = !connected || (encrypted && el.id === 'btn-poll');
-    });
+    composer.querySelectorAll('textarea, button').forEach((el) => { el.disabled = !connected; });
   }
 
   function focusComposer() {
@@ -1241,14 +1077,14 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
         </div>` : ''}
       <div class="upload-tray" id="upload-tray"></div>
       <div class="composer">
-        <button type="button" class="composer-btn" id="btn-attach" title="${escapeHtml(isEncryptedDm() ? t('dmEncryption.attachTitle') : t('chat.uploadFileTitle'))}">${icons.plus(22)}</button>
+        <button type="button" class="composer-btn" id="btn-attach" title="${escapeHtml(t('chat.uploadFileTitle'))}">${icons.plus(22)}</button>
         <input type="file" id="file-input" multiple class="hidden" accept="*/*">
         <textarea id="composer-input" rows="1" enterkeyhint="send" placeholder="${escapeHtml(placeholderFor(scope))}"></textarea>
-        <button type="button" class="composer-btn" id="btn-poll" ${isEncryptedDm() ? `disabled title="${escapeHtml(t('dmEncryption.pollDisabledTitle'))}"` : `title="${t('chat.createPollTitle')}"`}>${icons.barChart(20)}</button>
+        <button type="button" class="composer-btn" id="btn-poll" title="${t('chat.createPollTitle')}">${icons.barChart(20)}</button>
         <button type="button" class="composer-btn" id="btn-sticker" title="${t('admin.stickersTab')}">${icons.image(22)}</button>
         <button type="button" class="composer-btn" id="btn-emoji" title="${t('serverSettings.navEmoji')}">${icons.smile(22)}</button>
-        ${isEncryptedDm() || scope.channelType === 'stage' || !canRecordVoice() ? '' : `<button type="button" class="composer-btn" id="btn-voice" title="${t('voiceMsg.record')}">${icons.mic(22)}</button>`}
-        ${isEncryptedDm() || scope.channelType === 'stage' ? '' : `<button type="button" class="composer-btn" id="btn-schedule" title="${t('chat.scheduleTitle')}">${icons.clock(22)}</button>`}
+        ${scope.channelType === 'stage' || !canRecordVoice() ? '' : `<button type="button" class="composer-btn" id="btn-voice" title="${t('voiceMsg.record')}">${icons.mic(22)}</button>`}
+        ${scope.channelType === 'stage' ? '' : `<button type="button" class="composer-btn" id="btn-schedule" title="${t('chat.scheduleTitle')}">${icons.clock(22)}</button>`}
         <button type="button" class="composer-btn composer-btn-send" id="btn-send" title="${t('chat.sendTitle')}">${icons.send(20)}</button>
       </div>`;
 
@@ -1318,7 +1154,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       }
       // Discord/Slack convention: Up in an empty composer edits your own last message, not
       // wherever the cursor happens to sit — an empty box has no cursor history worth navigating.
-      if (e.key === 'ArrowUp' && input.value === '' && editingId === null && !isEncryptedDm()) {
+      if (e.key === 'ArrowUp' && input.value === '' && editingId === null) {
         const lastOwn = [...messages].reverse().find((m) => !m.eventType && !m.pending && !m.errored && isSelf(m.author.id));
         if (lastOwn) {
           const groupEl = listEl.querySelector(`[data-id="${lastOwn.id}"]`);
@@ -1667,11 +1503,11 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   }
 
   function addFiles(files) {
-    const encrypted = isEncryptedDm();
     const maxMb = state.config.maxUploadMb || 25;
     for (const f of files) {
       if (uploadFiles.length >= 5) { toast(t('chat.maxFilesToast')); break; }
-      if (encrypted && f.size > maxMb * 1024 * 1024) { toast(t('dmEncryption.fileTooLarge', { name: f.name, mb: maxMb }), { type: 'error' }); continue; }
+      const check = checkUploadFile(f, maxMb);
+      if (!check.ok) { toast(check.reason === 'blocked' ? t('chat.fileBlockedType', { name: f.name }) : t('chat.fileTooLarge', { name: f.name, mb: maxMb }), { type: 'error', ttl: 8000 }); continue; }
       uploadFiles.push(f);
     }
     renderUploadTray();
@@ -1859,9 +1695,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       if (result.replaceContent) content = result.replaceContent;
     }
 
-    const encrypted = isEncryptedDm();
-    if (encrypted && trustView(scope.dmId)?.status === 'changed') { toast(t('dmVerify.sendBlocked'), { type: 'error' }); return; }
-    if (!voice && content.length > (encrypted ? MAX_ENCRYPTED_CHARS : maxChars())) {
+    if (!voice && content.length > maxChars()) {
       if (textByteLength(content) > MAX_TEXT_FILE_BYTES) { toast(t('chat.tooLargeForFile', { kb: Math.round(MAX_TEXT_FILE_BYTES / 1024) }), { type: 'error' }); return; }
       const name = await promptModal({ title: t('chat.longAsFileTitle'), label: t('chat.longAsFileLabel'), placeholder: t('chat.longAsFilePlaceholder'), confirmLabel: t('chat.longAsFileConfirm'), allowEmpty: true });
       if (name === null) return;
@@ -1899,89 +1733,70 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       replyTo: replySnapshot ? { id: replySnapshot.id, author: replySnapshot.author, content: replySnapshot.content, sticker: replySnapshot.sticker || null } : null,
       sticker: stickerRef(sentSticker),
     };
+    Object.assign(optimistic, { key: tempId, scopeKey: `${scopeType}:${scopeId}`, files });
     messages.push(optimistic);
     renderAll();
     scrollToBottom(); // sending always jumps to the bottom, since it's always your own new message
 
     sending = true;
-    try {
-      const onProgress = files.length ? (p) => {
-        optimistic.uploadProgress = p;
-        const groupEl = listEl.querySelector(`[data-id="${tempId}"] .body`);
-        if (groupEl) {
-          const hint = groupEl.querySelector('.msg-edit-hint');
-          if (hint) hint.textContent = t('chat.uploadingProgress', { pct: Math.round(p * 100) });
-        }
-      } : undefined;
-
-      const stickerId = sentSticker?.id;
-      const res = encrypted
-        ? await sendEncrypted(content, replyToMessageId, files, onProgress, optimistic.sticker)
-        : scope.kind === 'dm'
-        ? await api.sendDmMessage(scope.dmId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs: voice?.durationMs })
-        : scope.kind === 'thread'
-          ? await api.sendThreadMessage(scope.serverId, scope.channelId, scope.threadId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs: voice?.durationMs })
-          : await api.sendChannelMessage(scope.serverId, scope.channelId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs: voice?.durationMs });
-
-      const idx = messages.findIndex((m) => m.id === tempId);
-      // The WS create can beat this response and, if the server altered the content (length cap), not match the optimistic entry — then both would stay.
-      if (idx !== -1) {
-        if (messages.some((m) => m.id === res.message.id)) messages.splice(idx, 1);
-        else messages[idx] = res.message;
+    uploads.add(optimistic);
+    optimistic._retry = { content, files, sticker: sentSticker };
+    const onProgress = files.length ? (p) => uploads.progress(optimistic, p) : undefined;
+    const stickerId = sentSticker?.id;
+    const signal = optimistic.controller.signal;
+    const voiceDurationMs = voice?.durationMs;
+    (async () => {
+      try {
+        const res = scope.kind === 'dm'
+          ? await api.sendDmMessage(scope.dmId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal })
+          : scope.kind === 'thread'
+            ? await api.sendThreadMessage(scope.serverId, scope.channelId, scope.threadId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal })
+            : await api.sendChannelMessage(scope.serverId, scope.channelId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal });
+        uploads.finish(optimistic, { res });
+      } catch (err) {
+        uploads.finish(optimistic, { err });
       }
-      renderAll();
-    } catch (err) {
-      const idx = messages.findIndex((m) => m.id === tempId);
-      if (idx !== -1) { messages[idx].pending = false; messages[idx].errored = true; messages[idx]._retry = { content, files, sticker: sentSticker }; }
-      renderAll();
-      toast(err.message === NO_IDENTITY ? t('dmEncryption.needPassport') : err.message === KEY_CHANGED ? t('dmVerify.sendBlocked') : apiErrorMessage(err, t('chat.messageFailedToSendError')), { type: 'error' });
-    } finally {
-      sending = false;
-    }
+    })();
   }
 
-  // Files are encrypted and uploaded first; their keys and metadata then ride inside the message.
-  async function sendEncrypted(content, replyToMessageId, files, onProgress, sticker) {
-    const dm = currentDm();
-    const metas = [];
-    try {
-      for (const file of files) {
-        metas.push(await uploadDmFile(dm.id, file));
-        onProgress?.(metas.length / files.length);
-      }
-      const res = await sealAndSend(dm, content, replyToMessageId, metas, sticker);
-      files.forEach((file, i) => {
-        if (isInlineE2eeImage(metas[i]) && !e2eeImageUrls.has(metas[i].id)) e2eeImageUrls.set(metas[i].id, Promise.resolve(URL.createObjectURL(file)));
-      });
-      return res;
-    } catch (err) {
-      for (const m of metas) api.deleteDmFile(dm.id, m.id).catch(() => {});
-      throw err;
+  const myUploadScope = `${scopeType}:${scopeId}`;
+  const offUploadProgress = bus.on('upload:progress', (item) => {
+    if (item.scopeKey !== myUploadScope) return;
+    const body = listEl.querySelector(`[data-id="${item.id}"] .body`);
+    if (!body) return;
+    const bar = body.querySelector('.up-bar i');
+    if (bar) bar.style.width = `${Math.round(item.progress * 100)}%`;
+    const pct = body.querySelector('.up-pct');
+    if (pct) pct.textContent = t('chat.uploadingProgress', { pct: Math.round(item.progress * 100) });
+    item.uploadProgress = item.progress;
+  });
+  const offUploadDone = bus.on('upload:finished', (ev) => {
+    const { item, res, err } = ev;
+    if (item.scopeKey !== myUploadScope) return;
+    ev.handled = true;
+    sending = false;
+    const idx = messages.findIndex((m) => m.id === item.id);
+    if (ev.cancelled) {
+      if (idx !== -1) messages.splice(idx, 1);
+      renderAll();
+      return;
     }
-  }
-
-  // The link preview is fetched here, before sealing, so the embed travels inside the ciphertext
-  // and the server never learns which URL was shared.
-  async function sealAndSend(dm, content, replyToMessageId, metas, sticker) {
-    const url = extractFirstUrl(content);
-    const embed = url
-      ? await Promise.race([
-        api.linkPreview(url).then((r) => r.embed).catch(() => null),
-        new Promise((resolve) => setTimeout(() => resolve(null), LINK_PREVIEW_WAIT_MS)),
-      ])
-      : null;
-    const { content: envelope, plaintextObj } = await encryptForSend(dm, state.me, content, embed, metas, sticker);
-    const res = await api.sendEncryptedDmMessage(dm.id, { content: envelope, replyToMessageId, fileIds: metas.length ? metas.map((m) => m.id) : undefined });
-    await cacheSentPlaintext(state.me.id, res.message.id, plaintextObj);
-    res.message.content = plaintextObj.text;
-    res.message.embed = plaintextObj.embed;
-    res.message.e2eeFiles = metas;
-    res.message.sticker = sticker || null;
-    res.message.decryptFailed = false;
-    return res;
-  }
+    if (err) {
+      if (idx !== -1) { messages[idx].pending = false; messages[idx].errored = true; }
+      renderAll();
+      toast(apiErrorMessage(err, t('chat.messageFailedToSendError')), { type: 'error' });
+      return;
+    }
+    // The WS create can beat this response and, if the server altered the content (length cap), not match the optimistic entry — then both would stay.
+    if (idx !== -1) {
+      if (messages.some((m) => m.id === res.message.id)) messages.splice(idx, 1);
+      else messages[idx] = res.message;
+    }
+    renderAll();
+  });
 
   function retrySend(msg) {
+    uploads.remove(msg.key);
     const idx = messages.findIndex((m) => m.id === msg.id);
     if (idx !== -1) messages.splice(idx, 1);
     const input = composerWrap.querySelector('#composer-input');
@@ -2004,7 +1819,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   // array stays correct; the render catches up as soon as the edit is cancelled/saved.
   function onWsCreate({ message }) {
     if (!belongsToScope(message)) return;
-    wsQueue = wsQueue.then(() => decryptList([message])).then(() => applyWsCreate(message)).catch(() => {});
+    wsQueue = wsQueue.then(() => applyWsCreate(message)).catch(() => {});
   }
 
   function applyWsCreate(message) {
@@ -2025,7 +1840,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
 
   function onWsUpdate({ message }) {
     if (!belongsToScope(message)) return;
-    wsQueue = wsQueue.then(() => decryptList([message])).then(() => applyWsUpdate(message)).catch(() => {});
+    wsQueue = wsQueue.then(() => applyWsUpdate(message)).catch(() => {});
   }
 
   function applyWsUpdate(message) {
@@ -2068,11 +1883,11 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   }
 
   function destroy() {
-    offEphemeral(); offCreate(); offUpdate(); offDelete(); offTyping(); offConnection(); offWsClose(); offWsOpen(); offProfile(); offDms?.(); offTrust?.(); offAccepted?.();
+    offUploadProgress(); offUploadDone();
+    offEphemeral(); offCreate(); offUpdate(); offDelete(); offTyping(); offConnection(); offWsClose(); offWsOpen(); offProfile(); offDms?.();
     scrollEl.removeEventListener('scroll', onScroll);
     clearTimeout(typingTimer);
     for (const f of uploadFiles) releaseObjectUrl(f);
-    for (const p of e2eeImageUrls.values()) p.then((url) => url && URL.revokeObjectURL(url));
   }
 
   return { destroy };

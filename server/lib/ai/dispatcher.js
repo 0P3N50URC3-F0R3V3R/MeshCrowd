@@ -1,6 +1,7 @@
 'use strict';
 
 const { db } = require('../../db');
+const { sealFor } = require('../atRest');
 const { serializeMessage, listMessages } = require('../messages');
 const { resolveScope } = require('../scopeAccess');
 const { getChannelPermissionBits } = require('../channelAccess');
@@ -31,7 +32,7 @@ function findTargets(message) {
   const ctx = resolveScope(message.scopeType, message.scopeId);
   if (!ctx) return null;
   if (message.scopeType === 'dm') {
-    if (ctx.dm.is_group || ctx.dm.e2ee_enabled) return null;
+    if (ctx.dm.is_group) return null;
     const other = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ? AND user_id != ?').get(ctx.dm.id, message.author.id);
     if (!other) return null;
     const bot = db.prepare(`${BOT_SELECT} WHERE b.user_id = ? AND b.dm_enabled = 1 AND b.provider_id IS NOT NULL`).get(other.user_id);
@@ -49,14 +50,15 @@ function findTargets(message) {
 function insertBotMessage(bot, trigger, ctx, content) {
   const replyTo = ctx.dm ? null : trigger.id;
   const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content, reply_to_message_id) VALUES (?, ?, ?, ?, ?)')
-    .run(trigger.scopeType, trigger.scopeId, bot.user_id, content, replyTo);
+    .run(trigger.scopeType, trigger.scopeId, bot.user_id, sealFor(trigger.scopeType, content), replyTo);
   const created = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(info.lastInsertRowid));
   ctx.broadcast({ type: 'message_create', message: created });
   return created;
 }
 
 function updateBotMessage(id, content, ctx) {
-  db.prepare('UPDATE messages SET content = ? WHERE id = ?').run(content, id);
+  const scopeType = db.prepare('SELECT scope_type FROM messages WHERE id = ?').get(id)?.scope_type;
+  db.prepare('UPDATE messages SET content = ? WHERE id = ?').run(sealFor(scopeType, content), id);
   const updated = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(id));
   ctx.broadcast({ type: 'message_update', message: updated });
   return updated;
@@ -157,7 +159,7 @@ async function handle(bot, message, ctx) {
 
 async function maybeRespond(message) {
   try {
-    if (!message || message.author?.isBot || message.isWebhook || message.eventType || message.isEncrypted) return;
+    if (!message || message.author?.isBot || message.isWebhook || message.eventType) return;
     if (!String(message.content || '').trim()) return;
     const found = findTargets(message);
     if (!found) return;

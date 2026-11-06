@@ -1,6 +1,7 @@
 'use strict';
 
 const test = require('node:test');
+const { open } = require('../lib/atRest');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -112,7 +113,7 @@ test('DM with a bot: refused when DM mode is off, works when on, answers without
   assert.equal(sent.status, 201);
   const reply = await until(() => botMsgs(on, 'dm', dm.data.dmId)[0]);
   assert.ok(reply);
-  assert.equal(reply.content, 'Wired reply');
+  assert.equal(open(reply.content), 'Wired reply');
 });
 
 test('DM with a bot needs a shared server and ignores the human\'s dm privacy settings on the bot', async () => {

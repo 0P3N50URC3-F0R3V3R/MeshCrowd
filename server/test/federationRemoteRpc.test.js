@@ -565,6 +565,7 @@ test('/api/remote members, attachments and threads: proxied, sanitized, never ha
   app.use(express.json());
   app.use((req, res, next) => { req.user = current; next(); });
   app.use('/api/remote', remoteRouter);
+  app.use(require('../middleware/errorHandler').errorHandler);
   const { server, base } = await listen(app);
   t.after(() => server.close());
   const url = (p) => `${base}/api/remote/${peerId}/5${p}`;
@@ -613,10 +614,14 @@ test('/api/remote members, attachments and threads: proxied, sanitized, never ha
   const form = new FormData();
   form.append('content', '');
   form.append('files', new Blob([PNG], { type: 'image/png' }), 'pic one.png');
-  form.append('files', new Blob(['x'], { type: 'text/html' }), 'drop.html');
   const sent = await fetch(url('/channels/3/messages'), { method: 'POST', body: form });
   assert.equal(sent.status, 201);
-  assert.deepEqual(rpcCalls.at(-1).payload.attachments, [{ fileName: 'pic_one.png', mimeType: 'image/png', dataBase64: PNG.toString('base64') }], 'blocked types never leave this instance');
+  assert.deepEqual(rpcCalls.at(-1).payload.attachments, [{ fileName: 'pic_one.png', mimeType: 'image/png', dataBase64: PNG.toString('base64') }]);
+  const withBlocked = new FormData();
+  withBlocked.append('files', new Blob(['x'], { type: 'text/html' }), 'drop.html');
+  const before = rpcCalls.length;
+  assert.notEqual((await fetch(url('/channels/3/messages'), { method: 'POST', body: withBlocked })).status, 201, 'blocked types never leave this instance');
+  assert.equal(rpcCalls.length, before);
   const onlyBlocked = new FormData();
   onlyBlocked.append('files', new Blob(['x']), 'drop.exe');
   const callsBefore = rpcCalls.length;

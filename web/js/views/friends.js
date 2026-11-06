@@ -213,7 +213,12 @@ export function mountFriends(container, initialTab = 'online') {
   }
 
   async function acceptFriend(userId) {
-    try { await api.friendAccept(userId); await refresh(); } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }
+    try {
+      await api.friendAccept(userId);
+      const accepted = state.friends.pending.find((x) => x.user.id === userId);
+      if (accepted) { state.friends = { ...state.friends, pending: state.friends.pending.filter((x) => x !== accepted), friends: [...state.friends.friends, { ...accepted, status: 'accepted' }] }; bus.emit('state:friends'); }
+      await refresh();
+    } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }
   }
   async function removeFriend(userId) {
     try { await api.friendRemove(userId); await refresh(); } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }

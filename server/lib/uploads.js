@@ -45,6 +45,17 @@ function isAllowedUpload(originalname) {
   return allowlist.includes(ext);
 }
 
+// Multer's silent "cb(null, false)" would drop a blocked file and still create the message, so the
+// sender never learns the attachment vanished; fail the whole request with a readable reason instead.
+function attachmentFileFilter(req, file, cb) {
+  file.originalname = fixUtf8Filename(file.originalname);
+  if (isAllowedUpload(file.originalname)) return cb(null, true);
+  const err = new Error(`file type not allowed: ${sanitizeFilename(file.originalname)}`);
+  err.name = 'MulterError';
+  err.code = 'BLOCKED_FILE_TYPE';
+  cb(err);
+}
+
 // The live admin-configured cap, but never above config.json's maxUploadMb - that value sets
 // multer's actual upload limit (fixed at process start), so the admin setting can only tighten
 // it further at runtime, never loosen it without a restart.
@@ -67,5 +78,5 @@ function rejectOversizedFiles(req, res, configMaxUploadMb) {
 
 module.exports = {
   BLOCKED_EXTENSIONS, sanitizeFilename, isBlockedExtension, fixUtf8Filename,
-  isAllowedUpload, effectiveMaxUploadMb, rejectOversizedFiles,
+  isAllowedUpload, attachmentFileFilter, effectiveMaxUploadMb, rejectOversizedFiles,
 };

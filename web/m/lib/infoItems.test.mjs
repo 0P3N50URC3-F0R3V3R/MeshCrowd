@@ -15,8 +15,8 @@ test('collectItems sorts attachments into media and files and extracts links new
   assert.deepEqual(out.links, ['https://a.example/x', 'http://b.example']);
 });
 
-test('collectItems ignores undecryptable / encrypted ciphertext and empty input', () => {
+test('collectItems ignores empty input and messages without text', () => {
   assert.deepEqual(collectItems([]), { media: [], files: [], links: [] });
-  const out = collectItems([msg(1, { isEncrypted: true, decryptFailed: true, content: 'https://leak.example' })]);
+  const out = collectItems([msg(1, { content: '' })]);
   assert.deepEqual(out.links, []);
 });

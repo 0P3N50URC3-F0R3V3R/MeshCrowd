@@ -7,7 +7,7 @@ const { requireAuth } = require('../middleware/auth');
 const { callPeer } = require('../lib/federationRpc');
 const { singleLine } = require('../lib/textSanitize');
 const { load: loadConfig } = require('../lib/config');
-const { sanitizeFilename, isAllowedUpload, fixUtf8Filename, effectiveMaxUploadMb } = require('../lib/uploads');
+const { sanitizeFilename, attachmentFileFilter, fixUtf8Filename, effectiveMaxUploadMb } = require('../lib/uploads');
 const { sanitizeRemoteMessage, remoteImageType, REMOTE_ATTACHMENT_MAX_BYTES } = require('../lib/remoteChannelEvents');
 const { maxMessageChars } = require('../lib/messageLimits');
 
@@ -24,10 +24,7 @@ const MEMBER_STATUSES = new Set(['online', 'idle', 'dnd', 'offline']);
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: Math.min(config.maxUploadMb * 1024 * 1024, REMOTE_ATTACHMENT_MAX_BYTES), files: 5 },
-  fileFilter: (req, file, cb) => {
-    file.originalname = fixUtf8Filename(file.originalname);
-    cb(null, isAllowedUpload(file.originalname));
-  },
+  fileFilter: attachmentFileFilter,
 });
 
 router.get('/servers', (req, res) => {

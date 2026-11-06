@@ -7,10 +7,9 @@ import { nav } from '../router.js';
 import { ensureServerDetail } from '../data.js';
 import { markPinsSeen } from '../../js/pinSeen.js';
 import { handleError } from '../lib/errors.js';
-import { dmTitle, messageText } from '../lib/dmPreview.mjs';
+import { dmTitle } from '../lib/dmPreview.mjs';
 import { collectItems } from '../lib/infoItems.mjs';
 import { openImageViewer } from '../components/bottomSheet.js';
-import { decryptMessages } from '../../js/e2ee/dmCrypto.js';
 import { openProfileSheet } from './profileSheet.js';
 
 const TABS = [['members', 'm.infoMembers'], ['media', 'm.infoMedia'], ['links', 'm.infoLinks'], ['files', 'm.infoFiles'], ['pins', 'm.infoPins']];
@@ -24,7 +23,6 @@ export function mountInfo(el, params) {
   let pins = null;
   let members = [];
   const dm = kind === 'dm' ? state.dms.find((d) => d.id === params.dmId) : null;
-  const encrypted = !!dm?.e2eeEnabled;
 
   el.innerHTML = `<div class="m-header"><button class="m-icon-btn" id="m-back">${icons.arrowLeft(22)}</button><h1 id="m-title"></h1></div>
     <div class="m-info-actions" id="m-qa"></div><div class="m-tabs" id="m-tabs"></div><div class="m-scroll" id="m-pane"></div>`;
@@ -45,7 +43,6 @@ export function mountInfo(el, params) {
 
   async function loadItems() {
     if (items) return;
-    if (encrypted) { items = { media: [], files: [], links: [] }; return; }
     let all = [];
     let before;
     for (let i = 0; i < 4; i += 1) {
@@ -71,9 +68,8 @@ export function mountInfo(el, params) {
         markPinsSeen(scopeType, scopeId);
         if (!pins) {
           pins = (await api.listPins(scopeType, scopeId)).messages;
-          if (encrypted) await decryptMessages(dm, state.me, pins);
         }
-        pane.innerHTML = pins.map((m) => `<div class="m-row"><span class="m-grow"><b>${escapeHtml(m.author.displayName)}</b><small>${escapeHtml(messageText(m, t('m.decryptFailed')))}</small></span></div>`).join('') || none;
+        pane.innerHTML = pins.map((m) => `<div class="m-row"><span class="m-grow"><b>${escapeHtml(m.author.displayName)}</b><small>${escapeHtml(m.content || '')}</small></span></div>`).join('') || none;
       } else {
         await loadItems();
         if (tab === 'media') {

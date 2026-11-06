@@ -14,7 +14,7 @@ function systemPrompt({ bot, serverName, channelName, dmWith }) {
 function toTurns(history, botUserId) {
   const turns = [];
   for (const m of history) {
-    if (m.eventType || m.isEncrypted) continue;
+    if (m.eventType) continue;
     const content = String(m.content || '').trim().slice(0, MESSAGE_CAP);
     if (!content) continue;
     if (m.author.id === botUserId) turns.push({ role: 'assistant', content });
