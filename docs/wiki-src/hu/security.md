@@ -1,6 +1,6 @@
 ---
 title: Biztonság és adatvédelem
-desc: Hogyan védi a MeshCrowd a fiókokat és az adatokat, mit fed a végponttól végpontig tartó titkosítás, és hol vannak az őszinte korlátok.
+desc: Hogyan védi a MeshCrowd a fiókokat és az adatokat, hogyan védettek a privát üzenetek és a Jegyzetek, és hol vannak az őszinte korlátok.
 group: Szerver üzemeltetése
 order: 2
 ---
@@ -28,20 +28,15 @@ Az Admin panel **Biztonsági központ** oldala (csak oldaladminisztrátoroknak) 
 
 Ha a MeshCrowd fordított proxy mögött fut, állítsd be a `trustProxy` értéket a `config.json`-ban, különben minden látogató a proxynak látszik, és a címenkénti korlátok nem tudják megkülönböztetni az embereket.
 
-## Végponttól végpontig titkosított privát üzenetek
+## Titkosított privát üzenetek nyugalmi állapotban
 
-Bármely, azonos szerveren lévő két ember közötti kettesben folyó privát beszélgetés átkapcsolható végponttól végpontig titkosításra a zár gombbal. **Egyirányú**: a visszalépéshez töröld a beszélgetést és indíts újat. A szerver csak titkosított szöveget tárol. A kulcsok mindenki Útlevelétől származnak.
+A privát üzenetek szövege, a link-előnézeti kártyák, az időzített privát üzenetek és a privát üzenetekről sorban álló Android-értesítések titkosítva (AES-256-GCM) tárolódnak a szerver adatbázisában. Ez az adatbázisfájlt, a mentéseit és az írási naplót védi. **Nem** végponttól végpontig: a kulcsot a szerver birtokolja, ezért a keresés, a botok és a moderációs jelentések működnek, és bárki, akinél a futó szerver és a kulcs is megvan, elolvashatja a privát üzeneteket.
 
-**Biztonsági számok**: a titkosított privát beszélgetésnek van Ellenőrzés pajzsa, amely egy 60 számjegyes számot mutat, amit mindketten összevethettek megbízható csatornán. Minden eszköz **rögzíti** a másik ember kulcsát, amikor először beszélget vele; ha ez a kulcs később megváltozik, a küldés le van tiltva, amíg át nem nézed és el nem fogadod az újat. A rögzítés és az ellenőrzés eszközönkénti.
+A kulcs a környezeti `DISMESH_DM_KEY` (base64, 32 bájt), vagy egy véletlen kulcs, amelyet a szerver a `data/dm-at-rest.key` fájlban hoz létre. Mentsd az adatbázissal együtt; nélküle a tárolt privát üzenetek nem olvashatók. A privát üzenetek keresése a beszélgetés legutóbbi 5000 üzenetét fejti vissza és nézi át.
 
-A titkosított beszélgetésben a szerkesztés, továbbítás, szavazások, hangüzenetek, időzítés és mellékletek le vannak tiltva.
+Nem fedett: a mellékletek nevei és fájljai, a szavazások opciói és a föderált szerverekre továbbított üzenetek.
 
-### Tudnivaló korlátok
-
-- Megbízhatóan egyszerre egy eszközről működik; ha két eszköz ír ugyanabba a beszélgetésbe, ütközhetnek, és „Nem sikerült visszafejteni” jelenhet meg.
-- Csak helyi: kettesben, ugyanazon a szerveren lévők között. A föderált privát üzenetek nem titkosítottak.
-- Az új vagy törölt eszköz nem olvashatja az előzményeket, amelyeket sosem látott.
-- A visszafejtett előzmények gyorsítótárazódnak az eszközön.
+A korábbi verziókban beszélgetésenkénti végponttól végpontig titkosítás volt. Ezt eltávolítottuk, a titkosított előzményeket pedig töröltük.
 
 ## Jegyzetcsatornák
 
@@ -49,7 +44,7 @@ A Jegyzetek a böngészőben, az Útleveledből származtatott kulccsal titkosí
 
 ## Mit láthat az üzemeltető
 
-A szerver üzemeltetője olvashatja a szokásos csatornaüzeneteket és feltöltéseket, mert a szerver tárolja őket. A végponttól végpontig titkosított privát üzenetek és a Jegyzetek kivételek. A botok azt küldik a MI-szolgáltatójuknak, amit kérdeznek tőlük, ezért olyan szolgáltatókat válassz, akiknek megbízol.
+A szerver üzemeltetője olvashatja a szokásos csatornaüzeneteket és feltöltéseket, mert a szerver tárolja őket. A Jegyzetek kivételek: azokat a böngésződ titkosítja. A privát üzenetek szövege titkosítva tárolódik, de a kulcsot a szerver birtokolja, így az üzemeltető továbbra is olvashatja őket. A botok azt küldik a MI-szolgáltatójuknak, amit kérdeznek tőlük, ezért olyan szolgáltatókat válassz, akiknek megbízol.
 
 ## A webes kliens bizalmi feltevése
 

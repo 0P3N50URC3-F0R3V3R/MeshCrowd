@@ -24,7 +24,6 @@ order: 3
 | Nincs értesítés Androidon | Nézd meg az alkalmazás akkumulátor-beállításait, az értesítési módot a **Te, Android-alkalmazás** alatt, és hogy a szerver elérhető-e HTTPS-en. |
 | A UnifiedPush nem csinál semmit a LAN-on futó ntfy-jal | Állítsd a `pushAllowPrivateEndpoints` értékét `true`-ra a szerveren. |
 | `TLS client error` vagy `SSL alert bad certificate` sorok a naplóban | A régebbi verziók minden sikertelen TLS-kézfogást naplóztak. Ezek a portot letapogató szkennerektől és botoktól származnak, ártalmatlanok; az újabb verziók csendben maradnak. A `MESHCROWD_TLS_DEBUG=1` környezeti változóval kapcsolhatod be a naplózást: sikertelen kézfogásonként egy sor, a kliens címével. Ha valódi felhasználót érint, ellenőrizd, hogy a tanúsítvány lefedi-e az általa használt gazdanevet, és hogy a `serverCrt` a teljes láncot tartalmazza-e. |
-| „Nem sikerült visszafejteni” egy titkosított privát üzenetben | Két eszköz írt ugyanabba a beszélgetésbe, vagy ez az eszköz sosem látta azt az előzményt. Használj egyszerre egy eszközt. |
 | Egy Oldal PHP-hibát mutat hiányzó DLL miatt | Futtasd az `npm run fetch:php` parancsot és a mellékelt szervert használd, vagy telepítsd a Visual C++ terjeszthető csomagot. |
 
 ## GYIK
@@ -56,8 +55,7 @@ Másold át a `data/` mappát. Lásd: [Adminisztráció](administration.html).
 ## Ismert korlátok
 
 - A hívások teljes közvetlen hálót használnak médiaszerver nélkül, így a nagy, videós hívások nehezek minden résztvevőnek.
-- A föderáció a távoli szervereken csak szöveges csatornákat támogat; a föderált privát üzenetek nem végponttól végpontig titkosítottak.
-- A végponttól végpontig titkosított privát üzenetek megbízhatóan egyszerre egy eszközről működnek, nem visznek mellékleteket, és egy szerverre korlátozódnak.
+- A föderáció a távoli szervereken csak szöveges csatornákat támogat.
 - A Jegyzetek mellékleteit fájlonként titkosítja, de a titkosításuk nincs a fájlazonosítóhoz kötve.
 - A botok perjeles parancsai csak szervercsatornákban működnek.
 - Az e-mailes ellenőrzés nincs megvalósítva.

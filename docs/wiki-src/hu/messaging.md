@@ -16,7 +16,7 @@ order: 3
 - `**félkövér**`, `*dőlt*`, `` `kód` `` és nyelvvel megjelölt kódblokkok a kiemeléshez.
 - `||spoiler||` addig rejti a szöveget, amíg rá nem kattintanak.
 - Gépelj `:` majd nevet az emoji-rövidkódokhoz, `@`-ot a megemlítésekhez és `#`-ot a csatornákhoz.
-- A linkek előnézeti kártyát kapnak, kivéve a titkosított privát üzenetekben.
+- A linkek előnézeti kártyát kapnak.
 
 ### Megemlítések
 
@@ -40,13 +40,13 @@ Kattints egy reakcióra, hogy a tiéd is megjelenjen. A **szavazások** kérdés
 
 ## Hangüzenetek
 
-Az üzenetmező **mikrofon** gombja legfeljebb öt percet rögzít. Egy piros sáv mutatja az időt; a szemetes elveti a felvételt, a küldés gomb pedig kis lejátszóval (lejátszás, haladás, tekerés) elküldi. Opusként rögzül a böngészőben, az asztali alkalmazásban vagy az Android-alkalmazásban, és mikrofonengedélyt, valamint HTTPS-t vagy `localhost`-ot igényel. A hangüzenetek nem érhetők el a végponttól végpontig titkosított privát üzenetekben.
+Az üzenetmező **mikrofon** gombja legfeljebb öt percet rögzít. Egy piros sáv mutatja az időt; a szemetes elveti a felvételt, a küldés gomb pedig kis lejátszóval (lejátszás, haladás, tekerés) elküldi. Opusként rögzül a böngészőben, az asztali alkalmazásban vagy az Android-alkalmazásban, és mikrofonengedélyt, valamint HTTPS-t vagy `localhost`-ot igényel.
 
 ## Időzített üzenetek
 
 Az üzenetmező melletti **óra** gomb megnyitja a **Küldés később** ablakot a beírt szöveghez. Válassz időpontot vagy egy előbeállítást, például holnap 9:00-t. Az üzenet abban a pillanatban a nevedben megy ki, ugyanazokkal az ellenőrzésekkel, mint egy normál üzenet, így még elutasítható, például ha időkizárt vagy az AutoMod kifogásolja. A sikertelenek a listádban maradnak az okukkal, és bármit megszakíthatsz, amit időzítettél. A telefonos felületen tartsd lenyomva a küldés gombot.
 
-A titkosított privát üzenetek, a Jegyzetcsatornák és a más szervereken lévő partnerekkel folytatott privát üzenetek nem időzíthetők.
+A Jegyzetcsatornák és a más szervereken lévő partnerekkel folytatott privát üzenetek nem időzíthetők.
 
 ## Perjeles parancsok
 

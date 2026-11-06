@@ -142,7 +142,7 @@
         </ul>
         <figure class="shot"><div class="window"><img src="assets/img/slash-answer.jpg" alt="A dice roll posted by a bot and a private answer visible only to the sender" loading="lazy"></div><figcaption>A public answer and a private one from the same bot.</figcaption></figure>
       </div>
-      <div class="callout warn"><strong>Privacy note</strong><p>Everything an AI bot is asked is sent to its provider. Bots never read end-to-end encrypted DMs, group DMs or Notes channels, and only see channels their role can view.</p></div>
+      <div class="callout warn"><strong>Privacy note</strong><p>Everything an AI bot is asked is sent to its provider. Bots never read group DMs or Notes channels, and only see channels their role can view.</p></div>
     </section>
 
     <section class="feat-block reveal" id="sites">
@@ -172,7 +172,7 @@
       <ul class="checks">
         <li><b>Passport</b>: an account key pair created in your browser, exportable as an encrypted <code>.mcpass</code> file for sign-in and recovery.</li>
         <li><b>Strengthened sign-in</b>: the browser derives the sign-in key; the server never sees the password of a web account.</li>
-        <li><b>End-to-end encrypted DMs</b> with safety numbers and key pinning.</li>
+        <li><b>Encrypted DMs at rest</b>: DM text is stored encrypted in the server database (AES-256-GCM).</li>
         <li><b>Two-factor</b> authentication with TOTP and recovery codes, revocable server-side sessions and rate limiting.</li>
         <li><b>HTTPS by default</b> with an automatic certificate, or bring your own.</li>
       </ul>

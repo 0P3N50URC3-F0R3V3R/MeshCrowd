@@ -21,7 +21,7 @@ A **Botok kezelése** jogosultsággal rendelkező szerveradminisztrátorok a **S
 A szolgáltatókat egy oldaladminisztrátor állítja be az **Admin, AI** alatt: típus (Ollama vagy OpenAI-kompatibilis), alap URL, opcionális API-kulcs (titkosítva tárolva, és soha nem jelenik meg újra), opcionális modell-engedélyezőlista (a **Kapcsolat tesztelése** gombbal kérhető le a lista), időkorlát és párhuzamos kérések korlátja. Jelöld be a **A szerveradminok használhatják ezt a szolgáltatót** lehetőséget, hogy a szerveradminoknak is felkínáld.
 
 ::: warn Adatvédelem
-Mindent, amit egy botnak elküldenek, a szolgáltatója kap meg. A botok sosem olvasnak végponttól végpontig titkosított privát üzeneteket, csoportos privát üzeneteket vagy Jegyzetcsatornákat, és csak azokat a csatornákat látják, amelyeket a szerepkörük láthat. A kimenetük nem említhet meg senkit, és nincsenek eszközeik vagy műveleteik.
+Mindent, amit egy botnak elküldenek, a szolgáltatója kap meg. A botok sosem olvasnak csoportos privát üzeneteket vagy Jegyzetcsatornákat, és csak azokat a csatornákat látják, amelyeket a szerepkörük láthat. A kimenetük nem említhet meg senkit, és nincsenek eszközeik vagy műveleteik.
 :::
 
 Csak CPU-s gépen használj kis modelleket (nagyjából 3-4 milliárd paraméterest), vagy irányítsd a szolgáltatót egy erősebb gépen futó Ollamára. Korlátok: alapból egyszerre egy kérés szolgáltatónként, legfeljebb öt várakozik, tíz másodperc várakozás felhasználónként és botonként, a válaszok legfeljebb 4000 karakteresek.
@@ -34,7 +34,7 @@ Nyiss meg egy botot és nyomd meg a **Token létrehozása** gombot. A token (`mc
 Authorization: Bot mcb_xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-A bot csak a saját szerverét látja, csak azt, amit a szerepköre enged, sosem látja a Jegyzetcsatornákat, és sosem látja a titkosított vagy csoportos privát üzeneteket. Korlátok: botonként percenként 120 kérés és 30 írás (`429` `Retry-After` fejléccel). Az `@everyone` és `@here` a bot üzeneteiben hatástalanított.
+A bot csak a saját szerverét látja, csak azt, amit a szerepköre enged, sosem látja a Jegyzetcsatornákat, és sosem látja a csoportos privát üzeneteket. Korlátok: botonként percenként 120 kérés és 30 írás (`429` `Retry-After` fejléccel). Az `@everyone` és `@here` a bot üzeneteiben hatástalanított.
 
 ## Bot API
 

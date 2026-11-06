@@ -24,7 +24,6 @@ order: 3
 | No notifications on Android | Check the battery settings for the app, the notification mode in **You, Android app**, and that the server is reachable over HTTPS. |
 | UnifiedPush does nothing with a ntfy on the LAN | Set `pushAllowPrivateEndpoints` to `true` on the server. |
 | Lines like `TLS client error` or `SSL alert bad certificate` in the log | Older versions logged every failed TLS handshake. These come from scanners and bots probing the port and are harmless; newer versions stay silent. Set the environment variable `MESHCROWD_TLS_DEBUG=1` to log one line per failed handshake with the client address. If a real user is affected, check that the certificate covers the hostname they use and that `serverCrt` contains the full chain. |
-| "Unable to decrypt" in an encrypted DM | Two devices wrote into the same conversation, or this device never saw that history. Use one device at a time. |
 | A Site shows a PHP error about a missing DLL | Run `npm run fetch:php` and use the bundled server, or install the Visual C++ redistributable. |
 
 ## FAQ
@@ -56,8 +55,7 @@ Copy the `data/` folder. See [Administration](administration.html).
 ## Known limitations
 
 - Calls are a full peer-to-peer mesh with no media server, so large calls with video are heavy for each participant.
-- Federation supports text channels only on remote servers; federated DMs are not end-to-end encrypted.
-- End-to-end encrypted DMs work reliably from one device at a time, carry no attachments and are local to one server.
+- Federation supports text channels only on remote servers.
 - Notes attachments are encrypted per file, but their encryption is not bound to the file id.
 - Bot slash commands work in server channels only.
 - Email verification is not implemented.

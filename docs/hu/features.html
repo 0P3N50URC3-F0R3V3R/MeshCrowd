@@ -142,7 +142,7 @@
         </ul>
         <figure class="shot"><div class="window"><img src="../assets/img/slash-answer.jpg" alt="Egy bot által küldött kockadobás és egy privát válasz, amit csak a küldő lát" loading="lazy"></div><figcaption>Egy nyilvános és egy privát válasz ugyanattól a bottól.</figcaption></figure>
       </div>
-      <div class="callout warn"><strong>Adatvédelmi megjegyzés</strong><p>Mindent, amit egy MI-botnak elküldenek, a szolgáltatója kap meg. A botok sosem olvasnak végpontig titkosított privát üzeneteket, csoportos privát üzeneteket vagy Jegyzetcsatornákat, és csak azokat a csatornákat látják, amelyeket a szerepkörük láthat.</p></div>
+      <div class="callout warn"><strong>Adatvédelmi megjegyzés</strong><p>Mindent, amit egy MI-botnak elküldenek, a szolgáltatója kap meg. A botok sosem olvasnak csoportos privát üzeneteket vagy Jegyzetcsatornákat, és csak azokat a csatornákat látják, amelyeket a szerepkörük láthat.</p></div>
     </section>
 
     <section class="feat-block reveal" id="sites">
@@ -172,7 +172,7 @@
       <ul class="checks">
         <li><b>Útlevél (Passport)</b>: a böngésződben létrejövő fiókkulcspár, titkosított <code>.mcpass</code> fájlként exportálható belépéshez és helyreállításhoz.</li>
         <li><b>Megerősített bejelentkezés</b>: a bejelentkezési kulcsot a böngésző származtatja; a szerver sosem látja egy webes fiók jelszavát.</li>
-        <li><b>Végponttól végpontig titkosított privát üzenetek</b> biztonsági számokkal és kulcsrögzítéssel.</li>
+        <li><b>Nyugalmi állapotban titkosított privát üzenetek</b>: a privát üzenetek szövege titkosítva (AES-256-GCM) tárolódik a szerver adatbázisában.</li>
         <li><b>Kétlépcsős azonosítás</b> TOTP-vel és helyreállító kódokkal, visszavonható szerveroldali munkamenetek és sebességkorlátozás.</li>
         <li><b>Alapból HTTPS</b> automatikus tanúsítvánnyal, vagy hozd a sajátodat.</li>
       </ul>

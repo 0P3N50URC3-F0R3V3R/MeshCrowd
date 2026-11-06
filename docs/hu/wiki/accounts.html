@@ -30,7 +30,7 @@
 <h2 id="tlev-l-a-hordozhat-azonoss-god">Útlevél: a hordozható azonosságod</h2>
 <p>Amikor a webes kliensben regisztrálsz, a böngésző létrehoz egy <strong>Útlevelet</strong>: egy kulcspárt, amelyhez a fiókod kötődik.</p>
 <ul><li><strong>Exportáld</strong> a <strong>Beállítások, Útlevél</strong> oldalon titkosított <code>.mcpass</code> fájlként.</li><li><strong>Jelentkezz be a fájllal</strong> és a jelmondatával; így állíthatod helyre az elfelejtett jelszót is.</li><li><strong>Regisztrálj egy másik MeshCrowd szerveren</strong> ugyanazzal az azonossággal. Szerverenként egy Útlevélhez egy fiók tartozik.</li></ul>
-<div class="callout warn"><strong>Őrizd meg a fájlt</strong><p>Az Útleveled védi a végponttól végpontig titkosított privát üzeneteidet és a privát Jegyzetcsatornáidat is. Ha az Útlevélfájlt és a jelszavadat is elveszted, a titkosított tartalmat senki nem tudja helyreállítani.</p></div>
+<div class="callout warn"><strong>Őrizd meg a fájlt</strong><p>Az Útleveled a privát Jegyzetcsatornáidat is védi. Ha az Útlevélfájlt és a jelszavadat is elveszted, a jegyzeteidet senki nem tudja helyreállítani.</p></div>
 <h2 id="meger-s-tett-bejelentkez-s">Megerősített bejelentkezés</h2>
 <p>A webes kliensben létrehozott fiókok a jelszavadból <strong>a böngészőben</strong> két kulcsot származtatnak. Az egyiket elküldi a szervernek, ahol bcrypt-hash-ként tárolódik. A másik az Útlevél-magodat csomagolja be, és sosem hagyja el a böngészőt. A szerver így sosem látja egy ilyen fiók jelszavát, ezért a naplók, egy adatbázis-másolat vagy egy kíváncsi üzemeltető nem tudja elolvasni.</p>
 <p>A régebbi fiókok, köztük a nagyon régi Android-alkalmazásokkal létrehozottak, a <strong>Beállítások, Útlevél</strong> oldalon kapcsolhatják be. A 3.0 előtti Android-alkalmazások nem tudnak bejelentkezni egy megerősített fiókba, és frissíteni kell őket.</p>
@@ -44,7 +44,7 @@
 <h2 id="profil">Profil</h2>
 <p>Az avatárod, bannered, bemutatkozásod, egyéni státuszod és jelenléted a <a href="personalization.html">Profilok, státusz és témák</a> oldalon szerepel. Az adatvédelmi beállítások döntik el, ki küldhet neked privát üzenetet, és ki láthatja a profilkártyádat.</p>
 <h2 id="bar-tok-s-priv-t-zenetek">Barátok és privát üzenetek</h2>
-<p>Barátkérést felhasználónév alapján küldhetsz. A barátok indíthatnak kettesben folyó privát beszélgetést; a csoportos privát üzenetekben legfeljebb tíz ember lehet. Egy kettesben folyó beszélgetés a beszélgetés fejlécében lévő zár gombbal átkapcsolható végponttól végpontig titkosítottra, ami nem vonható vissza: a visszalépéshez töröld a beszélgetést és indíts újat. A részleteket a <a href="security.html">Biztonság és adatvédelem</a> oldalon találod.</p>
+<p>Barátkérést felhasználónév alapján küldhetsz. A barátok indíthatnak kettesben folyó privát beszélgetést; a csoportos privát üzenetekben legfeljebb tíz ember lehet. A privát üzenetek szövege titkosítva tárolódik a szerveren; a részleteket a <a href="security.html">Biztonság és adatvédelem</a> oldalon találod.</p>
     </article>
     <div class="pager" id="wiki-pager"></div>
   </div>

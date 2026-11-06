@@ -2,6 +2,7 @@ import { bus } from '../bus.js';
 import { api } from '../api.js';
 import { state, presenceFor, annotationFor } from '../state.js';
 import { icons } from '../icons.js';
+import { renderBio } from '../bioMarkup.mjs';
 import { avatarHtml, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle } from '../utils.js';
 import { openModal, openContextMenu } from './modal.js';
 import { t } from '../i18n.js';
@@ -70,7 +71,7 @@ export async function openFullProfile(userId, { serverId } = {}) {
                   : `<button class="btn-icon fp-icon-btn" id="fp-add" title="${t('profile.addFriendTitle')}">${icons.userPlus(16)}</button>`}
               <button class="btn-icon fp-icon-btn" id="fp-more" title="${t('profile.moreTitle')}">${icons.kebab(16)}</button>
             </div>
-            ${live.bio ? `<div class="fp-field"><div class="fp-field-label">${t('fullProfile.aboutLabel')}</div><div>${escapeHtml(live.bio)}</div></div>` : ''}
+            ${live.bio ? `<div class="fp-field"><div class="fp-field-label">${t('fullProfile.aboutLabel')}</div><div>${renderBio(live.bio)}</div></div>` : ''}
             <div class="fp-field"><div class="fp-field-label">${t('fullProfile.memberSince')}</div><div>${escapeHtml(fmtDate(user.createdAt))}</div></div>
             ${user.friendsSince ? `<div class="fp-field"><div class="fp-field-label">${t('fullProfile.friendsSince')}</div><div>${escapeHtml(fmtDate(user.friendsSince))}</div></div>` : ''}
             <div class="fp-field">

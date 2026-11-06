@@ -2,6 +2,7 @@ import { bus } from '../bus.js';
 import { api } from '../api.js';
 import { state, presenceFor, getServerDetail, annotationFor } from '../state.js';
 import { icons } from '../icons.js';
+import { renderBio } from '../bioMarkup.mjs';
 import { avatarHtml, initials, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle } from '../utils.js';
 import { openModal, openContextMenu, confirmModal } from './modal.js';
 import { PERMISSIONS, has, memberPermissionBits, memberNameColor } from '../permissions.js';
@@ -92,7 +93,7 @@ export async function openProfileModal(userId, { serverId, anchor, asStranger = 
               ${icons.users(13)} ${mutualServers.length} ${mutualServers.length === 1 ? t('profile.mutualServerSingular') : t('profile.mutualServerPlural')}
               <span class="pp-ms-icons">${mutualServers.slice(0, 8).map((s) => `<button type="button" class="pp-ms" data-ms="${s.id}" title="${escapeHtml(s.name)}">${s.icon_path ? `<img src="${escapeHtml(s.icon_path)}" alt="" draggable="false">` : escapeHtml(initials(s.name))}</button>`).join('')}${mutualServers.length > 8 ? `<span class="pp-ms-more">+${mutualServers.length - 8}</span>` : ''}</span>
             </div>` : ''}
-          ${user.bio !== undefined ? `<div class="pp-bio">${escapeHtml(user.bio || t('profile.noBioYet'))}</div>` : ''}
+          ${user.bio !== undefined ? `<div class="pp-bio">${user.bio ? renderBio(user.bio) : escapeHtml(t('profile.noBioYet'))}</div>` : ''}
         </div>
       </div>
       ${asStranger ? `<div class="hint" style="padding:6px 12px">${t('profile.viewingAsStranger')}</div>` : ''}

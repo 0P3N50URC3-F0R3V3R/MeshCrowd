@@ -1,6 +1,6 @@
 ---
 title: Security and privacy
-desc: How MeshCrowd protects accounts and data, what end-to-end encryption covers and where the honest limits are.
+desc: How MeshCrowd protects accounts and data, how DMs and Notes are protected and where the honest limits are.
 group: Operating a server
 order: 2
 ---
@@ -28,20 +28,15 @@ Admin Panel, **Security Center** (site administrators only) holds the tools agai
 
 If MeshCrowd runs behind a reverse proxy, set `trustProxy` in `config.json`; otherwise every visitor looks like the proxy and the per-address limits cannot tell people apart.
 
-## End-to-end encrypted DMs
+## Encrypted DMs at rest
 
-Any 1:1 DM between two people on the same server can be switched to end-to-end encryption with the lock button. It is **one-way**: to go back, delete the conversation and start a new one. The server stores only ciphertext. Keys come from each person's Passport.
+DM message text, link-preview cards, scheduled DMs and queued Android notifications for DMs are stored encrypted (AES-256-GCM) in the server database. This protects the database file, its backups and its write-ahead log. It is **not** end-to-end: the server holds the key, so search, bots and moderation reports keep working, and anyone with both the running server and the key can read DMs.
 
-**Safety numbers**: an encrypted DM has a Verify shield showing a 60-digit number both people can compare over a trusted channel. Each device **pins** the other person's key the first time it talks to them; if that key later changes, sending is blocked until you review and accept it. Pinning and verification are per device.
+The key is `DISMESH_DM_KEY` (base64, 32 bytes) in the environment, or a random key the server creates at `data/dm-at-rest.key`. Back it up together with the database; without it, stored DMs cannot be read. DM search decrypts and scans the newest 5000 messages of a conversation.
 
-In an encrypted conversation editing, forwarding, polls, voice messages, scheduling and attachments are disabled.
+Not covered: attachment file names and files, poll options, and messages relayed to federated servers.
 
-### Limits to know
-
-- It works reliably from one device at a time; two devices sending into the same conversation can collide and show "Unable to decrypt".
-- It is local only: 1:1 between people on the same server. Federated DMs are not encrypted.
-- A new or cleared device cannot read history it never saw.
-- Decrypted history is cached on the device.
+Earlier versions had per-conversation end-to-end encryption. It was removed and the encrypted history deleted.
 
 ## Notes channels
 
@@ -49,7 +44,7 @@ Notes are encrypted in the browser with a key derived from your Passport, so nei
 
 ## What the operator can see
 
-The server operator can read ordinary channel messages and uploads, because the server stores them. End-to-end encrypted DMs and Notes are the exception. Bots send what they are asked to their AI provider, so choose providers you trust.
+The server operator can read ordinary channel messages and uploads, because the server stores them. Notes are the exception: they are encrypted in your browser. DM text is stored encrypted, but the server holds that key, so the operator can still read DMs. Bots send what they are asked to their AI provider, so choose providers you trust.
 
 ## The trust assumption in the web client
 

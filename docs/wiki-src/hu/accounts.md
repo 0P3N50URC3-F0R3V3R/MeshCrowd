@@ -20,7 +20,7 @@ Amikor a webes kliensben regisztrálsz, a böngésző létrehoz egy **Útlevelet
 - **Regisztrálj egy másik MeshCrowd szerveren** ugyanazzal az azonossággal. Szerverenként egy Útlevélhez egy fiók tartozik.
 
 ::: warn Őrizd meg a fájlt
-Az Útleveled védi a végponttól végpontig titkosított privát üzeneteidet és a privát Jegyzetcsatornáidat is. Ha az Útlevélfájlt és a jelszavadat is elveszted, a titkosított tartalmat senki nem tudja helyreállítani.
+Az Útleveled a privát Jegyzetcsatornáidat is védi. Ha az Útlevélfájlt és a jelszavadat is elveszted, a jegyzeteidet senki nem tudja helyreállítani.
 :::
 
 ## Megerősített bejelentkezés
@@ -49,4 +49,4 @@ Az avatárod, bannered, bemutatkozásod, egyéni státuszod és jelenléted a [P
 
 ## Barátok és privát üzenetek
 
-Barátkérést felhasználónév alapján küldhetsz. A barátok indíthatnak kettesben folyó privát beszélgetést; a csoportos privát üzenetekben legfeljebb tíz ember lehet. Egy kettesben folyó beszélgetés a beszélgetés fejlécében lévő zár gombbal átkapcsolható végponttól végpontig titkosítottra, ami nem vonható vissza: a visszalépéshez töröld a beszélgetést és indíts újat. A részleteket a [Biztonság és adatvédelem](security.html) oldalon találod.
+Barátkérést felhasználónév alapján küldhetsz. A barátok indíthatnak kettesben folyó privát beszélgetést; a csoportos privát üzenetekben legfeljebb tíz ember lehet. A privát üzenetek szövege titkosítva tárolódik a szerveren; a részleteket a [Biztonság és adatvédelem](security.html) oldalon találod.

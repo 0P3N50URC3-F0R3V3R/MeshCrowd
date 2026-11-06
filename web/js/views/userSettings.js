@@ -9,6 +9,8 @@ import {
 } from '../passport/flow.js';
 import { icons } from '../icons.js';
 import { cropImage } from '../cropEditor.js';
+import { renderBio } from '../bioMarkup.mjs';
+import { bioToolbarHtml, wireBioToolbar } from '../bioEditor.js';
 import { avatarHtml, BIO_MAX, colorForId, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle, navScroll, restoreNavScroll } from '../utils.js';
 import { openAdminPanel } from './admin.js';
 import { nextZIndex } from '../zstack.js';
@@ -129,6 +131,7 @@ export function openUserSettings(initialTab = 'account') {
       </div>
       <div class="field">
         <label style="display:flex;justify-content:space-between;align-items:baseline">${t('userSettings.bioLabel')}<span class="hint" id="f-bio-count" style="margin:0"></span></label>
+        ${bioToolbarHtml()}
         <textarea class="textarea" id="f-bio" maxlength="${BIO_MAX}" placeholder="${t('userSettings.bioPlaceholder')}">${escapeHtml(me.bio || '')}</textarea>
       </div>
       <div class="field"><label>${t('userSettings.usernameLabel')}</label><input class="input" value="${escapeHtml(me.username)}" disabled></div>
@@ -164,7 +167,7 @@ export function openUserSettings(initialTab = 'account') {
           ${avatarHtml(previewUser, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar')}
           <div class="pp-name">${escapeHtml(me.displayName)}</div>
           <div class="pp-username">@${escapeHtml(me.username)}</div>
-          <div class="pp-bio" id="pp-bio-preview">${escapeHtml(me.bio || '')}</div>
+          <div class="pp-bio" id="pp-bio-preview">${renderBio(me.bio || '')}</div>
         </div>
       </div>`;
 
@@ -207,7 +210,9 @@ export function openUserSettings(initialTab = 'account') {
     const bioCount = inner.querySelector('#f-bio-count');
     const paintBioCount = () => { const n = [...bioInput.value].length; bioCount.textContent = `${n}/${BIO_MAX}`; bioCount.style.color = n >= BIO_MAX ? 'var(--danger)' : ''; };
     paintBioCount();
-    bioInput.addEventListener('input', () => { inner.querySelector('#pp-bio-preview').textContent = bioInput.value; paintBioCount(); });
+    const onBioChange = () => { inner.querySelector('#pp-bio-preview').innerHTML = renderBio(bioInput.value); paintBioCount(); };
+    bioInput.addEventListener('input', onBioChange);
+    wireBioToolbar(inner.querySelector('.bio-toolbar'), bioInput, onBioChange);
 
     inner.querySelector('#f-banner-color').addEventListener('input', (e) => {
       bannerColorTouched = true;

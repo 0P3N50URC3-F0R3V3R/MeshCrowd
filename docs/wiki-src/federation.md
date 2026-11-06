@@ -29,7 +29,7 @@ Remote servers are **proxied live** from the owning instance: nothing is copied.
 ## What it does not do yet
 
 - Remote servers have text channels only: no attachments, threads, voice or member list.
-- Federated DMs are not end-to-end encrypted.
+- Federated DMs are not encrypted in transit beyond TLS, and the peer server stores its copy as it sees fit.
 
 ## Safety rules
 

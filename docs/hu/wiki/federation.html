@@ -33,7 +33,7 @@
 <ul><li><strong>Barátkérések és privát üzenetek</strong> a párosított szerverek emberei között.</li><li><strong>Felfedezés</strong>: egymás nyilvános szerverei megjelennek a könyvtárban.</li><li><strong>Csatlakozás</strong>: egy másik példányon lévő szerverhez <code>kód@domain</code> meghívóval csatlakozhatsz. A távoli szerverek megjelennek a szerversávodban, és egyszerűsített nézetben nyílnak meg szöveges csatornákkal, előzményekkel, írással, szerkesztéssel, törléssel és reakciókkal.</li></ul>
 <p>A távoli szerverek <strong>élőben, proxyn át</strong> jelennek meg a tulajdonos példányról: semmi nem másolódik. Elhalványulnak, amíg az a példány offline.</p>
 <h2 id="amit-m-g-nem-tud">Amit még nem tud</h2>
-<ul><li>A távoli szervereknek csak szöveges csatornáik vannak: nincs melléklet, szál, hang vagy taglista.</li><li>A föderált privát üzenetek nem végponttól végpontig titkosítottak.</li></ul>
+<ul><li>A távoli szervereknek csak szöveges csatornáik vannak: nincs melléklet, szál, hang vagy taglista.</li><li>A föderált privát üzenetek a TLS-en túl nem titkosítottak, a partnerszerver pedig a saját példányát úgy tárolja, ahogy jónak látja.</li></ul>
 <h2 id="biztons-gi-szab-lyok">Biztonsági szabályok</h2>
 <ul><li>A partnerekben <strong>csak az azonosság</strong> tekintetében bízik. A jogosultságokat mindig az a példány dönti el, amelyik a szervert birtokolja.</li><li>A példányok közötti hívások aláírtak és sebességkorlátozottak.</li><li>A kimenő hívások elutasítják az átirányításokat és rögzítik az ellenőrzött címet, így egy párosított partner nem irányíthatja a szerveredet a belső hálózatodra.</li></ul>
     </article>

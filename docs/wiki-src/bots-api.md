@@ -21,7 +21,7 @@ Server administrators with **Manage Bots** create bots under **Server Settings, 
 Providers are set up by a site administrator under **Admin, AI**: a kind (Ollama or OpenAI-compatible), a base URL, an optional API key (stored encrypted and never shown again), an optional model allowlist (press **Test connection** to fetch the list), a timeout and a parallel-request limit. Tick **Server admins may use this provider** to offer it to server admins.
 
 ::: warn Privacy
-Everything a bot is asked is sent to its provider. Bots never read end-to-end encrypted DMs, group DMs or Notes channels, and only see channels their role can view. Their output cannot mention anyone and has no tools or actions.
+Everything a bot is asked is sent to its provider. Bots never read group DMs or Notes channels, and only see channels their role can view. Their output cannot mention anyone and has no tools or actions.
 :::
 
 On a CPU-only host use small models (about 3 to 4 billion parameters), or point the provider at an Ollama running on a stronger machine. Limits: one request per provider at a time by default, at most five waiting, a ten second cooldown per user and bot, and replies capped at 4000 characters.
@@ -34,7 +34,7 @@ Open a bot and press **Generate token**. The token (it starts with `mcb_`) is sh
 Authorization: Bot mcb_xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-A bot sees only its own server, only what its roles allow, never Notes channels and never encrypted or group DMs. Limits are 120 requests and 30 writes per minute per bot (`429` with `Retry-After`). `@everyone` and `@here` in bot messages are defused.
+A bot sees only its own server, only what its roles allow, never Notes channels and never group DMs. Limits are 120 requests and 30 writes per minute per bot (`429` with `Retry-After`). `@everyone` and `@here` in bot messages are defused.
 
 ## Bot API
 

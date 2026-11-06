@@ -1,5 +1,6 @@
 import { api } from '../../js/api.js';
 import { t } from '../../js/i18n.js';
+import { renderBio } from '../../js/bioMarkup.mjs';
 import { escapeHtml, avatarHtml, customStatusLabel, toast, bannerStyle, cardStyle, initials } from '../../js/utils.js';
 import { rankFor, nameColorFor } from '../../js/views/profile.js';
 import { state, setFriends, setDms, presenceFor } from '../../js/state.js';
@@ -74,7 +75,7 @@ export async function openProfileSheet(userId, { asStranger = false, serverId = 
             ${rank ? `<div class="pp-rank" ${rank.color ? `style="color:${rank.color}"` : ''}>${icons.shield(12)} ${escapeHtml(rank.label)}</div>` : ''}
             ${mutualServers.length ? `<div class="pp-mutual">${icons.users(13)} ${mutualServers.length} ${mutualServers.length === 1 ? t('profile.mutualServerSingular') : t('profile.mutualServerPlural')}
               <span class="pp-ms-icons">${mutualServers.slice(0, 8).map((s) => `<span class="pp-ms" title="${escapeHtml(s.name)}">${s.icon_path ? `<img src="${escapeHtml(s.icon_path)}" alt="">` : escapeHtml(initials(s.name))}</span>`).join('')}${mutualServers.length > 8 ? `<span class="pp-ms-more">+${mutualServers.length - 8}</span>` : ''}</span></div>` : ''}
-            ${user.bio !== undefined ? `<div class="pp-bio">${escapeHtml(user.bio || t('profile.noBioYet'))}</div>` : ''}
+            ${user.bio !== undefined ? `<div class="pp-bio">${user.bio ? renderBio(user.bio) : escapeHtml(t('profile.noBioYet'))}</div>` : ''}
           </div>
         </div>
         ${asStranger ? `<p class="m-profile-bio"><i>${escapeHtml(t('profile.viewingAsStranger'))}</i></p>` : ''}

@@ -20,7 +20,7 @@ When you register in the web client the browser creates a **Passport**: a key pa
 - **Register on another MeshCrowd server** with the same identity. There is one account per Passport per server.
 
 ::: warn Keep the file safe
-Your Passport also protects your encrypted DMs and your private Notes channels. If you lose both the Passport file and your password, that encrypted content cannot be recovered by anyone.
+Your Passport also protects your private Notes channels. If you lose both the Passport file and your password, your notes cannot be recovered by anyone.
 :::
 
 ## Strengthened sign-in
@@ -49,4 +49,4 @@ Your avatar, banner, bio, custom status and presence are covered in [Profiles, s
 
 ## Friends and direct messages
 
-Send a friend request by username. Friends can start 1:1 DMs; group DMs hold up to ten people. A 1:1 DM can be switched to end-to-end encryption with the lock button, which cannot be undone: delete the conversation and start a new one to go back. Details are on [Security and privacy](security.html).
+Send a friend request by username. Friends can start 1:1 DMs; group DMs hold up to ten people. DM text is encrypted at rest on the server; details are on [Security and privacy](security.html).

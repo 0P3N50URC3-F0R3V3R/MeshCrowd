@@ -16,7 +16,7 @@ Type in the box at the bottom and press **Enter**. Use **Shift+Enter** for a new
 - `**bold**`, `*italic*`, `` `code` `` and fenced code blocks with a language for highlighting.
 - `||spoiler||` hides text until clicked.
 - Type `:` and a name for emoji shortcodes, `@` for mentions and `#` for channels.
-- Links get a preview card unless you are in an encrypted DM.
+- Links get a preview card.
 
 ### Mentions
 
@@ -40,13 +40,13 @@ Up to five attachments per message. Still images can be resized before upload (O
 
 ## Voice messages
 
-The **microphone** button in the composer records up to five minutes. A red bar shows the time; the bin discards the clip and the send button posts it with a small player (play, progress, seek). It is recorded as Opus in the browser, desktop app or Android app and needs microphone permission and HTTPS or `localhost`. Voice messages are not available in end-to-end encrypted DMs.
+The **microphone** button in the composer records up to five minutes. A red bar shows the time; the bin discards the clip and the send button posts it with a small player (play, progress, seek). It is recorded as Opus in the browser, desktop app or Android app and needs microphone permission and HTTPS or `localhost`.
 
 ## Scheduled messages
 
 The **clock** button next to the composer opens **Send later** for what you typed. Pick a time or a preset such as tomorrow at 9:00. The message is posted as you at that moment with the same checks as a normal message, so it can still be refused, for example if you are timed out or AutoMod objects. Failures stay in your list with the reason, and you can cancel anything you scheduled. On the phone interface hold the send button.
 
-Encrypted DMs, Notes channels and DMs with people on other servers cannot be scheduled.
+Notes channels and DMs with people on other servers cannot be scheduled.
 
 ## Slash commands
 

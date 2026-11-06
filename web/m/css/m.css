@@ -312,3 +312,8 @@ button.m-att-file { width: 100%; border: 0; text-align: left; font: inherit; }
 .m-up-bar i { display: block; height: 100%; background: var(--accent, var(--link)); transition: width .15s linear; }
 .m-up-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 .m-up-row .m-link { background: none; border: 0; color: var(--link); padding: 4px 0; font-size: 12px; }
+
+.bio-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 4px 0; }
+.bio-toolbar button { min-width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border, rgba(128,128,128,.4)); background: var(--bg-input); color: var(--text-primary); cursor: pointer; padding: 0 6px; }
+.bio-toolbar .bio-swatch { min-width: 20px; width: 20px; height: 20px; padding: 0; border-radius: 50%; }
+.bio-toolbar input[type=color] { width: 28px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer; }

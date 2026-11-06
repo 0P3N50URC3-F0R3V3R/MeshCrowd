@@ -33,7 +33,7 @@
 <ul><li><strong>Friend requests and DMs</strong> between people on paired servers.</li><li><strong>Discovery</strong>: each other's public servers appear in the directory.</li><li><strong>Joining</strong>: you can join a server on another instance with a <code>code@domain</code> invite. Remote servers appear in your server rail and open in a simplified view with text channels, history, posting, editing, deleting and reactions.</li></ul>
 <p>Remote servers are <strong>proxied live</strong> from the owning instance: nothing is copied. They grey out while that instance is offline.</p>
 <h2 id="what-it-does-not-do-yet">What it does not do yet</h2>
-<ul><li>Remote servers have text channels only: no attachments, threads, voice or member list.</li><li>Federated DMs are not end-to-end encrypted.</li></ul>
+<ul><li>Remote servers have text channels only: no attachments, threads, voice or member list.</li><li>Federated DMs are not encrypted in transit beyond TLS, and the peer server stores its copy as it sees fit.</li></ul>
 <h2 id="safety-rules">Safety rules</h2>
 <ul><li>Peers are trusted <strong>only for identity</strong>. Permissions are always decided by the instance that owns the server.</li><li>Calls between instances are signed and rate limited.</li><li>Outgoing calls refuse redirects and pin the validated address, so a paired peer cannot point your server at your internal network.</li></ul>
     </article>

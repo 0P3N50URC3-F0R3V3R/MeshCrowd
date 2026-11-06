@@ -3082,5 +3082,11 @@
     "unsupported passport file": "Nem támogatott útlevélfájl",
     "passphrase too short": "A jelszó túl rövid",
     "recording is not supported here": "A felvétel itt nem támogatott"
+  },
+  "bioEditor": {
+    "bold": "Félkövér",
+    "italic": "Dőlt",
+    "color": "Szövegszín",
+    "customColor": "Egyéni szín"
   }
 }

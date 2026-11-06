@@ -29,7 +29,7 @@ A távoli szerverek **élőben, proxyn át** jelennek meg a tulajdonos példány
 ## Amit még nem tud
 
 - A távoli szervereknek csak szöveges csatornáik vannak: nincs melléklet, szál, hang vagy taglista.
-- A föderált privát üzenetek nem végponttól végpontig titkosítottak.
+- A föderált privát üzenetek a TLS-en túl nem titkosítottak, a partnerszerver pedig a saját példányát úgy tárolja, ahogy jónak látja.
 
 ## Biztonsági szabályok
 

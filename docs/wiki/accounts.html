@@ -30,7 +30,7 @@
 <h2 id="passport-your-portable-identity">Passport: your portable identity</h2>
 <p>When you register in the web client the browser creates a <strong>Passport</strong>: a key pair that anchors your account.</p>
 <ul><li><strong>Export</strong> it from Settings, Passport as an encrypted <code>.mcpass</code> file.</li><li><strong>Sign in with the file</strong> and its passphrase, which is also how you recover a forgotten password.</li><li><strong>Register on another MeshCrowd server</strong> with the same identity. There is one account per Passport per server.</li></ul>
-<div class="callout warn"><strong>Keep the file safe</strong><p>Your Passport also protects your encrypted DMs and your private Notes channels. If you lose both the Passport file and your password, that encrypted content cannot be recovered by anyone.</p></div>
+<div class="callout warn"><strong>Keep the file safe</strong><p>Your Passport also protects your private Notes channels. If you lose both the Passport file and your password, your notes cannot be recovered by anyone.</p></div>
 <h2 id="strengthened-sign-in">Strengthened sign-in</h2>
 <p>Accounts created in the web client derive two keys from your password <strong>in the browser</strong>. One key is sent to the server and stored as a bcrypt hash. The other wraps your Passport seed and never leaves the browser. The server never sees the password of such an account, so logs, a database copy or a curious operator cannot read it.</p>
 <p>Older accounts, including those created by very old Android apps, can opt in under <strong>Settings, Passport</strong>. Android apps older than 3.0 cannot sign in to a strengthened account and need to be updated.</p>
@@ -44,7 +44,7 @@
 <h2 id="profile">Profile</h2>
 <p>Your avatar, banner, bio, custom status and presence are covered in <a href="personalization.html">Profiles, status and themes</a>. Privacy controls decide who can send you DMs and who can see your profile card.</p>
 <h2 id="friends-and-direct-messages">Friends and direct messages</h2>
-<p>Send a friend request by username. Friends can start 1:1 DMs; group DMs hold up to ten people. A 1:1 DM can be switched to end-to-end encryption with the lock button, which cannot be undone: delete the conversation and start a new one to go back. Details are on <a href="security.html">Security and privacy</a>.</p>
+<p>Send a friend request by username. Friends can start 1:1 DMs; group DMs hold up to ten people. DM text is encrypted at rest on the server; details are on <a href="security.html">Security and privacy</a>.</p>
     </article>
     <div class="pager" id="wiki-pager"></div>
   </div>
