@@ -13,6 +13,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 #### Fixed
 - Desktop app: right-click menus (Cut / Copy / Paste / Select All, spelling suggestions, Copy for links) now work in every input field and on selected text anywhere.
 - Accepting a friend request moves the person to the friend list immediately on desktop and mobile; the Messages tab on mobile shows a badge on the Friends button while requests are waiting.
+- Mobile / Android: the image viewer's Save button now works in the Android app (it hands the image to the app's own save path and confirms with "Saved to Downloads"; the first version relied on a link download the WebView ignores).
 - Mobile / Android: the image viewer has pinch and double-tap zoom, panning, a close button and a Save button.
 - "Mark as unread" now draws the new-messages line inside the open conversation straight away (desktop and mobile); on mobile it also marked one message too late.
 - Display names are limited to 32 characters (sign-up, profile, admin edit, federated users) and the inputs enforce it.
