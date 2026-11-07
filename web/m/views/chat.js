@@ -19,8 +19,9 @@ import { messageHtml, pendingHtml, ephemeralHtml } from '../components/messageIt
 import { mountComposer } from '../components/composer.js';
 import { openMessageSheet } from '../components/messageSheet.js';
 import { onPollClick, openPollSheet } from '../components/pollCard.js';
-import { openEmojiSheet, openStickerSheet } from '../components/emojiSheet.js';
+import { openEmojiSheet, openStickerSheet, openSoundSheet } from '../components/emojiSheet.js';
 import { stickerRef } from '../../js/stickers.mjs';
+import { playSoundboardAudio } from '../../js/soundboardPrefs.js';
 import { openImageViewer, openSheet, promptSheet, actionSheet, confirmSheet } from '../components/bottomSheet.js';
 import { editPostSheet } from '../components/postSheets.js';
 import { canEditPost, canDeletePost } from '../../js/threadPerms.mjs';
@@ -54,7 +55,7 @@ export function mountChat(el, params) {
   let unreadUpTo = 0;
   let unreadUpToSet = false;
   const offlineAtOpen = offlineWindows();
-  const unreadOk = unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen });
+  const unreadOk = (m) => unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen })(m);
   let firstLoad = true;
   let messages = [];
   const deleted = new Set(); // ids deleted over the websocket, so a racing create cannot bring them back
@@ -88,7 +89,7 @@ export function mountChat(el, params) {
     <div class="m-chat-body">
       <div class="m-unread-banner" id="m-unread-banner" hidden></div>
       <div class="m-msgs m-scroll" id="m-msgs"></div>
-      <button class="m-jump" id="m-jump" hidden>${icons.chevronDown(18)} ${t('m.jumpLatest')}</button>
+      <button class="m-jump" id="m-jump" hidden aria-label="${t('m.jumpLatest')}">${icons.chevronDown(18)}</button>
     </div>
     <div class="m-typing" id="m-typing"></div>
     <div class="m-slash" id="m-slash" hidden></div>
@@ -383,7 +384,7 @@ export function mountChat(el, params) {
     uploads.add(p);
     const onProgress = (x) => uploads.progress(p, x);
     try {
-      const res = await scope.send({ content: p.text, files: p.files, replyToMessageId: p.replyToMessageId, stickerId: p.sticker?.id, voiceDurationMs: p.voiceDurationMs, onProgress, signal: p.controller.signal });
+      const res = await scope.send({ content: p.text, files: p.files, replyToMessageId: p.replyToMessageId, stickerId: p.sticker?.id, soundId: p.sound?.id, voiceDurationMs: p.voiceDurationMs, onProgress, signal: p.controller.signal });
       uploads.finish(p, { res });
     } catch (err) {
       uploads.finish(p, { err });
@@ -463,6 +464,15 @@ export function mountChat(el, params) {
         } catch (err) { handleError(err, 'm.scheduleFailed'); return false; }
       },
       onPoll: () => openPollSheet(ctxForSheets()),
+      onSound: kind === 'dm' || !params.serverId ? undefined : async () => {
+        const sound = await openSoundSheet(ctxForSheets());
+        if (!sound) return;
+        if (state.voice.channelId && state.voice.serverId === params.serverId) { ws.send({ type: 'voice_soundboard_play', channelId: state.voice.channelId, soundId: sound.id }); return; }
+        composer.focus();
+        const p = { key: `${Date.now()}${Math.random().toString(36).slice(2, 6)}`, text: '', files: [], sound };
+        pending.push(p); paint(); scrollBottom();
+        deliver(p);
+      },
       onSticker: async () => {
         const sticker = await openStickerSheet(ctxForSheets());
         if (!sticker) return;
@@ -660,6 +670,8 @@ export function mountChat(el, params) {
   // ---------- interaction ----------
   const findMsg = (node) => messages.find((m) => m.id === Number(node.closest('[data-id]')?.dataset.id));
   msgsEl.addEventListener('click', async (e) => {
+    const soundBtn = e.target.closest('[data-sound-src]');
+    if (soundBtn) return void playSoundboardAudio(soundBtn.dataset.soundSrc);
     const img = e.target.closest('[data-viewer]');
     if (img) return openImageViewer(img.dataset.viewer, img.getAttribute('alt') || '');
     const goto = e.target.closest('[data-goto]');

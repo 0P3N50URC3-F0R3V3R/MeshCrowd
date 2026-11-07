@@ -2,6 +2,23 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-07
+#### Added
+- Android: soundboard button in the composer (server channels and threads): tap a sound to send it as a sound message (or play it to the call if you are in voice on that server), ▶ previews it. Sound messages now show a play button in mobile chat.
+- Android: trash button in the Notifications tab clears the whole list.
+
+#### Fixed
+- Android: the app's offline cache is renewed (cache name bumped), so phones that had stale CSS and JS pick up the new files without clearing app data.
+- The "new messages" line and jump-to-first-unread never appeared (desktop and mobile): the eligibility check was fixed at 0 when the chat opened. It now uses the newest message loaded at open, so the line shows for messages that arrived while this device was offline.
+- Desktop: a conversation now stays pinned to the newest message while images and embeds finish loading (it could end up short of the bottom, away from where you left off), and a round "jump to latest" button appears whenever you are scrolled away from the bottom.
+- Notes: attaching a big file now shows an "Encrypting…" and then an upload progress bar in the draft instead of nothing happening; saving waits until the upload finishes.
+- Notes: note text can be selected and copied again on desktop.
+- Android: the friends button no longer shows a red "0" badge when there are no requests.
+- Android: background notifications no longer announce messages that arrived while the app was open (the poll cursor now moves past them when the app goes to the background); the in-app notification list also skips messages from the conversation you are viewing.
+- Android: "Jump to latest" is now a small round arrow button in the corner instead of a wide pill.
+- Android: animated name effects animate again (the reduced-motion rule is removed from the mobile and shared chat stylesheets; the phone loads both).
+- Pinned messages list (desktop panel, forum thread panel and mobile Info > Pins) refreshes live when a message is pinned or unpinned.
+
 ### 2026-11-06
 #### Removed
 - End-to-end encrypted DMs are gone: the per-conversation "enable encryption" flow, the ratchet, safety numbers / verify sheets, encrypted DM files and the "message cannot be decrypted" state. This also removes the bugs where your own encrypted messages could not be decrypted and where DM notifications stuck after switching a conversation to encrypted. Existing end-to-end encrypted DM history was ciphertext only the clients could read, so it is deleted from the server at the next start (a one-time migration). Your passport and encrypted Notes channels are unchanged. DMs are ordinary messages again, so editing, forwarding, polls, scheduling, search, bots and attachments work in every conversation.

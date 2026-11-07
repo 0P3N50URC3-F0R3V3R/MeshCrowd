@@ -4,6 +4,7 @@ import { avatarHtml, escapeHtml, formatTimestamp, renderMessageContent, toast, a
 import { confirmModal } from './modal.js';
 import { t } from '../i18n.js';
 import { state } from '../state.js';
+import { bus } from '../bus.js';
 
 // Discord-style pinned-messages panel: docked in the right rail (same slot as the member list),
 // listing every pinned message top to bottom with a click-to-jump. Not a floating popover — it
@@ -12,6 +13,9 @@ export function mountPinnedPanel(container, scopeType, scopeId, { canManage = fa
   container.innerHTML = `<div class="panel-loading" style="height:160px"><div class="spinner"></div></div>`;
   let destroyed = false;
   load();
+  const offUpdate = bus.on('ws:message_update', ({ message }) => {
+    if (message && message.scopeType === scopeType && message.scopeId === scopeId) load();
+  });
 
   async function load() {
     try {
@@ -82,6 +86,6 @@ export function mountPinnedPanel(container, scopeType, scopeId, { canManage = fa
       </div>`;
   }
 
-  function destroy() { destroyed = true; }
+  function destroy() { destroyed = true; offUpdate(); }
   return { destroy };
 }

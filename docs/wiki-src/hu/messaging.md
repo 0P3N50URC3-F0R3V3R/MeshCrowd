@@ -75,6 +75,8 @@ Az események: közvetlen üzenetek, közvetlen üzenetben kapott említések, c
 
 Az alapértékek a korábbi viselkedést követik: a „ne zavarjanak” és a „láthatatlan” néma, minden más be van kapcsolva. Minden állapot módosítható, az Online is, de amíg az Online eltér az alapértéktől, figyelmeztetés látszik, mert könnyű elfelejteni, hogy ott kikapcsoltál valamit. Az elnémított szerverek és csatornák a rácstól függetlenül némák maradnak. Az egy eszközre vonatkozó hangbeállítások (hangerő, saját hangfájl) ugyanazon az oldalon a rács alatt maradnak. Az olvasatlan üzenetekkel megnyitott csevegésben egy piros **Új** vonal jelöli az elsőt; a beállításait lásd a [Profilok, állapot és témák](personalization.html#olvasatlan-zenetek) oldalon.
 
+Az olvasatlan üzenetekkel megnyitott csevegésben piros **Új** vonal jelenik meg az első fölött; a beállításait lásd: [Profilok, állapot és témák](personalization.html#olvasatlan-zenetek). A vonal azoknál az üzeneteknél jelenik meg, amelyek az eszköz offline ideje alatt érkeztek, és a csevegés ott nyílik meg. Egyébként a csevegés a legújabb üzenetnél marad, és kerek **Ugrás a legújabbhoz** gomb jelenik meg, ha elgörgetsz az aljától. A kitűzött üzenetek listája élőben frissül, amikor valaki kitűz vagy levesz egy üzenetet.
+
 ## Bejövő webhookok
 
 A csatornakezelő a csatorna beállításai alatt **bejövő webhookokat** hozhat létre. Egy szkript JSON-t küld a webhook URL-jére, és a webhook nevével és avatárjával megjelenik egy üzenet. Lásd: [Botok, API és webhookok](bots-api.html).

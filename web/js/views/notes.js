@@ -25,6 +25,7 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
   let key = null;
   let editingId = null;
   let draftFiles = [];
+  const pendingFiles = [];
   let destroyed = false;
   const imageUrls = new Map();
   let hasMore = false;
@@ -218,6 +219,13 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
       chip.appendChild(rm);
       draftEl.appendChild(chip);
     });
+    for (const p of pendingFiles) {
+      const row = document.createElement('div');
+      row.className = 'upload-progress';
+      const label = p.pct === null ? t('notes.encryptingFile', { name: p.name }) : t('notes.uploadingFile', { name: p.name, pct: Math.round(p.pct * 100) });
+      row.innerHTML = `<div class="up-bar"><i style="width:${Math.round((p.pct ?? 0) * 100)}%"></i></div><div class="msg-edit-hint">${escapeHtml(label)}</div>`;
+      draftEl.appendChild(row);
+    }
   }
 
   function removeDraft(i) {
@@ -235,14 +243,24 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
     for (const file of picked) {
       if (draftFiles.length >= MAX_FILES) { toast(t('notes.tooManyFiles', { count: MAX_FILES }), { type: 'error' }); break; }
       if (file.size > maxBytes) { toast(t('notes.fileTooLarge', { name: file.name, mb: state.config.maxUploadMb || 25 }), { type: 'error' }); continue; }
+      const pending = { name: file.name, pct: null };
+      pendingFiles.push(pending);
+      renderDraft();
       try {
+        await new Promise((r) => setTimeout(r, 0));
         const fk = newFileTag();
         const blob = await encryptBytes(key, channelId, new Uint8Array(await file.arrayBuffer()), { scope, fk });
-        const { file: up } = await api.uploadNoteFile(serverId, channelId, blob);
+        pending.pct = 0;
+        renderDraft();
+        const { file: up } = await api.uploadNoteFile(serverId, channelId, blob, (pct) => { pending.pct = pct; renderDraft(); });
+        pendingFiles.splice(pendingFiles.indexOf(pending), 1);
         if (destroyed) { api.deleteNoteFile(serverId, channelId, up.id).catch(() => {}); return; }
         draftFiles.push({ id: up.id, name: file.name, type: file.type || 'application/octet-stream', size: file.size, fk });
         renderDraft();
       } catch (err) {
+        const at = pendingFiles.indexOf(pending);
+        if (at >= 0) pendingFiles.splice(at, 1);
+        renderDraft();
         toast(apiErrorMessage(err, t('notes.fileError')), { type: 'error' });
       }
     }
@@ -272,7 +290,7 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
 
   async function submit() {
     const text = input.value.trim();
-    if ((!text && draftFiles.length === 0) || !key || sendBtn.disabled) return;
+    if ((!text && draftFiles.length === 0) || !key || sendBtn.disabled || pendingFiles.length) return;
     sendBtn.disabled = true;
     try {
       const files = draftFiles.map(({ id, name, type, size, fk }) => ({ id, name, type, size, ...(fk ? { fk } : {}) }));

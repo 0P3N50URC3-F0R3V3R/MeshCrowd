@@ -137,6 +137,7 @@ export function wireRealtime() {
     const title = notice ? notice.title : payload.scopeType === 'dm'
       ? author.displayName
       : `${author.displayName} #${payload.channelName}${payload.serverName ? ` (${payload.serverName})` : ''}`;
+    if (!document.hidden && state.mOpenScope === `${payload.scopeType}:${payload.scopeId}`) return;
     pushActivity({
       kind: notice ? payload.kind : payload.scopeType === 'dm' ? 'dm' : (payload.mentioned ? 'mention' : 'channel'),
       title, body: notice ? notice.body : notifyBody(payload),

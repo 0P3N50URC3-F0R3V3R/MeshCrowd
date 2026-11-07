@@ -1254,6 +1254,7 @@
     "searchNeedField": "Válassz legalább egy szűrőt.",
     "searchScopeHint": "Nyiss meg egy szervert vagy beszélgetést a kereséshez.",
     "notificationsTitle": "Értesítések",
+    "notificationsClear": "Összes értesítés törlése",
     "notificationsEmpty": "Nincs semmi új. Az említések, válaszok és üzenetek itt jelennek meg.",
     "setStatus": "Állapot beállítása",
     "account": "Fiók",
@@ -2079,6 +2080,8 @@
     "openOriginal": "Eredeti üzenet megnyitása",
     "originalGoneTitle": "Az eredeti üzenet törölve",
     "originalGoneBody": "Az eredeti üzenet ({author}, {date}) törölve lett vagy már nem elérhető. A mentett másolat változatlan.",
+    "encryptingFile": "{name} titkosítása…",
+    "uploadingFile": "{name} feltöltése — {pct}%",
     "fileError": "A fájl feldolgozása nem sikerült.",
     "tooManyFiles": "Jegyzetenként legfeljebb {count} fájl.",
     "fileTooLarge": "A(z) {name} nagyobb, mint {mb} MB."

@@ -190,6 +190,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         NotificationPoller.appVisible = false
+        val appContext = applicationContext
+        kotlin.concurrent.thread { try { NotificationPoller.markSeen(appContext) } catch (_: Exception) { /* next poll catches up */ } }
         CookieManager.getInstance().flush() // so the background poller sees the current session cookie
         if (settings.configured && !isChangingConfigurations) {
             try { ContextCompat.startForegroundService(this, Intent(this, ConnectionService::class.java)) } catch (_: Exception) { /* not allowed right now; the poller still runs */ }

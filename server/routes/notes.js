@@ -107,7 +107,7 @@ router.post('/trim', (req, res) => {
 
 // Raw encrypted blob (iv || ciphertext). The server cannot tell what it is and only ever serves it
 // back to the uploader. Registered before /:noteId so "files" is never parsed as an id.
-router.post('/files', (req, res, next) => express.raw({ type: 'application/octet-stream', limit: `${effectiveMaxUploadMb() + 1}mb` })(req, res, next), (req, res) => {
+router.post('/files', (req, res, next) => express.raw({ type: 'application/octet-stream', limit: `${effectiveMaxUploadMb() + 1}mb` })(req, res, next), async (req, res) => {
   const body = req.body;
   if (!Buffer.isBuffer(body) || body.length < 29) return res.status(400).json({ error: 'encrypted file body required' });
   const unsaved = db.prepare('SELECT COUNT(*) AS c FROM note_files WHERE user_id = ? AND channel_id = ? AND note_id IS NULL').get(req.user.id, req.channel.id).c;
@@ -117,7 +117,10 @@ router.post('/files', (req, res, next) => express.raw({ type: 'application/octet
   const token = crypto.randomBytes(16).toString('hex');
   const info = db.prepare('INSERT INTO note_files (channel_id, user_id, file_name, size) VALUES (?, ?, ?, ?)')
     .run(req.channel.id, req.user.id, token, body.length);
-  fs.writeFileSync(noteFilePath(req.channel.id, token), body);
+  try { await fs.promises.writeFile(noteFilePath(req.channel.id, token), body); } catch {
+    db.prepare('DELETE FROM note_files WHERE id = ?').run(info.lastInsertRowid);
+    return res.status(500).json({ error: 'could not store the file' });
+  }
   res.status(201).json({ file: { id: info.lastInsertRowid, size: body.length } });
 });
 

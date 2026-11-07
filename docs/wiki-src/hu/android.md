@@ -31,7 +31,7 @@ A telefonos felület ugyanazokat a funkciókat fedi le, mint az asztali:
 
 - **Üzenetküldés**: csatornák, szálak (az egyedi csatorna- és szálikonok látszanak a listákban és a csevegés fejlécében), fórumcsatornák (kártyák kereséssel, rendezéssel és előnézettel, amelyeket szálként nyitsz meg), titkosított közvetlen és csoportos csevegések, reakciók, válaszok, szavazások, hangüzenetek, matricák, perjeles parancsok, ütemezett és mentett üzenetek. Az emoji gomb a teljes választót nyitja kategóriákkal, kereséssel, legutóbbiakkal, egyedi emojikkal és `:rövidkód:` javaslatokkal, a matricaválasztóban pedig keresni is lehet. Egy csevegés megnyitásakor piros **Új** vonal jelöli az első olvasatlan üzenetet; lásd: [Olvasatlan üzenetek](personalization.html#olvasatlan-zenetek).
 - A **Jegyzetcsatornák** (a titkosított naplód) és a **Webhelyek** teljes képernyőn nyílnak meg.
-- **Hang**: hangszobák és színpadok, kamera, hangpult, és a csatorna alatt élőben látszik, ki van a szobában.
+- **Hang**: hangszobák és színpadok, kamera, hangpult, és a csatorna alatt élőben látszik, ki van a szobában. A szerverek csatornáiban és szálaiban az üzenetmezőben hangjegy gomb is van: egy hangra koppintva hangüzenetként küldődik el lejátszó gombbal (vagy lejátszódik a hívásban, ha azon a szerveren hangcsatornában vagy); a hang melletti ▶ csak neked játssza le előhallgatásként.
 - **Szerverkezelés**: a szervermenüben Események, Szerver beállításai (szerepkörök, csatornák, tagok, meghívók, AutoMod, botok, üdvözlés, naplózás és a többi), Csatorna létrehozása és Kategória létrehozása található, csak a jogosultsággal rendelkezőknek.
 - **A fiókod**: a **Te** fül megnyitja a fiók-, megjelenés- (témák), hang- és videó-, adatvédelmi, Útlevél- és biztonsági beállításokat, a mentett és ütemezett üzeneteket, valamint a webhelyadminisztrátoroknak az **Adminpanelt**, a föderációval együtt.
 - A párosított példányok **föderált szerverei** földgömb-jelvénnyel jelennek meg a szerverlistában; hosszan nyomva elhagyhatod őket.
@@ -48,7 +48,7 @@ Az alkalmazás maga kérdezi le a szerveredet, ezért nincs szüksége Firebase-
 | Gyors mód (alapból be van kapcsolva) | Előtér-szolgáltatás állandó értesítéssel, 1 és 1440 perc közötti lekérdezéssel | Terhelőbb |
 | UnifiedPush | A szerver egy elosztó alkalmazáson, például az ntfy-n át ébreszti a telefont | Kímélő és azonnali |
 
-A gyors mód állandó értesítése magától visszatér, ha elhúzod (az Android 14 és újabb engedi az elvetését). Amíg az alkalmazás nyitva van, az üzenetek azonnal megérkeznek a WebSocketen. A titkosított privát üzenetek csak általános „Új titkosított üzenet” értesítést mutatnak. Az értesítésre koppintva az adott beszélgetés nyílik meg.
+A gyors mód állandó értesítése magától visszatér, ha elhúzod (az Android 14 és újabb engedi az elvetését). Amíg az alkalmazás nyitva van, az üzenetek azonnal megérkeznek a WebSocketen. A titkosított privát üzenetek csak általános „Új titkosított üzenet” értesítést mutatnak. Az értesítésre koppintva az adott beszélgetés nyílik meg. Értesítés csak azokról az üzenetekről érkezik, amelyek az alkalmazás a háttérben volt, azokról soha, amelyeket nyitott alkalmazással már láttál. Az **Értesítések** fülön kuka gomb törli a teljes listát, és a fül csak azoknak a beszélgetéseknek az üzeneteit listázza, amelyeket éppen nem nézel.
 
 ### UnifiedPush
 

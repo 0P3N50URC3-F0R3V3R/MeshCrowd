@@ -83,11 +83,11 @@ body {
 
 input, textarea, code, pre, kbd, samp, [contenteditable="true"], .msg-line, .msg-line *, .link-embed-title, .link-embed-desc, .link-embed-site,
 .pp-bio, .pp-bio *, .fp-field, .fp-field *, .passport-id, .poll-option-label, .f-name, .rp-snippet,
-.selectable, .selectable * {
+.note-text, .note-text *, .selectable, .selectable * {
   -webkit-user-select: text;
   user-select: text;
 }
-input, textarea, .msg-line, .msg-line * { cursor: text; }
+input, textarea, .msg-line, .msg-line *, .note-text { cursor: text; }
 .msg-line a, .msg-line .mention, .msg-line .channel-ref, .msg-line .md-spoiler:not(.revealed), .msg-line button { cursor: pointer; }
 img, svg, video, canvas { -webkit-user-drag: none; }
 button, [role="button"], [role="menuitem"], select, summary, label, a[href] { cursor: pointer; }

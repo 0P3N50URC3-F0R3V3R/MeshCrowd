@@ -353,14 +353,21 @@ export const api = {
   updateNote: (serverId, channelId, noteId, payload) => patch(`/api/servers/${serverId}/channels/${channelId}/notes/${noteId}`, payload),
   deleteNote: (serverId, channelId, noteId) => del(`/api/servers/${serverId}/channels/${channelId}/notes/${noteId}`),
   trimNotes: (serverId, channelId, payload) => post(`/api/servers/${serverId}/channels/${channelId}/notes/trim`, payload),
-  uploadNoteFile: async (serverId, channelId, bytes) => {
-    const res = await fetch(`/api/servers/${serverId}/channels/${channelId}/notes/files`, {
-      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/octet-stream' }, body: bytes,
-    });
-    const body = await res.json().catch(() => null);
-    if (!res.ok) throw new ApiError(res.status, body);
-    return body;
-  },
+  uploadNoteFile: (serverId, channelId, bytes, onProgress) => new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/api/servers/${serverId}/channels/${channelId}/notes/files`, true);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    if (onProgress) xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    xhr.onload = () => {
+      let body = null;
+      try { body = JSON.parse(xhr.responseText); } catch { /* ignore */ }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body);
+      else reject(new ApiError(xhr.status, body));
+    };
+    xhr.onerror = () => reject(new ApiError(0, { error: 'network error' }));
+    xhr.send(bytes);
+  }),
   downloadNoteFile: async (serverId, channelId, fileId) => {
     const res = await fetch(`/api/servers/${serverId}/channels/${channelId}/notes/files/${fileId}`, { credentials: 'include' });
     if (!res.ok) throw new ApiError(res.status, null);

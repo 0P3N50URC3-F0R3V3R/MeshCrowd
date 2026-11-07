@@ -59,6 +59,10 @@ export function authorDisplay(msg, detail) {
   return member?.nickname || nameFor(msg.author) || msg.author.username;
 }
 
+function soundHtml(s) {
+  return `<button type="button" class="m-sound-msg" data-sound-src="${escapeHtml(s.audioPath)}">${icons.music(18)} ${s.emoji ? `${escapeHtml(s.emoji)} ` : ''}${escapeHtml(s.name)}</button>`;
+}
+
 export function messageHtml(msg, ctx) {
   if (msg.eventType) return `<div class="m-event" data-id="${msg.id}">${escapeHtml(serverEventText(msg) || msg.content || '')}</div>`;
   const compact = shouldCompact(ctx.prev, msg);
@@ -75,6 +79,7 @@ export function messageHtml(msg, ctx) {
       ${msg.forwardedFrom ? `<div class="m-forwarded">${icons.forward(12)} ${t('m.forwardedFrom')}</div>` : ''}
       ${replyHtml(msg.replyTo)}
       ${text}${msg.editedAt ? `<span class="m-edited">${t('m.edited')}</span>` : ''}
+      ${msg.sound ? soundHtml(msg.sound) : ''}
       ${msg.sticker ? `<img class="m-sticker anim-limit" src="${escapeHtml(msg.sticker.imagePath)}" alt="${escapeHtml(msg.sticker.name)}">` : ''}
       ${attachmentsHtml(msg)}${msg.poll ? pollHtml(msg.poll, ctx.meId, msg.id) : ''}${embedHtml(msg.embed)}${reactionsHtml(msg, ctx.meId, ctx.detail?.customEmoji)}
     </div>
@@ -85,6 +90,7 @@ export function pendingHtml(p, me) {
   return `<div class="m-msg mine pending${p.failed ? ' failed' : ''}" data-pending="${p.key}">
     <div class="m-msg-avatar">${avatarHtml(me, 36)}</div>
     <div class="m-msg-body">${p.text ? `<div class="m-text">${escapeHtml(p.text)}</div>` : ''}
+      ${p.sound ? soundHtml(p.sound) : ''}
       ${p.sticker ? `<img class="m-sticker" src="${escapeHtml(p.sticker.imagePath)}" alt="${escapeHtml(p.sticker.name)}">` : ''}
       ${p.files?.length ? `<div class="m-atts">${p.files.map((f) => `<div class="m-att-file">${icons.file(16)}<span class="m-grow"><b>${escapeHtml(f.name)}</b></span></div>`).join('')}</div>` : ''}
       ${!p.failed && p.files?.length ? `<div class="m-up"><div class="m-up-bar"><i style="width:${Math.round((p.progress || 0) * 100)}%"></i></div><div class="m-up-row"><span class="m-up-pct">${Math.round((p.progress || 0) * 100)}%</span><button class="m-link" data-abort="${p.key}">${t('chat.cancelUpload')}</button></div></div>` : ''}

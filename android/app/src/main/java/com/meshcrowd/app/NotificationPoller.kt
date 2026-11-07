@@ -8,6 +8,19 @@ object NotificationPoller {
     // True while the WebView is on screen: new messages are then visible in the page itself.
     @Volatile var appVisible = false
 
+    // Messages that arrived while the page was on screen were seen there; without moving the cursor past
+    // them the next background poll announced them as new.
+    fun markSeen(context: Context) {
+        val settings = SettingsStore(context)
+        val origin = settings.origin ?: return
+        val cookie = CookieManager.getInstance().getCookie(origin)
+        if (cookie.isNullOrEmpty()) return
+        val res = try { Net.get(NotificationMapper.pollUrl(origin, settings.lastNotificationId), settings.pin, cookie) } catch (_: Exception) { return }
+        if (res.code != 200) return
+        val latest = try { JSONObject(res.body).optLong("latestId", 0) } catch (_: Exception) { return }
+        if (latest > settings.lastNotificationId) settings.lastNotificationId = latest
+    }
+
     // One poll of GET /api/notifications/poll?since=<lastId>. Returns how many notifications were shown.
     // The very first poll only records the newest id so an old backlog never floods the shade.
     fun poll(context: Context): Int {

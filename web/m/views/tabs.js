@@ -26,7 +26,10 @@ function badgeFor(id) {
     for (const d of state.serverDetail.values()) for (const c of d.channels) if (isUnread('channel', c.id, c.last_message_id) && !isChannelMuted(d.server.id, c.id)) n++;
     return n;
   }
-  if (id === 'notifications') return Math.max(0, state.activityFeed.length - seenActivity);
+  if (id === 'notifications') {
+    if (state.activityFeed.length < seenActivity) seenActivity = state.activityFeed.length;
+    return state.activityFeed.length - seenActivity;
+  }
   return 0;
 }
 

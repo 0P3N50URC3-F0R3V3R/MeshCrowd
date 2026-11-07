@@ -2,15 +2,37 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-07
+#### Hozzáadva
+- Android: hangtár gomb az üzenetmezőben (szerverek csatornáiban és szálaiban): egy hangra koppintva hangüzenetként elküldődik (vagy lejátszódik a hívásban, ha azon a szerveren hangcsatornában vagy), a ▶ előhallgatja. A hangüzenetek mostantól lejátszó gombbal jelennek meg a mobilos csevegésben.
+- Android: az Értesítések fülön a kuka gomb törli a teljes listát.
+
+#### Javítva
+- Android: az offline gyorsítótár megújul (a gyorsítótár neve emelve), így a régi CSS-t és JS-t tartó telefonok az alkalmazásadatok törlése nélkül megkapják az új fájlokat.
+- Az „Új üzenetek" vonal és az első olvasatlanra ugrás sosem jelent meg (asztali és mobil): a jogosultság-ellenőrzés a csevegés megnyitásakor 0-ra rögzült. Mostantól a megnyitáskor betöltött legújabb üzenetet használja, így a vonal azoknál az üzeneteknél jelenik meg, amelyek az eszköz offline ideje alatt érkeztek.
+- Asztali: a beszélgetés a legújabb üzenetnél marad, amíg a képek és beágyazások betöltődnek (korábban az aljától elmaradva állt meg, nem ott, ahol abbahagytad), és kerek „Ugrás a legújabbhoz" gomb jelenik meg, ha el vagy görgetve az aljától.
+- Jegyzetek: nagy fájl csatolásakor „Titkosítás…", majd feltöltési folyamatjelző látszik a piszkozatban ahelyett, hogy semmi sem történne; a mentés megvárja a feltöltés végét.
+- Jegyzetek: a jegyzetek szövege újra kijelölhető és másolható asztali gépen.
+- Android: a barátok gomb már nem mutat piros „0" jelvényt, ha nincs kérés.
+- Android: a háttér-értesítések már nem jelentik be azokat az üzeneteket, amelyek az alkalmazás nyitva tartása alatt érkeztek (a lekérdezési kurzor a háttérbe váltáskor továbblép); az alkalmazáson belüli értesítési lista is kihagyja az éppen nézett beszélgetés üzeneteit.
+- Android: az „Ugrás a legújabbhoz" mostantól kis kerek nyíl gomb a sarokban, a széles pirula helyett.
+- Android: az animált néveffektek újra animálnak (a mobil és a közös csevegő stíluslapból is eltávolítottuk a csökkentett mozgás szabályát; a telefon mindkettőt betölti).
+- A kitűzött üzenetek listája (asztali panel, fórumszál-panel és mobil Infó > Kitűzöttek) élőben frissül, amikor egy üzenetet kitűznek vagy levesznek.
+
 ### 2026-11-06
 #### Eltávolítva
 - A végpontok közötti titkosított DM-ek megszűntek: a beszélgetésenkénti „titkosítás bekapcsolása", a ratchet, a biztonsági számok / ellenőrző lapok, a titkosított DM-fájlok és az „Az üzenet nem fejthető vissza" állapot. Ezzel megszűnnek azok a hibák is, hogy a saját titkosított üzeneteid nem voltak visszafejthetők, és hogy a DM-értesítés beragadt, ha egy beszélgetést titkosításra váltottál. A meglévő végpontok közötti titkosított DM-előzmények csak a kliensek által olvasható titkosított szöveg volt, ezért a szerver a következő indításkor törli őket (egyszeri migráció). Az útleveled és a titkosított Jegyzet csatornák változatlanok. A DM-ek újra hagyományos üzenetek, így a szerkesztés, továbbítás, szavazás, időzítés, keresés, botok és csatolmányok minden beszélgetésben működnek.
+- Az üzenetek „Megjelölés olvasatlanként" funkciója megszűnt (asztali menü és mobil lap): a megnyitott beszélgetés olvasottnak számít, így az olvasatlan vonal megjelenése után azonnal eltűnt. Használj könyvjelzőt vagy emlékeztetőt.
 
 #### Javítva
+- Fórumbejegyzések: a megnyitott bejegyzésben a kitűző gomb mostantól mutatja a piros „új kitűzés" pontot, ha valaki kitűz egy üzenetet, és a pont eltűnik, ha megnyitod a kitűzöttek listáját.
 - Hangtár normál csatornákban és szálakban: egy hang kiválasztása most lejátszható hangüzenetként kerül a csatornába (kattintásra mindenkinek szól), ahelyett hogy semmit sem csinálna. Ugyanazon a szerveren hívásban továbbra is a szobának szól.
 - Szövegkijelölés és kurzorok: csak az üzenetszöveg, a beviteli mezők, a kód és a profilszövegek jelölhetők ki (nem lehet többé avatárt, képeket, menüket és gombokat kijelölni), a menük és gombok pedig már nem mutatják a szövegkurzort.
 
 #### Hozzáadva
+- Jegyzetcsatornák: emoji-választó gomb az üzenetmező mellett.
+- Jobb kattintás egy üzenetre > „Mentés a Jegyzetekbe" a szövegét átmásolja az egyik Jegyzetcsatornádba (több csatorna esetén almenü jelenik meg), a feladóval és az idővel. A jegyzetben erre a sorra kattintva az eredetire ugrasz; ha törölték, felugró ablak jelzi, a mentett másolatod megmarad. Egyelőre csak asztali gépen.
+- Szerverenkénti tagkorlátozások: a moderátorok (Tagok moderálása) letilthatják egy tag saját névszínét, néveffektjeit, matricáit vagy bio-formázását, csak az adott szerveren (szerverbeállítások > Tagok > tagmenü > Korlátozások). A korlátozott nevek mindenkinek egyszerűen látszanak azon a szerveren, a bio sima szövegként jelenik meg a kártyán, a matricaküldést pedig elutasítja. A módosítások bekerülnek a naplóba. Más szervereket és privát üzeneteket nem érint.
 - Beállítások > Hang és videó: mások hangtár-hangjainak némítása vagy hangerejük csökkentése (hívások és hangüzenetek, csak ezen az eszközön). A hangtár felugró ablakában gyors némítógomb is van ugyanehhez a beállításhoz.
 - Bemutatkozás-szerkesztő: emoji-választó gomb a formázósávban.
 - `/wipe <szám>` (csak adminoknak: oldal- és szerveradminisztrátorok): törli az aktuális csatorna utolsó N üzenetét (legfeljebb 1000), a fájlokkal együtt.

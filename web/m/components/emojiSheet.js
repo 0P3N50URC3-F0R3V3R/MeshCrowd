@@ -5,6 +5,7 @@ import { t } from '../../js/i18n.js';
 import { EMOJI_CATEGORIES } from '../../js/emoji-data.js';
 import { EMOJI_SHORTCODES } from '../../js/emojiShortcodes.js';
 import { isEmojiSupported } from '../../js/emojiSupport.js';
+import { playSoundboardAudio } from '../../js/soundboardPrefs.js';
 
 export const QUICK_EMOJI = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
@@ -91,6 +92,36 @@ export function openStickerSheet(ctx) {
         body.addEventListener('click', (ev) => {
           const b = ev.target.closest('[data-s]');
           if (b) { chosen = stickers.find((s) => s.id === Number(b.dataset.s)) || null; close(); }
+        });
+      },
+      onClose: () => resolve(chosen),
+    });
+  });
+}
+
+export function openSoundSheet(ctx) {
+  return new Promise((resolve) => {
+    let chosen = null;
+    const sounds = ctx.detail?.sounds || [];
+    openSheet({
+      title: t('admin.soundboardTab'),
+      html: `<input class="m-input" id="sb-search" placeholder="${escapeHtml(t('soundboardPicker.searchPlaceholder'))}" autocomplete="off"><div id="sb-list"></div>`,
+      onMount: (body, close) => {
+        const list = body.querySelector('#sb-list');
+        const paint = (q) => {
+          q = q.trim().toLowerCase();
+          const shown = q ? sounds.filter((s) => s.name.toLowerCase().includes(q)) : sounds;
+          list.innerHTML = shown.length
+            ? shown.map((s) => `<div class="m-row m-sound-row"><button class="m-grow m-sound-pick" data-send="${s.id}"><span class="m-sound-emoji">${escapeHtml(s.emoji) || '🔊'}</span><b>${escapeHtml(s.name)}</b></button><button class="m-icon-btn" data-play="${s.id}" aria-label="▶">▶</button></div>`).join('')
+            : `<div class="m-empty">${t(sounds.length ? 'soundboardPicker.noMatching' : 'soundboardPicker.noneUploaded')}</div>`;
+        };
+        paint('');
+        body.querySelector('#sb-search').addEventListener('input', (ev) => paint(ev.target.value));
+        body.addEventListener('click', (ev) => {
+          const play = ev.target.closest('[data-play]');
+          if (play) { const s = sounds.find((x) => x.id === Number(play.dataset.play)); if (s) playSoundboardAudio(s.audioPath); return; }
+          const send = ev.target.closest('[data-send]');
+          if (send) { chosen = sounds.find((s) => s.id === Number(send.dataset.send)) || null; close(); }
         });
       },
       onClose: () => resolve(chosen),

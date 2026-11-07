@@ -75,7 +75,7 @@ The events are direct messages, direct-message mentions, channel messages (chann
 
 The defaults match the old behavior: Do not disturb and Invisible are silent, everything else is on. Every status can be changed, Online included, but a warning appears while Online differs from its defaults, because switching things off there is easy to forget. Muted servers and channels stay muted whatever the grid says. The sound on or off for a single device (volume, your own sound file) stays under the grid in the same settings page.
 
-A chat you open with unread messages shows a red **New** line above the first one; see [Profiles, status and themes](personalization.html#unread-messages) for its settings.
+A chat you open with unread messages shows a red **New** line above the first one; see [Profiles, status and themes](personalization.html#unread-messages) for its settings. The line is drawn for messages that arrived while this device was offline (change that under the unread settings), and the chat opens at it. A chat otherwise stays at the newest message, and a round **jump to latest** button appears whenever you scroll away from the bottom. The pinned messages list updates live when someone pins or unpins a message.
 
 ## Incoming webhooks
 

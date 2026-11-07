@@ -57,4 +57,4 @@ Highlight a few channels with a short description each, so a new member knows wh
 
 ## Custom emoji, stickers and soundboard
 
-Upload your own emoji and stickers (images) and a **soundboard** of short clips under **Server Settings**. Emoji work in messages and reactions; stickers are sent as a message; the soundboard plays into voice rooms. Animated stickers (GIF, APNG, animated WebP) stay still in the picker and the sticker editors until you hover them, and in chat only the six newest on screen play at once; hover any sticker to play it.
+Upload your own emoji and stickers (images) and a **soundboard** of short clips under **Server Settings**. Emoji work in messages and reactions; stickers are sent as a message; the soundboard plays into voice rooms. Animated stickers (GIF, APNG, animated WebP) stay still in the picker and the sticker editors until you hover them, and in chat only the six newest on screen play at once; hover any sticker to play it. On Android the music-note button in the message box of a server channel or thread works the same way as on the desktop.

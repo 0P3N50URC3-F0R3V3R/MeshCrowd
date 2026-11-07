@@ -1,4 +1,5 @@
 import { api } from '../../js/api.js';
+import { bus } from '../../js/bus.js';
 import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
 import { escapeHtml, avatarHtml, formatBytes } from '../../js/utils.js';
@@ -103,6 +104,12 @@ export function mountInfo(el, params) {
     }
   });
 
+  const offUpdate = bus.on('ws:message_update', ({ message }) => {
+    if (!message || message.scopeType !== scopeType || message.scopeId !== scopeId) return;
+    pins = null;
+    if (tab === 'pins') paintPane();
+  });
+
   (async () => {
     let title;
     if (kind === 'dm') { title = dmTitle(dm, nameFor); members = [state.me, ...dm.members]; }
@@ -116,4 +123,5 @@ export function mountInfo(el, params) {
     paintQuick();
     paintPane();
   })().catch((err) => handleError(err, 'm.loadFailed'));
+  return { destroy: offUpdate };
 }

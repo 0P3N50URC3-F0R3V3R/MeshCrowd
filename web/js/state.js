@@ -442,6 +442,11 @@ export function pushActivity(item) {
   bus.emit('state:activity');
 }
 
+export function clearActivity() {
+  state.activityFeed.length = 0;
+  bus.emit('state:activity');
+}
+
 export function setFriendVoice(userId, channel) {
   if (channel) state.friendVoice.set(userId, channel);
   else state.friendVoice.delete(userId);

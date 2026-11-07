@@ -27,6 +27,7 @@ export function mountComposer(host, opts) {
         ${opts.attachEnabled ? `<button class="m-icon-btn" id="c-plus" aria-label="${t('m.attach')}">${icons.plus(22)}</button>` : ''}
         ${opts.onEmoji ? `<button class="m-icon-btn" id="c-emoji" aria-label="${t('m.emoji')}">${icons.smile(22)}</button>` : ''}
         ${opts.onSticker ? `<button class="m-icon-btn" id="c-sticker" aria-label="${t('m.stickers')}">${icons.sticker(22)}</button>` : ''}
+        ${opts.onSound ? `<button class="m-icon-btn" id="c-sound" aria-label="${t('admin.soundboardTab')}">${icons.music(22)}</button>` : ''}
         ${opts.onVoice && canRecordVoice() ? `<button class="m-icon-btn" id="c-mic" aria-label="${t('voiceMsg.record')}">${icons.mic(22)}</button>` : ''}
         <span class="m-grow"></span>
         <button class="m-send" id="c-send" aria-label="${t('m.send')}" disabled>${icons.send(20)}</button>
@@ -115,6 +116,7 @@ export function mountComposer(host, opts) {
     input.focus();
   });
   host.querySelector('#c-sticker')?.addEventListener('click', () => opts.onSticker());
+  host.querySelector('#c-sound')?.addEventListener('click', () => opts.onSound());
   host.querySelector('#c-mic')?.addEventListener('click', async () => {
     const barHost = host.querySelector('#c-banner');
     if (host.querySelector('.voice-recorder')) return;

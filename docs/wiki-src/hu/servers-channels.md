@@ -76,7 +76,7 @@ Nyisd meg a csatorna beállításait, és engedélyezz vagy tiltsz jogosultságo
 
 ## Jegyzetcsatornák
 
-A **Jegyzet** csatorna minden tagnak privát jegyzetfüzetet ad a szerveren belül, szöveggel és jegyzetenként legfeljebb öt melléklettel. Minden a böngészőben, az Útleveledből származtatott kulccsal titkosított, így az adatbázis és az adminok nem tudják elolvasni. Az adminok csak egy dátumnál régebbi jegyzeteket törölhetnek. A jegyzetek nem kereshetők, nem továbbíthatók és nem alakíthatók más csatornatípussá, az Útlevél elvesztése pedig a jegyzetek elvesztését jelenti.
+A **Jegyzet** csatorna minden tagnak privát jegyzetfüzetet ad a szerveren belül, szöveggel és jegyzetenként legfeljebb öt melléklettel. Minden a böngészőben, az Útleveledből származtatott kulccsal titkosított, így az adatbázis és az adminok nem tudják elolvasni. Az adminok csak egy dátumnál régebbi jegyzeteket törölhetnek. A jegyzetek nem kereshetők, nem továbbíthatók és nem alakíthatók más csatornatípussá, az Útlevél elvesztése pedig a jegyzetek elvesztését jelenti. A jegyzetek szövege kijelölhető és másolható, és bármely üzenetre jobb kattintva a **Mentés a Jegyzetekbe** is elérhető (asztali gépen). Nagy fájl csatolásakor titkosítási lépés, majd feltöltési folyamatjelző látszik a piszkozatban; a Mentés megvárja a feltöltés végét.
 
 ## Szerversáv és mappák
 

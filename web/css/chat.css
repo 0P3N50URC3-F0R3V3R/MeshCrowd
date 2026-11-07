@@ -8,6 +8,10 @@
 .message-scroll .top-spacer { flex: 1 0 auto; }
 .unread-banner { position: sticky; top: 0; z-index: 5; flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 12px; height: 32px; font-size: 13px; font-weight: 600; color: #fff; background: var(--brand); }
 .unread-banner[hidden] { display: none; }
+#chat-body { position: relative; }
+.jump-latest { position: absolute; right: 24px; bottom: 84px; z-index: 6; width: 34px; height: 34px; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--brand); color: #fff; cursor: pointer; opacity: .9; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+.jump-latest:hover { opacity: 1; }
+.jump-latest[hidden] { display: none; }
 .unread-banner button { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .unread-banner-jump { flex: 1; height: 100%; }
 .unread-banner button:hover { text-decoration: underline; }
@@ -794,4 +798,3 @@
 @keyframes nfx-pulse { 50% { opacity: 0.45; } }
 @keyframes nfx-flicker { 0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; } 20%, 24%, 55% { opacity: 0.6; } }
 @keyframes nfx-wave { 50% { transform: translateY(-2px); } }
-@media (prefers-reduced-motion: reduce) { .name-fx { animation: none !important; } }

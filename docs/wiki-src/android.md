@@ -31,7 +31,7 @@ The phone interface covers the same features as the desktop one:
 
 - **Messaging**: channels, threads (custom channel and thread icons show in the lists and the chat header), forum channels (cards with search, sorting and previews that open as threads), direct and group chats with encryption, reactions, replies, polls, voice messages, stickers, slash commands, scheduled messages and saved messages. The emoji button opens the full picker with categories, search, recents, custom emoji and `:shortcode:` suggestions, and the sticker picker has search. A red **New** line marks the first unread message when you open a chat; see [Unread messages](personalization.html#unread-messages).
 - **Notes channels** (your encrypted journal) and **Sites** open full screen.
-- **Voice**: voice rooms and stages, camera, soundboard and a live list of who is in each room right under the channel.
+- **Voice**: voice rooms and stages, camera, soundboard and a live list of who is in each room right under the channel. Server channels and threads also have a music-note button in the message box: tap a sound to send it as a sound message with a play button (or to play it into the call when you are in voice on that server); the ▶ next to a sound previews it only for you.
 - **Server management**: the server menu has Events, Server Settings (roles, channels, members, invites, AutoMod, bots, onboarding, audit log and the rest), Create Channel and Create Category, shown only to people with the permission.
 - **Your account**: the **You** tab opens account, appearance (themes), voice and video, privacy, Passport and security settings, saved and scheduled messages, and the **Admin Panel** for site administrators, including federation.
 - **Federated servers** from paired instances appear in the server list with a globe badge; long-press one to leave it.
@@ -48,7 +48,7 @@ The app polls your server itself, so it needs no Firebase or Google Play Service
 | Fast mode (on by default) | A foreground service with a permanent notification, polling every 1 to 1440 minutes | Heavier |
 | UnifiedPush | The server wakes the phone through a distributor app such as ntfy | Light and instant |
 
-The permanent notification of fast mode comes back by itself if you swipe it away (Android 14 and newer allow dismissing it). While the app is open, messages arrive instantly over the WebSocket. Encrypted DMs show only a generic "New encrypted message". Tapping a notification opens that conversation.
+The permanent notification of fast mode comes back by itself if you swipe it away (Android 14 and newer allow dismissing it). While the app is open, messages arrive instantly over the WebSocket. Encrypted DMs show only a generic "New encrypted message". Tapping a notification opens that conversation. Notifications are only sent for messages that arrived while the app was in the background, never for what you already saw with the app open. The **Notifications** tab has a trash button that clears the whole list, and the tab only lists messages from conversations you are not looking at.
 
 ### UnifiedPush
 

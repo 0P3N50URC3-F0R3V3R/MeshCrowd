@@ -1254,6 +1254,7 @@
     "searchNeedField": "Select at least one filter.",
     "searchScopeHint": "Open a server or conversation to search it.",
     "notificationsTitle": "Notifications",
+    "notificationsClear": "Clear all notifications",
     "notificationsEmpty": "Nothing new. Mentions, replies and DMs show up here.",
     "setStatus": "Set status",
     "account": "Account",
@@ -2079,6 +2080,8 @@
     "openOriginal": "Open the original message",
     "originalGoneTitle": "Original message deleted",
     "originalGoneBody": "The original message from {author} ({date}) was deleted or is no longer accessible. Your saved copy is unchanged.",
+    "encryptingFile": "Encrypting {name}…",
+    "uploadingFile": "Uploading {name} — {pct}%",
     "fileError": "Could not process the file.",
     "tooManyFiles": "At most {count} files per note.",
     "fileTooLarge": "{name} is larger than {mb} MB."

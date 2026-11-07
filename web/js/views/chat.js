@@ -74,7 +74,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   let unreadUpTo = 0;
   let unreadUpToSet = false;
   const offlineAtOpen = offlineWindows();
-  const unreadOk = unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen });
+  const unreadOk = (m) => unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen })(m);
 
   container.innerHTML = `
     <div class="message-scroll" id="msg-scroll">
@@ -82,6 +82,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       <div class="top-spacer"></div>
       <div id="msg-list"></div>
     </div>
+    <button type="button" class="jump-latest" id="jump-latest" hidden title="${escapeHtml(t('m.jumpLatest'))}" aria-label="${escapeHtml(t('m.jumpLatest'))}">${icons.chevronDown(18)}</button>
     <div class="typing-indicator" id="typing-indicator"></div>
     <div class="composer-wrap" id="composer-wrap"></div>`;
 
@@ -91,6 +92,28 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   const typingEl = container.querySelector('#typing-indicator');
   const composerWrap = container.querySelector('#composer-wrap');
   const unreadBannerEl = container.querySelector('#unread-banner');
+  const jumpLatestEl = container.querySelector('#jump-latest');
+
+  // After the initial load the view is pinned to the bottom while images, embeds and fonts settle:
+  // each one grows the list and, unpinned, left the view short of the end. Any user scroll gesture lets go.
+  let pinBottom = false;
+  const releasePin = () => { pinBottom = false; };
+  for (const ev of ['wheel', 'touchstart', 'mousedown', 'keydown']) scrollEl.addEventListener(ev, releasePin, { passive: true });
+  const pinObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { if (pinBottom) scrollEl.scrollTop = scrollEl.scrollHeight; }) : null;
+  pinObserver?.observe(listEl);
+  function pinToBottomBriefly() {
+    pinBottom = true;
+    setTimeout(releasePin, 4000);
+  }
+  function paintJumpLatest() {
+    jumpLatestEl.hidden = !hasNewer && isNearBottom();
+  }
+  jumpLatestEl.addEventListener('click', async () => {
+    if (hasNewer) await showLatest();
+    scrollToBottom();
+    pinToBottomBriefly();
+    paintJumpLatest();
+  });
 
   function paintUnreadBanner() {
     const at = bannerDismissed ? -1 : firstUnreadIndex(messages, unreadAfterId, (m) => isSelf(m.author.id), unreadOk);
@@ -169,6 +192,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   setComposerConnected(state.wsConnected);
   const onScroll = debounce(checkEdges, 150);
   scrollEl.addEventListener('scroll', onScroll);
+  scrollEl.addEventListener('scroll', paintJumpLatest, { passive: true });
 
   listEl.addEventListener('click', onListClick);
   listEl.addEventListener('keydown', (e) => {
@@ -208,7 +232,8 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
           const anchorAt = anchorIndex(unreadAt, prefs.unreadContext);
           const anchor = anchorAt === unreadAt ? listEl.querySelector('.unread-divider') : listEl.querySelector(`[data-id="${messages[anchorAt].id}"]`);
           (anchor || listEl.lastElementChild)?.scrollIntoView({ block: 'start' });
-        } else scrollToBottom();
+        } else { scrollToBottom(); pinToBottomBriefly(); }
+        paintJumpLatest();
         // Short backlog: everything is already (nearly) on screen, so the unread line has been "reached".
         requestAnimationFrame(() => {
           if (isNearBottom() && !hasNewer && listEl.querySelector('.unread-divider')) {
@@ -1921,6 +1946,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     offUploadProgress(); offUploadDone();
     offEphemeral(); offCreate(); offUpdate(); offDelete(); offTyping(); offConnection(); offWsClose(); offWsOpen(); offProfile(); offDms?.();
     scrollEl.removeEventListener('scroll', onScroll);
+    pinObserver?.disconnect();
     clearTimeout(typingTimer);
     for (const f of uploadFiles) releaseObjectUrl(f);
   }
