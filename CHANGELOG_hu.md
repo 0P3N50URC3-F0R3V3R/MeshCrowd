@@ -4,10 +4,13 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 
 ### 2026-11-07
 #### Hozzáadva
+- Asztali, Electron és web: az emoji-választó a kategóriafülek alatt, mindig látható sorban mutatja az utolsó 10 választott emojit (közös előzmény az Android-alkalmazás legutóbbi listájával).
 - Android: hangtár gomb az üzenetmezőben (szerverek csatornáiban és szálaiban): egy hangra koppintva hangüzenetként elküldődik (vagy lejátszódik a hívásban, ha azon a szerveren hangcsatornában vagy), a ▶ előhallgatja. A hangüzenetek mostantól lejátszó gombbal jelennek meg a mobilos csevegésben.
 - Android: az Értesítések fülön a kuka gomb törli a teljes listát.
 
 #### Javítva
+- Android: a letöltött DM-mellékletek `<azonosító>.bin` néven mentődtek (egy APK nem telepíthető így), mert a szerver `filename*=UTF-8''…` fejlécéből a fájlnév elveszett; mostantól a valódi név kerül mentésre.
+- Android: a letöltések némák voltak. Mostantól „Letöltés…” üzenet, folyamatjelző értesítés és „Letöltés kész” értesítés (új, alapértelmezett fontosságú csatornán) jelenik meg, hibánál pedig az okot mutató üzenet.
 - Android: az offline gyorsítótár megújul (a gyorsítótár neve emelve), így a régi CSS-t és JS-t tartó telefonok az alkalmazásadatok törlése nélkül megkapják az új fájlokat.
 - Az „Új üzenetek" vonal és az első olvasatlanra ugrás sosem jelent meg (asztali és mobil): a jogosultság-ellenőrzés a csevegés megnyitásakor 0-ra rögzült. Mostantól a megnyitáskor betöltött legújabb üzenetet használja, így a vonal azoknál az üzeneteknél jelenik meg, amelyek az eszköz offline ideje alatt érkeztek.
 - Asztali: a beszélgetés a legújabb üzenetnél marad, amíg a képek és beágyazások betöltődnek (korábban az aljától elmaradva állt meg, nem ott, ahol abbahagytad), és kerek „Ugrás a legújabbhoz" gomb jelenik meg, ha el vagy görgetve az aljától.

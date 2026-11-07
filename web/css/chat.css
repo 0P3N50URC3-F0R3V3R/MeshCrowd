@@ -506,6 +506,12 @@
 }
 .emoji-picker .ep-tabs button:hover { background: var(--bg-hover); }
 .emoji-picker .ep-tabs button.active { background: var(--bg-active); color: var(--text-primary); }
+.emoji-picker .ep-recent {
+  display: grid; grid-template-columns: repeat(10, 1fr); padding: 4px 8px;
+  flex-shrink: 0; border-bottom: 1px solid var(--border-subtle);
+}
+.emoji-picker .ep-recent[hidden] { display: none; }
+.emoji-picker .ep-recent .ep-emoji { font-size: 18px; }
 .emoji-picker .ep-list { flex: 1; overflow-y: auto; padding: 8px; }
 .emoji-picker .ep-cat-label {
   font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;

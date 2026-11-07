@@ -13,6 +13,14 @@ function getSupportedCategories() {
   return supportedCategories;
 }
 
+// Same key as the mobile sheet so both UIs share one history.
+const RECENT_KEY = 'mc.recentEmoji';
+const RECENT_SHOWN = 10;
+function recentEmoji() { try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch { return []; } }
+function pushRecent(e) {
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify([e, ...recentEmoji().filter((x) => x !== e)].slice(0, 24))); } catch { /* storage unavailable */ }
+}
+
 // Popover emoji picker anchored above the composer's emoji button. `onPick(value)` receives a raw
 // unicode character for a built-in emoji, or a ":name:" shortcode for a server custom emoji.
 // `customEmoji` (optional, [{id, name, image_path}]) adds a "This Server" tab of uploaded images —
@@ -42,10 +50,32 @@ export function openEmojiPicker(anchorEl, onPick, customEmoji = [], onClose) {
       <div class="ep-grid">${cat.emoji.map((e) => `<button class="ep-emoji" type="button">${e}</button>`).join('')}</div>`;
   }
 
+  function pick(value) {
+    pushRecent(value);
+    renderRecent();
+    onPick(value);
+  }
+
   function wireEmojiButtons(list) {
     list.querySelectorAll('.ep-emoji').forEach((btn) => {
-      btn.addEventListener('click', () => onPick(btn.dataset.customName ? `:${btn.dataset.customName}:` : btn.textContent));
+      btn.addEventListener('click', () => pick(btn.dataset.customName ? `:${btn.dataset.customName}:` : btn.textContent));
     });
+  }
+
+  function renderRecent() {
+    const row = picker.querySelector('.ep-recent');
+    const items = recentEmoji().filter((v) => {
+      const m = /^:(.+):$/.exec(v);
+      return m ? customEmoji.some((c) => c.name === m[1]) : true;
+    }).slice(0, RECENT_SHOWN);
+    row.hidden = !items.length;
+    row.innerHTML = items.map((v) => {
+      const m = /^:(.+):$/.exec(v);
+      if (!m) return `<button class="ep-emoji" type="button">${v}</button>`;
+      const c = customEmoji.find((x) => x.name === m[1]);
+      return `<button class="ep-emoji" type="button" data-custom-name="${escapeHtml(c.name)}" title=":${escapeHtml(c.name)}:"><img src="${escapeHtml(c.image_path)}" alt=":${escapeHtml(c.name)}:" style="width:22px;height:22px;object-fit:contain"></button>`;
+    }).join('');
+    wireEmojiButtons(row);
   }
 
   function renderList() {
@@ -70,11 +100,13 @@ export function openEmojiPicker(anchorEl, onPick, customEmoji = [], onClose) {
     <div class="ep-tabs">
       ${categories.map((c) => `<button type="button" data-cat="${c.id}" class="${c.id === activeCat ? 'active' : ''}">${c.icon}</button>`).join('')}
     </div>
+    <div class="ep-recent" hidden></div>
     <div class="ep-list"></div>`;
 
   picker.style.zIndex = nextZIndex();
   document.body.appendChild(picker);
   positionPicker();
+  renderRecent();
   renderList();
 
   picker.querySelectorAll('.ep-tabs button').forEach((btn) => {

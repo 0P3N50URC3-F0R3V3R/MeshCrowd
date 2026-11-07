@@ -14,14 +14,16 @@ import androidx.core.app.NotificationManagerCompat
 object NotificationHelper {
     const val CHANNEL_MESSAGES = "messages"
     const val CHANNEL_SERVICE = "service"
-    const val CHANNEL_DOWNLOADS = "downloads"
+    // v2: the original "downloads" channel was IMPORTANCE_LOW and users never noticed it; channel importance cannot be raised once created.
+    const val CHANNEL_DOWNLOADS = "downloads_v2"
     const val EXTRA_DEEP_LINK = "deepLink"
 
     fun createChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel(CHANNEL_MESSAGES, context.getString(R.string.channel_messages), NotificationManager.IMPORTANCE_HIGH))
         nm.createNotificationChannel(NotificationChannel(CHANNEL_SERVICE, context.getString(R.string.channel_service), NotificationManager.IMPORTANCE_LOW))
-        nm.createNotificationChannel(NotificationChannel(CHANNEL_DOWNLOADS, context.getString(R.string.channel_downloads), NotificationManager.IMPORTANCE_LOW))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL_DOWNLOADS, context.getString(R.string.channel_downloads), NotificationManager.IMPORTANCE_DEFAULT))
+        nm.deleteNotificationChannel("downloads")
     }
 
     private fun canNotify(context: Context) = NotificationManagerCompat.from(context).areNotificationsEnabled()
@@ -76,18 +78,35 @@ object NotificationHelper {
             .setDeleteIntent(repostIntent(context))
             .build()
 
-    fun showDownloaded(context: Context, name: String, uri: Uri, mime: String) {
+    fun showDownloadProgress(context: Context, id: Int, name: String, done: Long, total: Long) {
+        if (!canNotify(context)) return
+        val n = NotificationCompat.Builder(context, CHANNEL_DOWNLOADS)
+            .setSmallIcon(android.R.drawable.stat_sys_download)
+            .setContentTitle(context.getString(R.string.download_progress))
+            .setContentText(name)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setProgress(if (total > 0) 100 else 0, if (total > 0) (done * 100 / total).toInt() else 0, total <= 0)
+            .build()
+        @Suppress("MissingPermission")
+        NotificationManagerCompat.from(context).notify(id, n)
+    }
+
+    fun cancelDownload(context: Context, id: Int) = NotificationManagerCompat.from(context).cancel(id)
+
+    fun showDownloaded(context: Context, id: Int, name: String, uri: Uri, mime: String) {
         if (!canNotify(context)) return
         val view = Intent(Intent.ACTION_VIEW).setDataAndType(uri, mime).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         val pending = PendingIntent.getActivity(context, uri.hashCode(), view, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val n = NotificationCompat.Builder(context, CHANNEL_DOWNLOADS)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(android.R.drawable.stat_sys_download_done)
             .setContentTitle(context.getString(R.string.download_done))
             .setContentText(name)
             .setAutoCancel(true)
             .setContentIntent(pending)
             .build()
         @Suppress("MissingPermission")
-        NotificationManagerCompat.from(context).notify(uri.hashCode(), n)
+        NotificationManagerCompat.from(context).notify(id, n)
     }
 }

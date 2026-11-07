@@ -25,7 +25,15 @@ object Downloads {
         return unprefixed.ifEmpty { "download" }.take(120)
     }
 
+    // URLUtil.guessFileName ignores the RFC 5987 "filename*=UTF-8''name" form the DM file route sends,
+    // which saved every DM attachment as "<id>.bin".
+    private fun extendedFilename(contentDisposition: String?): String? {
+        val m = Regex("""filename\*\s*=\s*[^']*'[^']*'([^;]+)""", RegexOption.IGNORE_CASE).find(contentDisposition ?: return null) ?: return null
+        return runCatching { URLDecoder.decode(m.groupValues[1].trim().trim('"').replace("+", "%2B"), "UTF-8") }.getOrNull()?.takeIf { it.isNotBlank() }
+    }
+
     fun nameFor(url: String, contentDisposition: String?, mime: String?): String {
+        extendedFilename(contentDisposition)?.let { return safeName(it) }
         val guessed = URLUtil.guessFileName(url, contentDisposition, mime)
         return safeName(runCatching { URLDecoder.decode(guessed, "UTF-8") }.getOrDefault(guessed))
     }
@@ -36,7 +44,7 @@ object Downloads {
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
     }
 
-    fun save(context: Context, name: String, mime: String, input: InputStream): Uri {
+    fun save(context: Context, name: String, mime: String, input: InputStream, notifyId: Int = name.hashCode()): Uri {
         val safe = safeName(name)
         val resolver = context.contentResolver
         val uri: Uri
@@ -58,27 +66,47 @@ object Downloads {
             target.outputStream().use { out -> input.copyTo(out) }
             uri = FileProvider.getUriForFile(context, "${context.packageName}.files", target)
         }
-        NotificationHelper.showDownloaded(context, safe, uri, mime)
+        try { NotificationHelper.showDownloaded(context, notifyId, safe, uri, mime) } catch (_: Exception) { /* file is saved; the notification is a convenience */ }
         return uri
     }
 
     // http(s) downloads go through our own (pin-aware) connection with the WebView's session cookie.
     fun downloadUrl(context: Context, url: String, userAgent: String?, contentDisposition: String?, mime: String?) {
         val settings = SettingsStore(context)
+        val main = android.os.Handler(android.os.Looper.getMainLooper())
+        val notifyId = (System.nanoTime() and 0x7fffffff).toInt()
+        fun toast(res: Int, arg: String) = main.post { android.widget.Toast.makeText(context, context.getString(res, arg), android.widget.Toast.LENGTH_LONG).show() }
         Thread {
             try {
                 val conn = Net.open(url, settings.pin, CookieManager.getInstance().getCookie(url), timeoutMs = 20000)
                 if (!userAgent.isNullOrEmpty()) conn.setRequestProperty("User-Agent", userAgent)
                 conn.setRequestProperty("Accept", "*/*")
                 try {
-                    if (conn.responseCode !in 200..299) return@Thread
+                    if (conn.responseCode !in 200..299) { NotificationHelper.cancelDownload(context, notifyId); toast(R.string.download_failed, "HTTP ${conn.responseCode}"); return@Thread }
                     val name = nameFor(url, contentDisposition ?: conn.getHeaderField("Content-Disposition"), mime ?: conn.contentType)
-                    conn.inputStream.use { save(context, name, mimeFor(name, mime ?: conn.contentType?.substringBefore(';')), it) }
+                    toast(R.string.download_started, name)
+                    val total = conn.contentLengthLong
+                    var done = 0L
+                    var lastTick = 0L
+                    NotificationHelper.showDownloadProgress(context, notifyId, name, 0, total)
+                    val counted = object : java.io.FilterInputStream(conn.inputStream) {
+                        override fun read(b: ByteArray, off: Int, len: Int): Int {
+                            val n = super.read(b, off, len)
+                            if (n > 0) {
+                                done += n
+                                val now = System.currentTimeMillis()
+                                if (now - lastTick > 500) { lastTick = now; NotificationHelper.showDownloadProgress(context, notifyId, name, done, total) }
+                            }
+                            return n
+                        }
+                    }
+                    counted.use { save(context, name, mimeFor(name, mime ?: conn.contentType?.substringBefore(';')), it, notifyId) }
                 } finally {
                     conn.disconnect()
                 }
-            } catch (_: Exception) {
-                // The download simply does not happen; the page stays usable.
+            } catch (e: Exception) {
+                NotificationHelper.cancelDownload(context, notifyId)
+                toast(R.string.download_failed, e.message ?: e.javaClass.simpleName)
             }
         }.start()
     }

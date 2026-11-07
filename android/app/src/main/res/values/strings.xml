@@ -11,6 +11,9 @@
     <string name="service_title">MeshCrowd is checking for messages</string>
     <string name="service_text">Fast mode keeps this notification. Turn it off in You, Android app.</string>
     <string name="download_done">Download complete</string>
+    <string name="download_progress">Downloading</string>
+    <string name="download_started">Downloading %1$s…</string>
+    <string name="download_failed">Download failed (%1$s)</string>
     <string name="notify_encrypted">New encrypted message</string>
     <string name="notify_attachment">Sent an attachment</string>
     <string name="notify_sticker">Sent a sticker</string>

@@ -4,10 +4,13 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ### 2026-11-07
 #### Added
+- Desktop, Electron and web: the emoji picker now shows your last 10 picked emoji in a row right below the category tabs, always visible (shared history with the Android app's recent list).
 - Android: soundboard button in the composer (server channels and threads): tap a sound to send it as a sound message (or play it to the call if you are in voice on that server), ▶ previews it. Sound messages now show a play button in mobile chat.
 - Android: trash button in the Notifications tab clears the whole list.
 
 #### Fixed
+- Android: downloaded DM attachments were saved as `<id>.bin` (an APK could not be installed) because the filename from the server's `filename*=UTF-8''…` header was ignored; the real name is now used.
+- Android: downloads were silent. They now show a "Downloading…" toast, a progress notification, and a "Download complete" notification (new default-importance channel, so it is no longer hidden as a low-priority one), plus a failure toast with the reason (HTTP code or error).
 - Android: the app's offline cache is renewed (cache name bumped), so phones that had stale CSS and JS pick up the new files without clearing app data.
 - The "new messages" line and jump-to-first-unread never appeared (desktop and mobile): the eligibility check was fixed at 0 when the chat opened. It now uses the newest message loaded at open, so the line shows for messages that arrived while this device was offline.
 - Desktop: a conversation now stays pinned to the newest message while images and embeds finish loading (it could end up short of the bottom, away from where you left off), and a round "jump to latest" button appears whenever you are scrolled away from the bottom.
