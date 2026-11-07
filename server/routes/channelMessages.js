@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const { isRestricted } = require('../lib/restrictions');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const multer = require('multer');
@@ -100,6 +101,7 @@ router.post('/', requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfRestricte
   const content = String(req.body?.content || '').slice(0, maxMessageChars());
   let stickerId = null;
   if (req.body?.stickerId) {
+    if (isRestricted(req.channel.server_id, req.user.id, 'stickers')) return res.status(403).json({ error: 'stickers are restricted for you on this server' });
     const sticker = db.prepare('SELECT id FROM stickers WHERE id = ? AND server_id = ?').get(Number(req.body.stickerId), req.channel.server_id);
     if (!sticker) return res.status(400).json({ error: 'sticker not found on this server' });
     stickerId = sticker.id;

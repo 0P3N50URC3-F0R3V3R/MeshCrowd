@@ -7,7 +7,8 @@ import { mountChat } from './chat.js';
 import { forumCardHtml, matchesPost, sortPosts } from '../forumCard.js';
 import { t } from '../i18n.js';
 import { memberNameColor } from '../permissions.js';
-import { state, threadUnread, getServerDetail, setReadState, isUnread } from '../state.js';
+import { state, threadUnread, getServerDetail, setReadState, isUnread, pinUnseen } from '../state.js';
+import { markPinsSeen } from '../pinSeen.js';
 import { mountPinnedPanel } from './pinnedPanel.js';
 import { canEditPost, canDeletePost } from '../threadPerms.mjs';
 import { editPost, deletePost } from './postActions.js';
@@ -157,7 +158,8 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
     const host = document.createElement('div');
     host.className = 'forum-pins';
     pane.appendChild(host);
-    const close = () => { pinsPanel?.destroy?.(); pinsPanel = null; host.remove(); };
+    markPinsSeen('thread', post.id);
+    const close =() => { pinsPanel?.destroy?.(); pinsPanel = null; host.remove(); };
     pinsPanel = mountPinnedPanel(host, 'thread', post.id, {
       canManage,
       onJump: (messageId) => { close(); mountPostChat(post, messageId); },
@@ -184,7 +186,15 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
     pane.querySelector('#forum-pane-close').addEventListener('click', closePost);
     pane.querySelector('#forum-pane-edit')?.addEventListener('click', () => editPost(serverId, channelId, post.id));
     pane.querySelector('#forum-pane-delete')?.addEventListener('click', () => deletePost(serverId, channelId, post));
-    pane.querySelector('#forum-pane-pins').addEventListener('click', () => togglePins(post));
+    const pinBtn = pane.querySelector('#forum-pane-pins');
+    pinBtn.addEventListener('click', () => togglePins(post));
+    const paintPinDot = () => pinBtn.classList.toggle('has-dot', pinUnseen('thread', post.id));
+    paintPinDot();
+    const offPins = bus.on('state:pins', () => {
+      if (!pinBtn.isConnected) { offPins(); return; }
+      if (pane.querySelector('.forum-pins')) markPinsSeen('thread', post.id);
+      paintPinDot();
+    });
     mountPostChat(post);
     render();
   }

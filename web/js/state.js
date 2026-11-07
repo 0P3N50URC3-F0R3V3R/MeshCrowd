@@ -345,13 +345,6 @@ bus.on('ws:message_create', ({ message, channelId }) => {
 });
 bus.on('ws:thread_delete', ({ threadId }) => { if (state.threadsUnread.delete(threadId)) bus.emit('state:threads', threadId); });
 
-export function forceReadState(scopeType, scopeId, messageId) {
-  const key = `${scopeType}:${scopeId}`;
-  state.readState.set(key, messageId);
-  settleThread(scopeType, scopeId, messageId);
-  bus.emit('state:readState', key);
-}
-
 export function setReadStateBulk(rows, pinsUnseen = [], threadsUnread = []) {
   state.readState = new Map(rows.map((r) => [`${r.scopeType}:${r.scopeId}`, r.lastReadMessageId]));
   state.pinsUnseen = new Map(pinsUnseen.map((p) => [`${p.scopeType}:${p.scopeId}`, p.latest]));

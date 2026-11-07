@@ -304,5 +304,11 @@ router.get('/pins', requireAuth, (req, res) => {
   res.json({ messages: rows.map(serializeMessage) });
 });
 
+// Used by saved note links: a message that is gone and one the caller can no longer see look the same.
+router.get('/:id/exists', requireAuth, (req, res) => {
+  const message = db.prepare('SELECT scope_type, scope_id FROM messages WHERE id = ?').get(req.params.id);
+  res.json({ exists: !!message && canViewScope(message, req) });
+});
+
 module.exports = router;
 module.exports.deleteAttachmentFiles = deleteAttachmentFiles;

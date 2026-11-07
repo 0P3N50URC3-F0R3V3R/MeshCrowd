@@ -2,9 +2,11 @@ import { api } from '../api.js';
 import { icons } from '../icons.js';
 import { state } from '../state.js';
 import { escapeHtml, formatTimestamp, apiErrorMessage, toast, refocusInput } from '../utils.js';
-import { confirmModal, promptModal } from './modal.js';
+import { confirmModal, promptModal, openModal } from './modal.js';
+import { openRef } from '../saveToNotes.js';
 import { getNotesKey, encryptNote, decryptNote, encryptBytes, decryptBytes, newFileTag, packNote, unpackNote } from '../e2ee/notes.js';
 import { t } from '../i18n.js';
+import { openEmojiPicker } from './emojiPicker.js';
 
 const MAX_FILES = 5;
 const INLINE_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
@@ -37,6 +39,7 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
         <div style="display:flex;gap:8px;align-items:flex-end">
           <button class="btn btn-secondary" id="notes-attach" title="${escapeHtml(t('notes.attachTitle'))}">${icons.paperclip(16)}</button>
           <input type="file" id="notes-file-input" multiple style="display:none">
+          <button class="btn btn-secondary" id="notes-emoji" title="${escapeHtml(t('serverSettings.navEmoji'))}">${icons.smile(16)}</button>
           <textarea class="textarea" id="notes-input" rows="2" maxlength="4000" style="flex:1;resize:none" placeholder="${escapeHtml(t('notes.placeholder', { channel: channelName || '' }))}"></textarea>
           <button class="btn btn-primary" id="notes-send">${t('notes.saveButton')}</button>
           ${canTrim ? `<button class="btn btn-secondary" id="notes-trim" title="${escapeHtml(t('notes.trimTitle'))}">${icons.trash(16)}</button>` : ''}
@@ -138,6 +141,7 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
           <button class="btn-icon" data-edit title="${t('notes.editTitle')}">${icons.edit(14)}</button>
           <button class="btn-icon" data-del title="${t('notes.deleteTitle')}">${icons.trash(14)}</button>
         </div>
+        <div class="note-ref" style="display:none"></div>
         <div class="note-text" style="white-space:pre-wrap;word-break:break-word"></div>
         <div class="note-files" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px"></div>
       </div>`).join('');
@@ -149,6 +153,13 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
         textEl.textContent = t('notes.undecryptable'); textEl.style.fontStyle = 'italic'; textEl.style.color = 'var(--text-muted)';
       } else {
         textEl.textContent = n.body.text;
+        if (n.body.ref) {
+          const refEl = el.querySelector('.note-ref');
+          refEl.style.cssText = 'margin:4px 0;padding:4px 8px;border-left:3px solid var(--brand);font-size:12px;color:var(--text-muted);cursor:pointer';
+          refEl.textContent = t('notes.savedFrom', { author: n.body.ref.author, date: formatTimestamp(n.body.ref.postedAt) });
+          refEl.title = t('notes.openOriginal');
+          refEl.addEventListener('click', () => openOriginal(n.body.ref));
+        }
         for (const f of n.body.files) {
           const chip = document.createElement('div');
           chip.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:flex-start';
@@ -179,6 +190,19 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
       }));
     });
     if (scrollDown) listEl.scrollTop = listEl.scrollHeight;
+  }
+
+  async function openOriginal(ref) {
+    let exists = false;
+    try { exists = (await api.messageExists(ref.messageId)).exists; } catch (err) { return toast(apiErrorMessage(err), { type: 'error' }); }
+    if (exists) return openRef(ref);
+    openModal({
+      title: t('notes.originalGoneTitle'),
+      render(body, close) {
+        body.innerHTML = `<p>${escapeHtml(t('notes.originalGoneBody', { author: ref.author, date: formatTimestamp(ref.postedAt) }))}</p><button class="btn btn-primary" id="note-gone-ok">${t('common.ok')}</button>`;
+        body.querySelector('#note-gone-ok').addEventListener('click', close);
+      },
+    });
   }
 
   function renderDraft() {
@@ -224,6 +248,15 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
     }
   });
   container.querySelector('#notes-attach').addEventListener('click', () => fileInput.click());
+  const emojiBtn = container.querySelector('#notes-emoji');
+  emojiBtn.addEventListener('click', () => {
+    openEmojiPicker(emojiBtn, (emoji) => {
+      const start = input.selectionStart ?? input.value.length;
+      const end = input.selectionEnd ?? input.value.length;
+      input.value = input.value.slice(0, start) + emoji + input.value.slice(end);
+      input.setSelectionRange(start + emoji.length, start + emoji.length);
+    }, [], () => input.focus());
+  });
 
   function startEdit(n) {
     if (n.body === null) return;
@@ -243,8 +276,9 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
     sendBtn.disabled = true;
     try {
       const files = draftFiles.map(({ id, name, type, size, fk }) => ({ id, name, type, size, ...(fk ? { fk } : {}) }));
-      const payload = { ...(await encryptNote(key, channelId, packNote(text, files), scope)), fileIds: files.map((f) => f.id) };
-      const body = { v: 1, text, files };
+      const ref = editingId ? notes.find((n) => n.id === editingId)?.body?.ref : undefined;
+      const payload = { ...(await encryptNote(key, channelId, packNote(text, files, ref), scope)), fileIds: files.map((f) => f.id) };
+      const body = { v: 1, text, files, ...(ref ? { ref } : {}) };
       if (editingId) {
         const { note } = await api.updateNote(serverId, channelId, editingId, payload);
         const idx = notes.findIndex((n) => n.id === editingId);

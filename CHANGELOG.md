@@ -6,7 +6,16 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 #### Removed
 - End-to-end encrypted DMs are gone: the per-conversation "enable encryption" flow, the ratchet, safety numbers / verify sheets, encrypted DM files and the "message cannot be decrypted" state. This also removes the bugs where your own encrypted messages could not be decrypted and where DM notifications stuck after switching a conversation to encrypted. Existing end-to-end encrypted DM history was ciphertext only the clients could read, so it is deleted from the server at the next start (a one-time migration). Your passport and encrypted Notes channels are unchanged. DMs are ordinary messages again, so editing, forwarding, polls, scheduling, search, bots and attachments work in every conversation.
 
+- "Mark as unread" on messages (desktop menu and mobile sheet): an open conversation counts as read, so the unread line vanished the moment it appeared. Use bookmark or remind me instead.
+
+#### Added
+- Notes channels: emoji picker button next to the composer.
+- Right-click a message > "Save to Notes" copies its text into one of your Notes channels (a submenu appears if you have several), with who posted it and when. Click that line in the note to jump to the original; if it was deleted, a popup says so and your saved copy stays. Desktop only for now.
+
+- Per-server member restrictions: moderators (Moderate Members) can block one member's personal name color, name effects, stickers or bio formatting, in that server only (server settings > Members > member menu > Restrictions). Restricted names show plain to everyone in that server, bios show as plain text on their card there, and sticker sends are refused. Changes are written to the audit log. Other servers and DMs are unaffected.
+
 #### Fixed
+- Forum posts: the pin button inside an open post now shows the red "new pin" dot when someone pins a message, and the dot clears once you open the pin list.
 - Soundboard in normal channels and threads: picking a sound now posts it as a playable sound message (click to play for everyone) instead of doing nothing. In a call on the same server it still plays for the room.
 - Text selection and cursors: only message text, inputs, code and profile text can be highlighted now (no more selecting avatars, images, menus and buttons), and menus/buttons no longer show the text I-beam cursor.
 

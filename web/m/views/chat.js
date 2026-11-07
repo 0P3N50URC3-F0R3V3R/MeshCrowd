@@ -4,7 +4,7 @@ import { ws } from '../../js/ws.js';
 import { icons } from '../../js/icons.js';
 import { t } from '../../js/i18n.js';
 import { avatarHtml, escapeHtml, toast } from '../../js/utils.js';
-import { state, pinUnseen, channelHasUnreadThreads, setReadState, forceReadState, nameFor, getKnownUser } from '../../js/state.js';
+import { state, pinUnseen, channelHasUnreadThreads, setReadState, nameFor, getKnownUser } from '../../js/state.js';
 import { PERMISSIONS, has, memberPermissionBits, channelPermissionBits } from '../../js/permissions.js';
 import { nav } from '../router.js';
 import { ensureServerDetail } from '../data.js';
@@ -54,8 +54,7 @@ export function mountChat(el, params) {
   let unreadUpTo = 0;
   let unreadUpToSet = false;
   const offlineAtOpen = offlineWindows();
-  let forcedUnreadAfter = 0;
-  const unreadOk = (m) => (forcedUnreadAfter > 0 && m.id > forcedUnreadAfter) || unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen })(m);
+  const unreadOk = unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen });
   let firstLoad = true;
   let messages = [];
   const deleted = new Set(); // ids deleted over the websocket, so a racing create cannot bring them back
@@ -418,12 +417,7 @@ export function mountChat(el, params) {
     paint(); scrollBottom(); markReadSoon();
   }));
 
-  function markUnreadFrom(msg) {
-    const before = Math.max(0, msg.id - 1);
-    forceReadState(scopeType, scopeId, before);
-    if (prefs.unreadLine !== 'off') { forcedUnreadAfter = unreadAfterId = before; bannerDismissed = false; paint({ anchor: true }); }
-  }
-  const ctxForSheets = () => ({ markUnreadFrom, kind, scopeType, scopeId, params, detail, channel, thread, canSend, canManage, dm: dm(), composer, scrollToMessage });
+  const ctxForSheets = () => ({ kind, scopeType, scopeId, params, detail, channel, thread, canSend, canManage, dm: dm(), composer, scrollToMessage });
 
   async function boot() {
     let info;

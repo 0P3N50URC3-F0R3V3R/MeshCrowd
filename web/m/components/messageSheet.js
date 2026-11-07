@@ -64,7 +64,6 @@ export async function openMessageSheet(msg, ctx) {
     ctx.kind === 'channel' && ctx.canSend && { id: 'thread', icon: icons.messageSquare(20), label: t('m.actThread') },
     { id: 'forward', icon: icons.forward(20), label: t('m.actForward') },
     { id: marked ? 'unbookmark' : 'bookmark', icon: icons.bookmark(20), label: marked ? t('m.actUnbookmark') : t('m.actBookmark') },
-    ctx.kind !== 'thread' && { id: 'unread', icon: icons.bell(20), label: t('m.actMarkUnread') },
     !mine && { id: 'report', icon: icons.flag(20), label: t('m.actReport') },
     (mine || ctx.canManage) && { id: 'delete', icon: icons.trash(20), label: t('m.actDelete'), danger: true },
   ].filter(Boolean);
@@ -84,7 +83,6 @@ export async function openMessageSheet(msg, ctx) {
       case 'forward': await forward(msg); break;
       case 'bookmark': await api.addBookmark(msg.id); state.bookmarkIds.add(msg.id); break;
       case 'unbookmark': await api.removeBookmark(msg.id); state.bookmarkIds.delete(msg.id); break;
-      case 'unread': await api.markUnreadFrom(ctx.scopeType, ctx.scopeId, Math.max(0, msg.id - 1)); ctx.markUnreadFrom?.(msg); break;
       case 'report': await report(msg); break;
       case 'delete': if (await confirmSheet(t('m.deleteConfirm'))) await api.deleteMessage(msg.id); break;
       default: break;

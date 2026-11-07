@@ -2,12 +2,13 @@ import { api } from '../api.js';
 import { bus } from '../bus.js';
 import { ws } from '../ws.js';
 import { icons } from '../icons.js';
-import { state, isSelf, getKnownUser, getServerDetail, setReadState, forceReadState, isIgnored, setView } from '../state.js';
+import { state, isSelf, getKnownUser, getServerDetail, setReadState, isIgnored, setView } from '../state.js';
 import {
   avatarHtml, formatTimestamp, formatShortTime, formatBytes, renderMessageContent,
   isEmojiOnly, isImageMime, isVideoMime, debounce, toast, apiErrorMessage, escapeHtml, refocusInput,
 } from '../utils.js';
 import { openEmojiPicker } from './emojiPicker.js';
+import { notesTargets, saveMessageToNotes } from '../saveToNotes.js';
 import { openContextMenu } from './modal.js';
 import { EMOJI_SHORTCODES } from '../emojiShortcodes.js';
 import { openStickerPicker } from './stickerPicker.js';
@@ -73,8 +74,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   let unreadUpTo = 0;
   let unreadUpToSet = false;
   const offlineAtOpen = offlineWindows();
-  let forcedUnreadAfter = 0;
-  const unreadOk = (m) => (forcedUnreadAfter > 0 && m.id > forcedUnreadAfter) || unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen })(m);
+  const unreadOk = unreadEligible({ upToId: unreadUpTo, always: prefs.unreadAlways === 'on', windows: offlineAtOpen });
 
   container.innerHTML = `
     <div class="message-scroll" id="msg-scroll">
@@ -719,20 +719,16 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     }).catch((err) => toast(apiErrorMessage(err, t('msgMenu.couldNotBookmark')), { type: 'error' }));
   }
 
+  function saveToNotesItems(msg) {
+    const targets = notesTargets();
+    if (!targets.length) return [];
+    if (targets.length === 1) return [{ label: t('msgMenu.saveToNotes'), onClick: () => saveMessageToNotes(msg, scope, targets[0]) }];
+    return [{ label: t('msgMenu.saveToNotes'), submenu: targets.map((tg) => ({ label: `${tg.serverName} · ${tg.channelName}`, onClick: () => saveMessageToNotes(msg, scope, tg) })) }];
+  }
+
   function remindMe(msg, minutes) {
     api.createReminder(msg.id, minutes).then(() => toast(t('msgMenu.reminderSetToast')))
       .catch((err) => toast(apiErrorMessage(err, t('msgMenu.couldNotRemind')), { type: 'error' }));
-  }
-
-  function markUnreadFrom(msg) {
-    const scopeType = scope.kind === 'dm' ? 'dm' : 'channel';
-    const scopeId = scope.kind === 'dm' ? scope.dmId : scope.channelId;
-    api.markUnreadFrom(scopeType, scopeId, Math.max(0, msg.id - 1)).then(() => {
-      const before = Math.max(0, msg.id - 1);
-      forceReadState(scopeType, scopeId, before);
-      if (prefs.unreadLine !== 'off') { forcedUnreadAfter = unreadAfterId = before; bannerDismissed = false; renderKeepingPosition(); }
-    })
-      .catch((err) => toast(apiErrorMessage(err, t('msgMenu.couldNotMarkUnread')), { type: 'error' }));
   }
 
   function readAloud(text) {
@@ -759,7 +755,6 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
 
     const mine = isSelf(msg.author.id);
     const text = msg.content || '';
-    const canMarkUnread = scope.kind !== 'thread';
     // The custom menu replaces the browser's own, so a highlighted passage has to be picked up here.
     const sel = window.getSelection?.();
     const selected = sel && !sel.isCollapsed && groupEl.contains(sel.anchorNode) && groupEl.contains(sel.focusNode) ? sel.toString().trim() : '';
@@ -774,8 +769,8 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       ...(selected ? [{ label: t('msgMenu.copySelection'), onClick: () => copyToClipboard(selected, 'msgMenu.textCopiedToast') }] : []),
       ...(text ? [{ label: t('msgMenu.copyText'), onClick: () => copyToClipboard(text, 'msgMenu.textCopiedToast') }] : []),
       { label: state.bookmarkIds.has(msg.id) ? t('msgMenu.removeBookmark') : t('msgMenu.bookmark'), onClick: () => toggleBookmark(msg) },
+      ...saveToNotesItems(msg),
       { label: t('msgMenu.remindMe'), submenu: REMINDERS.map(([key, minutes]) => ({ label: t(`msgMenu.${key}`), onClick: () => remindMe(msg, minutes) })) },
-      ...(canMarkUnread ? [{ label: t('msgMenu.markUnread'), onClick: () => markUnreadFrom(msg) }] : []),
       { label: t('msgMenu.copyLink'), onClick: () => copyToClipboard(messageLink(msg), 'msgMenu.linkCopiedToast') },
       ...(text ? [{ label: t('msgMenu.readAloud'), onClick: () => readAloud(text) }] : []),
       ...((scope.kind === 'dm' || scope.canManage) ? [{ label: msg.pinnedAt ? t('chat.unpinMessageTitle') : t('chat.pinMessageTitle'), onClick: () => togglePin(msg) }] : []),

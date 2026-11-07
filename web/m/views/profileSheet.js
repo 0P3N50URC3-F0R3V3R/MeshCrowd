@@ -3,7 +3,7 @@ import { t } from '../../js/i18n.js';
 import { renderBio } from '../../js/bioMarkup.mjs';
 import { nameAttrs, personalFx } from '../../js/nameStyle.js';
 import { escapeHtml, avatarHtml, customStatusLabel, toast, bannerStyle, cardStyle, initials } from '../../js/utils.js';
-import { rankFor, nameColorFor } from '../../js/views/profile.js';
+import { rankFor, nameColorFor, restrictionsFor, cardNameFx, cardBioHtml } from '../../js/views/profile.js';
 import { state, setFriends, setDms, presenceFor } from '../../js/state.js';
 import { icons } from '../../js/icons.js';
 import { nav } from '../router.js';
@@ -28,6 +28,7 @@ export async function openProfileSheet(userId, { asStranger = false, serverId = 
   const status = user.status === 'invisible' ? 'offline' : (user.status || 'offline');
   const rank = rankFor(serverId, userId);
   const nameColor = nameColorFor(serverId, userId);
+  const restr = restrictionsFor(serverId, userId);
   const mutualServers = user.mutualServers || [];
   const items = self ? [{ id: 'edit', label: t('profile.editProfileButton') }, { id: 'stranger', label: t('profile.viewAsStrangerMenuItem') }] : [
     { id: 'dm', label: t('m.sendMessage') },
@@ -70,13 +71,13 @@ export async function openProfileSheet(userId, { asStranger = false, serverId = 
               ${avatarHtml(user, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar')}
               <div class="status-dot ${status}" style="position:absolute;bottom:2px;right:-2px;width:14px;height:14px"></div>
             </div>
-            <div${nameAttrs(user.nameColor || user.nameEffect ? personalFx(user) : { color: nameColor }, 'pp-name')}>${escapeHtml(user.displayName)}</div>
+            <div${nameAttrs(cardNameFx(user, restr, nameColor), 'pp-name')}>${escapeHtml(user.displayName)}</div>
             <div class="pp-username">@${escapeHtml(user.username)}${user.isBot ? `<span class="bot-badge">${t('bots.badge')}</span>` : ''}</div>
             ${customStatusLabel(user) ? `<div class="pp-username">${escapeHtml(customStatusLabel(user))}</div>` : ''}
             ${rank ? `<div class="pp-rank" ${rank.color ? `style="color:${rank.color}"` : ''}>${icons.shield(12)} ${escapeHtml(rank.label)}</div>` : ''}
             ${mutualServers.length ? `<div class="pp-mutual">${icons.users(13)} ${mutualServers.length} ${mutualServers.length === 1 ? t('profile.mutualServerSingular') : t('profile.mutualServerPlural')}
               <span class="pp-ms-icons">${mutualServers.slice(0, 8).map((s) => `<span class="pp-ms" title="${escapeHtml(s.name)}">${s.icon_path ? `<img src="${escapeHtml(s.icon_path)}" alt="">` : escapeHtml(initials(s.name))}</span>`).join('')}${mutualServers.length > 8 ? `<span class="pp-ms-more">+${mutualServers.length - 8}</span>` : ''}</span></div>` : ''}
-            ${user.bio !== undefined ? `<div class="pp-bio">${user.bio ? renderBio(user.bio) : escapeHtml(t('profile.noBioYet'))}</div>` : ''}
+            ${user.bio !== undefined ? `<div class="pp-bio">${cardBioHtml(user, restr)}</div>` : ''}
           </div>
         </div>
         ${asStranger ? `<p class="m-profile-bio"><i>${escapeHtml(t('profile.viewingAsStranger'))}</i></p>` : ''}

@@ -53,3 +53,9 @@ test('the file tag survives the encrypted note body', async () => {
   const body = unpackNote(await decryptNote(key, 5, enc, SCOPE));
   assert.equal(body.files[0].fk, fk);
 });
+
+test('a note saved from a message keeps its ref through pack/unpack', () => {
+  const ref = { kind: 'channel', ids: [1, 2], messageId: 9, author: 'Ann', postedAt: '2026-11-07T10:00:00.000Z' };
+  assert.deepEqual(unpackNote(packNote('hi', [], ref)).ref, ref);
+  assert.equal(unpackNote(packNote('hi', [])).ref, undefined);
+});

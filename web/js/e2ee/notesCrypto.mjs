@@ -61,8 +61,9 @@ export async function decryptBytes(key, channelId, blob, binding) {
   }
 }
 
-// A note's encrypted body: { v: 1, text, files: [{ id, name, type, size, fk? }] }. Older notes are bare text.
-export function packNote(text, files) { return JSON.stringify({ v: 1, text, files }); }
+// A note's encrypted body: { v: 1, text, files: [{ id, name, type, size, fk? }], ref? }. `ref` is set when
+// the note was saved from a chat message: { kind, ids, messageId, author, postedAt }. Older notes are bare text.
+export function packNote(text, files, ref) { return JSON.stringify(ref ? { v: 1, text, files, ref } : { v: 1, text, files }); }
 export function unpackNote(plain) {
   if (plain === null) return null;
   try {

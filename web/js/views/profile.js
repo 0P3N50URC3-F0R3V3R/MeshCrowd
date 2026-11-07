@@ -2,7 +2,7 @@ import { bus } from '../bus.js';
 import { api } from '../api.js';
 import { state, presenceFor, getServerDetail, annotationFor } from '../state.js';
 import { icons } from '../icons.js';
-import { renderBio } from '../bioMarkup.mjs';
+import { renderBio, bioPlain } from '../bioMarkup.mjs';
 import { nameAttrs, personalFx } from '../nameStyle.js';
 import { avatarHtml, initials, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle } from '../utils.js';
 import { openModal, openContextMenu, confirmModal } from './modal.js';
@@ -72,6 +72,7 @@ export async function openProfileModal(userId, { serverId, anchor, asStranger = 
     const isBlocked = state.friends.blocked.some((f) => f.user.id === userId);
     const rank = rankFor(serverId, userId);
     const nameColor = nameColorFor(serverId, userId);
+    const restr = restrictionsFor(serverId, userId);
     const mutualServers = user.mutualServers || [];
 
     m.body.innerHTML = `
@@ -85,7 +86,7 @@ export async function openProfileModal(userId, { serverId, anchor, asStranger = 
             ${avatarHtml(user, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar')}
             <div class="status-dot ${status}" style="position:absolute;bottom:2px;right:-2px;width:14px;height:14px"></div>
           </div>
-          <div${nameAttrs(user.nameColor || user.nameEffect ? personalFx(user) : { color: nameColor }, 'pp-name')}>${escapeHtml(user.displayName)}</div>
+          <div${nameAttrs(cardNameFx(user, restr, nameColor), 'pp-name')}>${escapeHtml(user.displayName)}</div>
           <div class="pp-username">@${escapeHtml(user.username)}${user.isBot ? `<span class="bot-badge">${t('bots.badge')}</span>` : ''}</div>
           ${user.customStatusText ? `<div class="pp-username">${user.customStatusEmoji ? escapeHtml(user.customStatusEmoji) + ' ' : ''}${escapeHtml(user.customStatusText)}</div>` : ''}
           ${rank ? `<div class="pp-rank" ${rank.color ? `style="color:${rank.color}"` : ''}>${icons.shield(12)} ${escapeHtml(rank.label)}</div>` : ''}
@@ -94,7 +95,7 @@ export async function openProfileModal(userId, { serverId, anchor, asStranger = 
               ${icons.users(13)} ${mutualServers.length} ${mutualServers.length === 1 ? t('profile.mutualServerSingular') : t('profile.mutualServerPlural')}
               <span class="pp-ms-icons">${mutualServers.slice(0, 8).map((s) => `<button type="button" class="pp-ms" data-ms="${s.id}" title="${escapeHtml(s.name)}">${s.icon_path ? `<img src="${escapeHtml(s.icon_path)}" alt="" draggable="false">` : escapeHtml(initials(s.name))}</button>`).join('')}${mutualServers.length > 8 ? `<span class="pp-ms-more">+${mutualServers.length - 8}</span>` : ''}</span>
             </div>` : ''}
-          ${user.bio !== undefined ? `<div class="pp-bio">${user.bio ? renderBio(user.bio) : escapeHtml(t('profile.noBioYet'))}</div>` : ''}
+          ${user.bio !== undefined ? `<div class="pp-bio">${cardBioHtml(user, restr)}</div>` : ''}
         </div>
       </div>
       ${asStranger ? `<div class="hint" style="padding:6px 12px">${t('profile.viewingAsStranger')}</div>` : ''}
@@ -222,6 +223,24 @@ export async function openProfileModal(userId, { serverId, anchor, asStranger = 
   } catch (err) {
     m.body.innerHTML = `<p style="color:var(--danger)">${escapeHtml(apiErrorMessage(err, t('profile.loadProfileError')))}</p>`;
   }
+}
+
+export function restrictionsFor(serverId, userId) {
+  if (!serverId) return [];
+  return getServerDetail(serverId)?.members.find((m) => m.user.id === userId)?.restrictions || [];
+}
+
+// The name look a profile card shows: the person's own, minus whatever this server has restricted.
+export function cardNameFx(user, restrictions, roleColor) {
+  const fx = personalFx(user);
+  if (restrictions.includes('name_color')) fx.color = null;
+  if (restrictions.includes('name_effect')) { fx.effect = ''; fx.colors = []; }
+  return fx.color || fx.effect ? fx : { color: roleColor };
+}
+
+export function cardBioHtml(user, restrictions) {
+  if (!user.bio) return escapeHtml(t('profile.noBioYet'));
+  return restrictions.includes('bio_style') ? escapeHtml(bioPlain(user.bio)) : renderBio(user.bio);
 }
 
 export function nameColorFor(serverId, userId) {

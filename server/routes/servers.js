@@ -10,6 +10,7 @@ const { requireAuth } = require('../middleware/auth');
 const { PERMISSIONS, DEFAULT_EVERYONE_PERMISSIONS, has } = require('../lib/permissions');
 const { getMemberPermissionBits, getChannelPermissionBits, removeMember, isPendingMember } = require('../lib/channelAccess');
 const { toPublicUser } = require('../lib/publicUser');
+const restrictions = require('../lib/restrictions');
 const { broadcastToServer, broadcastToChannel, notifyUserIds } = require('../socket/hub');
 const { postServerEvent, SERVER_EVENT_TYPES } = require('../lib/systemMessages');
 const { searchMessages, parseFieldsParam } = require('../lib/search');
@@ -289,14 +290,21 @@ router.get('/:id', requireMember, (req, res) => {
   const categories = db.prepare('SELECT * FROM channel_categories WHERE server_id = ? ORDER BY position ASC, id ASC').all(req.server.id);
   const roles = db.prepare('SELECT * FROM roles WHERE server_id = ? ORDER BY position DESC').all(req.server.id);
   const members = db.prepare(
-    `SELECT sm.user_id, sm.nickname, sm.name_color, sm.timeout_until, u.* FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id = ?`
-  ).all(req.server.id).map((m) => ({
-    nickname: m.nickname,
-    nameColor: m.name_color || null,
-    timeoutUntil: m.timeout_until && new Date(m.timeout_until) > new Date() ? m.timeout_until : null,
-    roleIds: db.prepare('SELECT role_id FROM member_roles WHERE server_id = ? AND user_id = ?').all(req.server.id, m.user_id).map((r) => r.role_id),
-    user: toPublicUser(m, {}),
-  }));
+    `SELECT sm.user_id, sm.nickname, sm.name_color, sm.timeout_until, sm.restrictions, u.* FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id = ?`
+  ).all(req.server.id).map((m) => {
+    const user = toPublicUser(m, {});
+    // A restricted member's personal look is blanked for everyone in this server only.
+    if (m.restrictions & restrictions.FLAGS.name_color) user.nameColor = null;
+    if (m.restrictions & restrictions.FLAGS.name_effect) { user.nameEffect = ''; user.nameFx = null; }
+    return {
+      nickname: m.nickname,
+      nameColor: m.name_color || null,
+      timeoutUntil: m.timeout_until && new Date(m.timeout_until) > new Date() ? m.timeout_until : null,
+      restrictions: restrictions.toNames(m.restrictions),
+      roleIds: db.prepare('SELECT role_id FROM member_roles WHERE server_id = ? AND user_id = ?').all(req.server.id, m.user_id).map((r) => r.role_id),
+      user,
+    };
+  });
 
   const myBits = getMemberPermissionBits(req.server.id, req.user.id);
   const server = has(myBits, PERMISSIONS.CREATE_INVITE)
@@ -1249,6 +1257,23 @@ router.delete('/:id/members/:userId/timeout', requireMember, requirePerm(PERMISS
   postServerEvent(req.server.id, 'member_timeout_clear', targetId, {}, req.user.id);
   broadcastToServer(req.server.id, { type: 'member_role_update', userId: targetId, serverId: req.server.id });
   res.json({ ok: true });
+});
+
+// Replaces the member's restriction list (name_color, name_effect, stickers, bio_style) for this server only.
+router.put('/:id/members/:userId/restrictions', requireMember, requirePerm(PERMISSIONS.MODERATE_MEMBERS), (req, res) => {
+  const targetId = Number(req.params.userId);
+  const target = db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(req.server.id, targetId);
+  if (!target) return res.status(404).json({ error: 'member not found' });
+  if (targetId === req.server.owner_id) return res.status(400).json({ error: 'cannot restrict the owner' });
+  if (!assertCanGrant(req, getMemberPermissionBits(req.server.id, targetId))) {
+    return res.status(403).json({ error: 'cannot restrict a member with permissions you do not hold' });
+  }
+  const bits = restrictions.fromNames(req.body?.restrictions);
+  if (bits === null) return res.status(400).json({ error: 'invalid restrictions' });
+  db.prepare('UPDATE server_members SET restrictions = ? WHERE server_id = ? AND user_id = ?').run(bits, req.server.id, targetId);
+  logAudit(req.server.id, req.user.id, 'member_restrictions_update', 'user', targetId, { restrictions: restrictions.toNames(bits) });
+  broadcastToServer(req.server.id, { type: 'member_role_update', userId: targetId, serverId: req.server.id });
+  res.json({ ok: true, restrictions: restrictions.toNames(bits) });
 });
 
 // ---- Audit log ----

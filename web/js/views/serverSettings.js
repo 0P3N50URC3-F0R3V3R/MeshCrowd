@@ -1349,6 +1349,21 @@ function buildServerSettings(serverId, opts) {
           });
         }
       }
+      if (!isTargetOwner && canModerate) {
+        const current = member.restrictions || [];
+        items.push('sep');
+        items.push({
+          label: t('serverSettings.restrictionsMenuItem'),
+          submenu: ['name_color', 'name_effect', 'stickers', 'bio_style'].map((name) => ({
+            label: `${current.includes(name) ? '✓ ' : ''}${t(`serverSettings.restriction_${name}`)}`,
+            onClick: async () => {
+              const next = current.includes(name) ? current.filter((n) => n !== name) : [...current, name];
+              try { await api.setMemberRestrictions(serverId, member.user.id, next); await refresh(); }
+              catch (err) { toast(apiErrorMessage(err, t('serverSettings.couldNotRestrictError')), { type: 'error' }); }
+            },
+          })),
+        });
+      }
       if (!isTargetOwner) {
         items.push('sep');
         items.push({ label: t('serverSettings.kickMemberTitle'), icon: icons.kick, danger: true, onClick: () => kickMember(member) });

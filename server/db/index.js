@@ -87,6 +87,7 @@ const COLUMN_MIGRATIONS = [
   { table: 'messages', column: 'federation_peer_id', ddl: 'ALTER TABLE messages ADD COLUMN federation_peer_id INTEGER REFERENCES federation_peers(id) ON DELETE SET NULL' },
   { table: 'messages', column: 'federation_message_id', ddl: 'ALTER TABLE messages ADD COLUMN federation_message_id TEXT' },
   { table: 'server_members', column: 'name_color', ddl: 'ALTER TABLE server_members ADD COLUMN name_color TEXT' },
+  { table: 'server_members', column: 'restrictions', ddl: 'ALTER TABLE server_members ADD COLUMN restrictions INTEGER NOT NULL DEFAULT 0' },
   { table: 'users', column: 'ui_prefs', ddl: "ALTER TABLE users ADD COLUMN ui_prefs TEXT NOT NULL DEFAULT '{}'" },
   { table: 'users', column: 'language', ddl: 'ALTER TABLE users ADD COLUMN language TEXT' },
   { table: 'users', column: 'e2ee_public_key', ddl: 'ALTER TABLE users ADD COLUMN e2ee_public_key TEXT' },
