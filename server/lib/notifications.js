@@ -1,9 +1,9 @@
 'use strict';
 
 const { open, sealFor } = require('./atRest');
-const { db } = require('../db');
+const { db, inTransaction } = require('../db');
 const { has, PERMISSIONS } = require('./permissions');
-const { getChannelPermissionBits } = require('./channelAccess');
+const { getChannelPermissionBits, getChannelPermissionBitsBulk } = require('./channelAccess');
 const hub = require('../socket/hub');
 const { resolveChannelPref } = require('./serverPrefs');
 const { isIgnoring } = require('./userMeta');
@@ -19,25 +19,26 @@ const OUTBOX_KEEP_PER_USER = 200;
 // the table can't grow unbounded for a chatty server.
 // The grid row of an event for one recipient, and whether their grid lets it reach their phone. The
 // Android app is only ever woken from here, so this is where the Android column is enforced.
-function gridFor(userId, { scopeType, kind = null, mentioned, message }) {
-  const user = db.prepare('SELECT username, status, notify_grid FROM users WHERE id = ?').get(userId);
+function gridFor(userId, { scopeType, kind = null, mentioned, message }, prefetchedUser = null) {
+  const user = prefetchedUser || db.prepare('SELECT username, status, notify_grid FROM users WHERE id = ?').get(userId);
   if (!user) return { gridEvent: null, android: true };
   const gridEvent = notifyGrid.classify({ scopeType, kind, mentioned, message, recipient: user });
   const grid = notifyGrid.effective(notifyGrid.parseStored(user.notify_grid));
   return { gridEvent, android: notifyGrid.allows(grid, user.status, gridEvent, 'android') };
 }
 
-function recordOutbox(userId, { scopeType, scopeId, serverId = null, serverName = null, channelName = null, message, mentioned, kind = null, extra = null }) {
-  if (!gridFor(userId, { scopeType, kind, mentioned, message }).android) return;
+function recordOutbox(userId, { scopeType, scopeId, serverId = null, serverName = null, channelName = null, message, mentioned, kind = null, extra = null, grid = null }) {
+  if (!(grid || gridFor(userId, { scopeType, kind, mentioned, message })).android) return;
   db.prepare(
     `INSERT INTO notifications_outbox (user_id, scope_type, scope_id, server_id, server_name, channel_name, message_json, mentioned, kind, extra_json)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(userId, scopeType, scopeId, serverId, serverName, channelName, sealFor(scopeType, JSON.stringify(message)), mentioned ? 1 : 0, kind, extra ? JSON.stringify(extra) : null);
+  // Keeps the newest OUTBOX_KEEP_PER_USER rows: everything older than the Nth newest id goes (nothing if there are fewer).
   db.prepare(
-    `DELETE FROM notifications_outbox WHERE user_id = ? AND id NOT IN (
-       SELECT id FROM notifications_outbox WHERE user_id = ? ORDER BY id DESC LIMIT ?
+    `DELETE FROM notifications_outbox WHERE user_id = ? AND id < (
+       SELECT id FROM notifications_outbox WHERE user_id = ? ORDER BY id DESC LIMIT 1 OFFSET ?
      )`
-  ).run(userId, userId, OUTBOX_KEEP_PER_USER);
+  ).run(userId, userId, OUTBOX_KEEP_PER_USER - 1);
   require('./pushEndpoints').wake(userId);
 }
 
@@ -103,7 +104,31 @@ function parseMentions(content, { candidateUsers = [], roles = [] } = {}) {
   return { userIds: [...userIds], roleIds: [...roleIds], everyone, here };
 }
 
-function notifyChannelMessage(channel, message, mentions) {
+// What notifyChannelMessage/notifyChannelEvent need to know about every member of a channel's server, read once
+// instead of once per member: who can see the channel, who ignores the author, and each member's effective
+// notification level for the channel (same rules as getPref/resolveChannelPref).
+function recipientContext(channel, authorId, userIds) {
+  const bits = getChannelPermissionBitsBulk(channel, userIds);
+  const ignoredBy = new Set(db.prepare('SELECT user_id FROM user_annotations WHERE target_id = ? AND ignored = 1').all(authorId).map((r) => r.user_id));
+  const channelPrefs = new Map(db.prepare("SELECT user_id, pref, muted_until FROM notification_prefs WHERE scope_type = 'channel' AND scope_id = ?").all(channel.id).map((r) => [r.user_id, r]));
+  const serverPrefs = new Map(db.prepare('SELECT user_id, notif_level, muted_until FROM server_prefs WHERE server_id = ?').all(channel.server_id).map((r) => [r.user_id, r]));
+  const now = Date.now();
+  return {
+    canView: (userId) => has(bits.get(userId) || 0, PERMISSIONS.VIEW_CHANNEL),
+    ignores: (userId) => ignoredBy.has(userId),
+    prefOf(userId) {
+      let row = channelPrefs.get(userId);
+      if (row && row.pref === 'mute' && row.muted_until && Date.parse(row.muted_until) <= now) row = null;
+      const srv = serverPrefs.get(userId);
+      if (srv && srv.muted_until && Date.parse(srv.muted_until) > now) return 'mute';
+      if (row && row.pref) return row.pref;
+      return (srv && srv.notif_level) || SCOPE_DEFAULTS.channel;
+    },
+  };
+}
+
+function notifyChannelMessage(...args) { return inTransaction(() => notifyChannelMessageImpl(...args)); }
+function notifyChannelMessageImpl(channel, message, mentions) {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(channel.server_id);
   if (!server) return;
   const members = db.prepare('SELECT user_id FROM server_members WHERE server_id = ?').all(channel.server_id);
@@ -117,38 +142,44 @@ function notifyChannelMessage(channel, message, mentions) {
         .all(channel.server_id, ...mentions.roleIds).map((r) => r.user_id)
     );
   }
+  const ctx = recipientContext(channel, message.author.id, members.map((m) => m.user_id));
   for (const m of members) {
     if (m.user_id === message.author.id) continue;
-    if (isIgnoring(m.user_id, message.author.id)) continue;
-    if (!has(getChannelPermissionBits(channel, m.user_id), PERMISSIONS.VIEW_CHANNEL)) continue;
-    const pref = getPref(m.user_id, 'channel', channel.id);
+    if (ctx.ignores(m.user_id)) continue;
+    if (!ctx.canView(m.user_id)) continue;
+    const pref = ctx.prefOf(m.user_id);
     const mentioned = mentions.userIds.includes(m.user_id)
       || mentions.everyone
       || (mentions.here && hub.isOnline(m.user_id))
       || roleMemberIds.has(m.user_id);
     if (pref === 'mute') continue;
     if (pref === 'mentions' && !mentioned) continue;
+    const user = db.prepare('SELECT username, status, notify_grid FROM users WHERE id = ?').get(m.user_id);
+    const grid = gridFor(m.user_id, { scopeType: 'channel', mentioned, message }, user);
     hub.notifyUser(m.user_id, {
       type: 'notify', scopeType: 'channel', scopeId: channel.id, serverId: channel.server_id,
       serverName: server.name, channelName: channel.name, message, mentioned,
-      gridEvent: gridFor(m.user_id, { scopeType: 'channel', mentioned, message }).gridEvent,
+      gridEvent: grid.gridEvent,
     });
     recordOutbox(m.user_id, {
       scopeType: 'channel', scopeId: channel.id, serverId: channel.server_id,
-      serverName: server.name, channelName: channel.name, message, mentioned,
+      serverName: server.name, channelName: channel.name, message, mentioned, grid,
     });
   }
 }
 
 // Auto-posted log events (joins, renames, ...) only mark the channel as unread; they notify just
 // the members who explicitly set this channel to "all messages".
-function notifyChannelEvent(channel, message) {
+function notifyChannelEvent(...args) { return inTransaction(() => notifyChannelEventImpl(...args)); }
+function notifyChannelEventImpl(channel, message) {
   const server = db.prepare('SELECT name FROM servers WHERE id = ?').get(channel.server_id);
   if (!server) return;
-  for (const m of db.prepare('SELECT user_id FROM server_members WHERE server_id = ?').all(channel.server_id)) {
+  const members = db.prepare('SELECT user_id FROM server_members WHERE server_id = ?').all(channel.server_id);
+  const ctx = recipientContext(channel, message.author.id, members.map((m) => m.user_id));
+  for (const m of members) {
     if (m.user_id === message.author.id) continue;
-    if (!has(getChannelPermissionBits(channel, m.user_id), PERMISSIONS.VIEW_CHANNEL)) continue;
-    if (getPref(m.user_id, 'channel', channel.id) !== 'all') continue;
+    if (!ctx.canView(m.user_id)) continue;
+    if (ctx.prefOf(m.user_id) !== 'all') continue;
     hub.notifyUser(m.user_id, {
       type: 'notify', scopeType: 'channel', scopeId: channel.id, serverId: channel.server_id,
       serverName: server.name, channelName: channel.name, message, mentioned: false,
@@ -161,7 +192,8 @@ function notifyChannelEvent(channel, message) {
   }
 }
 
-function notifyDmMessage(dm, message) {
+function notifyDmMessage(...args) { return inTransaction(() => notifyDmMessageImpl(...args)); }
+function notifyDmMessageImpl(dm, message) {
   const members = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(dm.id);
   // A conversation someone "closed" comes back to their list as soon as anything new is said.
   db.prepare('UPDATE dm_prefs SET hidden = 0 WHERE dm_id = ? AND hidden = 1').run(dm.id);

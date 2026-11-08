@@ -25,6 +25,7 @@ const { logAudit } = require('../lib/auditLog');
 const { maybeFetchAndAttachEmbed } = require('../lib/linkPreview');
 const { wipeScope } = require('../lib/prune');
 const { maxMessageChars } = require('../lib/messageLimits');
+const { afterResponse } = require('../lib/deferred');
 
 const router = express.Router({ mergeParams: true });
 const config = loadConfig();
@@ -299,15 +300,17 @@ router.post('/:threadId/messages', loadThread, requireChannelPerm(PERMISSIONS.SE
   broadcastToChannel(req.channel, { type: 'message_create', message, channelId: req.channel.id });
   maybeFetchAndAttachEmbed(message, (payload) => broadcastToChannel(req.channel, payload)).catch(() => {});
 
-  const candidateUsers = db.prepare(
-    `SELECT u.id, u.username FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id = ?`
-  ).all(req.channel.server_id);
-  const roles = db.prepare('SELECT id, name FROM roles WHERE server_id = ?').all(req.channel.server_id);
-  const mentions = parseMentions(content, { candidateUsers, roles });
-  notifyChannelMessage(req.channel, message, mentions);
-  onMessageCreated(message);
-
   res.status(201).json({ message });
+
+  afterResponse('thread-message', () => {
+    const candidateUsers = db.prepare(
+      `SELECT u.id, u.username FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id = ?`
+    ).all(req.channel.server_id);
+    const roles = db.prepare('SELECT id, name FROM roles WHERE server_id = ?').all(req.channel.server_id);
+    const mentions = parseMentions(content, { candidateUsers, roles });
+    notifyChannelMessage(req.channel, message, mentions);
+    return onMessageCreated(message);
+  });
 });
 
 module.exports = router;

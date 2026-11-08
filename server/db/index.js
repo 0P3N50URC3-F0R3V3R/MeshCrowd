@@ -18,6 +18,15 @@ const isNewDb = !fs.existsSync(DB_PATH);
 const db = new DatabaseSync(DB_PATH);
 db.exec('PRAGMA foreign_keys = ON;');
 db.exec('PRAGMA journal_mode = WAL;');
+// WAL + NORMAL fsyncs only at checkpoints: a crash or power loss can drop the last few commits but never corrupts the file.
+db.exec('PRAGMA synchronous = NORMAL;');
+db.exec('PRAGMA busy_timeout = 5000;');
+db.exec('PRAGMA temp_store = MEMORY;');
+db.exec('PRAGMA cache_size = -32768;');
+// Checkpoints sync the files, which is slow on a spinning disk. Raise the automatic threshold so a message
+// send is rarely the commit that pays for one, and run the routine one on a timer instead.
+db.exec('PRAGMA wal_autocheckpoint = 8000;');
+setInterval(() => { try { db.exec('PRAGMA wal_checkpoint(PASSIVE)'); } catch { /* database closed or busy */ } }, 30_000).unref();
 
 const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
 db.exec(schema);
@@ -382,4 +391,11 @@ if (isNewDb) {
   console.log('[db] fresh database created at', DB_PATH);
 }
 
-module.exports = { db, isNewDb, DATA_DIR, WEBHOOK_SYSTEM_USER_ID, migrateOwnerConsoleBit, migrateNotifyGrid };
+// One commit (one write-ahead-log sync) for a batch of writes instead of one per statement. Joins an open transaction.
+function inTransaction(fn) {
+  if (db.isTransaction) return fn();
+  db.exec('BEGIN');
+  try { const out = fn(); db.exec('COMMIT'); return out; } catch (err) { try { db.exec('ROLLBACK'); } catch { /* already rolled back */ } throw err; }
+}
+
+module.exports = { db, inTransaction, isNewDb, DATA_DIR, WEBHOOK_SYSTEM_USER_ID, migrateOwnerConsoleBit, migrateNotifyGrid };

@@ -26,6 +26,7 @@ const { enqueueEvent } = require('../lib/federationOutbox');
 const { ownDomain } = require('../lib/federationOutboxWorker');
 const { maxMessageChars } = require('../lib/messageLimits');
 const { stickersForUser, userCanUseSticker } = require('../lib/stickers');
+const { afterResponse } = require('../lib/deferred');
 
 const router = express.Router();
 const config = loadConfig();
@@ -314,10 +315,12 @@ router.post('/:dmId/messages', loadDm, upload.array('files', 5), (req, res) => {
   const message = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(info.lastInsertRowid));
   broadcastToDm(req.dm.id, { type: 'message_create', message });
   relayDmMessageCreate(req.dm, req.user, message, req.files);
-  notifyDmMessage(req.dm, message);
-  onMessageCreated(message);
   maybeFetchAndAttachEmbed(message, (payload) => broadcastToDm(req.dm.id, payload)).catch(() => {});
   res.status(201).json({ message });
+  afterResponse('dm-message', () => {
+    notifyDmMessage(req.dm, message);
+    return onMessageCreated(message);
+  });
 });
 
 // Group creator only — never available on a 1:1 DM (its only lever is leave, above), and never

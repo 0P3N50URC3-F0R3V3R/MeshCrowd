@@ -24,6 +24,7 @@ const { getMemberTimeout, slowmodeRetryAfter } = require('../lib/moderation');
 const { maybeFetchAndAttachEmbed } = require('../lib/linkPreview');
 const { serializeRemoteMessage, relayRemoteChannelEvent } = require('../lib/remoteChannelEvents');
 const { maxMessageChars } = require('../lib/messageLimits');
+const { afterResponse } = require('../lib/deferred');
 
 const router = express.Router({ mergeParams: true });
 const config = loadConfig();
@@ -148,15 +149,17 @@ router.post('/', requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfRestricte
   relayRemoteChannelEvent(req.channel, 'message_create', { message: serializeRemoteMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(message.id)) });
   maybeFetchAndAttachEmbed(message, (payload) => broadcastToChannel(req.channel, payload)).catch(() => {});
 
-  const candidateUsers = db.prepare(
-    `SELECT u.id, u.username FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id = ?`
-  ).all(req.channel.server_id);
-  const roles = db.prepare('SELECT id, name FROM roles WHERE server_id = ?').all(req.channel.server_id);
-  const mentions = parseMentions(content, { candidateUsers, roles });
-  notifyChannelMessage(req.channel, message, mentions);
-  onMessageCreated(message);
-
   res.status(201).json({ message });
+
+  afterResponse('channel-message', () => {
+    const candidateUsers = db.prepare(
+      `SELECT u.id, u.username FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id = ?`
+    ).all(req.channel.server_id);
+    const roles = db.prepare('SELECT id, name FROM roles WHERE server_id = ?').all(req.channel.server_id);
+    const mentions = parseMentions(content, { candidateUsers, roles });
+    notifyChannelMessage(req.channel, message, mentions);
+    return onMessageCreated(message);
+  });
 });
 
 module.exports = router;

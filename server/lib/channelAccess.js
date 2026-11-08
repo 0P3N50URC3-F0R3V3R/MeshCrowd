@@ -89,6 +89,60 @@ function getChannelPermissionBits(channel, userId) {
   return isPendingMember(channel.server_id, userId) ? bits & PERMISSIONS.VIEW_CHANNEL : bits;
 }
 
+// Same result as getChannelPermissionBits() for many members at once, from a handful of queries instead
+// of about ten per member (the notification fan-out asks this for every member of a server on every
+// message). Returns Map(userId -> bits). Kept in step with getChannelPermissionBits by channelAccessBulk.test.js.
+function getChannelPermissionBitsBulk(channel, userIds) {
+  const out = new Map();
+  if (!userIds.length) return out;
+  const serverId = channel.server_id;
+  const server = db.prepare('SELECT owner_id, screening_enabled FROM servers WHERE id = ?').get(serverId);
+  const roles = new Map(db.prepare('SELECT id, permissions, position, is_default FROM roles WHERE server_id = ?').all(serverId).map((r) => [r.id, r]));
+  const everyone = [...roles.values()].find((r) => r.is_default === 1) || null;
+  const members = new Map(db.prepare('SELECT user_id, screened_at FROM server_members WHERE server_id = ?').all(serverId).map((r) => [r.user_id, r]));
+  const memberRoles = new Map();
+  for (const r of db.prepare('SELECT user_id, role_id FROM member_roles WHERE server_id = ?').all(serverId)) {
+    if (!memberRoles.has(r.user_id)) memberRoles.set(r.user_id, []);
+    memberRoles.get(r.user_id).push(r.role_id);
+  }
+  const roleOverrides = db.prepare('SELECT role_id, allow, deny FROM channel_role_overrides WHERE channel_id = ?').all(channel.id)
+    .filter((o) => roles.has(o.role_id))
+    .sort((a, b) => roles.get(a.role_id).position - roles.get(b.role_id).position);
+  const userOverrides = new Map(db.prepare('SELECT user_id, allow, deny FROM channel_user_overrides WHERE channel_id = ?').all(channel.id).map((r) => [r.user_id, r]));
+
+  for (const userId of userIds) {
+    if (server && server.owner_id === userId) { out.set(userId, OWNER_PERMISSIONS); continue; }
+    const member = members.get(userId);
+    if (!member) { out.set(userId, 0); continue; }
+    const pending = !!server && server.screening_enabled === 1 && member.screened_at === null;
+
+    const roleIds = new Set(memberRoles.get(userId) || []);
+    if (everyone) roleIds.add(everyone.id);
+    let bits = 0;
+    for (const id of roleIds) if (roles.has(id)) bits |= roles.get(id).permissions;
+    if (pending) bits &= PERMISSIONS.VIEW_CHANNEL;
+    if (bits & PERMISSIONS.ADMINISTRATOR) { out.set(userId, bits); continue; }
+
+    let hasExplicitViewAllow = false;
+    for (const o of roleOverrides) {
+      if (!roleIds.has(o.role_id)) continue;
+      bits = (bits & ~o.deny) | o.allow;
+      if (o.allow & PERMISSIONS.VIEW_CHANNEL) hasExplicitViewAllow = true;
+    }
+    const userOverride = userOverrides.get(userId);
+    if (userOverride) {
+      bits = (bits & ~userOverride.deny) | userOverride.allow;
+      if (userOverride.allow & PERMISSIONS.VIEW_CHANNEL) hasExplicitViewAllow = true;
+    }
+    const isModPlus = (bits & (PERMISSIONS.MANAGE_CHANNELS | PERMISSIONS.MANAGE_MESSAGES | PERMISSIONS.ADMINISTRATOR)) !== 0;
+    if (channel.type === 'private' && !hasExplicitViewAllow && !isModPlus) bits &= ~PERMISSIONS.VIEW_CHANNEL;
+    if ((channel.type === 'announcement' || channel.type === 'readonly') && !isModPlus) bits &= ~PERMISSIONS.SEND_MESSAGES;
+    if (channel.type === 'stage') bits &= ~PERMISSIONS.SEND_MESSAGES;
+    out.set(userId, pending ? bits & PERMISSIONS.VIEW_CHANNEL : bits);
+  }
+  return out;
+}
+
 function canAccessChannel(channel, userId, flag) {
   const bits = getChannelPermissionBits(channel, userId);
   return (bits & PERMISSIONS.ADMINISTRATOR) !== 0 || (bits & flag) === flag;
@@ -99,4 +153,4 @@ function removeMember(serverId, userId) {
   db.prepare('DELETE FROM server_members WHERE server_id = ? AND user_id = ?').run(serverId, userId);
 }
 
-module.exports = { getMemberRoleIds, getMemberPermissionBits, getChannelPermissionBits, canAccessChannel, removeMember, isPendingMember };
+module.exports = { getMemberRoleIds, getMemberPermissionBits, getChannelPermissionBits, getChannelPermissionBitsBulk, canAccessChannel, removeMember, isPendingMember };

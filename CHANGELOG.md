@@ -14,6 +14,9 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 #### Changed
 - Auto-posted log events (joins, renames, ...) in log channels only mark the channel unread. They notify only members who set that channel to "all messages", and the notification text is now localized.
 
+#### Changed
+- Faster sending, especially on a spinning disk: the server answers a message as soon as it is stored and broadcast and does the notification, Android-queue and bot work afterwards (channels, threads and DMs); SQLite runs with `synchronous=NORMAL` (commits no longer wait for a disk sync; a power cut can lose the last moments of data but never corrupts the database) and the WAL is checkpointed on a timer instead of inside a message send; the notification writes for one message share a single commit; and the per-member permission, mute and ignore lookups are read once per message instead of about 15 queries per member (a 300-member server: 73 ms to about 1 ms for an ordinary message). `scripts/bench-send.mjs` measures it.
+
 #### Fixed
 - Link previews never showed their image (e.g. GitHub links): the page's CSP only allows images from its own origin, so the browser blocked the remote `og:image`. The image is now fetched and re-served by the server (`GET /api/link-preview/image`, signed-in users only, same private-address guard as the preview itself, no redirects, PNG/JPEG/GIF/WebP up to 5 MB, never SVG), on desktop, web and the Android app.
 - Desktop chat: resizing the window no longer shifts the conversation; the bottom stays pinned or the visible message keeps its place.
