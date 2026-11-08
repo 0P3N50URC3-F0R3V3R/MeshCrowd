@@ -7,6 +7,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Website and wiki (EN and HU): all screenshots retaken with the demo community using illustrated, royalty-free (CC0) avatars and camera tiles; new pictures for the soundboard, emoji recents, Save to Notes, Send later, name effects and bio editor, Auto away, the notification grid, chat font, member restrictions and the phone app. Both tour videos were re-recorded with the new features.
 
 #### Fixed
+- Bundled ffmpeg runtime (`npm run fetch:ffmpeg` into `runtime/ffmpeg/`, used before ffmpeg on PATH) so video posters work without installing ffmpeg on the host.
 - Posted videos no longer re-download when switching channels: channel attachments are now browser-cached for a day, and videos load nothing until played (preload none). The server extracts the first frame as a poster image (needs ffmpeg on the host; without it the player stays blank, nothing breaks). DM videos are encrypted at rest and get no poster.
 
 #### Added

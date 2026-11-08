@@ -501,6 +501,10 @@ the rail for every user. It has no channels, roles UI, invites, voice or notific
   into `runtime/php/`; the server installs the redistributable on its own when PHP reports the
   missing DLL. Config keys `sites.phpPath` and `sites.maxWorkers` (parallel workers per Site,
   default 4, about 20-30 MB each).
+- **ffmpeg runtime**: `npm run fetch:ffmpeg` fetches a static ffmpeg (gyan.dev release essentials,
+  SHA-256 verified) into `runtime/ffmpeg/`; the binary is git-ignored (over GitHub's 100 MB limit)
+  but ships in the portable build. `server/lib/videoPoster.js` uses it, then `ffmpeg` on PATH, to
+  make the first-frame poster of channel and thread videos.
 - **Sandbox**: PHP binds to 127.0.0.1, runs with `open_basedir` set to the Site folder, a scrubbed
   environment, and `disable_functions` covering process, mail, `putenv`, `dl`, socket and symlink
   functions, plus `allow_url_fopen=0`. Known residual risk: a page can still read other files in its

@@ -12,6 +12,7 @@
     "build:portable": "node scripts/build-portable.js",
     "build:client": "node scripts/build-client.js",
     "fetch:php": "node scripts/fetch-php.js",
+    "fetch:ffmpeg": "node scripts/fetch-ffmpeg.js",
     "test": "node --test \"server/test/*.test.js\" \"web/**/*.test.mjs\" \"electron/*.test.js\""
   },
   "engines": {

@@ -5,13 +5,18 @@ const { execFile } = require('child_process');
 const SUFFIX = '.poster.jpg';
 const VIDEO_EXT = new Set(['.mp4', '.webm', '.mov', '.m4v', '.ogv']);
 const pending = new Map();
+const BUNDLED = path.join(__dirname, '..', '..', 'runtime', 'ffmpeg', process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
 let ffmpegMissing = false;
+
+function ffmpegBin() {
+  return fs.existsSync(BUNDLED) ? BUNDLED : 'ffmpeg';
+}
 
 function extract(src, dest) {
   if (pending.has(dest)) return pending.get(dest);
   const tmp = `${dest}.${process.pid}.tmp.jpg`;
   const p = new Promise((resolve) => {
-    execFile('ffmpeg', ['-y', '-v', 'error', '-ss', '0.1', '-i', src, '-frames:v', '1', '-vf', 'scale=640:-2', '-q:v', '5', tmp],
+    execFile(ffmpegBin(), ['-y', '-v', 'error', '-ss', '0.1', '-i', src, '-frames:v', '1', '-vf', 'scale=640:-2', '-q:v', '5', tmp],
       { timeout: 15000, windowsHide: true }, (err) => {
         if (err) {
           if (err.code === 'ENOENT') ffmpegMissing = true;
