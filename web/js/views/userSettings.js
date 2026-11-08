@@ -69,6 +69,7 @@ export function openUserSettings(initialTab = 'account') {
           <div class="snav-item ${tab === 'privacy' ? 'active' : ''}" data-tab="privacy">${t('userSettings.privacySafetyTab')}</div>
           <div class="snav-item ${tab === 'passport' ? 'active' : ''}" data-tab="passport">${t('passport.tab')}</div>
           <div class="snav-item ${tab === 'devices' ? 'active' : ''}" data-tab="devices">${t('userSettings.devicesTab')}</div>
+          ${window.dismeshClient?.onDownloadEvent ? `<div class="snav-item ${tab === 'downloads' ? 'active' : ''}" data-tab="downloads">${t('userSettings.downloadsTab')}</div>` : ''}
           ${window.dismeshClient && !window.dismeshClient.isAndroidWebView ? `<div class="snav-item ${tab === 'app' ? 'active' : ''}" data-tab="app">${t('userSettings.desktopAppTab')}</div>` : ''}
           ${me.isSiteAdmin ? `<div class="snav-label">${t('userSettings.instanceLabel')}</div><div class="snav-item" data-admin>${t('userSettings.adminPanelNav')}</div>` : ''}
           <div class="snav-label"></div>
@@ -95,6 +96,7 @@ export function openUserSettings(initialTab = 'account') {
     else if (tab === 'passport') renderPassport(inner);
     else if (tab === 'devices') renderDevices(inner);
     else if (tab === 'app') renderApp(inner);
+    else if (tab === 'downloads') renderDownloads(inner);
   }
 
   let bannerColorTouched = false;
@@ -689,6 +691,46 @@ export function openUserSettings(initialTab = 'account') {
       await window.dismeshClient.setAppSettings({ trayBadgeColors: { online: null, idle: null, dnd: null, offline: null } });
       renderApp(inner);
     });
+  }
+
+  async function renderDownloads(inner) {
+    inner.innerHTML = `<h2>${t('userSettings.downloadsHeading')}</h2><div class="panel-loading" style="height:80px"><div class="spinner"></div></div>`;
+    const settings = await window.dismeshClient.getAppSettings();
+    const folderMode = settings.downloadMode === 'folder';
+    inner.innerHTML = `
+      <h2>${t('userSettings.downloadsHeading')}</h2>
+      <label class="checkbox-row"><input type="radio" name="f-dl-mode" value="ask" ${folderMode ? '' : 'checked'}><span>${t('userSettings.downloadsAskRadio')}</span></label>
+      <label class="checkbox-row"><input type="radio" name="f-dl-mode" value="folder" ${folderMode ? 'checked' : ''}><span>${t('userSettings.downloadsFolderRadio')}</span></label>
+      <div class="field" style="margin-top:16px">
+        <label>${t('userSettings.downloadsFolderLabel')}</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="f-dl-dir" style="flex:1" value="${escapeHtml(settings.downloadDir)}" placeholder="${escapeHtml(t('userSettings.downloadsFolderPlaceholder'))}" spellcheck="false">
+          <button class="btn btn-ghost" id="f-dl-browse">${t('userSettings.downloadsBrowse')}</button>
+        </div>
+        <div class="hint" style="margin-top:6px">${escapeHtml(t('userSettings.downloadsDefaultHint', { dir: settings.defaultDownloadDir }))}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" id="f-dl-save">${t('userSettings.downloadsSaveButton')}</button>
+        <button class="btn btn-ghost" id="f-dl-open">${t('userSettings.downloadsOpenFolder')}</button>
+      </div>`;
+    const dirInput = inner.querySelector('#f-dl-dir');
+    const saveDir = async () => {
+      const r = await window.dismeshClient.setAppSettings({ downloadDir: dirInput.value.trim() });
+      if (r && r.ok === false) toast(t('userSettings.downloadsInvalidPathToast'), { type: 'error' });
+      else toast(t('userSettings.downloadsSavedToast'));
+    };
+    inner.querySelectorAll('input[name="f-dl-mode"]').forEach((r) => r.addEventListener('change', async (e) => {
+      await window.dismeshClient.setAppSettings({ downloadMode: e.target.value });
+      toast(t('userSettings.downloadsSavedToast'));
+    }));
+    inner.querySelector('#f-dl-browse').addEventListener('click', async () => {
+      const dir = await window.dismeshClient.selectDownloadDir();
+      if (!dir) return;
+      dirInput.value = dir;
+      await saveDir();
+    });
+    inner.querySelector('#f-dl-save').addEventListener('click', saveDir);
+    inner.querySelector('#f-dl-open').addEventListener('click', () => window.dismeshClient.openDownloadDir());
   }
 
   // Per-user CSS-variable theme: colors + font only, no free-form CSS (see server/lib/theme.js

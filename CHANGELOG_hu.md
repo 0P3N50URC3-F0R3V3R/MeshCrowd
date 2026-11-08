@@ -8,6 +8,7 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 - A csatornákban közzétett videók csatornaváltáskor már nem töltődnek újra: a csatolmányok egy napig a böngésző gyorsítótárában maradnak, a videó pedig lejátszásig semmit sem tölt le. A szerver a videó első képkockáját indexképként állítja elő (ffmpeg kell a gazdagépen; nélküle a lejátszó üres marad, de semmi nem romlik el). A DM-videók titkosítva tárolódnak, ezekhez nincs indexkép.
 
 #### Hozzáadva
+- Asztali alkalmazás: letöltésjelző a csatolmányokhoz (fájlonkénti folyamatjelző, megszakítás, Megnyitás és Megjelenítés mappában, tálcaikon-folyamat) és új Beállítások > Letöltések fül, ahol vagy minden fájlnál rákérdez a mentés helyére, vagy mindig egy választott mappába ment (Tallózás vagy beírt útvonal). Az új asztali kliens-buildet igényli.
 - Automatikus távol státusz: Beállítások > Státusz (asztali) vagy Te > Állapot beállítása > Automatikus távol (Android) – a megadott tétlenségi idő után a státuszod Távol lesz, tevékenységre visszaáll Elérhetőre. A 0 kikapcsolja. Csak az automatikus váltást vonja vissza, a saját magad beállított státuszt soha.
 - Csevegés betűtípusa és szövegmérete a témaszerkesztőben. Csak az üzenetek szövege és az üzenetmező változik, a felület nem. Csak rendszerbetűk.
 - Android: az értesítések és az alkalmazás szövegei magyar fordítást kaptak (a telefon nyelvét követi).

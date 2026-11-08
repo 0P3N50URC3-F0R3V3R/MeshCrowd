@@ -42,6 +42,7 @@ function saveClientConfig(cfg) {
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) app.quit();
 
+const downloads = require('./downloads');
 let clientConfig = loadClientConfig();
 let mainWindow;
 let pendingInvite = findMcrLink(process.argv); // an mcr:// link that started this process, handled once the window exists
@@ -470,6 +471,9 @@ ipcMain.handle('dismesh:get-network-interfaces', () => {
 });
 
 ipcMain.handle('dismesh:get-app-settings', () => ({
+  downloadMode: clientConfig.downloadMode === 'folder' ? 'folder' : 'ask',
+  downloadDir: clientConfig.downloadDir || '',
+  defaultDownloadDir: app.getPath('downloads'),
   closeToTray: !!clientConfig.closeToTray,
   startMinimized: !!clientConfig.startMinimized,
   startWithWindows: !!clientConfig.startWithWindows,
@@ -485,7 +489,7 @@ const TRAY_BADGE_STATES = ['online', 'idle', 'dnd', 'offline'];
 // Whitelist of keys the renderer is allowed to touch here — anything else in the payload is
 // silently dropped rather than merged into clientConfig, so a new settings key can't be added to
 // this object without an explicit decision about whether the renderer should control it.
-const APP_SETTINGS_KEYS = ['closeToTray', 'startMinimized', 'startWithWindows', 'trayIconColor', 'trayBadgeColors', 'handleInviteLinks', 'f11Fullscreen'];
+const APP_SETTINGS_KEYS = ['closeToTray', 'startMinimized', 'startWithWindows', 'trayIconColor', 'trayBadgeColors', 'handleInviteLinks', 'f11Fullscreen', 'downloadMode', 'downloadDir'];
 
 ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
   if (!settings || typeof settings !== 'object') return { ok: false, error: 'invalid settings' };
@@ -496,6 +500,15 @@ ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
     if (key === 'startWithWindows') {
       clientConfig.startWithWindows = !!settings.startWithWindows;
       app.setLoginItemSettings({ openAtLogin: clientConfig.startWithWindows });
+    }
+    if (key === 'downloadMode' && downloads.MODES.includes(settings.downloadMode)) clientConfig.downloadMode = settings.downloadMode;
+    if (key === 'downloadDir') {
+      const dir = settings.downloadDir === '' ? '' : downloads.normalizeDir(settings.downloadDir);
+      if (dir === null) return { ok: false, error: 'invalid-path' };
+      if (dir) {
+        try { require('node:fs').mkdirSync(dir, { recursive: true }); } catch { return { ok: false, error: 'unwritable-path' }; }
+      }
+      clientConfig.downloadDir = dir;
     }
     if (key === 'f11Fullscreen') clientConfig.f11Fullscreen = !!settings.f11Fullscreen;
     if (key === 'handleInviteLinks') {
@@ -523,6 +536,8 @@ ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
   applyTrayBadge();
   return {
     ok: true,
+    downloadMode: clientConfig.downloadMode === 'folder' ? 'folder' : 'ask',
+    downloadDir: clientConfig.downloadDir || '',
     closeToTray: !!clientConfig.closeToTray,
     startMinimized: !!clientConfig.startMinimized,
     startWithWindows: !!clientConfig.startWithWindows,
@@ -647,6 +662,7 @@ app.whenReady().then(() => {
   if (!gotSingleInstanceLock) return;
   setupCertHandling();
   setupDisplayMediaHandler();
+  downloads.setupDownloads({ session: session.defaultSession, ipcMain, dialog, shell, app, getWindow: () => mainWindow, getConfig: () => clientConfig });
   createWindow();
   setupTray();
   app.setLoginItemSettings({ openAtLogin: !!clientConfig.startWithWindows });

@@ -11,6 +11,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Posted videos no longer re-download when switching channels: channel attachments are now browser-cached for a day, and videos load nothing until played (preload none). The server extracts the first frame as a poster image (needs ffmpeg on the host; without it the player stays blank, nothing breaks). DM videos are encrypted at rest and get no poster.
 
 #### Added
+- Desktop app: download progress indicator for attachments (per-file progress bar, cancel, Open and Show in folder, taskbar progress) and a new Settings > Downloads tab to either be asked where to save each file or always save to a chosen folder (Browse or type a path). Needs the new desktop client build.
 - Auto away: Settings > Status (desktop) or You > Set status > Auto away (Android) sets the idle time after which your status switches to Away; activity restores Online. 0 turns it off. Only an automatic switch is undone; a status you set yourself is never touched.
 - Chat font and chat text size in the theme editor. Only message text and the composer change, not the interface. System fonts only.
 - Android: notification and app strings now have a Hungarian translation (follows the phone language).

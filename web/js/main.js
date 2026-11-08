@@ -5,6 +5,7 @@ import { mountShell } from './views/shell.js';
 import { initI18n, applyStaticI18n } from './i18n.js';
 import './animatedImages.js';
 import './autoRefocus.js';
+import './downloads.js';
 
 const root = document.getElementById('app');
 
