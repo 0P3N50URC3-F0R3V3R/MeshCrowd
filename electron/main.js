@@ -52,12 +52,35 @@ let trayBadge = { status: 'online', count: 0 }; // last badge state pushed from 
 let trayLabels = { open: 'Open MeshCrowd', recent: 'Recent', none: 'No recent notifications', logout: 'Log Out', quit: 'Quit MeshCrowd', unread: '{count} unread', undo: 'Undo', redo: 'Redo', cut: 'Cut', copy: 'Copy', paste: 'Paste', selectAll: 'Select All' };
 app.isQuitting = false;
 
+const TRAY_RECENT_DEFAULT = 5;
+const TRAY_RECENT_MAX = 15;
+function trayRecentLimit() {
+  const n = Number(clientConfig.trayRecentCount);
+  return Number.isInteger(n) && n >= 0 && n <= TRAY_RECENT_MAX ? n : TRAY_RECENT_DEFAULT;
+}
+
+// What the renderer needs to decide whether the user is "looking" at a channel: the window state plus
+// the two switches (Settings > Desktop App) that make a hidden/unfocused window count as not viewing.
+function sendWindowState() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send('dismesh:window-state', {
+    hidden: !mainWindow.isVisible() || mainWindow.isMinimized(),
+    focused: mainWindow.isFocused(),
+    notifyWhenHidden: clientConfig.notifyWhenHidden !== false,
+    notifyWhenUnfocused: !!clientConfig.notifyWhenUnfocused,
+  });
+}
+
 function rebuildTrayMenu() {
   if (!tray) return;
   const recentItems = recentNotifications.length
     ? recentNotifications.map((n) => ({
       label: `${n.title}: ${n.body}`.slice(0, 60) || n.title,
       click: () => {
+        const i = recentNotifications.indexOf(n);
+        if (i !== -1) recentNotifications.splice(i, 1);
+        rebuildTrayMenu();
+        if (mainWindow.isMinimized()) mainWindow.restore();
         mainWindow.show(); mainWindow.focus();
         mainWindow.webContents.send('dismesh:navigate-to', n);
       },
@@ -268,6 +291,9 @@ function createWindow() {
     recentNotifications.length = 0;
     rebuildTrayMenu();
   });
+  // Hiding to the tray doesn't reliably flip document.hidden in the renderer, so tell it directly.
+  for (const ev of ['show', 'hide', 'minimize', 'restore', 'focus', 'blur']) mainWindow.on(ev, sendWindowState);
+  mainWindow.webContents.on('did-finish-load', sendWindowState);
   mainWindow.on('resize', scheduleSaveBounds);
   mainWindow.on('move', scheduleSaveBounds);
   mainWindow.on('maximize', scheduleSaveBounds);
@@ -479,6 +505,9 @@ ipcMain.handle('dismesh:get-app-settings', () => ({
   startWithWindows: !!clientConfig.startWithWindows,
   handleInviteLinks: clientConfig.handleInviteLinks !== false,
   f11Fullscreen: clientConfig.f11Fullscreen !== false,
+  trayRecentCount: trayRecentLimit(),
+  notifyWhenHidden: clientConfig.notifyWhenHidden !== false,
+  notifyWhenUnfocused: !!clientConfig.notifyWhenUnfocused,
   trayIconColor: clientConfig.trayIconColor || null,
   trayBadgeColors: clientConfig.trayBadgeColors || {},
 }));
@@ -489,7 +518,7 @@ const TRAY_BADGE_STATES = ['online', 'idle', 'dnd', 'offline'];
 // Whitelist of keys the renderer is allowed to touch here — anything else in the payload is
 // silently dropped rather than merged into clientConfig, so a new settings key can't be added to
 // this object without an explicit decision about whether the renderer should control it.
-const APP_SETTINGS_KEYS = ['closeToTray', 'startMinimized', 'startWithWindows', 'trayIconColor', 'trayBadgeColors', 'handleInviteLinks', 'f11Fullscreen', 'downloadMode', 'downloadDir'];
+const APP_SETTINGS_KEYS = ['closeToTray', 'startMinimized', 'startWithWindows', 'trayIconColor', 'trayBadgeColors', 'handleInviteLinks', 'f11Fullscreen', 'downloadMode', 'downloadDir', 'trayRecentCount', 'notifyWhenHidden', 'notifyWhenUnfocused'];
 
 ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
   if (!settings || typeof settings !== 'object') return { ok: false, error: 'invalid settings' };
@@ -509,6 +538,16 @@ ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
         try { require('node:fs').mkdirSync(dir, { recursive: true }); } catch { return { ok: false, error: 'unwritable-path' }; }
       }
       clientConfig.downloadDir = dir;
+    }
+    if (key === 'notifyWhenHidden') clientConfig.notifyWhenHidden = !!settings.notifyWhenHidden;
+    if (key === 'notifyWhenUnfocused') clientConfig.notifyWhenUnfocused = !!settings.notifyWhenUnfocused;
+    if (key === 'trayRecentCount') {
+      const n = Number(settings.trayRecentCount);
+      if (Number.isInteger(n) && n >= 0 && n <= TRAY_RECENT_MAX) {
+        clientConfig.trayRecentCount = n;
+        recentNotifications.length = Math.min(recentNotifications.length, n);
+        rebuildTrayMenu();
+      }
     }
     if (key === 'f11Fullscreen') clientConfig.f11Fullscreen = !!settings.f11Fullscreen;
     if (key === 'handleInviteLinks') {
@@ -534,6 +573,7 @@ ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
   }
   saveClientConfig(clientConfig);
   applyTrayBadge();
+  sendWindowState();
   return {
     ok: true,
     downloadMode: clientConfig.downloadMode === 'folder' ? 'folder' : 'ask',
@@ -543,6 +583,9 @@ ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
     startWithWindows: !!clientConfig.startWithWindows,
     handleInviteLinks: clientConfig.handleInviteLinks !== false,
     f11Fullscreen: clientConfig.f11Fullscreen !== false,
+    trayRecentCount: trayRecentLimit(),
+    notifyWhenHidden: clientConfig.notifyWhenHidden !== false,
+    notifyWhenUnfocused: !!clientConfig.notifyWhenUnfocused,
     trayIconColor: clientConfig.trayIconColor || null,
     trayBadgeColors: clientConfig.trayBadgeColors || {},
   };
@@ -597,7 +640,7 @@ function handleInviteLink(link) {
 // window is hidden in the background.
 ipcMain.on('dismesh:push-notification', (event, n) => {
   recentNotifications.unshift(n);
-  recentNotifications.length = Math.min(recentNotifications.length, 5);
+  recentNotifications.length = Math.min(recentNotifications.length, trayRecentLimit());
   rebuildTrayMenu();
 });
 

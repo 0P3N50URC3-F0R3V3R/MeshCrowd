@@ -272,7 +272,7 @@ export async function mountShell(root) {
   function onNotify(payload) {
     const viewingIt = state.view.type === (payload.scopeType === 'dm' ? 'dm' : 'server')
       && (payload.scopeType === 'dm' ? state.view.dmId === payload.scopeId : state.view.channelId === payload.scopeId);
-    const isFocused = viewingIt && !document.hidden;
+    const isFocused = viewingIt && !document.hidden && (window.dismeshClient?.isUserLooking?.() ?? true);
     if ((!isFocused || notifySound.get().playWhenFocused) && shouldPlayNotifySound(payload.gridEvent)) notifySound.play();
     if (isFocused) return;
 
@@ -395,7 +395,7 @@ export async function mountShell(root) {
   function dismissSeenNotifications(globalCount) {
     if (!pendingNotifications.size) return;
     const keys = keysToClear(pendingNotifications.keys(), {
-      globalCount, focused: !document.hidden && document.hasFocus(), isViewing: isViewingKey, status: scopeStatus,
+      globalCount, focused: !document.hidden && document.hasFocus() && (window.dismeshClient?.isUserLooking?.() ?? true), isViewing: isViewingKey, status: scopeStatus,
     });
     if (!keys.length) return;
     for (const key of keys) {

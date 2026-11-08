@@ -632,6 +632,19 @@ export function openUserSettings(initialTab = 'account') {
         <input type="checkbox" id="f-f11" ${settings.f11Fullscreen !== false ? 'checked' : ''}>
         <span>${t('userSettings.f11FullscreenCheckbox')}</span>
       </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="f-notify-hidden" ${settings.notifyWhenHidden !== false ? 'checked' : ''}>
+        <span>${t('userSettings.notifyWhenHiddenCheckbox')}</span>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="f-notify-unfocused" ${settings.notifyWhenUnfocused ? 'checked' : ''}>
+        <span>${t('userSettings.notifyWhenUnfocusedCheckbox')}</span>
+      </label>
+      <div class="field" style="margin-top:8px">
+        <label>${t('userSettings.trayRecentCountLabel')}</label>
+        <input type="number" id="f-tray-recent" min="0" max="15" step="1" value="${settings.trayRecentCount ?? 5}" style="width:80px">
+        <div class="hint">${t('userSettings.trayRecentCountHint')}</div>
+      </div>
       <div class="hint" style="margin-top:8px">${t('userSettings.trayRightClickHint')}</div>
       <div class="divider"></div>
       <h2>${t('userSettings.trayIconHeading')}</h2>
@@ -661,6 +674,13 @@ export function openUserSettings(initialTab = 'account') {
     });
     inner.querySelector('#f-start-minimized').addEventListener('change', async (e) => {
       await window.dismeshClient.setAppSettings({ startMinimized: e.target.checked });
+    });
+    inner.querySelector('#f-notify-hidden').addEventListener('change', (e) => window.dismeshClient.setAppSettings({ notifyWhenHidden: e.target.checked }));
+    inner.querySelector('#f-notify-unfocused').addEventListener('change', (e) => window.dismeshClient.setAppSettings({ notifyWhenUnfocused: e.target.checked }));
+    inner.querySelector('#f-tray-recent').addEventListener('change', async (e) => {
+      const n = Math.max(0, Math.min(15, Math.round(Number(e.target.value)) || 0));
+      e.target.value = n;
+      await window.dismeshClient.setAppSettings({ trayRecentCount: n });
     });
     inner.querySelector('#f-f11').addEventListener('change', async (e) => {
       await window.dismeshClient.setAppSettings({ f11Fullscreen: e.target.checked });

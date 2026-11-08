@@ -7,10 +7,12 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Website and wiki (EN and HU): all screenshots retaken with the demo community using illustrated, royalty-free (CC0) avatars and camera tiles; new pictures for the soundboard, emoji recents, Save to Notes, Send later, name effects and bio editor, Auto away, the notification grid, chat font, member restrictions and the phone app. Both tour videos were re-recorded with the new features.
 
 #### Fixed
+- Desktop app: a channel left open while the window is hidden to the tray or minimized no longer counts as "being viewed", so its new messages now raise Windows notifications and appear in the tray's recent list. Clicking a tray entry removes it from the list and opens that exact message. Needs the new desktop client build.
 - Bundled ffmpeg runtime (`npm run fetch:ffmpeg` into `runtime/ffmpeg/`, used before ffmpeg on PATH) so video posters work without installing ffmpeg on the host.
 - Posted videos no longer re-download when switching channels: channel attachments are now browser-cached for a day, and videos load nothing until played (preload none). The server extracts the first frame as a poster image (needs ffmpeg on the host; without it the player stays blank, nothing breaks). DM videos are encrypted at rest and get no poster.
 
 #### Added
+- Desktop app (Settings > Desktop App): switches for notifying about the open channel while the app is hidden/minimized (on) or merely unfocused (off), and a setting for how many recent notifications the tray menu lists (0-15, default 5). Client-only.
 - Desktop app: download progress indicator for attachments (per-file progress bar, cancel, Open and Show in folder, taskbar progress) and a new Settings > Downloads tab to either be asked where to save each file or always save to a chosen folder (Browse or type a path). Needs the new desktop client build.
 - Auto away: Settings > Status (desktop) or You > Set status > Auto away (Android) sets the idle time after which your status switches to Away; activity restores Online. 0 turns it off. Only an automatic switch is undone; a status you set yourself is never touched.
 - Chat font and chat text size in the theme editor. Only message text and the composer change, not the interface. System fonts only.

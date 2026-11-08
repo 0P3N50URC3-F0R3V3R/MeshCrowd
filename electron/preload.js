@@ -2,7 +2,11 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+let windowState = { hidden: false, focused: true, notifyWhenHidden: true, notifyWhenUnfocused: false };
+ipcRenderer.on('dismesh:window-state', (event, st) => { windowState = st; });
+
 contextBridge.exposeInMainWorld('dismeshClient', {
+  isUserLooking: () => !(windowState.hidden && windowState.notifyWhenHidden) && !(!windowState.focused && windowState.notifyWhenUnfocused),
   getConfig: () => ipcRenderer.invoke('dismesh:get-config'),
   setServer: (url) => ipcRenderer.invoke('dismesh:set-server', url),
   forgetServer: () => ipcRenderer.invoke('dismesh:forget-server'),

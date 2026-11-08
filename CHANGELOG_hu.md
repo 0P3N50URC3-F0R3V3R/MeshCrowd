@@ -4,10 +4,12 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 
 ### 2026-11-08
 #### Javítva
+- Asztali alkalmazás: a megnyitva hagyott csatorna, miközben az ablak a tálcára van rejtve vagy kis méretű, már nem számít "nézettnek", így az új üzenetei Windows-értesítést kapnak és megjelennek a tálca legutóbbi listájában. A tálca egy elemére kattintva az kikerül a listából, és pontosan arra az üzenetre ugrik. Az új asztali kliens-buildet igényli.
 - Beépített ffmpeg futtatókörnyezet (`npm run fetch:ffmpeg`, a `runtime/ffmpeg/` mappába; a PATH-on lévő ffmpeg előtt ezt használja), így a videók indexképei ffmpeg telepítése nélkül is működnek a gazdagépen.
 - A csatornákban közzétett videók csatornaváltáskor már nem töltődnek újra: a csatolmányok egy napig a böngésző gyorsítótárában maradnak, a videó pedig lejátszásig semmit sem tölt le. A szerver a videó első képkockáját indexképként állítja elő (ffmpeg kell a gazdagépen; nélküle a lejátszó üres marad, de semmi nem romlik el). A DM-videók titkosítva tárolódnak, ezekhez nincs indexkép.
 
 #### Hozzáadva
+- Asztali alkalmazás (Beállítások > Asztali alkalmazás): kapcsolók a megnyitott csatorna értesítéséhez, ha az app rejtett/kis méretű (be) vagy csak nincs fókuszban (ki), valamint beállítás arra, hány legutóbbi értesítést listázzon a tálcamenü (0-15, alapértelmezett 5). Csak a kliensben.
 - Asztali alkalmazás: letöltésjelző a csatolmányokhoz (fájlonkénti folyamatjelző, megszakítás, Megnyitás és Megjelenítés mappában, tálcaikon-folyamat) és új Beállítások > Letöltések fül, ahol vagy minden fájlnál rákérdez a mentés helyére, vagy mindig egy választott mappába ment (Tallózás vagy beírt útvonal). Az új asztali kliens-buildet igényli.
 - Automatikus távol státusz: Beállítások > Státusz (asztali) vagy Te > Állapot beállítása > Automatikus távol (Android) – a megadott tétlenségi idő után a státuszod Távol lesz, tevékenységre visszaáll Elérhetőre. A 0 kikapcsolja. Csak az automatikus váltást vonja vissza, a saját magad beállított státuszt soha.
 - Csevegés betűtípusa és szövegmérete a témaszerkesztőben. Csak az üzenetek szövege és az üzenetmező változik, a felület nem. Csak rendszerbetűk.
