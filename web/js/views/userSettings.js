@@ -337,7 +337,21 @@ export function openUserSettings(initialTab = 'account') {
         </div>
         <div class="hint" style="margin-top:8px">${t('userBar.quickPicks')} ${['🎮','💻','🎧','☕','😴','🚀'].map((e) => `<button type="button" class="quick-emoji" data-e="${e}" style="font-size:18px;margin-right:6px">${e}</button>`).join('')}</div>
       </div>
+      <div class="divider"></div>
+      <div class="field">
+        <label>${t('userSettings.autoAwayLabel')}</label>
+        <input type="number" class="input" id="f-auto-away" min="0" max="86400" value="${Number(state.uiPrefs.autoAwaySeconds) || 0}" style="max-width:120px">
+      </div>
       <button class="btn btn-primary" id="status-save">${t('common.save')}</button>`;
+
+    inner.querySelector('#f-auto-away').addEventListener('change', async (e) => {
+      const prev = Number(state.uiPrefs.autoAwaySeconds) || 0;
+      try {
+        const res = await api.setUiPrefs({ autoAwaySeconds: Number(e.target.value) });
+        Object.assign(state.uiPrefs, res.uiPrefs);
+        e.target.value = Number(state.uiPrefs.autoAwaySeconds) || 0;
+      } catch (err) { e.target.value = prev; toast(apiErrorMessage(err), { type: 'error' }); }
+    });
 
     const setStatusEmoji = bindStatusEmojiField(inner, 'f-emoji');
     inner.querySelectorAll('.quick-emoji').forEach((b) => b.addEventListener('click', () => setStatusEmoji(b.dataset.e)));
@@ -710,10 +724,6 @@ export function openUserSettings(initialTab = 'account') {
           </select>
         </div>
         <div class="field">
-          <label>${t('userSettings.autoAwayLabel')}</label>
-          <input type="number" class="input" id="f-auto-away" min="0" max="86400" value="${Number(state.uiPrefs.autoAwaySeconds) || 0}" style="max-width:120px">
-        </div>
-        <div class="field">
           <label>${t('userSettings.unreadLineLabel')}</label>
           <select class="input" id="f-unread-line" style="max-width:280px">
             <option value="on" ${unreadPrefs.unreadLine === 'on' ? 'selected' : ''}>${t('userSettings.unreadLineOn')}</option>
@@ -860,7 +870,7 @@ export function openUserSettings(initialTab = 'account') {
         try { await api.setUiPrefs({ landingView: value }); }
         catch (err) { landingView = prev; e.target.value = prev; toast(apiErrorMessage(err), { type: 'error' }); }
       });
-      for (const [id, key, num] of [['#f-unread-line', 'unreadLine'], ['#f-unread-always', 'unreadAlways'], ['#f-unread-jump', 'unreadJump'], ['#f-unread-context', 'unreadContext', true], ['#f-initial-messages', 'initialMessages', true], ['#f-auto-away', 'autoAwaySeconds', true]]) {
+      for (const [id, key, num] of [['#f-unread-line', 'unreadLine'], ['#f-unread-always', 'unreadAlways'], ['#f-unread-jump', 'unreadJump'], ['#f-unread-context', 'unreadContext', true], ['#f-initial-messages', 'initialMessages', true]]) {
         inner.querySelector(id)?.addEventListener('change', async (e) => {
           const value = num ? Number(e.target.value) : e.target.value;
           const prev = unreadPrefs[key];
