@@ -306,6 +306,8 @@ svg { display: block; flex-shrink: 0; }
 .dl-bar > div { height: 100%; background: var(--brand); transition: width 0.2s; }
 .dl-bar.indeterminate > div { width: 40% !important; animation: dl-slide 1.2s ease-in-out infinite; }
 .dl-row[data-state="interrupted"] .dl-bar > div, .dl-row[data-state="cancelled"] .dl-bar > div { background: var(--danger); }
-.dl-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted, #949ba4); }
-.dl-actions { display: flex; gap: 4px; }
+.dl-meta { font-size: 12px; color: var(--text-muted, #949ba4); }
+.dl-meta > span:first-child { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.dl-actions .btn { white-space: nowrap; }
 @keyframes dl-slide { 0% { margin-left: -40%; } 100% { margin-left: 100%; } }
