@@ -4,7 +4,7 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 
 ### 2026-11-08
 #### Hozzáadva
-- Automatikus távol státusz: Beállítások > Státusz (asztali) vagy Te > Automatikus távol (Android) – a megadott tétlenségi idő után a státuszod Távol lesz, tevékenységre visszaáll Elérhetőre. A 0 kikapcsolja. Csak az automatikus váltást vonja vissza, a saját magad beállított státuszt soha.
+- Automatikus távol státusz: Beállítások > Státusz (asztali) vagy Te > Állapot beállítása > Automatikus távol (Android) – a megadott tétlenségi idő után a státuszod Távol lesz, tevékenységre visszaáll Elérhetőre. A 0 kikapcsolja. Csak az automatikus váltást vonja vissza, a saját magad beállított státuszt soha.
 - Csevegés betűtípusa és szövegmérete a témaszerkesztőben. Csak az üzenetek szövege és az üzenetmező változik, a felület nem. Csak rendszerbetűk.
 - Android: az értesítések és az alkalmazás szövegei magyar fordítást kaptak (a telefon nyelvét követi).
 

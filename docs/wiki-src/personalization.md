@@ -15,7 +15,7 @@ Privacy settings decide who can send you direct messages and who can see your pr
 
 ## Presence and custom status
 
-Choose **Online**, **Idle**, **Do not disturb** or **Invisible**, and add a custom status with an emoji and text. Open the status menu from your avatar: **Custom Status** edits it and **Remove Custom Status** (shown while one is set) clears it in one click. The slash command `/afk` sets idle with a message. **Auto away**: under **Settings, Status** (on a phone: **You, Auto away**) set a number of seconds (minutes on a phone) of inactivity after which your status switches to Idle by itself; activity switches it back to Online. 0 turns it off. Only the automatic switch is undone; a status you chose yourself is never changed. What reaches you in each status is set in the notification grid, see [Notifications](messaging.html#notifications).
+Choose **Online**, **Idle**, **Do not disturb** or **Invisible**, and add a custom status with an emoji and text. Open the status menu from your avatar: **Custom Status** edits it and **Remove Custom Status** (shown while one is set) clears it in one click. The slash command `/afk` sets idle with a message. **Auto away**: under **Settings, Status** (on a phone: **You, Set status, Auto away**) set a number of seconds (minutes on a phone) of inactivity after which your status switches to Idle by itself; activity switches it back to Online. 0 turns it off. Only the automatic switch is undone; a status you chose yourself is never changed. What reaches you in each status is set in the notification grid, see [Notifications](messaging.html#notifications).
 
 ## Themes
 

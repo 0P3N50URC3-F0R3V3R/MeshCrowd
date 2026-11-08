@@ -46,7 +46,6 @@ export function mountYouTab(host) {
       ${bridge ? row('chatStyle', icons.messageSquare(20), t('m.chatStyle'), t(getPref('chatStyle', 'plain') === 'bubbles' ? 'm.chatStyleBubbles' : 'm.chatStylePlain')) : ''}
       ${row('notifyGrid', icons.bell(20), t('userSettings.notificationSoundStatusLabel'))}
       ${row('unreadAlways', icons.messageSquare(20), t('userSettings.unreadAlwaysLabel'), t(state.uiPrefs.unreadAlways === 'on' ? 'userSettings.unreadAlwaysOn' : 'userSettings.unreadAlwaysOff'))}
-      ${row('autoAway', icons.clock ? icons.clock(20) : icons.smile(20), t('userSettings.autoAwayTitle'), autoAwayText())}
       ${row('language', icons.menu(20), t('m.language'), currentLanguage())}
       ${bridge ? row('android', icons.bell(20), t('m.androidSection')) : ''}
       ${row('syncDevices', icons.link(20), t('userSync.syncDevicesButton'))}
@@ -55,12 +54,18 @@ export function mountYouTab(host) {
     </div>`;
   }
 
+  async function pickAutoAway() {
+    const v = await actionSheet({ title: t('userSettings.autoAwayTitle'), items: AUTO_AWAY_MINUTES.map((n) => ({ id: String(n), label: autoAwayLabel(n) })) });
+    if (v != null) Object.assign(state.uiPrefs, (await api.setUiPrefs({ autoAwaySeconds: Number(v) * 60 })).uiPrefs);
+  }
+
   async function onRow(id) {
     try {
       if (id === 'status') {
         const hasCustom = state.me.customStatusEmoji || state.me.customStatusText;
-        const v = await actionSheet({ title: t('m.setStatus'), items: [...STATUSES.map(([value, key]) => ({ id: value, label: t(key) })), ...(hasCustom ? [{ id: '__removeCustom', label: t('userBar.removeCustomStatus') }] : [])] });
-        if (v === '__removeCustom') {
+        const v = await actionSheet({ title: t('m.setStatus'), items: [...STATUSES.map(([value, key]) => ({ id: value, label: t(key) })), ...(hasCustom ? [{ id: '__removeCustom', label: t('userBar.removeCustomStatus') }] : []), { id: '__autoAway', label: `${t('userSettings.autoAwayTitle')}: ${autoAwayText()}` }] });
+        if (v === '__autoAway') await pickAutoAway();
+        else if (v === '__removeCustom') {
           await api.setStatus({ customStatusEmoji: '', customStatusText: '' });
           Object.assign(state.me, { customStatusEmoji: '', customStatusText: '' });
           bus.emit('state:me');
@@ -72,9 +77,6 @@ export function mountYouTab(host) {
       } else if (id === 'unreadAlways') {
         const v = await actionSheet({ title: t('userSettings.unreadAlwaysLabel'), items: [{ id: 'off', label: t('userSettings.unreadAlwaysOff') }, { id: 'on', label: t('userSettings.unreadAlwaysOn') }] });
         if (v) { Object.assign(state.uiPrefs, (await api.setUiPrefs({ unreadAlways: v })).uiPrefs); paint(); }
-      } else if (id === 'autoAway') {
-        const v = await actionSheet({ title: t('userSettings.autoAwayTitle'), items: AUTO_AWAY_MINUTES.map((n) => ({ id: String(n), label: autoAwayLabel(n) })) });
-        if (v != null) { Object.assign(state.uiPrefs, (await api.setUiPrefs({ autoAwaySeconds: Number(v) * 60 })).uiPrefs); paint(); }
       } else if (id === 'startView') {
         const v = await actionSheet({ title: t('m.startView'), items: START_VIEWS.map(([value, key]) => ({ id: value, label: t(key) })) });
         if (v) { setPref('startView', v); paint(); }
