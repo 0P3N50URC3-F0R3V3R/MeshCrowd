@@ -48,7 +48,7 @@ The app polls your server itself, so it needs no Firebase or Google Play Service
 | Fast mode (on by default) | A foreground service with a permanent notification, polling every 1 to 1440 minutes | Heavier |
 | UnifiedPush | The server wakes the phone through a distributor app such as ntfy | Light and instant |
 
-The permanent notification of fast mode comes back by itself if you swipe it away (Android 14 and newer allow dismissing it). While the app is open, messages arrive instantly over the WebSocket. Encrypted DMs show only a generic "New encrypted message". Tapping a notification opens that conversation. Notifications are only sent for messages that arrived while the app was in the background, never for what you already saw with the app open. The **Notifications** tab has a trash button that clears the whole list, and the tab only lists messages from conversations you are not looking at.
+The permanent notification of fast mode comes back by itself if you swipe it away (Android 14 and newer allow dismissing it). While the app is open, messages arrive instantly over the WebSocket. Encrypted DMs show only a generic "New encrypted message". Tapping a notification opens that conversation. Notification and app texts follow the phone's language (English and Hungarian). Notifications are only sent for messages that arrived while the app was in the background, never for what you already saw with the app open. The **Notifications** tab has a trash button that clears the whole list, and the tab only lists messages from conversations you are not looking at.
 
 ### UnifiedPush
 

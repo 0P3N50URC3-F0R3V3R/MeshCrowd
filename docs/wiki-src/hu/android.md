@@ -48,7 +48,7 @@ Az alkalmazás maga kérdezi le a szerveredet, ezért nincs szüksége Firebase-
 | Gyors mód (alapból be van kapcsolva) | Előtér-szolgáltatás állandó értesítéssel, 1 és 1440 perc közötti lekérdezéssel | Terhelőbb |
 | UnifiedPush | A szerver egy elosztó alkalmazáson, például az ntfy-n át ébreszti a telefont | Kímélő és azonnali |
 
-A gyors mód állandó értesítése magától visszatér, ha elhúzod (az Android 14 és újabb engedi az elvetését). Amíg az alkalmazás nyitva van, az üzenetek azonnal megérkeznek a WebSocketen. A titkosított privát üzenetek csak általános „Új titkosított üzenet” értesítést mutatnak. Az értesítésre koppintva az adott beszélgetés nyílik meg. Értesítés csak azokról az üzenetekről érkezik, amelyek az alkalmazás a háttérben volt, azokról soha, amelyeket nyitott alkalmazással már láttál. Az **Értesítések** fülön kuka gomb törli a teljes listát, és a fül csak azoknak a beszélgetéseknek az üzeneteit listázza, amelyeket éppen nem nézel.
+A gyors mód állandó értesítése magától visszatér, ha elhúzod (az Android 14 és újabb engedi az elvetését). Amíg az alkalmazás nyitva van, az üzenetek azonnal megérkeznek a WebSocketen. A titkosított privát üzenetek csak általános „Új titkosított üzenet” értesítést mutatnak. Az értesítésre koppintva az adott beszélgetés nyílik meg. Az értesítések és az alkalmazás szövegei a telefon nyelvét követik (angol és magyar). Értesítés csak azokról az üzenetekről érkezik, amelyek az alkalmazás a háttérben volt, azokról soha, amelyeket nyitott alkalmazással már láttál. Az **Értesítések** fülön kuka gomb törli a teljes listát, és a fül csak azoknak a beszélgetéseknek az üzeneteit listázza, amelyeket éppen nem nézel.
 
 ### UnifiedPush
 

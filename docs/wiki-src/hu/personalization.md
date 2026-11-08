@@ -15,7 +15,7 @@ Az adatvédelmi beállítások döntik el, ki küldhet neked privát üzenetet, 
 
 ## Jelenlét és egyéni státusz
 
-Válaszd az **Online**, **Tétlen**, **Ne zavarjanak** vagy **Láthatatlan** lehetőséget, és adj hozzá egyéni státuszt emojival és szöveggel. Az `/afk` perjeles parancs üzenettel együtt tétlenre állít. Hogy az egyes állapotokban mi ér el, azt az értesítési rács adja meg, lásd az [Értesítések](messaging.html#rtes-t-sek) részt. Az avatarodra kattintva megnyíló menüben az **Egyéni státusz** szerkeszti, az **Egyéni státusz törlése** (amíg be van állítva) egy kattintással törli.
+Válaszd az **Online**, **Tétlen**, **Ne zavarjanak** vagy **Láthatatlan** lehetőséget, és adj hozzá egyéni státuszt emojival és szöveggel. Az `/afk` perjeles parancs üzenettel együtt tétlenre állít. **Automatikus távol**: a **Beállítások, Megjelenés** alatt (telefonon: **Te, Automatikus távol**) megadhatsz egy tétlenségi időt másodpercben (telefonon percben), amely után a státuszod magától Tétlenre vált; tevékenységre visszaáll Online-ra. A 0 kikapcsolja. Csak az automatikus váltást vonja vissza, a magad választotta státuszt soha. Hogy az egyes állapotokban mi ér el, azt az értesítési rács adja meg, lásd az [Értesítések](messaging.html#rtes-t-sek) részt. Az avatarodra kattintva megnyíló menüben az **Egyéni státusz** szerkeszti, az **Egyéni státusz törlése** (amíg be van állítva) egy kattintással törli.
 
 ## Témák
 
@@ -24,6 +24,7 @@ Minden tag a saját kinézetét választja a **Beállítások, Megjelenés** ala
 - **Előbeállítások**: MeshCrowd Dark, MeshCrowd Light, Midnight Purple, Forest, Sunset és High Contrast.
 - **Színek** a márkaszínhez, a sávhoz, az oldalsávhoz, a csevegés hátteréhez és a szöveghez.
 - **Betűtípusok**: alapértelmezett, talpas, egytávolságos és még néhány.
+- **Csevegés betűtípusa és szövegmérete** (akadálymentesítés): külön betűtípus (rendszerbetűk, pl. Arial, Tahoma, Calibri, Times New Roman) és 12–28 px közötti méret, amely csak az üzenetek szövegét és az üzenetmezőt változtatja, a felület többi részét soha.
 - Opcionális **háttérátmenet** (kezdő szín, záró szín és szög) az oldalsáv, a csevegés és a taglista mögött.
 - A **CSS másolása** a témádat kivágatként exportálja, amit más is importálhat.
 

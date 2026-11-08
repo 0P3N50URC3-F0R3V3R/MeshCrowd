@@ -60,7 +60,7 @@ A keresést a nagyítóval nyithatod meg. Jelöld be, mely mezőkre keressen: **
 
 ## Értesítések
 
-Minden csatorna és privát beszélgetés elnémítható, beállítható csak megemlítésekre vagy mindenre (az alapérték csatornáknál a megemlítések, privát üzeneteknél minden). Az asztali értesítések a böngészőt vagy az asztali alkalmazást használják. Az asztali alkalmazás tálcaikonja olvasatlan jelvényt mutat. Androidon lásd az [Android-alkalmazás](android.html) oldalt.
+Minden csatorna és privát beszélgetés elnémítható, beállítható csak megemlítésekre vagy mindenre (az alapérték csatornáknál a megemlítések, privát üzeneteknél minden). Az asztali értesítések a böngészőt vagy az asztali alkalmazást használják. Az asztali alkalmazás tálcaikonja olvasatlan jelvényt mutat. A közlemény csatornák automatikus naplóeseményei (belépések, átnevezések és hasonlók) csak olvasatlannak jelölik a csatornát; csak akkor értesítenek, ha a csatornát minden üzenetre állítottad. Androidon lásd az [Android-alkalmazás](android.html) oldalt.
 
 ### Az értesítési rács
 

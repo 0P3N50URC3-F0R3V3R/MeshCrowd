@@ -60,7 +60,7 @@ Open search from the magnifier. Tick which fields to match: **message text** (fu
 
 ## Notifications
 
-Each channel and DM can be muted, set to mentions only, or to everything (the default is mentions for channels and everything for DMs). Desktop notifications use the browser or the desktop app. The tray icon of the desktop app shows an unread badge. On Android see the [Android app](android.html).
+Each channel and DM can be muted, set to mentions only, or to everything (the default is mentions for channels and everything for DMs). Desktop notifications use the browser or the desktop app. The tray icon of the desktop app shows an unread badge. Automatic log events in announcement channels (joins, renames and similar) only mark the channel as unread; they notify you only if you set that channel to everything. On Android see the [Android app](android.html).
 
 ### The notification grid
 

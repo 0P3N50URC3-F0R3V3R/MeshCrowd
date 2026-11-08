@@ -15,7 +15,7 @@ Privacy settings decide who can send you direct messages and who can see your pr
 
 ## Presence and custom status
 
-Choose **Online**, **Idle**, **Do not disturb** or **Invisible**, and add a custom status with an emoji and text. Open the status menu from your avatar: **Custom Status** edits it and **Remove Custom Status** (shown while one is set) clears it in one click. The slash command `/afk` sets idle with a message. What reaches you in each status is set in the notification grid, see [Notifications](messaging.html#notifications).
+Choose **Online**, **Idle**, **Do not disturb** or **Invisible**, and add a custom status with an emoji and text. Open the status menu from your avatar: **Custom Status** edits it and **Remove Custom Status** (shown while one is set) clears it in one click. The slash command `/afk` sets idle with a message. **Auto away**: under **Settings, Appearance** (on a phone: **You, Auto away**) set a number of seconds (minutes on a phone) of inactivity after which your status switches to Idle by itself; activity switches it back to Online. 0 turns it off. Only the automatic switch is undone; a status you chose yourself is never changed. What reaches you in each status is set in the notification grid, see [Notifications](messaging.html#notifications).
 
 ## Themes
 
@@ -24,6 +24,7 @@ Every member picks their own look under **Settings, Appearance**. Start with a p
 - **Presets**: MeshCrowd Dark, MeshCrowd Light, Midnight Purple, Forest, Sunset and High Contrast.
 - **Colors** for the brand, the rail, the sidebar, the chat background and the text.
 - **Fonts**: default, serif, monospace and a few more.
+- **Chat font and text size** (accessibility): a separate font (system fonts such as Arial, Tahoma, Calibri, Times New Roman) and a size from 12 to 28 px that change only the message text and the message box, never the rest of the interface.
 - An optional **background gradient** (start, end and angle) behind the sidebar, chat and member list.
 - **Copy CSS** exports your theme as a snippet that someone else can import.
 
