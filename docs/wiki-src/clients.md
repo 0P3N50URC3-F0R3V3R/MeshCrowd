@@ -25,6 +25,7 @@ A portable app: unzip it and run `MeshCrowd.exe`. On the first launch it asks fo
 - A **connecting screen** with a spinner while the server answers. If it cannot be reached (or takes over 20 seconds) it offers **Retry** and **Change server** instead of a blank window.
 - **Native notifications**, close to tray and start with Windows.
 - **F11 fullscreen**, which can be switched off under **Settings, Desktop App**.
+- **Tray notification list**: right-click the tray icon to see your latest notifications (**Settings, Desktop App** sets how many, 0 to 15, default 5). Clicking one removes it from the list and opens that exact message. A channel you left open still notifies you while the app is hidden in the tray or minimized; a second switch does the same when the window is merely unfocused.
 - **Download indicator**: every attachment download shows a progress bar (size, percent, Cancel) in the bottom-right corner and on the taskbar icon; when it finishes, **Open** and **Show in folder** are one click away.
 - **Download location**: under **Settings, Downloads** choose between being asked where to save each file and always saving to one folder. Pick the folder with **Browse** or type a full path; empty means the system Downloads folder. Existing files are never overwritten, a number is added instead.
 - **Window memory**: size, position and a maximized state are restored on the next start.
