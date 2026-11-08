@@ -6,6 +6,9 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 #### Changed
 - Website and wiki (EN and HU): all screenshots retaken with the demo community using illustrated, royalty-free (CC0) avatars and camera tiles; new pictures for the soundboard, emoji recents, Save to Notes, Send later, name effects and bio editor, Auto away, the notification grid, chat font, member restrictions and the phone app. Both tour videos were re-recorded with the new features.
 
+#### Fixed
+- Posted videos no longer re-download when switching channels: channel attachments are now browser-cached for a day, and videos load nothing until played (preload none).
+
 #### Added
 - Auto away: Settings > Status (desktop) or You > Set status > Auto away (Android) sets the idle time after which your status switches to Away; activity restores Online. 0 turns it off. Only an automatic switch is undone; a status you set yourself is never touched.
 - Chat font and chat text size in the theme editor. Only message text and the composer change, not the interface. System fonts only.

@@ -98,6 +98,7 @@ app.use('/vendor/tinymce', express.static(path.join(__dirname, '..', 'node_modul
 const INLINE_SAFE_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico']);
 app.use('/uploads/attachments', require('./routes/dmFiles'));
 app.use('/uploads/attachments', express.static(path.join(DATA_DIR, 'attachments'), {
+  maxAge: '1d',
   setHeaders(res, filePath) {
     if (!INLINE_SAFE_EXT.has(path.extname(filePath).toLowerCase())) {
       res.setHeader('Content-Disposition', 'attachment');

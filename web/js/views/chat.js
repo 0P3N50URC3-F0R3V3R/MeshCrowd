@@ -633,7 +633,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     if (isVideoMime(a.mimeType)) {
       // Native <video controls> — plays inline directly from this instance's own /uploads (no
       // third-party embed/player), and its built-in fullscreen button already covers "large view".
-      return `<div class="attachment-video"><video src="${escapeHtml(a.url)}" controls preload="metadata"></video></div>`;
+      return `<div class="attachment-video"><video src="${escapeHtml(a.url)}" controls preload="none"></video></div>`;
     }
     // `download` (not target="_blank") so this is a same-window download, not a window-open - in
     // the Electron client, a target="_blank" link gets intercepted by main.js's
