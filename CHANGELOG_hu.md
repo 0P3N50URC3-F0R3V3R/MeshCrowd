@@ -4,7 +4,7 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 
 ### 2026-11-08
 #### Javítva
-- A csatornákban közzétett videók csatornaváltáskor már nem töltődnek újra: a csatolmányok egy napig a böngésző gyorsítótárában maradnak, a videó pedig lejátszásig semmit sem tölt le.
+- A csatornákban közzétett videók csatornaváltáskor már nem töltődnek újra: a csatolmányok egy napig a böngésző gyorsítótárában maradnak, a videó pedig lejátszásig semmit sem tölt le. A szerver a videó első képkockáját indexképként állítja elő (ffmpeg kell a gazdagépen; nélküle a lejátszó üres marad, de semmi nem romlik el). A DM-videók titkosítva tárolódnak, ezekhez nincs indexkép.
 
 #### Hozzáadva
 - Automatikus távol státusz: Beállítások > Státusz (asztali) vagy Te > Állapot beállítása > Automatikus távol (Android) – a megadott tétlenségi idő után a státuszod Távol lesz, tevékenységre visszaáll Elérhetőre. A 0 kikapcsolja. Csak az automatikus váltást vonja vissza, a saját magad beállított státuszt soha.

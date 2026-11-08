@@ -97,6 +97,7 @@ app.use('/vendor/tinymce', express.static(path.join(__dirname, '..', 'node_modul
 // navigation/Save-As is, and raster formats can't carry script the way SVG/HTML can.
 const INLINE_SAFE_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico']);
 app.use('/uploads/attachments', require('./routes/dmFiles'));
+app.use('/uploads/attachments', require('./lib/videoPoster').posterMiddleware(path.join(DATA_DIR, 'attachments')));
 app.use('/uploads/attachments', express.static(path.join(DATA_DIR, 'attachments'), {
   maxAge: '1d',
   setHeaders(res, filePath) {

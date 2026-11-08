@@ -24,7 +24,7 @@ function attachmentsHtml(msg) {
     const url = escapeHtml(a.url);
     if (a.voiceMs && (a.mimeType || '').startsWith('audio/')) { out.push(voiceMessageHtml(a)); continue; }
     if (isImageMime(a.mimeType)) out.push(`<img class="m-att-img" data-viewer="${url}" src="${url}" alt="${escapeHtml(a.fileName)}" loading="lazy">`);
-    else if (isVideoMime(a.mimeType)) out.push(`<video class="m-att-video" src="${url}" controls preload="none" playsinline></video>`);
+    else if (isVideoMime(a.mimeType)) out.push(`<video class="m-att-video" src="${url}" poster="${url}.poster.jpg" controls preload="none" playsinline></video>`);
     else if ((a.mimeType || '').startsWith('audio/')) out.push(`<audio class="m-att-audio" src="${url}" controls preload="none"></audio>`);
     else out.push(`<a class="m-att-file" href="${url}" download="${escapeHtml(a.fileName)}">${icons.file(18)}<span class="m-grow"><b>${escapeHtml(a.fileName)}</b><small>${formatBytes(a.sizeBytes)}</small></span></a>`);
   }
