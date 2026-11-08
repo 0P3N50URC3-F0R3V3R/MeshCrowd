@@ -2,6 +2,19 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-08
+#### Hozzáadva
+- Automatikus távol státusz: Beállítások > Megjelenés (asztali) vagy Te > Automatikus távol (Android) – a megadott tétlenségi idő után a státuszod Távol lesz, tevékenységre visszaáll Elérhetőre. A 0 kikapcsolja. Csak az automatikus váltást vonja vissza, a saját magad beállított státuszt soha.
+- Csevegés betűtípusa és szövegmérete a témaszerkesztőben. Csak az üzenetek szövege és az üzenetmező változik, a felület nem. Csak rendszerbetűk.
+- Android: az értesítések és az alkalmazás szövegei magyar fordítást kaptak (a telefon nyelvét követi).
+
+#### Módosítva
+- A naplócsatornák automatikus eseményei (belépések, átnevezések stb.) csak olvasatlannak jelölik a csatornát. Csak azokat értesítik, akik a csatornát „minden üzenet" értesítésre állították, és az értesítés szövege most már lokalizált.
+
+#### Javítva
+- Asztali csevegés: az ablak átméretezése már nem tolja el a beszélgetést; az alja rögzített marad, vagy a látható üzenet a helyén marad.
+- Asztali: az ugrás az utolsó üzenetre gomb minden csevegőnézetben (hangcsevegő, szálak) a csevegéshez és az üzenetmezőhöz igazodik.
+
 ### 2026-11-07
 #### Hozzáadva
 - Asztali, Electron és web: az emoji-választó a kategóriafülek alatt, mindig látható sorban mutatja az utolsó 10 választott emojit (közös előzmény az Android-alkalmazás legutóbbi listájával).

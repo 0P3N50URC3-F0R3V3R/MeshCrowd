@@ -3,7 +3,7 @@
 // Speeds up repeat launches (notably the Android app on mobile networks): static files are answered
 // from the cache at once and refreshed in the background, so code and assets stop depending on the
 // network. API calls, the websocket, federation and private attachments are never touched.
-const CACHE = 'mc-static-v2';
+const CACHE = 'mc-static-v3';
 const MAX_ENTRIES = 700;
 const CACHEABLE = [
   /^\/m\/(?!.*\/api\/)/, /^\/css\//, /^\/js\//, /^\/vendor\//, /^\/lang\//, /^\/assets\//,

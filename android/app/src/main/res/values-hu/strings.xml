@@ -1,0 +1,35 @@
+<resources>
+    <string name="app_name">MeshCrowd</string>
+    <string name="channel_messages">Üzenetek</string>
+    <string name="channel_service">Háttérben futó üzenetellenőrző</string>
+    <string name="channel_downloads">Letöltések</string>
+    <string name="channel_call">Hanghívások</string>
+    <string name="connection_title">A MeshCrowd csatlakoztatva van</string>
+    <string name="connection_text">A háttérben is csatlakozva marad, hogy az üzenetek azonnal megérkezzenek.</string>
+    <string name="call_title">MeshCrowd hívás folyamatban</string>
+    <string name="call_text">Koppints a híváshoz való visszatéréshez.</string>
+    <string name="service_title">A MeshCrowd üzeneteket keres</string>
+    <string name="service_text">A gyors mód megtartja ezt az értesítést. Kikapcsolás: Te, Android alkalmazás.</string>
+    <string name="download_done">Letöltés kész</string>
+    <string name="download_progress">Letöltés</string>
+    <string name="download_started">%1$s letöltése…</string>
+    <string name="download_failed">A letöltés sikertelen (%1$s)</string>
+    <string name="notify_encrypted">Új titkosított üzenet</string>
+    <string name="notify_attachment">Mellékletet küldött</string>
+    <string name="notify_sticker">Matricát küldött</string>
+    <string name="notify_pinned">%1$s kitűzött egy üzenetet</string>
+    <string name="notify_thread">%1$s szálat indított az üzenetedre</string>
+    <string name="invite_switch_title">Meghívó megnyitása?</string>
+    <string name="invite_switch_body">Ez a meghívó a(z) %1$s szerverre szól, ami eltér attól, amelyhez az alkalmazás be van állítva. Folytatod a csatlakozást?</string>
+    <string name="invite_switch_continue">Folytatás</string>
+    <string name="setup_title">Csatlakozás a szerveredhez</string>
+    <string name="setup_hint">Add meg a MeshCrowd szervered címét.</string>
+    <string name="setup_placeholder">chat.example.com vagy 192.168.1.44:8080</string>
+    <string name="setup_connect">Csatlakozás</string>
+    <string name="setup_invalid">Ez nem tűnik szervercímnek.</string>
+    <string name="setup_failed">Ezen a címen nem érhető el MeshCrowd szerver.</string>
+    <string name="setup_untrusted_title">Nem megbízható tanúsítvány</string>
+    <string name="setup_untrusted_body">Ez a szerver olyan tanúsítványt használ, amelyet a telefonod nem ismer fel (például önaláírt).\n\nSHA-256 ujjlenyomat:\n%1$s\n\nCsak akkor folytasd, ha ez egyezik a szerver adminisztrátorától kapott ujjlenyomattal.</string>
+    <string name="setup_trust">Tanúsítvány elfogadása</string>
+    <string name="setup_cleartext">Ez a szerver titkosítás nélkül (http) érhető el. A hálózaton bárki olvashatja az üzeneteidet. Csak megbízható hálózaton használd.</string>
+</resources>

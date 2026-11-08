@@ -105,9 +105,31 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     pinBottom = true;
     setTimeout(releasePin, 4000);
   }
+  if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
   function paintJumpLatest() {
     jumpLatestEl.hidden = !hasNewer && isNearBottom();
+    jumpLatestEl.style.bottom = `${composerWrap.offsetHeight + typingEl.offsetHeight + 12}px`;
   }
+  let viewAnchor = null;
+  let wasAtBottom = true;
+  function captureViewAnchor() {
+    if (!scrollEl.clientHeight) return;
+    wasAtBottom = isNearBottom();
+    const top = scrollEl.getBoundingClientRect().top;
+    const el = [...listEl.querySelectorAll('[data-id]')].find((e) => e.getBoundingClientRect().bottom > top);
+    viewAnchor = el ? { id: el.dataset.id, offset: el.getBoundingClientRect().top - top } : null;
+  }
+  scrollEl.addEventListener('scroll', captureViewAnchor, { passive: true });
+  const resizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(() => {
+    if (wasAtBottom) scrollToBottom();
+    else if (viewAnchor) {
+      const el = [...listEl.querySelectorAll('[data-id]')].find((e) => e.dataset.id === viewAnchor.id);
+      if (el) scrollEl.scrollTop += el.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top - viewAnchor.offset;
+    }
+    paintJumpLatest();
+  }) : null;
+  resizeObserver?.observe(scrollEl);
+  resizeObserver?.observe(composerWrap);
   jumpLatestEl.addEventListener('click', async () => {
     if (hasNewer) await showLatest();
     scrollToBottom();
@@ -1947,6 +1969,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     offEphemeral(); offCreate(); offUpdate(); offDelete(); offTyping(); offConnection(); offWsClose(); offWsOpen(); offProfile(); offDms?.();
     scrollEl.removeEventListener('scroll', onScroll);
     pinObserver?.disconnect();
+    resizeObserver?.disconnect();
     clearTimeout(typingTimer);
     for (const f of uploadFiles) releaseObjectUrl(f);
   }

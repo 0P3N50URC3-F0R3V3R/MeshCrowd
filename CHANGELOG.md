@@ -2,6 +2,19 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-08
+#### Added
+- Auto away: Settings > Appearance (desktop) or You > Auto away (Android) sets the idle time after which your status switches to Away; activity restores Online. 0 turns it off. Only an automatic switch is undone; a status you set yourself is never touched.
+- Chat font and chat text size in the theme editor. Only message text and the composer change, not the interface. System fonts only.
+- Android: notification and app strings now have a Hungarian translation (follows the phone language).
+
+#### Changed
+- Auto-posted log events (joins, renames, ...) in log channels only mark the channel unread. They notify only members who set that channel to "all messages", and the notification text is now localized.
+
+#### Fixed
+- Desktop chat: resizing the window no longer shifts the conversation; the bottom stays pinned or the visible message keeps its place.
+- Desktop: the jump-to-latest button is positioned relative to the chat and composer in all chat views (voice chat, threads).
+
 ### 2026-11-07
 #### Added
 - Desktop, Electron and web: the emoji picker now shows your last 10 picked emoji in a row right below the category tabs, always visible (shared history with the Android app's recent list).

@@ -44,3 +44,10 @@ test('garbage input never throws, just yields the default theme', () => {
   assert.deepEqual(sanitizeTheme(42), DEFAULT_THEME);
   assert.deepEqual(sanitizeTheme(undefined), DEFAULT_THEME);
 });
+
+test('chat font key and size are validated', () => {
+  assert.equal(sanitizeTheme({ chatFont: 'arial', chatSize: 18 }).chatFont, 'arial');
+  assert.equal(sanitizeTheme({ chatFont: 'arial', chatSize: 18 }).chatSize, 18);
+  assert.equal(sanitizeTheme({ chatFont: 'evil', chatSize: 400 }).chatFont, 'default');
+  assert.equal(sanitizeTheme({ chatFont: 'evil', chatSize: 400 }).chatSize, 0);
+});

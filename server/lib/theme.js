@@ -7,11 +7,16 @@ const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 // (browser ESM vs server CJS, kept in sync by hand). Must match that file's FONT_STACKS keys.
 const FONT_KEYS = new Set(['default', 'serif', 'mono', 'comic', 'verdana']);
 
+// Chat-only fonts: the GUI fonts above plus more system fonts (no bundled font files).
+const CHAT_FONT_KEYS = new Set([...FONT_KEYS, 'arial', 'tahoma', 'trebuchet', 'calibri', 'times', 'courier']);
+const CHAT_SIZE_MIN = 12;
+const CHAT_SIZE_MAX = 28;
+
 const COLOR_FIELDS = ['brand', 'bgRail', 'bgSidebar', 'bgPrimary', 'bgFloating', 'textPrimary', 'textSecondary', 'gradFrom', 'gradTo'];
 
 const DEFAULT_THEME = Object.freeze({
   brand: '', bgRail: '', bgSidebar: '', bgPrimary: '', bgFloating: '', textPrimary: '', textSecondary: '', font: 'default',
-  gradFrom: '', gradTo: '', gradAngle: 135,
+  gradFrom: '', gradTo: '', gradAngle: 135, chatFont: 'default', chatSize: 0,
 });
 
 // Validates/normalizes a client-submitted theme down to a known-safe shape: every color field is
@@ -30,7 +35,9 @@ function sanitizeTheme(input) {
   }
   if (Number.isInteger(input.gradAngle) && input.gradAngle >= 0 && input.gradAngle <= 360) out.gradAngle = input.gradAngle;
   if (typeof input.font === 'string' && FONT_KEYS.has(input.font)) out.font = input.font;
+  if (typeof input.chatFont === 'string' && CHAT_FONT_KEYS.has(input.chatFont)) out.chatFont = input.chatFont;
+  if (Number.isInteger(input.chatSize) && input.chatSize >= CHAT_SIZE_MIN && input.chatSize <= CHAT_SIZE_MAX) out.chatSize = input.chatSize;
   return out;
 }
 
-module.exports = { sanitizeTheme, DEFAULT_THEME, FONT_KEYS, COLOR_FIELDS };
+module.exports = { sanitizeTheme, DEFAULT_THEME, FONT_KEYS, CHAT_FONT_KEYS, COLOR_FIELDS };

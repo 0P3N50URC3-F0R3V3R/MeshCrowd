@@ -161,8 +161,9 @@
 .msg-system-time { margin-left: auto; font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
 
 .msg-line {
-  font-size: 15px;
-  line-height: 1.375rem;
+  font-family: var(--chat-font-stack, inherit);
+  font-size: var(--chat-font-size, 15px);
+  line-height: calc(var(--chat-font-size, 15px) * 1.45);
   color: var(--text-secondary);
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -460,8 +461,8 @@
 .composer textarea {
   flex: 1;
   border: none; background: none; outline: none; resize: none;
-  color: var(--text-primary); font-size: 15px; line-height: 1.375rem;
-  padding: 11px 0; max-height: 50vh; font-family: inherit;
+  color: var(--text-primary); font-size: var(--chat-font-size, 15px); line-height: calc(var(--chat-font-size, 15px) * 1.45);
+  padding: 11px 0; max-height: 50vh; font-family: var(--chat-font-stack, inherit);
 }
 .composer textarea::placeholder { color: var(--text-muted); }
 .composer textarea { min-width: 0; }

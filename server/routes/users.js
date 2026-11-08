@@ -195,7 +195,7 @@ router.put('/me/theme', requireAuth, syncAfter('theme'), (req, res) => {
 // Resizable-sidebar widths (channel sidebar, member list/right-panel slot) - a personal layout
 // preference like theme/server-layout above, so it gets the same "own JSON column, sanitize on
 // the way in" treatment rather than a bespoke table for two numbers.
-const UI_PREF_BOUNDS = { sidebarWidth: [180, 400], membersWidth: [180, 400], unreadContext: [0, 50], initialMessages: [20, 100] };
+const UI_PREF_BOUNDS = { sidebarWidth: [180, 400], membersWidth: [180, 400], unreadContext: [0, 50], initialMessages: [20, 100], autoAwaySeconds: [0, 86400] };
 const LANDING_VIEWS = new Set(['home', 'lastLocation']);
 const UI_PREF_ENUMS = { unreadLine: new Set(['on', 'off']), unreadAlways: new Set(['on', 'off']), unreadJump: new Set(['firstUnread', 'bottom']) };
 function sanitizeUiPrefs(raw) {

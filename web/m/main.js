@@ -4,6 +4,7 @@ import { setMe, state, setServers } from '../js/state.js';
 import { initI18n, applyStaticI18n, t } from '../js/i18n.js';
 import '../js/animatedImages.js';
 import '../js/autoRefocus.js';
+import { startAutoAway } from '../js/autoAway.js';
 import { renderAuth } from '../js/views/auth.js';
 import { loadAll, fetchAll, applyAll, wireRealtime } from './data.js';
 import { readSnapshot, writeSnapshot, clearSnapshot } from './lib/stateCache.js';
@@ -87,6 +88,7 @@ async function boot() {
   root.innerHTML = '<div id="m-conn" class="m-conn hidden"></div><div id="m-callbar" class="m-callbar" hidden></div><div id="m-host" class="m-host"></div>';
   document.getElementById('m-conn').textContent = t('m.offline');
   wireRealtime();
+  startAutoAway();
   initRouter(document.getElementById('m-host'));
   initCallSession();
   mountCallBar(document.getElementById('m-callbar'));

@@ -102,7 +102,7 @@ img, video { max-width: 100%; }
 .m-msg-head { display: flex; align-items: baseline; gap: 8px; }
 .m-msg-name { font-size: 0.95rem; }
 .m-msg-head time { font-size: 0.7rem; color: var(--text-faint); }
-.m-text { font-size: 0.95rem; line-height: 1.35; }
+.m-text { font-family: var(--chat-font-stack, inherit); font-size: var(--chat-font-size, 0.95rem); line-height: 1.4; }
 .m-text.m-emoji-only { font-size: 2rem; }
 .m-edited { font-size: 0.7rem; color: var(--text-faint); margin-left: 4px; }
 .m-event { text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 8px var(--m-pad); }
@@ -127,7 +127,7 @@ img, video { max-width: 100%; }
 .m-composer-row { display: flex; flex-direction: column; gap: 2px; padding: 6px 8px; }
 .m-composer-actions { display: flex; align-items: center; gap: 4px; }
 .m-composer-actions .m-grow { flex: 1; }
-.m-composer-row textarea { width: 100%; box-sizing: border-box; min-height: 44px; resize: none; max-height: 140px; background: var(--bg-input); color: var(--text-primary); border: 0; border-radius: 20px; padding: 10px 14px; line-height: 1.3; font-family: inherit; }
+.m-composer-row textarea { width: 100%; box-sizing: border-box; min-height: 44px; resize: none; max-height: 140px; background: var(--bg-input); color: var(--text-primary); border: 0; border-radius: 20px; padding: 10px 14px; line-height: 1.3; font-family: var(--chat-font-stack, inherit); }
 .m-send { width: var(--m-tap); height: var(--m-tap); flex-shrink: 0; border: 0; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; }
 .m-send:disabled { background: var(--bg-active); color: var(--text-faint); }
 .m-banner { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 12px; background: var(--bg-sidebar); font-size: 0.8rem; color: var(--text-muted); }

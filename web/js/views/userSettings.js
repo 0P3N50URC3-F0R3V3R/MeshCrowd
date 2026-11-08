@@ -20,7 +20,7 @@ import { soundboardPrefs } from '../soundboardPrefs.js';
 import { statusEmojiFieldHtml, bindStatusEmojiField } from './statusEmojiField.js';
 import { startMicMeter } from '../micMeter.js';
 import { notifySound, CUSTOM_MAX_BYTES, CUSTOM_MAX_SECONDS } from '../notifySound.js';
-import { COLOR_FIELDS, GRADIENT_FIELDS, FONT_LABELS, PRESETS, DEFAULT_THEME, generateCss, parseCss, applyTheme } from '../theme.js';
+import { COLOR_FIELDS, GRADIENT_FIELDS, FONT_LABELS, CHAT_FONT_LABELS, CHAT_SIZE_MIN, CHAT_SIZE_MAX, PRESETS, DEFAULT_THEME, generateCss, parseCss, applyTheme } from '../theme.js';
 import { t } from '../i18n.js';
 import { unreadPrefs as unreadPrefsOf } from '../unreadLine.mjs';
 import { mountNotifyGridEditor } from './notifyGridEditor.js';
@@ -710,6 +710,10 @@ export function openUserSettings(initialTab = 'account') {
           </select>
         </div>
         <div class="field">
+          <label>${t('userSettings.autoAwayLabel')}</label>
+          <input type="number" class="input" id="f-auto-away" min="0" max="86400" value="${Number(state.uiPrefs.autoAwaySeconds) || 0}" style="max-width:120px">
+        </div>
+        <div class="field">
           <label>${t('userSettings.unreadLineLabel')}</label>
           <select class="input" id="f-unread-line" style="max-width:280px">
             <option value="on" ${unreadPrefs.unreadLine === 'on' ? 'selected' : ''}>${t('userSettings.unreadLineOn')}</option>
@@ -781,6 +785,21 @@ export function openUserSettings(initialTab = 'account') {
             ${Object.entries(FONT_LABELS).map(([k, label]) => `<option value="${k}" ${pending.font === k ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}
           </select>
         </div>
+        <div class="field">
+          <label>${t('userSettings.chatFontLabel')}</label>
+          <div class="hint">${t('userSettings.chatFontHint')}</div>
+          <select class="select" id="f-chat-font">
+            ${Object.entries(CHAT_FONT_LABELS).map(([k, label]) => `<option value="${k}" ${(pending.chatFont || 'default') === k ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field theme-color-row">
+          <label>${t('userSettings.chatSizeLabel')}</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="range" min="${CHAT_SIZE_MIN}" max="${CHAT_SIZE_MAX}" step="1" id="f-chat-size" value="${pending.chatSize || 15}">
+            <span id="f-chat-size-val">${pending.chatSize ? `${pending.chatSize}px` : t('userSettings.chatSizeDefault')}</span>
+            <button type="button" class="btn-icon" id="f-chat-size-clear" title="${t('userSettings.resetToDefaultTitle')}">${icons.x(14)}</button>
+          </div>
+        </div>
         <div class="divider"></div>
         <div class="field">
           <label>${t('userSettings.exportLabel')}</label>
@@ -815,6 +834,15 @@ export function openUserSettings(initialTab = 'account') {
       });
       angleInput.addEventListener('change', () => save());
       inner.querySelector('#f-font').addEventListener('change', (e) => { pending.font = e.target.value; save(); });
+      inner.querySelector('#f-chat-font').addEventListener('change', (e) => { pending.chatFont = e.target.value; save(); });
+      const chatSizeInput = inner.querySelector('#f-chat-size');
+      chatSizeInput.addEventListener('input', () => {
+        pending.chatSize = Number(chatSizeInput.value);
+        inner.querySelector('#f-chat-size-val').textContent = `${chatSizeInput.value}px`;
+        preview();
+      });
+      chatSizeInput.addEventListener('change', () => save());
+      inner.querySelector('#f-chat-size-clear').addEventListener('click', () => { pending.chatSize = 0; save(); paint(); });
       inner.querySelector('#f-language')?.addEventListener('change', async (e) => {
         const code = e.target.value;
         try {
@@ -832,7 +860,7 @@ export function openUserSettings(initialTab = 'account') {
         try { await api.setUiPrefs({ landingView: value }); }
         catch (err) { landingView = prev; e.target.value = prev; toast(apiErrorMessage(err), { type: 'error' }); }
       });
-      for (const [id, key, num] of [['#f-unread-line', 'unreadLine'], ['#f-unread-always', 'unreadAlways'], ['#f-unread-jump', 'unreadJump'], ['#f-unread-context', 'unreadContext', true], ['#f-initial-messages', 'initialMessages', true]]) {
+      for (const [id, key, num] of [['#f-unread-line', 'unreadLine'], ['#f-unread-always', 'unreadAlways'], ['#f-unread-jump', 'unreadJump'], ['#f-unread-context', 'unreadContext', true], ['#f-initial-messages', 'initialMessages', true], ['#f-auto-away', 'autoAwaySeconds', true]]) {
         inner.querySelector(id)?.addEventListener('change', async (e) => {
           const value = num ? Number(e.target.value) : e.target.value;
           const prev = unreadPrefs[key];
@@ -845,7 +873,7 @@ export function openUserSettings(initialTab = 'account') {
         });
       }
       inner.querySelectorAll('[data-preset]').forEach((btn) => btn.addEventListener('click', () => {
-        pending = { ...PRESETS.find((p) => p.name === btn.dataset.preset).theme };
+        pending = { ...PRESETS.find((p) => p.name === btn.dataset.preset).theme, chatFont: pending.chatFont, chatSize: pending.chatSize };
         save(); paint();
       }));
       inner.querySelector('#f-copy').addEventListener('click', async () => {

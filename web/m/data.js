@@ -1,4 +1,5 @@
 import { api } from '../js/api.js';
+import { serverEventText } from '../js/eventText.js';
 import { bus } from '../js/bus.js';
 import { ws } from '../js/ws.js';
 import { applyTheme } from '../js/theme.js';
@@ -91,7 +92,7 @@ async function resync() {
 
 function notifyBody(payload) {
   const m = payload.message;
-  return m.content || (m.sticker ? t('m.dmPreviewSticker') : '') || (m.attachments?.length ? t('m.dmPreviewAttachment') : '');
+  return (m.eventType && serverEventText(m)) || m.content || (m.sticker ? t('m.dmPreviewSticker') : '') || (m.attachments?.length ? t('m.dmPreviewAttachment') : '');
 }
 
 export function wireRealtime() {

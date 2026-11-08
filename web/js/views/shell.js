@@ -50,6 +50,8 @@ import { peekInvite } from '../inviteLink.js';
 import { previewText } from '../stickers.mjs';
 import { openScreeningModal } from './onboarding.js';
 import { eventNotice, entryTarget } from '../notifyEvent.mjs';
+import { serverEventText } from '../eventText.js';
+import { startAutoAway } from '../autoAway.js';
 
 export async function mountShell(root) {
   root.innerHTML = `
@@ -280,7 +282,7 @@ export async function mountShell(root) {
     const title = notice ? notice.title : payload.scopeType === 'dm'
       ? author.displayName
       : `${author.displayName} in #${payload.channelName}${payload.serverName ? ` (${payload.serverName})` : ''}`;
-    const body = notice ? notice.body : previewText({ text: payload.message.content, sticker: payload.message.sticker, hasAttachments: !!payload.message.attachments?.length }, noticeLabels);
+    const body = notice ? notice.body : previewText({ text: (payload.message.eventType && serverEventText(payload.message)) || payload.message.content, sticker: payload.message.sticker, hasAttachments: !!payload.message.attachments?.length }, noticeLabels);
 
     const target = notice || payload.message.scopeType === 'thread' ? {
       threadId: payload.message.scopeType === 'thread' ? payload.message.scopeId : null, messageId: payload.message.id,
@@ -1409,6 +1411,7 @@ export async function mountShell(root) {
     if (uiPrefsRes.uiPrefs.membersWidth) document.documentElement.style.setProperty('--members-width', `${uiPrefsRes.uiPrefs.membersWidth}px`);
     landingView = uiPrefsRes.uiPrefs.landingView || 'home';
     state.uiPrefs = uiPrefsRes.uiPrefs;
+    startAutoAway();
     pushTrayLabels();
     pushUnreadBadge();
   } catch {

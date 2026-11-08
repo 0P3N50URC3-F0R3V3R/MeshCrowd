@@ -19,6 +19,10 @@ import { mountNotifyGridEditor } from '../../js/views/notifyGridEditor.js';
 const STATUSES = [['online', 'm.statusOnline'], ['idle', 'm.statusIdle'], ['dnd', 'm.statusDnd'], ['invisible', 'm.statusInvisible']];
 const START_VIEWS = [['servers', 'm.tabServers'], ['messages', 'm.tabMessages'], ['notifications', 'm.tabNotifications'], ['you', 'm.tabYou'], ['last', 'm.startViewLast']];
 
+const AUTO_AWAY_MINUTES = [0, 1, 5, 10, 15, 30, 60];
+const autoAwayLabel = (n) => (n === 0 ? t('userSettings.autoAwayOff') : t('userSettings.autoAwayOption', { n }));
+const autoAwayText = () => autoAwayLabel(Math.round((Number(state.uiPrefs.autoAwaySeconds) || 0) / 60));
+
 export function mountYouTab(host) {
   const bridge = androidBridge();
   function paint() {
@@ -42,6 +46,7 @@ export function mountYouTab(host) {
       ${bridge ? row('chatStyle', icons.messageSquare(20), t('m.chatStyle'), t(getPref('chatStyle', 'plain') === 'bubbles' ? 'm.chatStyleBubbles' : 'm.chatStylePlain')) : ''}
       ${row('notifyGrid', icons.bell(20), t('userSettings.notificationSoundStatusLabel'))}
       ${row('unreadAlways', icons.messageSquare(20), t('userSettings.unreadAlwaysLabel'), t(state.uiPrefs.unreadAlways === 'on' ? 'userSettings.unreadAlwaysOn' : 'userSettings.unreadAlwaysOff'))}
+      ${row('autoAway', icons.clock ? icons.clock(20) : icons.smile(20), t('userSettings.autoAwayTitle'), autoAwayText())}
       ${row('language', icons.menu(20), t('m.language'), currentLanguage())}
       ${bridge ? row('android', icons.bell(20), t('m.androidSection')) : ''}
       ${row('syncDevices', icons.link(20), t('userSync.syncDevicesButton'))}
@@ -67,6 +72,9 @@ export function mountYouTab(host) {
       } else if (id === 'unreadAlways') {
         const v = await actionSheet({ title: t('userSettings.unreadAlwaysLabel'), items: [{ id: 'off', label: t('userSettings.unreadAlwaysOff') }, { id: 'on', label: t('userSettings.unreadAlwaysOn') }] });
         if (v) { Object.assign(state.uiPrefs, (await api.setUiPrefs({ unreadAlways: v })).uiPrefs); paint(); }
+      } else if (id === 'autoAway') {
+        const v = await actionSheet({ title: t('userSettings.autoAwayTitle'), items: AUTO_AWAY_MINUTES.map((n) => ({ id: String(n), label: autoAwayLabel(n) })) });
+        if (v != null) { Object.assign(state.uiPrefs, (await api.setUiPrefs({ autoAwaySeconds: Number(v) * 60 })).uiPrefs); paint(); }
       } else if (id === 'startView') {
         const v = await actionSheet({ title: t('m.startView'), items: START_VIEWS.map(([value, key]) => ({ id: value, label: t(key) })) });
         if (v) { setPref('startView', v); paint(); }

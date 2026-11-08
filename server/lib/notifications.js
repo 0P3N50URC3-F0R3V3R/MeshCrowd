@@ -140,6 +140,27 @@ function notifyChannelMessage(channel, message, mentions) {
   }
 }
 
+// Auto-posted log events (joins, renames, ...) only mark the channel as unread; they notify just
+// the members who explicitly set this channel to "all messages".
+function notifyChannelEvent(channel, message) {
+  const server = db.prepare('SELECT name FROM servers WHERE id = ?').get(channel.server_id);
+  if (!server) return;
+  for (const m of db.prepare('SELECT user_id FROM server_members WHERE server_id = ?').all(channel.server_id)) {
+    if (m.user_id === message.author.id) continue;
+    if (!has(getChannelPermissionBits(channel, m.user_id), PERMISSIONS.VIEW_CHANNEL)) continue;
+    if (getPref(m.user_id, 'channel', channel.id) !== 'all') continue;
+    hub.notifyUser(m.user_id, {
+      type: 'notify', scopeType: 'channel', scopeId: channel.id, serverId: channel.server_id,
+      serverName: server.name, channelName: channel.name, message, mentioned: false,
+      gridEvent: gridFor(m.user_id, { scopeType: 'channel', mentioned: false, message }).gridEvent,
+    });
+    recordOutbox(m.user_id, {
+      scopeType: 'channel', scopeId: channel.id, serverId: channel.server_id,
+      serverName: server.name, channelName: channel.name, message, mentioned: false,
+    });
+  }
+}
+
 function notifyDmMessage(dm, message) {
   const members = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(dm.id);
   // A conversation someone "closed" comes back to their list as soon as anything new is said.
@@ -208,4 +229,4 @@ function notifyThreadStarted(channel, thread, parentMessage, firstMessage, actor
   }, { actor: { id: actor.id, displayName: actor.displayName }, threadId: thread.id, threadTitle: thread.title });
 }
 
-module.exports = { notifyPin, notifyThreadStarted, recordOutbox, getPref, setPref, parseMentions, notifyChannelMessage, notifyDmMessage, pollOutbox, VALID_PREFS };
+module.exports = { notifyPin, notifyThreadStarted, recordOutbox, getPref, setPref, parseMentions, notifyChannelMessage, notifyChannelEvent, notifyDmMessage, pollOutbox, VALID_PREFS };

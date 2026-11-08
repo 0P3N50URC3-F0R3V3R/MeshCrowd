@@ -77,6 +77,7 @@ function postServerEvent(serverId, eventType, targetUserId, params = {}, actorId
     ).run('channel', channel.id, authorId, content, eventType, eventData);
     const message = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(info.lastInsertRowid));
     broadcastToChannel(channel, { type: 'message_create', message });
+    require('./notifications').notifyChannelEvent(channel, message);
   }
 
   if (eventType === 'member_join' && !db.prepare('SELECT is_bot FROM users WHERE id = ?').get(targetUserId)?.is_bot) {

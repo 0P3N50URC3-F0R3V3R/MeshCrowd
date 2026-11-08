@@ -14,6 +14,20 @@ export const FONT_STACKS = {
 };
 export const FONT_LABELS = { default: 'Default', serif: 'Serif', mono: 'Monospace', comic: 'Comic Sans', verdana: 'Verdana' };
 
+// Chat-text-only fonts (messages + composer; the GUI is untouched). System fonts only.
+export const CHAT_FONT_STACKS = {
+  ...FONT_STACKS,
+  arial: 'Arial, Helvetica, sans-serif',
+  tahoma: 'Tahoma, Geneva, sans-serif',
+  trebuchet: '"Trebuchet MS", Helvetica, sans-serif',
+  calibri: 'Calibri, Candara, "Segoe UI", sans-serif',
+  times: '"Times New Roman", Times, serif',
+  courier: '"Courier New", Courier, monospace',
+};
+export const CHAT_FONT_LABELS = { ...FONT_LABELS, arial: 'Arial', tahoma: 'Tahoma', trebuchet: 'Trebuchet MS', calibri: 'Calibri', times: 'Times New Roman', courier: 'Courier New' };
+export const CHAT_SIZE_MIN = 12;
+export const CHAT_SIZE_MAX = 28;
+
 // `default` is the app's actual built-in value for that variable (see web/css/base.css :root) —
 // used to seed a native <input type=color> when the user hasn't overridden that field (an empty
 // theme value means "inherit the app default", but the color input itself needs *some* hex).
@@ -34,7 +48,7 @@ export const GRADIENT_FIELDS = [
 
 export const DEFAULT_THEME = {
   brand: '', bgRail: '', bgSidebar: '', bgPrimary: '', bgFloating: '', textPrimary: '', textSecondary: '', font: 'default',
-  gradFrom: '', gradTo: '', gradAngle: 135,
+  gradFrom: '', gradTo: '', gradAngle: 135, chatFont: 'default', chatSize: 0,
 };
 
 // One-click starting points. "MeshCrowd Dark" is just DEFAULT_THEME (the app's own built-in look
@@ -100,6 +114,12 @@ export function generateCss(theme) {
   if (t.font && t.font !== 'default' && FONT_STACKS[t.font]) {
     lines.push(`  --font-stack: ${FONT_STACKS[t.font]};`);
   }
+  if (t.chatFont && t.chatFont !== 'default' && CHAT_FONT_STACKS[t.chatFont]) {
+    lines.push(`  --chat-font-stack: ${CHAT_FONT_STACKS[t.chatFont]};`);
+  }
+  if (Number.isInteger(t.chatSize) && t.chatSize >= CHAT_SIZE_MIN && t.chatSize <= CHAT_SIZE_MAX) {
+    lines.push(`  --chat-font-size: ${t.chatSize}px;`);
+  }
   if (lines.length === 0) return '';
   return `:root {\n${lines.join('\n')}\n}`;
 }
@@ -121,7 +141,14 @@ export function parseCss(cssText) {
   if (gradMatch && Number(gradMatch[1]) <= 360) {
     theme.gradAngle = Number(gradMatch[1]); theme.gradFrom = gradMatch[2]; theme.gradTo = gradMatch[3];
   }
-  const fontMatch = String(cssText || '').match(/--font-stack\s*:\s*([^;]+);/);
+  const chatFontMatch = String(cssText || '').match(/--chat-font-stack\s*:\s*([^;]+);/);
+  if (chatFontMatch) {
+    const found = Object.entries(CHAT_FONT_STACKS).find(([, stack]) => stack === chatFontMatch[1].trim());
+    if (found) theme.chatFont = found[0];
+  }
+  const chatSizeMatch = String(cssText || '').match(/--chat-font-size\s*:\s*(\d{1,2})px\s*;/);
+  if (chatSizeMatch && Number(chatSizeMatch[1]) >= CHAT_SIZE_MIN && Number(chatSizeMatch[1]) <= CHAT_SIZE_MAX) theme.chatSize = Number(chatSizeMatch[1]);
+  const fontMatch = String(cssText || '').match(/(?<!chat-)--font-stack\s*:\s*([^;]+);/);
   if (fontMatch) {
     const value = fontMatch[1].trim();
     const found = Object.entries(FONT_STACKS).find(([, stack]) => stack === value);
