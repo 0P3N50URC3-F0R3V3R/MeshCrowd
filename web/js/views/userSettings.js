@@ -642,7 +642,7 @@ export function openUserSettings(initialTab = 'account') {
       </label>
       <div class="field" style="margin-top:8px">
         <label>${t('userSettings.trayRecentCountLabel')}</label>
-        <input type="number" id="f-tray-recent" min="0" max="15" step="1" value="${settings.trayRecentCount ?? 5}" style="width:80px">
+        <input type="number" class="input" id="f-tray-recent" min="0" max="15" step="1" value="${settings.trayRecentCount ?? 5}" style="max-width:120px">
         <div class="hint">${t('userSettings.trayRecentCountHint')}</div>
       </div>
       <div class="hint" style="margin-top:8px">${t('userSettings.trayRightClickHint')}</div>
