@@ -13,6 +13,7 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 - A naplócsatornák automatikus eseményei (belépések, átnevezések stb.) csak olvasatlannak jelölik a csatornát. Csak azokat értesítik, akik a csatornát „minden üzenet" értesítésre állították, és az értesítés szövege most már lokalizált.
 
 #### Javítva
+- A hivatkozás-előnézetek sosem mutatták a képüket (pl. GitHub-linkeknél): az oldal CSP-je csak a saját eredetű képeket engedi, ezért a böngésző blokkolta a külső `og:image`-et. A képet most a szerver tölti le és szolgálja ki (`GET /api/link-preview/image`, csak bejelentkezett felhasználóknak, ugyanaz a privát címek elleni védelem, nincs átirányítás, PNG/JPEG/GIF/WebP legfeljebb 5 MB, SVG soha), asztali, webes és Android felületen.
 - Asztali csevegés: az ablak átméretezése már nem tolja el a beszélgetést; az alja rögzített marad, vagy a látható üzenet a helyén marad.
 - Asztali: az ugrás az utolsó üzenetre gomb minden csevegőnézetben (hangcsevegő, szálak) a csevegéshez és az üzenetmezőhöz igazodik.
 

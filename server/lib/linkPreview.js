@@ -10,6 +10,8 @@ const { isPrivateOrLoopback: isPrivateIp } = require('./federationSsrf');
 
 const FETCH_TIMEOUT_MS = 5000;
 const MAX_BYTES = 512 * 1024;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 
 function extractFirstUrl(content) {
   const m = String(content || '').match(/https?:\/\/[^\s<>"')]+/i);
@@ -60,6 +62,49 @@ async function fetchHtml(url) {
       });
       res.on('error', reject);
       res.on('close', () => resolve(html));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
+
+// The page's CSP only allows images from this origin, so a preview image is fetched here and
+// re-served: same SSRF guard and no redirects as fetchHtml, raster types only (never SVG).
+async function fetchImage(url) {
+  const parsed = new URL(url);
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+  const host = parsed.hostname.replace(/^\[|\]$/g, '');
+  if (host === 'localhost') return null;
+
+  const { address, family } = await dns.lookup(host);
+  if (isPrivateIp(address)) return null;
+  const lookup = (_hostname, options, callback) => (options && options.all
+    ? callback(null, [{ address, family }])
+    : callback(null, address, family));
+
+  const transport = parsed.protocol === 'https:' ? https : http;
+  return new Promise((resolve, reject) => {
+    const req = transport.request(url, {
+      agent: false,
+      lookup,
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      headers: { 'user-agent': 'MeshCrowd-LinkPreview/1.0', accept: 'image/png,image/jpeg,image/gif,image/webp' },
+    }, (res) => {
+      const type = String(res.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+      if (res.statusCode < 200 || res.statusCode >= 300 || !IMAGE_TYPES.has(type)) {
+        req.destroy();
+        resolve(null);
+        return;
+      }
+      const chunks = [];
+      let bytes = 0;
+      res.on('data', (chunk) => {
+        bytes += chunk.length;
+        if (bytes > MAX_IMAGE_BYTES) { req.destroy(); resolve(null); return; }
+        chunks.push(chunk);
+      });
+      res.on('error', reject);
+      res.on('end', () => resolve({ type, body: Buffer.concat(chunks) }));
     });
     req.on('error', reject);
     req.end();
@@ -132,4 +177,4 @@ async function maybeFetchAndAttachEmbed(message, broadcast) {
   broadcast({ type: 'message_update', message: updated });
 }
 
-module.exports = { maybeFetchAndAttachEmbed, extractFirstUrl, fetchEmbed, isPrivateIp };
+module.exports = { maybeFetchAndAttachEmbed, extractFirstUrl, fetchEmbed, fetchImage, isPrivateIp };

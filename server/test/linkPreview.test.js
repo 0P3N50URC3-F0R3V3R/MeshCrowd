@@ -115,3 +115,26 @@ test('fetchEmbed returns null for a non-html response', async (t) => {
   const embed = await fetchEmbed(`http://127.0.0.1:${port}/data.json`);
   assert.equal(embed, null);
 });
+
+test('fetchImage returns raster images, refuses SVG, oversized bodies and loopback', async (t) => {
+  const { fetchImage } = require('../lib/linkPreview');
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+  const server = http.createServer((req, res) => {
+    if (req.url === '/a.png') { res.writeHead(200, { 'content-type': 'image/png' }); res.end(png); return; }
+    if (req.url === '/a.svg') { res.writeHead(200, { 'content-type': 'image/svg+xml' }); res.end('<svg/>'); return; }
+    res.writeHead(200, { 'content-type': 'image/png' }); res.end(Buffer.alloc(6 * 1024 * 1024));
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const originalLookup = dns.promises.lookup;
+  dns.promises.lookup = async () => ({ address: '203.0.113.5', family: 4 });
+  t.after(() => { dns.promises.lookup = originalLookup; });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const ok = await fetchImage(`${base}/a.png`);
+  assert.equal(ok.type, 'image/png');
+  assert.deepEqual(ok.body, png);
+  assert.equal(await fetchImage(`${base}/a.svg`), null);
+  assert.equal(await fetchImage(`${base}/big.png`), null);
+  dns.promises.lookup = async () => ({ address: '127.0.0.1', family: 4 });
+  assert.equal(await fetchImage(`${base}/a.png`), null);
+});

@@ -591,7 +591,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
         ${embed.title ? `<div class="link-embed-title">${escapeHtml(embed.title)}</div>` : ''}
         ${embed.description ? `<div class="link-embed-desc">${escapeHtml(embed.description)}</div>` : ''}
       </div>
-      ${embed.image ? `<img class="link-embed-image" src="${escapeHtml(embed.image)}" alt="" loading="lazy">` : ''}
+      ${embed.image ? `<img class="link-embed-image" src="/api/link-preview/image?url=${encodeURIComponent(embed.image)}" alt="" loading="lazy">` : ''}
     </a>`;
   }
 

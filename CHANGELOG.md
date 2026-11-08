@@ -15,6 +15,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Auto-posted log events (joins, renames, ...) in log channels only mark the channel unread. They notify only members who set that channel to "all messages", and the notification text is now localized.
 
 #### Fixed
+- Link previews never showed their image (e.g. GitHub links): the page's CSP only allows images from its own origin, so the browser blocked the remote `og:image`. The image is now fetched and re-served by the server (`GET /api/link-preview/image`, signed-in users only, same private-address guard as the preview itself, no redirects, PNG/JPEG/GIF/WebP up to 5 MB, never SVG), on desktop, web and the Android app.
 - Desktop chat: resizing the window no longer shifts the conversation; the bottom stays pinned or the visible message keeps its place.
 - Desktop: the jump-to-latest button is positioned relative to the chat and composer in all chat views (voice chat, threads).
 

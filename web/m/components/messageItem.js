@@ -39,7 +39,7 @@ function embedHtml(e) {
     <div class="link-embed-site">${escapeHtml(e.siteName || host)}</div>
     ${e.title ? `<div class="link-embed-title">${escapeHtml(e.title)}</div>` : ''}
     ${e.description ? `<div class="link-embed-desc">${escapeHtml(e.description)}</div>` : ''}
-    ${e.image ? `<img class="link-embed-image" src="${escapeHtml(e.image)}" alt="" loading="lazy">` : ''}</a>`;
+    ${e.image ? `<img class="link-embed-image" src="/api/link-preview/image?url=${encodeURIComponent(e.image)}" alt="" loading="lazy">` : ''}</a>`;
 }
 
 function reactionGlyph(emoji, customEmoji) {
