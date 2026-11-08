@@ -72,4 +72,4 @@ The web client and the phone interface are served by the server, so updating the
 npm run build:portable
 ```
 
-This produces `dist/dismesh-portable/`. For Sites, run `npm run fetch:php` once on the build machine to bundle a PHP runtime for Windows. See [Sites](sites.html).
+This produces `dist/dismesh-portable/`. For Sites, run `npm run fetch:php` once on the build machine to bundle a PHP runtime for Windows. See [Sites](sites.html). Run `npm run fetch:ffmpeg` once as well to bundle ffmpeg, which makes the first-frame preview of posted videos (without it, install ffmpeg on the server or videos show a blank player until played).

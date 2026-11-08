@@ -25,6 +25,8 @@ Hordozható alkalmazás: csomagold ki és futtasd a `MeshCrowd.exe` fájlt. Az e
 - **Csatlakozási képernyővel**, amely pörgő jelzést mutat, amíg a szerver válaszol. Ha nem érhető el (vagy 20 másodpercnél tovább tart), üres ablak helyett az **Újrapróbálás** és a **Szerver módosítása** gombot kínálja.
 - **Natív értesítésekkel**, tálcára zárással és indítással a Windowsszal.
 - **F11 teljes képernyő**, amely a **Beállítások, Asztali alkalmazás** alatt kikapcsolható.
+- **Letöltésjelzővel**: minden csatolmány-letöltésnél a jobb alsó sarokban és a tálcaikonon folyamatjelző látszik (méret, százalék, Mégse); a végén a **Megnyitás** és a **Megjelenítés mappában** egy kattintásra van.
+- **Letöltési hellyel**: a **Beállítások, Letöltések** alatt választhatsz, hogy minden fájlnál rákérdezzen a mentés helyére, vagy mindig egy mappába mentsen. A mappát a **Tallózással** választhatod ki, vagy beírhatod a teljes útvonalat; üresen a rendszer Letöltések mappája él. Meglévő fájlt soha nem ír felül, helyette sorszámot fűz a névhez.
 - **Ablak-memóriával**: a méretet, a pozíciót és a teljes képernyős (maximalizált) állapotot a következő indításkor visszaállítja.
 - Az operációs rendszer **képernyő- és ablakválasztójával** a képernyőmegosztáshoz.
 - **Meghívólinkek**: a meghívóoldalról érkező `mcr://` linkek az alkalmazásban nyílnak meg. Az alkalmazás minden indításkor regisztrálja magát hozzájuk, ami a mappa áthelyezése után is helyreállítja a bejegyzést; kikapcsolható a **Beállítások, Asztali alkalmazás** alatt. A linkek szerverváltás és csatlakozás előtt mindig rákérdeznek. A `MeshCrowd.exe` melletti `register-mcr-protocol.bat` és `unregister-mcr-protocol.bat` kézzel ugyanezt teszi.

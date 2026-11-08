@@ -25,6 +25,8 @@ A portable app: unzip it and run `MeshCrowd.exe`. On the first launch it asks fo
 - A **connecting screen** with a spinner while the server answers. If it cannot be reached (or takes over 20 seconds) it offers **Retry** and **Change server** instead of a blank window.
 - **Native notifications**, close to tray and start with Windows.
 - **F11 fullscreen**, which can be switched off under **Settings, Desktop App**.
+- **Download indicator**: every attachment download shows a progress bar (size, percent, Cancel) in the bottom-right corner and on the taskbar icon; when it finishes, **Open** and **Show in folder** are one click away.
+- **Download location**: under **Settings, Downloads** choose between being asked where to save each file and always saving to one folder. Pick the folder with **Browse** or type a full path; empty means the system Downloads folder. Existing files are never overwritten, a number is added instead.
 - **Window memory**: size, position and a maximized state are restored on the next start.
 - The operating system's **screen and window picker** for screen sharing.
 - **Invite links**: `mcr://` links from an invite page open in the app. The app registers itself for them on every start, which also repairs the entry after you move the folder; switch it off under **Settings, Desktop App**. Links always ask before switching server and before joining. `register-mcr-protocol.bat` and `unregister-mcr-protocol.bat` next to `MeshCrowd.exe` do the same by hand.

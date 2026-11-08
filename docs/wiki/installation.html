@@ -48,7 +48,7 @@ npm start</code></pre>
 <p>The web client and the phone interface are served by the server, so updating the server updates them everywhere. Desktop and Android apps only need a new release when their own native code changes.</p>
 <h2 id="building-the-portable-bundle-yourself">Building the portable bundle yourself</h2>
 <pre><code>npm run build:portable</code></pre>
-<p>This produces <code>dist/dismesh-portable/</code>. For Sites, run <code>npm run fetch:php</code> once on the build machine to bundle a PHP runtime for Windows. See <a href="sites.html">Sites</a>.</p>
+<p>This produces <code>dist/dismesh-portable/</code>. For Sites, run <code>npm run fetch:php</code> once on the build machine to bundle a PHP runtime for Windows. See <a href="sites.html">Sites</a>. Run <code>npm run fetch:ffmpeg</code> once as well to bundle ffmpeg, which makes the first-frame preview of posted videos (without it, install ffmpeg on the server or videos show a blank player until played).</p>
     </article>
     <div class="pager" id="wiki-pager"></div>
   </div>

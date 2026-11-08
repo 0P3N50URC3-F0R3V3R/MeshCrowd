@@ -48,7 +48,7 @@ npm start</code></pre>
 <p>A webes klienst és a telefonos felületet a szerver szolgálja ki, így a szerver frissítése mindenhol frissíti őket. Az asztali és az Android-alkalmazásnak csak akkor kell új kiadás, ha a saját natív kódjuk változik.</p>
 <h2 id="a-hordozhat-csomag-saj-t-p-t-se">A hordozható csomag saját építése</h2>
 <pre><code>npm run build:portable</code></pre>
-<p>Ez a <code>dist/dismesh-portable/</code> mappát hozza létre. Az Oldalakhoz (Sites) futtasd egyszer az <code>npm run fetch:php</code> parancsot az építő gépen, hogy Windowsra PHP futtatókörnyezet kerüljön a csomagba. Lásd: <a href="sites.html">Oldalak</a>.</p>
+<p>Ez a <code>dist/dismesh-portable/</code> mappát hozza létre. Az Oldalakhoz (Sites) futtasd egyszer az <code>npm run fetch:php</code> parancsot az építő gépen, hogy Windowsra PHP futtatókörnyezet kerüljön a csomagba. Lásd: <a href="sites.html">Oldalak</a>. Futtasd egyszer az <code>npm run fetch:ffmpeg</code> parancsot is, hogy az ffmpeg is a csomagba kerüljön: ez adja a közzétett videók első képkockás előnézetét (nélküle telepítsd az ffmpeg-et a szerverre, különben a videó lejátszásig üres lejátszót mutat).</p>
     </article>
     <div class="pager" id="wiki-pager"></div>
   </div>

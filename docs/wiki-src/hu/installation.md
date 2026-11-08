@@ -72,4 +72,4 @@ A webes klienst és a telefonos felületet a szerver szolgálja ki, így a szerv
 npm run build:portable
 ```
 
-Ez a `dist/dismesh-portable/` mappát hozza létre. Az Oldalakhoz (Sites) futtasd egyszer az `npm run fetch:php` parancsot az építő gépen, hogy Windowsra PHP futtatókörnyezet kerüljön a csomagba. Lásd: [Oldalak](sites.html).
+Ez a `dist/dismesh-portable/` mappát hozza létre. Az Oldalakhoz (Sites) futtasd egyszer az `npm run fetch:php` parancsot az építő gépen, hogy Windowsra PHP futtatókörnyezet kerüljön a csomagba. Lásd: [Oldalak](sites.html). Futtasd egyszer az `npm run fetch:ffmpeg` parancsot is, hogy az ffmpeg is a csomagba kerüljön: ez adja a közzétett videók első képkockás előnézetét (nélküle telepítsd az ffmpeg-et a szerverre, különben a videó lejátszásig üres lejátszót mutat).
