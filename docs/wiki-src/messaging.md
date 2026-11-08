@@ -34,6 +34,8 @@ Type in the box at the bottom and press **Enter**. Use **Shift+Enter** for a new
 
 Click a reaction to add yours. **Polls** take a question and options and show live percentages; you can choose several options when the poll allows it. Pinned messages are listed in the pin panel.
 
+![The emoji picker with your recently used emoji](../assets/img/emoji-recents.jpg)
+
 ## Attachments
 
 Up to five attachments per message. Still images can be resized before upload (Original, 1920, 1280 or 800 pixels), animated GIFs get a play and pause button, and non-ASCII file names are kept. The size limit comes from `maxUploadMb` and the admin panel; some file types (executables, HTML, SVG) are always refused.
@@ -47,6 +49,8 @@ The **microphone** button in the composer records up to five minutes. A red bar 
 The **clock** button next to the composer opens **Send later** for what you typed. Pick a time or a preset such as in 3 hours, tonight or tomorrow at 9:00; the editor shows your time zone, how long until it is sent and a character counter. A pending message can be edited (text and time) or cancelled from the list. The message is posted as you at that moment with the same checks as a normal message, so it can still be refused, for example if you are timed out or AutoMod objects. Failures stay in your list with the reason, and you can cancel anything you scheduled. On the phone interface hold the send button.
 
 Notes channels and DMs with people on other servers cannot be scheduled.
+
+![The Send later dialog](../assets/img/schedule.jpg)
 
 ## Slash commands
 
@@ -76,6 +80,8 @@ The events are direct messages, direct-message mentions, channel messages (chann
 The defaults match the old behavior: Do not disturb and Invisible are silent, everything else is on. Every status can be changed, Online included, but a warning appears while Online differs from its defaults, because switching things off there is easy to forget. Muted servers and channels stay muted whatever the grid says. The sound on or off for a single device (volume, your own sound file) stays under the grid in the same settings page.
 
 A chat you open with unread messages shows a red **New** line above the first one; see [Profiles, status and themes](personalization.html#unread-messages) for its settings. The line is drawn for messages that arrived while this device was offline (change that under the unread settings), and the chat opens at it. A chat otherwise stays at the newest message, and a round **jump to latest** button appears whenever you scroll away from the bottom. The pinned messages list updates live when someone pins or unpins a message.
+
+![The notification grid for the Idle status](../assets/img/notif-grid.jpg)
 
 ## Incoming webhooks
 

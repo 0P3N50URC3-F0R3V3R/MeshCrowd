@@ -78,6 +78,8 @@ Open a channel's settings to allow or deny permissions for a role or a single me
 
 A **Notes** channel gives every member a private notebook inside the server, with text and up to five attachments per note. Everything is encrypted in the browser with a key derived from your Passport, so the database and the admins cannot read it. Admins can only delete notes older than a date. Notes cannot be searched, forwarded or converted to another channel type, and losing your Passport means losing your notes. Note text can be selected and copied, and right-clicking any message offers **Save to Notes** (desktop). Attaching a large file shows an encrypting step and then an upload progress bar in the draft; Save waits until the upload has finished.
 
+![Right-click a message and choose Save to Notes](../assets/img/msg-menu-notes.jpg)
+
 ## Server rail and folders
 
 Your server rail is personal: drag servers into **folders** with their own icon and color. Mute a server or a channel, or limit notifications to mentions, from the right-click menu.

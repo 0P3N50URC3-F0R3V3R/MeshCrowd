@@ -15,6 +15,22 @@ const c = {};
 for (const [u, d] of PEOPLE) { c[u] = new Client(u); await c[u].register(u, d); }
 const mara = c.mara;
 
+const AV = process.env.TOUR_AVATARS;
+const STYLE = {
+  mara: { nameEffect: 'gradient', bio: 'Builder of cozy corners. [#14b8a6]Night owl[/] by choice, **coffee** by necessity.' },
+  kai: { nameColor: '#f59e0b', bio: 'Shipping **Android** things. *Usually* in the Lounge.' },
+  priya: { nameEffect: 'glow', bio: 'Design, palettes and [#a78bfa]purple[/] everything.' },
+  nova: { nameEffect: 'rainbow', bio: 'Ideas machine. Ask me about the **soundboard**.' },
+};
+for (const [u] of PEOPLE) {
+  if (AV && fs.existsSync(`${AV}/${u}.png`)) {
+    const fd = new FormData();
+    fd.append('avatar', new Blob([fs.readFileSync(`${AV}/${u}.png`)], { type: 'image/png' }), `${u}.png`);
+    await c[u].req('POST', '/api/users/me/avatar', fd).catch((e) => console.log('avatar', u, e.message));
+  }
+  if (STYLE[u]) await c[u].patch('/api/users/me', STYLE[u]).catch((e) => console.log('style', u, e.message));
+}
+
 const { server } = await mara.post('/api/servers', { name: 'Nightowls', description: 'A cozy corner for builders, gamers and night owls.', visibility: 'private' });
 const sid = server.id;
 const detail0 = await mara.get(`/api/servers/${sid}`);

@@ -66,6 +66,8 @@ A tag jobb gombos menüjéből vagy a **Szerverbeállítások, Tagok** oldalról
 - A **Lassított mód** korlátozza, milyen gyakran írhatnak az emberek egy csatornában.
 - **Mindenki némítása** a hangszobákban.
 
+![Tagonkénti korlátozások a tagmenüben](../assets/img/settings-restrictions.jpg)
+
 ## Bejelentések
 
 Bármely tag bejelenthet egy üzenetet vagy egy embert. A bejelentések egy sorba kerülnek, amelyet a bejelentési jogosultsággal rendelkező oldaladminisztrátorok kezelnek az adminpanelről. A bejelentések a jelentett személy szerint vannak csoportosítva, Függőben, Megoldott, Elutasított és Mind fülekkel. A függőben lévő bejelentés szerkeszthető marad: módosítható az oka, és **csak adminoknak látható jegyzeteket** lehet írni az esethez. A megoldás vagy elutasítás rögzíti, ki és mikor tette, a lezárt bejelentés újranyitható, és csak megoldott vagy elutasított bejelentés törölhető (a **Lezártak törlése** tömegesen törli őket, személyenként vagy mindenkire; a függőben lévőkhöz sosem nyúl).

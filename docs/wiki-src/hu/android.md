@@ -25,6 +25,8 @@ Az Android-alkalmazás egy vékony Kotlin-burok (Android 8.0 vagy újabb, egyetl
 - **Üzenetstílus**: a **Te** fülön választhatsz sima csevegés és csevegőbuborékok között.
 - **Az adminisztráció jelszót kér**: az Adminpanel vagy a Szerver beállításai megnyitása előtt meg kell erősítened a jelszavadat, így egy feloldva hagyott telefon nem adja ki az adminisztrációs képernyőket.
 
+![A hangeffekt-gomb a telefonos üzenetmezőben](../assets/img/m-soundboard.jpg)
+
 ## Mi működik a telefonon
 
 A telefonos felület ugyanazokat a funkciókat fedi le, mint az asztali:
@@ -37,6 +39,12 @@ A telefonos felület ugyanazokat a funkciókat fedi le, mint az asztali:
 - A párosított példányok **föderált szerverei** földgömb-jelvénnyel jelennek meg a szerverlistában; hosszan nyomva elhagyhatod őket.
 
 A beállítási és admin képernyők ugyanazok az oldalak, mint az asztali alkalmazásban, görgethető fülsávval felül és a tartalommal alatta.
+
+![Az értesítési rács telefonon](../assets/img/m-notif.jpg)
+
+![Állapot beállítása automatikus távolléttel](../assets/img/m-status.jpg)
+
+![Profilszerkesztő névhatással és bioval](../assets/img/m-profile.jpg)
 
 ## Értesítések Google-szolgáltatások nélkül
 

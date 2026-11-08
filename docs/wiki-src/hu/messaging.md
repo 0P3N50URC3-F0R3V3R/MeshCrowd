@@ -34,6 +34,8 @@ Az `@felhasználónév` egy embert értesít, az `@szerepkörnév` egy szerepkö
 
 Kattints egy reakcióra, hogy a tiéd is megjelenjen. A **szavazások** kérdést és opciókat kapnak, és élő százalékokat mutatnak; ha a szavazás engedi, több opciót is választhatsz. A kitűzött üzenetek a kitűzési panelen láthatók.
 
+![Az emojiválasztó a legutóbb használt emojikkal](../assets/img/emoji-recents.jpg)
+
 ## Mellékletek
 
 Üzenetenként legfeljebb öt melléklet. A képek feltöltés előtt átméretezhetők (Eredeti, 1920, 1280 vagy 800 pixel), az animált GIF-ek lejátszás- és szünetgombot kapnak, és az ékezetes fájlnevek megmaradnak. A méretkorlát a konfiguráció `maxUploadMb` értékéből és az adminpanelből jön; néhány fájltípus (futtathatók, HTML, SVG) mindig tiltott.
@@ -47,6 +49,8 @@ Az üzenetmező **mikrofon** gombja legfeljebb öt percet rögzít. Egy piros s�
 Az üzenetmező melletti **óra** gomb megnyitja a **Küldés később** ablakot a beírt szöveghez. Válassz időpontot vagy egy előbeállítást, például 3 óra múlvát, ma estét vagy holnap 9:00-t; a szerkesztő mutatja az időzónádat, mennyi idő van hátra a küldésig, és karakterszámlálót. A függőben lévő üzenet a listából szerkeszthető (szöveg és idő) vagy törölhető. Az üzenet abban a pillanatban a nevedben megy ki, ugyanazokkal az ellenőrzésekkel, mint egy normál üzenet, így még elutasítható, például ha időkizárt vagy az AutoMod kifogásolja. A sikertelenek a listádban maradnak az okukkal, és bármit megszakíthatsz, amit időzítettél. A telefonos felületen tartsd lenyomva a küldés gombot.
 
 A Jegyzetcsatornák és a más szervereken lévő partnerekkel folytatott privát üzenetek nem időzíthetők.
+
+![A Küldés később ablak](../assets/img/schedule.jpg)
 
 ## Perjeles parancsok
 
@@ -76,6 +80,8 @@ Az események: közvetlen üzenetek, közvetlen üzenetben kapott említések, c
 Az alapértékek a korábbi viselkedést követik: a „ne zavarjanak” és a „láthatatlan” néma, minden más be van kapcsolva. Minden állapot módosítható, az Online is, de amíg az Online eltér az alapértéktől, figyelmeztetés látszik, mert könnyű elfelejteni, hogy ott kikapcsoltál valamit. Az elnémított szerverek és csatornák a rácstól függetlenül némák maradnak. Az egy eszközre vonatkozó hangbeállítások (hangerő, saját hangfájl) ugyanazon az oldalon a rács alatt maradnak. Az olvasatlan üzenetekkel megnyitott csevegésben egy piros **Új** vonal jelöli az elsőt; a beállításait lásd a [Profilok, állapot és témák](personalization.html#olvasatlan-zenetek) oldalon.
 
 Az olvasatlan üzenetekkel megnyitott csevegésben piros **Új** vonal jelenik meg az első fölött; a beállításait lásd: [Profilok, állapot és témák](personalization.html#olvasatlan-zenetek). A vonal azoknál az üzeneteknél jelenik meg, amelyek az eszköz offline ideje alatt érkeztek, és a csevegés ott nyílik meg. Egyébként a csevegés a legújabb üzenetnél marad, és kerek **Ugrás a legújabbhoz** gomb jelenik meg, ha elgörgetsz az aljától. A kitűzött üzenetek listája élőben frissül, amikor valaki kitűz vagy levesz egy üzenetet.
+
+![Az értesítési rács a Tétlen állapothoz](../assets/img/notif-grid.jpg)
 
 ## Bejövő webhookok
 

@@ -25,6 +25,8 @@ The Android app is a thin Kotlin shell (Android 8.0 or newer, one universal APK,
 - **Message style**: choose plain chat or chat bubbles under **You**.
 - **Administration asks for your password**: opening the Admin Panel or Server Settings asks you to confirm your password first, so a phone left unlocked does not hand over the administration screens.
 
+![The soundboard button in the phone composer](../assets/img/m-soundboard.jpg)
+
 ## What works on the phone
 
 The phone interface covers the same features as the desktop one:
@@ -37,6 +39,12 @@ The phone interface covers the same features as the desktop one:
 - **Federated servers** from paired instances appear in the server list with a globe badge; long-press one to leave it.
 
 Settings and admin screens use the same pages as the desktop app, laid out as a scrolling tab strip with the content below.
+
+![The notification grid on the phone](../assets/img/m-notif.jpg)
+
+![Set status with Auto away](../assets/img/m-status.jpg)
+
+![Profile editor with name effect and bio](../assets/img/m-profile.jpg)
 
 ## Notifications without Google services
 

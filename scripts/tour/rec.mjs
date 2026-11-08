@@ -31,8 +31,8 @@ const CURSOR_JS = `
   mk();
 })();`;
 
-export async function launch({ width, height, videoDir, mobile = false, headless = false, lang = 'en', video = true }) {
-  const browser = await chromium.launch({ executablePath: CHROME, headless, args: MEDIA_ARGS });
+export async function launch({ width, height, videoDir, mobile = false, headless = false, lang = 'en', video = true, cam = null }) {
+  const browser = await chromium.launch({ executablePath: CHROME, headless, args: cam ? [...MEDIA_ARGS, `--use-file-for-fake-video-capture=${cam}`] : MEDIA_ARGS });
   const ctx = await browser.newContext({
     viewport: { width, height },
     permissions: ['microphone', 'camera'],

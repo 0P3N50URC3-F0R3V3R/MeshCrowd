@@ -57,9 +57,13 @@ A server can have a soundboard of short clips that members with permission can p
 
 If clips from other people annoy you, open **Settings, Voice & Video** and tick **Mute soundboard sounds from others**, or lower **Soundboard volume**. It applies to clips played in calls and to sound messages in chats, on this device only. The soundboard popup also has a speaker button for a quick mute.
 
+![The soundboard popup in a voice room](../assets/img/voice-soundboard.jpg)
+
 ## Noise suppression
 
 **Settings, Voice, Advanced noise suppression (RNNoise)** runs your microphone through a small neural network compiled to WebAssembly, which removes keyboard, fan and background noise. It works on your own device, adds about ten milliseconds of delay and is off by default. The module (about 5 MB) is only downloaded the first time a call starts with it on. If it cannot start, the call simply continues without it.
+
+![Settings > Voice & Video](../assets/img/voice-settings.jpg)
 
 ## How the connection path is chosen
 

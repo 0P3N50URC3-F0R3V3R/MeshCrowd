@@ -17,6 +17,8 @@ Az adatvédelmi beállítások döntik el, ki küldhet neked privát üzenetet, 
 
 Válaszd az **Online**, **Tétlen**, **Ne zavarjanak** vagy **Láthatatlan** lehetőséget, és adj hozzá egyéni státuszt emojival és szöveggel. Az `/afk` perjeles parancs üzenettel együtt tétlenre állít. **Automatikus távol**: a **Beállítások, Státusz** alatt (telefonon: **Te, Állapot beállítása, Automatikus távol**) megadhatsz egy tétlenségi időt másodpercben (telefonon percben), amely után a státuszod magától Tétlenre vált; tevékenységre visszaáll Online-ra. A 0 kikapcsolja. Csak az automatikus váltást vonja vissza, a magad választotta státuszt soha. Hogy az egyes állapotokban mi ér el, azt az értesítési rács adja meg, lásd az [Értesítések](messaging.html#rtes-t-sek) részt. Az avatarodra kattintva megnyíló menüben az **Egyéni státusz** szerkeszti, az **Egyéni státusz törlése** (amíg be van állítva) egy kattintással törli.
 
+![Beállítások > Állapot, automatikus távollétel](../assets/img/status-autoaway.jpg)
+
 ## Témák
 
 Minden tag a saját kinézetét választja a **Beállítások, Megjelenés** alatt. Indulj egy előbeállításból és igazítsd a színeket, vagy építs sajátot:
@@ -31,6 +33,8 @@ Minden tag a saját kinézetét választja a **Beállítások, Megjelenés** ala
 ![Midnight Purple téma](../assets/img/theme-purple.jpg)
 
 A témák egyszerű színekre és betűválasztásra vannak validálva. Sosem hordoznak tetszőleges CSS-t, így egy megosztott téma nem tölthet be külső erőforrásokat.
+
+![Csevegőbetűtípus és szövegméret a Megjelenésben](../assets/img/appearance-chatfont.jpg)
 
 ## Elrendezés
 
@@ -66,6 +70,8 @@ A szerver adhat neked **becenevet**, amely csak ott látszik. A szerveradminok t
 A **Beállítások, Fiókom** oldalon (telefonon **Te, Profil**) választhatsz **névszínt** az előre megadottak közül vagy a szabad színválasztóval, és opcionálisan **szövegeffektet**: szivárvány, színátmenet, ragyogás, neon, pulzálás, csillogás, tűz vagy hullám. Élő előnézet mutatja az eredményt. Az **Az effekt testreszabása** alatt saját színeket adhatsz meg (legfeljebb ötöt: két szín a teljes szivárvány helyett kétszínű átmenetet ad) és a sebességet másodperc/ciklusban. Akik a csökkentett mozgást kérik, az animáció nélkül látják a színeket.
 
 Hol látszik: a **profilkártyádon** és a **privát üzenetekben** mindig a saját megjelenésed szerepel. **Szerveren** a színes **szerepkör** erősebb: az ő színe és effektje (lásd a Szerepköröket a [Szerverek és csatornák](servers-channels.html) oldalon) felülírja a tiédet, és a moderátortól kapott szín is. Színes szerepkör nélkül a saját színed és effekted látszik.
+
+![Névszín, effekt és bioszerkesztő a Fiókom oldalon](../assets/img/account-effects.jpg)
 
 ## Szinkron az eszközök között
 

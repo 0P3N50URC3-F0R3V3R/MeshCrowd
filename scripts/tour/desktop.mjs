@@ -27,8 +27,12 @@ const openChannel = async (page, name) => {
 
 // ---- peers ----
 const peers = await launch({ width: 1000, height: 700, headless: true, video: false });
+const CAMS = process.env.TOUR_CAMS;
+const extra = [];
 async function startPeer(user, { voice = false, camera = false } = {}) {
-  const ctx = await peers.browser.newContext({ viewport: { width: 1000, height: 700 }, permissions: ['microphone', 'camera'] });
+  let br = peers.browser;
+  if (camera && CAMS) { br = (await launch({ width: 1000, height: 700, headless: true, video: false, cam: `${CAMS}/${user}.mjpeg` })).browser; extra.push(br); }
+  const ctx = await br.newContext({ viewport: { width: 1000, height: 700 }, permissions: ['microphone', 'camera'] });
   const p = await ctx.newPage();
   await login(p, user);
   await p.locator('[data-server]').first().click();
@@ -42,7 +46,7 @@ async function startPeer(user, { voice = false, camera = false } = {}) {
 for (const u of ['jonas', 'lena', 'nova', 'tomas']) await startPeer(u);
 
 // ---- main recording ----
-const { browser, ctx, page } = await launch({ width: 1280, height: 720, videoDir: outDir, lang });
+const { browser, ctx, page } = await launch({ width: 1280, height: 720, videoDir: outDir, lang, cam: process.env.TOUR_CAMS ? `${process.env.TOUR_CAMS}/mara.mjpeg` : null });
 const a = new Actor(page);
 const scene = async (name, fn) => {
   const t = Date.now();
@@ -156,8 +160,8 @@ await scene('voice', async () => {
   await sleep(1500);
   await a.click('#vc-join', 2000);
   const kai = await startPeer('kai', { voice: true, camera: true });
-  const priya = await startPeer('priya', { voice: true });
-  const nova = await startPeer('nova', { voice: true });
+  const priya = await startPeer('priya', { voice: true, camera: true });
+  const nova = await startPeer('nova', { voice: true, camera: true });
   await sleep(3500);
   await shot(page, 'voice-1');
   const sp = await page.locator('#voice-splitter').boundingBox();
@@ -185,6 +189,21 @@ await scene('stage', async () => {
   await a.click('#vc-join', 2500);
   await shot(page, 'stage-joined');
   await a.click('#vc-leave', 1500);
+});
+
+await scene('new-settings', async () => {
+  await a.click('#ub-settings', 2000);
+  await shot(page, 'my-account');
+  await a.click(`text=${L('Customize the effect', 'Effekt testreszabása')}`, 1500).catch(() => {});
+  await shot(page, 'my-account-fx');
+  await a.click(`.snav-item >> text=${L('Status', 'Állapot')}`, 1500);
+  await shot(page, 'status');
+  await a.click(`.snav-item >> text=${L('Notifications', 'Értesítések')}`, 1800);
+  await a.scroll('#s-members, .settings-content, main', 260, 8, 800).catch(() => {});
+  await shot(page, 'notif-grid');
+  await a.click(`text=${L('Idle', 'Tétlen')}`, 1500).catch(() => {});
+  await shot(page, 'notif-grid-idle');
+  await esc(1000);
 });
 
 await scene('settings-themes', async () => {

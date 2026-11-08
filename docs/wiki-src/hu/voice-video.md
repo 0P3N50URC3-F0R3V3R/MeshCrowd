@@ -57,9 +57,13 @@ A szervernek lehet rövid hangklipekből álló hangpultja, amelyet a jogosult t
 
 Ha zavarnak mások hangklipjei, a **Beállítások, Hang és videó** alatt pipáld be a **Mások hangtár-hangjainak némítása** opciót, vagy vedd lejjebb a **Hangtár hangerejét**. Ez a hívásokban lejátszott klipekre és a csevegésekben küldött hangüzenetekre vonatkozik, csak ezen az eszközön. A hangtár felugró ablakában egy hangszóró gomb is van a gyors némításhoz.
 
+![A hangeffekt-panel egy hangszobában](../assets/img/voice-soundboard.jpg)
+
 ## Zajszűrés
 
 A **Beállítások, Hang és videó, Fejlett zajszűrés (RNNoise)** a mikrofonodat egy WebAssemblyre fordított kis neurális hálózaton engedi át, ami eltávolítja a billentyűzet-, ventilátor- és háttérzajt. A saját eszközödön működik, nagyjából tíz milliszekundum késleltetést ad, és alapból ki van kapcsolva. A modul (kb. 5 MB) csak akkor töltődik le, amikor először indul hívás bekapcsolt állapotban. Ha nem tud elindulni, a hívás egyszerűen nélküle folytatódik.
+
+![Beállítások > Hang és videó](../assets/img/voice-settings.jpg)
 
 ## Hogyan választ útvonalat a kapcsolat
 

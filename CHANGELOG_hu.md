@@ -9,6 +9,7 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 - Android: az értesítések és az alkalmazás szövegei magyar fordítást kaptak (a telefon nyelvét követi).
 
 #### Módosítva
+- Weboldal és wiki (EN és HU): az összes képernyőkép újra készült a demóközösséggel, illusztrált, jogdíjmentes (CC0) avatarokkal és kameracsempékkel; új képek a hangeffekt-panelhez, az utolsó emojikhoz, a Mentés a jegyzetekbe funkcióhoz, a Küldés később ablakhoz, a névhatásokhoz és bioszerkesztőhöz, az automatikus távolléthez, az értesítési rácshoz, a csevegőbetűtípushoz, a tagonkénti korlátozásokhoz és a telefonos alkalmazáshoz. Mindkét bemutatóvideó újra felvételre került az új funkciókkal.
 - A naplócsatornák automatikus eseményei (belépések, átnevezések stb.) csak olvasatlannak jelölik a csatornát. Csak azokat értesítik, akik a csatornát „minden üzenet" értesítésre állították, és az értesítés szövege most már lokalizált.
 
 #### Javítva

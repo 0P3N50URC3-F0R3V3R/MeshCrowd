@@ -17,6 +17,8 @@ Privacy settings decide who can send you direct messages and who can see your pr
 
 Choose **Online**, **Idle**, **Do not disturb** or **Invisible**, and add a custom status with an emoji and text. Open the status menu from your avatar: **Custom Status** edits it and **Remove Custom Status** (shown while one is set) clears it in one click. The slash command `/afk` sets idle with a message. **Auto away**: under **Settings, Status** (on a phone: **You, Set status, Auto away**) set a number of seconds (minutes on a phone) of inactivity after which your status switches to Idle by itself; activity switches it back to Online. 0 turns it off. Only the automatic switch is undone; a status you chose yourself is never changed. What reaches you in each status is set in the notification grid, see [Notifications](messaging.html#notifications).
 
+![Settings > Status, with Auto away](../assets/img/status-autoaway.jpg)
+
 ## Themes
 
 Every member picks their own look under **Settings, Appearance**. Start with a preset and adjust the colors, or build your own:
@@ -31,6 +33,8 @@ Every member picks their own look under **Settings, Appearance**. Start with a p
 ![Midnight Purple theme](../assets/img/theme-purple.jpg)
 
 Themes are validated to be plain colors and a font choice. They never carry arbitrary CSS, so a shared theme cannot load external resources.
+
+![Chat font and chat text size in Appearance](../assets/img/appearance-chatfont.jpg)
 
 ## Layout
 
@@ -66,6 +70,8 @@ A server can give you a **nickname** that only shows there. Server admins can se
 In **Settings, My Account** (or **You, Profile** on the phone) pick a **name color** from the presets or with the free color picker, and optionally a **text effect**: rainbow, gradient, glow, neon, pulse, shimmer, fire or wave. A live preview shows the result. Under **Customize the effect** you can choose your own color stops (up to five: two colors give a two-color blend instead of the full rainbow) and the speed in seconds per cycle. People who prefer reduced motion see the colors without the animation.
 
 Where it shows: your **profile card** and your names in **DMs** always use your own look. In a **server**, a colored **role** wins: its color and its effect (see Roles in [Servers and channels](servers-channels.html)) replace yours, and so does a color a moderator gave you. With no colored role, your own color and effect show.
+
+![Name color, effect and the bio editor in My Account](../assets/img/account-effects.jpg)
 
 ## Syncing between devices
 

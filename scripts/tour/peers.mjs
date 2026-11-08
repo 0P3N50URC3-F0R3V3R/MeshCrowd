@@ -2,10 +2,11 @@
 import { launch } from './rec.mjs';
 import { BASE, sleep, PASSWORD } from './lib.mjs';
 
-const list = process.argv.slice(2).length ? process.argv.slice(2) : ['kai:cam', 'priya', 'nova'];
-const { browser } = await launch({ width: 1000, height: 700, headless: true, video: false });
+const list = process.argv.slice(2).length ? process.argv.slice(2) : ['kai:cam', 'priya:cam', 'nova:cam'];
+const CAMS = process.env.TOUR_CAMS;
 for (const entry of list) {
   const [user, cam] = entry.split(':');
+  const { browser } = await launch({ width: 1000, height: 700, headless: true, video: false, cam: cam && CAMS ? `${CAMS}/${user}.mjpeg` : null });
   const ctx = await browser.newContext({ viewport: { width: 1000, height: 700 }, permissions: ['microphone', 'camera'] });
   const p = await ctx.newPage();
   await p.goto(BASE + '/');
