@@ -2,6 +2,10 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-09
+#### Added
+- C# desktop client (`ClientC#/`, WebView2 shell, one self-contained exe, data folder beside it). Same web UI and the same `dismesh-client-config.json` as the Electron client; tray with unread blink and recent list, notifications, downloads with taskbar progress, mcr:// invite links, single instance, certificate pinning, close to tray. Electron stays the main client.
+
 ### 2026-11-08
 #### Changed
 - Website and wiki (EN and HU): all screenshots retaken with the demo community using illustrated, royalty-free (CC0) avatars and camera tiles; new pictures for the soundboard, emoji recents, Save to Notes, Send later, name effects and bio editor, Auto away, the notification grid, chat font, member restrictions and the phone app. Both tour videos were re-recorded with the new features.
