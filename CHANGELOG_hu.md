@@ -2,6 +2,11 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-09
+#### Hozzáadva
+- C# asztali kliens (`ClientC#/`, WebView2 keret, egyetlen önálló exe, mellette létrejövő `data` mappával). Ugyanaz a webes felület és ugyanaz a `dismesh-client-config.json`, mint az Electron kliensnél; tálcaikon olvasatlan-villogással és legutóbbi listával, értesítések, letöltések tálcaállapottal, `mcr://` meghívó linkek, egy példány, tanúsítvány-rögzítés, bezárás a tálcára, és a lap felső sávja a címsor (minimalizálás/maximalizálás/bezárás ugyanabban a sorban). Az Electron marad a fő kliens.
+- C# kliens: a WebView2 futtatókörnyezet beágyazható az exe-be (`ClientC#/bundle-webview2.ps1`, majd `dotnet publish`; az exe ~250 MB lesz). WebView2 nélküli gépeken egyszer kicsomagolja a `data/webview2-runtime` mappába; ahol van telepítve, azt használja.
+
 ### 2026-11-08
 #### Javítva
 - Asztali alkalmazás: a megnyitva hagyott csatorna, miközben az ablak a tálcára van rejtve vagy kis méretű, már nem számít "nézettnek", így az új üzenetei Windows-értesítést kapnak és megjelennek a tálca legutóbbi listájában. A tálca egy elemére kattintva az kikerül a listából, és pontosan arra az üzenetre ugrik. Az új asztali kliens-buildet igényli.
