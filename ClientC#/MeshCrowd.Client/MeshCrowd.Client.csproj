@@ -30,6 +30,8 @@
     <EmbeddedResource Include="..\..\electron\renderer\*" LogicalName="renderer/%(Filename)%(Extension)" />
     <EmbeddedResource Include="..\..\electron\icon.png" LogicalName="icon.png" />
     <EmbeddedResource Include="bridge.js" LogicalName="bridge.js" />
+    <EmbeddedResource Include="webview2-runtime.bin" LogicalName="webview2-runtime.bin" Condition="Exists('webview2-runtime.bin')" />
+    <EmbeddedResource Include="webview2-runtime.version" LogicalName="webview2-runtime.version" Condition="Exists('webview2-runtime.bin')" />
   </ItemGroup>
 
 </Project>

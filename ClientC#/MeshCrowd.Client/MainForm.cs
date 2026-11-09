@@ -37,12 +37,14 @@ public sealed class MainForm : Form
     private readonly CaptionButton _btnClose = new(CaptionKind.Close);
     private FormWindowState _prevState;
     private Rectangle _prevBounds;
+    private readonly string? _webViewFolder;
     private string _lastNavUri = "";
     private TaskCompletionSource? _appPageLoaded;
 
-    public MainForm(string dataDir, AppConfig cfg, bool dev, McrLink? invite)
+    public MainForm(string dataDir, AppConfig cfg, bool dev, McrLink? invite, string? webViewFolder)
     {
         _dataDir = dataDir;
+        _webViewFolder = webViewFolder;
         _cfg = cfg;
         _dev = dev;
         _pendingInvite = invite;
@@ -185,7 +187,7 @@ public sealed class MainForm : Form
             if (Environment.GetEnvironmentVariable("MESHCROWD_CDP_PORT") is { Length: > 0 } port) args += $" --remote-debugging-port={port}";
             options.AdditionalBrowserArguments = args.Trim();
         }
-        var env = await CoreWebView2Environment.CreateAsync(null, Path.Combine(_dataDir, "webview2"), options);
+        var env = await CoreWebView2Environment.CreateAsync(_webViewFolder, Path.Combine(_dataDir, "webview2"), options);
         await _web.EnsureCoreWebView2Async(env);
         SetupWebView(_web.CoreWebView2);
 

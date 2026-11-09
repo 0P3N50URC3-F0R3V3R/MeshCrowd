@@ -5,6 +5,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 ### 2026-11-09
 #### Added
 - C# desktop client (`ClientC#/`, WebView2 shell, one self-contained exe, data folder beside it). Same web UI and the same `dismesh-client-config.json` as the Electron client; tray with unread blink and recent list, notifications, downloads with taskbar progress, mcr:// invite links, single instance, certificate pinning, close to tray. Electron stays the main client.
+- C# client: the WebView2 runtime can be embedded in the exe (`ClientC#/bundle-webview2.ps1`, then `dotnet publish`; exe grows to ~250 MB). Machines without WebView2 unpack it once into `data/webview2-runtime`; machines that have it keep using it.
 
 ### 2026-11-08
 #### Changed

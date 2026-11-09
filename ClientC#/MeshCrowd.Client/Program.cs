@@ -30,7 +30,8 @@ internal static class Program
 
         bool dev = args.Contains("--dev") || args.Contains("-dev");
         var cfg = new AppConfig(dataDir);
-        var form = new MainForm(dataDir, cfg, dev, InviteUrl.Find(args));
+        string? webViewFolder = WebViewRuntime.Resolve(dataDir, args.Contains("--bundled-webview2"));
+        var form = new MainForm(dataDir, cfg, dev, InviteUrl.Find(args), webViewFolder);
 
         var cts = new CancellationTokenSource();
         _ = Task.Run(() => ListenForSecondInstances(pipeName, form, cts.Token));
