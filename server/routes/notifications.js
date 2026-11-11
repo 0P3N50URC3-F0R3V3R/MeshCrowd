@@ -12,8 +12,7 @@ router.use(requireAuth);
 // cursor even on an empty page.
 router.get('/poll', (req, res) => {
   const since = Number(req.query.since);
-  const { notifications, latestId } = pollOutbox(req.user.id, Number.isInteger(since) && since >= 0 ? since : 0);
-  res.json({ notifications, latestId });
+  res.json(pollOutbox(req.user.id, Number.isInteger(since) && since >= 0 ? since : 0));
 });
 
 module.exports = router;

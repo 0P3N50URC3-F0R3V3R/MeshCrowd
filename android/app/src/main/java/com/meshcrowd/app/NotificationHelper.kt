@@ -17,6 +17,8 @@ object NotificationHelper {
     // v2: the original "downloads" channel was IMPORTANCE_LOW and users never noticed it; channel importance cannot be raised once created.
     const val CHANNEL_DOWNLOADS = "downloads_v2"
     const val EXTRA_DEEP_LINK = "deepLink"
+    private const val EXTRA_READ_SCOPE = "readScope"
+    private const val EXTRA_MESSAGE_ID = "messageId"
 
     fun createChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
@@ -54,8 +56,19 @@ object NotificationHelper {
             .setGroup(m.scopeKey)
             .setAutoCancel(true)
             .setContentIntent(openAppIntent(context, m.deepLink, m.scopeKey.hashCode()))
+            .addExtras(android.os.Bundle().apply { putString(EXTRA_READ_SCOPE, m.readScope); putLong(EXTRA_MESSAGE_ID, m.messageId) })
         @Suppress("MissingPermission")
         NotificationManagerCompat.from(context).notify(m.scopeKey, m.scopeKey.hashCode(), builder.build())
+    }
+
+    // The user read these on another device since the notification was posted.
+    fun cancelRead(context: Context, lastRead: Map<String, Long>) {
+        if (lastRead.isEmpty()) return
+        val nm = context.getSystemService(NotificationManager::class.java)
+        nm.activeNotifications.filter { it.notification.channelId == CHANNEL_MESSAGES }.forEach {
+            val extras = it.notification.extras
+            if (NotificationMapper.isRetiredBy(extras.getString(EXTRA_READ_SCOPE).orEmpty(), extras.getLong(EXTRA_MESSAGE_ID, -1), lastRead)) nm.cancel(it.tag, it.id)
+        }
     }
 
     // Opening the app is how the user sees what the background poller announced; leaving those

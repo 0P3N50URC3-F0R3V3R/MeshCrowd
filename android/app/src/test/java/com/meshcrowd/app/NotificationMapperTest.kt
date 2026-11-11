@@ -22,6 +22,23 @@ class NotificationMapperTest {
         assertEquals(true, m.mentioned)
     }
 
+    @Test fun readPositionRetiresOnlyMessagesAtOrBelowIt() {
+        val read = NotificationMapper.readPositions(org.json.JSONArray("""[{"scopeType":"dm","scopeId":11,"lastReadMessageId":60}]"""))
+        assertEquals(true, NotificationMapper.isRetiredBy("dm:11", 60, read))
+        assertEquals(false, NotificationMapper.isRetiredBy("dm:11", 61, read))
+        assertEquals(false, NotificationMapper.isRetiredBy("dm:12", 1, read))
+        assertEquals(false, NotificationMapper.isRetiredBy("", 1, read))
+    }
+
+    @Test fun threadReplyReadScopeIsTheThreadAndPinsHaveNone() {
+        val reply = NotificationMapper.map(item("""{"id":1,"scopeType":"channel","scopeId":3,"serverId":2,
+            "message":{"id":50,"scopeType":"thread","scopeId":9,"content":"x","author":{"displayName":"A"}}}"""), labels)!!
+        assertEquals("thread:9", reply.readScope)
+        val pin = NotificationMapper.map(item("""{"id":2,"scopeType":"channel","scopeId":3,"serverId":2,"kind":"pin","actor":{"displayName":"B"},
+            "message":{"id":50,"scopeType":"channel","scopeId":3,"content":"x","author":{"displayName":"A"}}}"""), labels)!!
+        assertEquals("", pin.readScope)
+    }
+
     @Test fun dmUsesAuthorOnlyAndDmLink() {
         val m = NotificationMapper.map(item("""{"id":8,"scopeType":"dm","scopeId":11,"mentioned":true,
             "message":{"id":60,"content":"psst","author":{"displayName":"Sam"},"attachments":[]}}"""), labels)!!

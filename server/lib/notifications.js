@@ -12,6 +12,7 @@ const notifyGrid = require('./notifyGrid');
 const VALID_PREFS = new Set(['all', 'mentions', 'mute']);
 const SCOPE_DEFAULTS = { channel: 'mentions', dm: 'all' };
 const OUTBOX_KEEP_PER_USER = 200;
+const READ_SYNC_LIMIT = 100;
 
 // Durable copy of a notify decision already made by notifyChannelMessage/notifyDmMessage below —
 // lets a client with no open WebSocket (the Android background poller) catch up via
@@ -49,8 +50,8 @@ function pollOutbox(userId, sinceId = 0, limit = 50) {
   const rows = db.prepare(
     'SELECT id, scope_type, scope_id, server_id, server_name, channel_name, message_json, mentioned, kind, extra_json, created_at FROM notifications_outbox WHERE user_id = ? AND id > ? ORDER BY id ASC LIMIT ?'
   ).all(userId, sinceId, limit);
-  const readUpTo = new Map(db.prepare('SELECT scope_type, scope_id, last_read_message_id FROM read_state WHERE user_id = ?')
-    .all(userId).map((r) => [`${r.scope_type}:${r.scope_id}`, r.last_read_message_id]));
+  const readRows = db.prepare('SELECT scope_type, scope_id, last_read_message_id FROM read_state WHERE user_id = ? ORDER BY updated_at DESC').all(userId);
+  const readUpTo = new Map(readRows.map((r) => [`${r.scope_type}:${r.scope_id}`, r.last_read_message_id]));
   const notifications = rows.map((r) => ({
     id: r.id, scopeType: r.scope_type, scopeId: r.scope_id, serverId: r.server_id, serverName: r.server_name,
     channelName: r.channel_name, message: JSON.parse(open(r.message_json)), mentioned: !!r.mentioned, createdAt: r.created_at,
@@ -59,12 +60,16 @@ function pollOutbox(userId, sinceId = 0, limit = 50) {
     // Already read on another device (read_state advances from any client): announcing it now is stale.
     // Pin/thread events point at older messages, so their message id says nothing about being read.
     if (n.kind) return true;
-    const readTo = readUpTo.get(`${n.scopeType}:${n.scopeId}`);
+    // A thread reply is announced under its channel but its read position is the thread's own.
+    const key = n.message.scopeType === 'thread' ? `thread:${n.message.scopeId}` : `${n.scopeType}:${n.scopeId}`;
+    const readTo = readUpTo.get(key);
     return !(readTo && n.message.id <= readTo);
   });
   const maxRow = db.prepare('SELECT MAX(id) AS maxId FROM notifications_outbox WHERE user_id = ?').get(userId);
   const latestId = maxRow.maxId || sinceId;
-  return { notifications, latestId };
+  // Lets the phone take down notifications it already posted for things read elsewhere since.
+  const read = readRows.slice(0, READ_SYNC_LIMIT).map((r) => ({ scopeType: r.scope_type, scopeId: r.scope_id, lastReadMessageId: r.last_read_message_id }));
+  return { notifications, latestId, read };
 }
 
 function getPref(userId, scopeType, scopeId) {

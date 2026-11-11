@@ -9,6 +9,7 @@ const { broadcastToDm } = require('../socket/hub');
 const pinSeen = require('../lib/pinSeen');
 const { unreadThreads } = require('../lib/threadUnread');
 const { isInvisible } = require('../lib/invisible');
+const pushEndpoints = require('../lib/pushEndpoints');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -71,6 +72,11 @@ router.put('/:scopeType/:scopeId', (req, res) => {
   if (scopeType === 'dm' && !hidden) {
     broadcastToDm(scopeId, { type: 'dm_read', dmId: scopeId, userId: req.user.id, messageId });
   }
+  // A phone that already announced something from this scope should take it down: wake it (coalesced) for a poll.
+  const announced = !force && (scopeType === 'thread'
+    ? db.prepare("SELECT 1 FROM notifications_outbox WHERE user_id = ? AND kind IS NULL AND scope_type = 'channel' LIMIT 1").get(req.user.id)
+    : db.prepare('SELECT 1 FROM notifications_outbox WHERE user_id = ? AND scope_type = ? AND scope_id = ? LIMIT 1').get(req.user.id, scopeType, scopeId));
+  if (announced) pushEndpoints.wake(req.user.id);
   res.json({ ok: true });
 });
 

@@ -3,7 +3,11 @@
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
 ### 2026-11-11
+#### Added
+- Android: notifications already in the shade disappear when you read that conversation on another device. Reading on PC wakes the phone (UnifiedPush) or the next background check, which takes down everything at or below your read position; the poll now also returns your read positions (`read`). Needs a server deploy and a new APK.
+
 #### Fixed
+- Notification poll: a thread reply is judged against the thread's own read position instead of the channel's, so an unread reply is no longer skipped.
 - Android: messages you already read on the PC (or any other device) are no longer announced on the phone when it catches up later. The server's notification poll now skips channel and DM messages at or below your read position; pin and thread events are unaffected. Server-only change, no APK rebuild.
 
 ### 2026-11-09

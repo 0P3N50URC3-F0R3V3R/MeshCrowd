@@ -12,7 +12,30 @@ object NotificationMapper {
         val scopeKey: String,
         val deepLink: String,
         val mentioned: Boolean,
+        // The read-state scope ("dm:11", "channel:3", "thread:9") and the message this notification shows,
+        // so a later read position on another device can take it down again.
+        val readScope: String = "",
+        val messageId: Long = -1,
     )
+
+    // Pin and thread-start events point at older messages, so reading never retires them.
+    fun isRetiredBy(readScope: String, messageId: Long, lastRead: Map<String, Long>): Boolean {
+        if (readScope.isEmpty() || messageId < 0) return false
+        return (lastRead[readScope] ?: return false) >= messageId
+    }
+
+    fun readPositions(read: org.json.JSONArray?): Map<String, Long> {
+        val out = HashMap<String, Long>()
+        if (read == null) return out
+        for (i in 0 until read.length()) {
+            val r = read.optJSONObject(i) ?: continue
+            val scopeType = r.optString("scopeType")
+            val scopeId = r.optLong("scopeId", -1)
+            if (scopeType.isEmpty() || scopeId < 0) continue
+            out["$scopeType:$scopeId"] = r.optLong("lastReadMessageId", -1)
+        }
+        return out
+    }
 
     private const val MAX_BODY = 200
 
@@ -43,7 +66,7 @@ object NotificationMapper {
         val mentioned = item.optBoolean("mentioned")
         val head = when (kind) { "pin" -> String.format(labels.pinned, author); "thread" -> String.format(labels.thread, author); else -> author }
         if (scopeType == "dm") {
-            return Mapped(id, head, body, "dm:$scopeId", "#open=dm:$scopeId:$messageId", mentioned)
+            return Mapped(id, head, body, "dm:$scopeId", "#open=dm:$scopeId:$messageId", mentioned, if (kind.isEmpty()) "dm:$scopeId" else "", messageId)
         }
         val serverId = item.optLong("serverId", -1)
         val channel = item.optString("channelName")
@@ -53,11 +76,17 @@ object NotificationMapper {
             if (channel.isNotEmpty()) append(" #").append(channel)
             if (server.isNotEmpty()) append(" (").append(server).append(')')
         }
-        val link = if (message.optString("scopeType") == "thread") {
+        val inThread = message.optString("scopeType") == "thread"
+        val link = if (inThread) {
             "#open=thread:$serverId:$scopeId:${message.optLong("scopeId")}:$messageId"
         } else {
             "#open=channel:$serverId:$scopeId:$messageId"
         }
-        return Mapped(id, title, body, "channel:$serverId:$scopeId", link, mentioned)
+        val readScope = when {
+            kind.isNotEmpty() -> ""
+            inThread -> "thread:${message.optLong("scopeId")}"
+            else -> "channel:$scopeId"
+        }
+        return Mapped(id, title, body, "channel:$serverId:$scopeId", link, mentioned, readScope, messageId)
     }
 }

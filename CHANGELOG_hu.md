@@ -3,7 +3,11 @@
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
 ### 2026-11-11
+#### Hozzáadva
+- Android: az értesítési sávban lévő értesítések eltűnnek, ha a beszélgetést egy másik eszközön elolvasod. A PC-n olvasás felébreszti a telefont (UnifiedPush) vagy a következő háttérellenőrzést, ami leszedi az olvasási pozíciódig mindent; a lekérdezés mostantól az olvasási pozíciókat is visszaadja (`read`). Szerver-telepítés és új APK szükséges.
+
 #### Javítva
+- Értesítés-lekérdezés: a szálválaszt a szál saját olvasási pozíciójához méri, nem a csatornáéhoz, így az olvasatlan válasz nem marad ki.
 - Android: a PC-n (vagy bármely más eszközön) már elolvasott üzenetekről a telefon utólag, felzárkózáskor sem értesít többé. A szerver értesítés-lekérdezése kihagyja a csatorna- és DM-üzeneteket az olvasási pozíciódig; a kitűzés- és szál-események nem érintettek. Csak szerveroldali változás, APK-újraépítés nem kell.
 
 ### 2026-11-09

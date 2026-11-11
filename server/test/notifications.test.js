@@ -168,6 +168,32 @@ test('pollOutbox skips messages already read on another device but still advance
   assert.equal(latestId, notifications[0].id);
 });
 
+test('pollOutbox reports read positions so the phone can dismiss what it already showed', () => {
+  const authorId = makeUser('author9x');
+  const otherId = makeUser('other9x');
+  const dmId = db.prepare('INSERT INTO dm_channels (is_group, created_by) VALUES (0, ?)').run(authorId).lastInsertRowid;
+  db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?), (?, ?)').run(dmId, authorId, dmId, otherId);
+  assert.deepEqual(pollOutbox(otherId, 0).read, []);
+  db.prepare('INSERT INTO read_state (user_id, scope_type, scope_id, last_read_message_id) VALUES (?, ?, ?, ?)').run(otherId, 'dm', dmId, 77);
+  assert.deepEqual(pollOutbox(otherId, 0).read, [{ scopeType: 'dm', scopeId: Number(dmId), lastReadMessageId: 77 }]);
+});
+
+test('a thread reply is judged against the thread read position, not the channel one', () => {
+  const authorId = makeUser('author10x');
+  const memberId = makeUser('member10x');
+  const serverId = db.prepare('INSERT INTO servers (name, owner_id, invite_code) VALUES (?, ?, ?)').run('S10', authorId, 'inv10').lastInsertRowid;
+  makeEveryoneRole(serverId);
+  const channelId = db.prepare('INSERT INTO channels (server_id, name, type) VALUES (?, ?, ?)').run(serverId, 'general', 'public').lastInsertRowid;
+  db.prepare('INSERT INTO server_members (server_id, user_id) VALUES (?, ?), (?, ?)').run(serverId, authorId, serverId, memberId);
+  setPref(memberId, 'channel', channelId, 'all');
+  db.prepare('INSERT INTO read_state (user_id, scope_type, scope_id, last_read_message_id) VALUES (?, ?, ?, ?)').run(memberId, 'channel', channelId, 500);
+  const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(channelId);
+  notifyChannelMessage(channel, { id: 300, scopeType: 'thread', scopeId: 9, author: { id: authorId }, content: 'in thread' }, { userIds: [], roleIds: [], everyone: false, here: false });
+  assert.equal(pollOutbox(memberId, 0).notifications.length, 1);
+  db.prepare('INSERT INTO read_state (user_id, scope_type, scope_id, last_read_message_id) VALUES (?, ?, ?, ?)').run(memberId, 'thread', 9, 300);
+  assert.equal(pollOutbox(memberId, 0).notifications.length, 0);
+});
+
 test('a muted scope never reaches the outbox, matching the live-push filtering', () => {
   const authorId = makeUser('author6');
   const mutedId = makeUser('muted6');
