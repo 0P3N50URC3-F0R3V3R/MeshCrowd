@@ -153,6 +153,21 @@ test('a channel notify is durably recorded in the outbox and readable via pollOu
   assert.equal(second.latestId, latestId);
 });
 
+test('pollOutbox skips messages already read on another device but still advances the cursor', () => {
+  const authorId = makeUser('author8x');
+  const otherId = makeUser('other8x');
+  const dmId = db.prepare('INSERT INTO dm_channels (is_group, created_by) VALUES (0, ?)').run(authorId).lastInsertRowid;
+  db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?), (?, ?)').run(dmId, authorId, dmId, otherId);
+  const dm = db.prepare('SELECT * FROM dm_channels WHERE id = ?').get(dmId);
+  notifyDmMessage(dm, { id: 101, author: { id: authorId }, content: 'first' });
+  notifyDmMessage(dm, { id: 102, author: { id: authorId }, content: 'second' });
+  db.prepare('INSERT INTO read_state (user_id, scope_type, scope_id, last_read_message_id) VALUES (?, ?, ?, ?)').run(otherId, 'dm', dmId, 101);
+
+  const { notifications, latestId } = pollOutbox(otherId, 0);
+  assert.deepEqual(notifications.map((n) => n.message.content), ['second']);
+  assert.equal(latestId, notifications[0].id);
+});
+
 test('a muted scope never reaches the outbox, matching the live-push filtering', () => {
   const authorId = makeUser('author6');
   const mutedId = makeUser('muted6');

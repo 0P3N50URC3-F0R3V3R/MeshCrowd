@@ -2,6 +2,10 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-11
+#### Javítva
+- Android: a PC-n (vagy bármely más eszközön) már elolvasott üzenetekről a telefon utólag, felzárkózáskor sem értesít többé. A szerver értesítés-lekérdezése kihagyja a csatorna- és DM-üzeneteket az olvasási pozíciódig; a kitűzés- és szál-események nem érintettek. Csak szerveroldali változás, APK-újraépítés nem kell.
+
 ### 2026-11-09
 #### Hozzáadva
 - C# asztali kliens (`ClientC#/`, WebView2 keret, egyetlen önálló exe, mellette létrejövő `data` mappával). Ugyanaz a webes felület és ugyanaz a `dismesh-client-config.json`, mint az Electron kliensnél; tálcaikon olvasatlan-villogással és legutóbbi listával, értesítések, letöltések tálcaállapottal, `mcr://` meghívó linkek, egy példány, tanúsítvány-rögzítés, bezárás a tálcára, és a lap felső sávja a címsor (minimalizálás/maximalizálás/bezárás ugyanabban a sorban). Az Electron marad a fő kliens.

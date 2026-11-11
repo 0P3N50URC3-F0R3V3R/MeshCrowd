@@ -2,6 +2,10 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-11
+#### Fixed
+- Android: messages you already read on the PC (or any other device) are no longer announced on the phone when it catches up later. The server's notification poll now skips channel and DM messages at or below your read position; pin and thread events are unaffected. Server-only change, no APK rebuild.
+
 ### 2026-11-09
 #### Added
 - C# desktop client (`ClientC#/`, WebView2 shell, one self-contained exe, data folder beside it). Same web UI and the same `dismesh-client-config.json` as the Electron client; tray with unread blink and recent list, notifications, downloads with taskbar progress, mcr:// invite links, single instance, certificate pinning, close to tray. Electron stays the main client.
