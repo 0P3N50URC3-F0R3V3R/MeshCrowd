@@ -55,6 +55,13 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   const PAGE_SIZE = 50;
   let uploadFiles = [];
   let editingId = null;
+  // A render that replaces the list while an edit box is open (a delete, a reaction, a reconnect
+  // catch-up) removes the box without running its cancel/save, which would leave editingId set
+  // forever and block every later edit and all live updates. No box in the DOM means no edit.
+  function isEditing() {
+    if (editingId !== null && !listEl.querySelector('.msg-edit-box')) editingId = null;
+    return editingId !== null;
+  }
   let replyingTo = null; // the message object being replied to, or null
   let sending = false;
   const typingUsers = new Map(); // userId -> {name, expiresAt}
@@ -190,7 +197,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       const fresh = fetched.filter((m) => !known.has(m.id) && m.id > lastKnown);
       const nearBottom = isNearBottom();
       messages = messages.concat(fresh);
-      if (editingId === null) { renderKeepingPosition(); if (nearBottom) scrollToBottom(); }
+      if (!isEditing()) { renderKeepingPosition(); if (nearBottom) scrollToBottom(); }
       if (fresh.length) markRead(fresh[fresh.length - 1].id);
     } catch { /* the next event or reload catches up */ }
   });
@@ -209,7 +216,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   });
   // Only matters for a DM: the other member's read pointer moving is what drives the "Seen" tag.
   const offDms = scope.kind === 'dm' ? bus.on('state:dms', () => {
-    if (editingId === null) renderAll();
+    if (!isEditing()) renderAll();
   }) : null;
   setComposerConnected(state.wsConnected);
   const onScroll = debounce(checkEdges, 150);
@@ -1049,7 +1056,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   }
 
   function startEdit(msg, groupEl) {
-    if (editingId) return;
+    if (isEditing()) return;
     editingId = msg.id;
     const bodyEl = groupEl.querySelector('.body');
     const lineEl = bodyEl.querySelector('.msg-line');
@@ -1099,7 +1106,9 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
         try {
           await api.deleteMessage(msg.id);
           messages = messages.filter((m) => m.id !== msg.id);
-          renderAll();
+          if (editingId === msg.id) editingId = null;
+          if (!isEditing()) renderAll();
+          else listEl.querySelector(`[data-id="${msg.id}"]`)?.remove();
         } catch (err) {
           toast(apiErrorMessage(err, t('chat.couldNotDeleteMessageError')), { type: 'error' });
         }
@@ -1224,7 +1233,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       }
       // Discord/Slack convention: Up in an empty composer edits your own last message, not
       // wherever the cursor happens to sit — an empty box has no cursor history worth navigating.
-      if (e.key === 'ArrowUp' && input.value === '' && editingId === null) {
+      if (e.key === 'ArrowUp' && input.value === '' && !isEditing()) {
         const lastOwn = [...messages].reverse().find((m) => !m.eventType && !m.pending && !m.errored && isSelf(m.author.id));
         if (lastOwn) {
           const groupEl = listEl.querySelector(`[data-id="${lastOwn.id}"]`);
@@ -1913,7 +1922,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     if (dupIdx !== -1) messages.splice(dupIdx, 1);
     const nearBottom = isNearBottom();
     messages.push(message);
-    if (editingId === null) {
+    if (!isEditing()) {
       renderAll();
       if (nearBottom) scrollToBottom();
     }
@@ -1929,7 +1938,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     const idx = messages.findIndex((m) => m.id === message.id);
     if (idx !== -1) {
       messages[idx] = message;
-      if (editingId === null) renderAll();
+      if (!isEditing()) renderAll();
     }
   }
 
@@ -1938,7 +1947,8 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     const hadIt = messages.some((m) => m.id === payload.messageId);
     if (hadIt) {
       messages = messages.filter((m) => m.id !== payload.messageId);
-      if (editingId === null) renderAll();
+      if (editingId === payload.messageId) editingId = null;
+      if (!isEditing()) renderAll();
     }
   }
 

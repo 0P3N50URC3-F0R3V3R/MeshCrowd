@@ -4,6 +4,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ### 2026-11-12
 #### Fixed
+- Chat (all channels, DMs and forum threads): after deleting a message while another was open for editing, editing stopped working until a full page reload (Up-arrow and the edit button did nothing, live updates froze). The edit state now clears itself when its box is gone, a delete no longer wipes an open edit, and deleting the message being edited cancels the edit. Web-only change.
 - Phone: the private notes composer now puts the text field on its own full-width line with the attach, emoji, save and trim buttons on the next line.
 - A new forum post (a thread started without a parent message) now notifies like a channel message: members with the channel on "all messages" or @-mentioned in it get the desktop, tray and Android notification. Before, it notified nobody. Needs a server deploy.
 - Android: files attached to a private (encrypted) note did nothing when tapped. The app's blob download hook re-fetched the decrypted blob, which the CSP blocks; notes now hand the bytes to the app's save bridge directly, keeping the file name. Web-only change, no APK rebuild.
