@@ -2,6 +2,13 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-12
+#### Javítva
+- Chat (minden csatorna, DM és fórumszál): ha törölsz egy üzenetet, miközben egy másik szerkesztés alatt áll, a szerkesztés teljes oldalfrissítésig nem működött (a felfelé nyíl és a szerkesztés gomb nem csinált semmit, az élő frissítések megálltak). A szerkesztési állapot mostantól magától törlődik, ha a szerkesztőmező eltűnt, a törlés nem törli le a nyitott szerkesztést, és a szerkesztett üzenet törlése megszakítja a szerkesztést. Csak webes változás.
+- Telefon: a privát jegyzet-csatorna író mezője külön, teljes szélességű sorba kerül, a csatolás, emoji, mentés és törlés gombok pedig alatta, a következő sorban.
+- Az új fórumbejegyzés (szülő üzenet nélkül indított szál) mostantól úgy értesít, mint egy csatornaüzenet: aki a csatornát „minden üzenet" módra állította, vagy akit megemlítettek benne, asztali, tálca- és Android-értesítést kap. Eddig senkit nem értesített. Szerver-telepítés szükséges.
+- Android: a privát (titkosított) jegyzethez csatolt fájlok koppintásra nem csináltak semmit. Az app blob-letöltő kapcsolata újra lekérte a visszafejtett blobot, amit a CSP tilt; a jegyzetek mostantól közvetlenül az app mentő hídjának adják át a bájtokat, a fájlnév megtartásával. Csak webes változás, APK-újraépítés nem kell.
+
 ### 2026-11-11
 #### Hozzáadva
 - Android: az értesítési sávban lévő értesítések eltűnnek, ha a beszélgetést egy másik eszközön elolvasod. A PC-n olvasás felébreszti a telefont (UnifiedPush) vagy a következő háttérellenőrzést, ami leszedi az olvasási pozíciódig mindent; a lekérdezés mostantól az olvasási pozíciókat is visszaadja (`read`). Szerver-telepítés és új APK szükséges.
