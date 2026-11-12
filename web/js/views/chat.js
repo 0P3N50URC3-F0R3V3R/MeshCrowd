@@ -1517,13 +1517,14 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
 
   function autoGrow(ta) {
     ta.style.height = 'auto';
-    // A tall draft (e.g. a large paste) drops the buttons below the text instead of leaving an empty
-    // column beside it. Enter/leave thresholds differ so the width change can't flip it back and forth.
+    // A draft that wraps drops the buttons below the text so it gets the full width instead of a narrow
+    // column beside them. It only un-stacks once emptied, since the width change would otherwise flip it back and forth.
     const composerEl = ta.closest('.composer');
     if (composerEl) {
       const stacked = composerEl.classList.contains('tall');
-      if (!stacked && ta.scrollHeight > 110) composerEl.classList.add('tall');
-      else if (stacked && ta.scrollHeight <= 50) composerEl.classList.remove('tall');
+      const lineH = parseFloat(getComputedStyle(ta).lineHeight) || 22;
+      if (!stacked && ta.scrollHeight > lineH * 1.5 + 22) composerEl.classList.add('tall');
+      else if (stacked && !ta.value) composerEl.classList.remove('tall');
       ta.style.height = 'auto';
     }
     // visualViewport.height (when available) reflects the actually-visible area once the
