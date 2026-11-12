@@ -141,6 +141,16 @@ router.post('/', requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfTimedOut,
   maybeFetchAndAttachEmbed(message, (payload) => broadcastToChannel(req.channel, payload)).catch(() => {});
   if (parentMessage) notifyThreadStarted(req.channel, thread, parentMessage, message, { id: req.user.id, displayName: req.user.display_name });
   res.status(201).json({ thread, message });
+
+  if (!parentMessage) {
+    afterResponse('thread-post', () => {
+      const candidateUsers = db.prepare(
+        `SELECT u.id, u.username FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id = ?`
+      ).all(req.channel.server_id);
+      const roles = db.prepare('SELECT id, name FROM roles WHERE server_id = ?').all(req.channel.server_id);
+      notifyChannelMessage(req.channel, message, parseMentions(`${title}\n${content}`, { candidateUsers, roles }));
+    });
+  }
 });
 
 router.patch('/:threadId', loadThread, (req, res) => {

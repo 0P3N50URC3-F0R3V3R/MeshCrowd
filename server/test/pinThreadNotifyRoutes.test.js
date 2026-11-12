@@ -56,8 +56,16 @@ test('starting a thread from a message notifies its author, not the starter; for
   sent = [];
   const own = post(owner, 'my own');
   await call('POST', `/api/servers/${serverId}/channels/${channelId}/threads`, owner, { title: 'Mine', content: 'x', parentMessageId: own });
-  await call('POST', `/api/servers/${serverId}/channels/${channelId}/threads`, owner, { title: 'Post', content: 'x' });
+  await new Promise((r) => setTimeout(r, 100));
   assert.equal(sent.length, 0);
+});
+
+test('a new forum-style post notifies viewers on "all messages", not its author', async () => {
+  const res = await call('POST', `/api/servers/${serverId}/channels/${channelId}/threads`, owner, { title: 'Post', content: 'x' });
+  assert.equal(res.status, 201);
+  await new Promise((r) => setTimeout(r, 100));
+  assert.deepEqual(sent.map((s) => s.userId).sort(), [author, reader].sort());
+  assert.equal(sent[0].payload.message.scopeType, 'thread');
 });
 
 test('pinning notifies other viewers once; re-pinning and unpinning stay silent', async () => {

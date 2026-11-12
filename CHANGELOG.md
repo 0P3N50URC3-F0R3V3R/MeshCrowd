@@ -2,6 +2,11 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-12
+#### Fixed
+- A new forum post (a thread started without a parent message) now notifies like a channel message: members with the channel on "all messages" or @-mentioned in it get the desktop, tray and Android notification. Before, it notified nobody. Needs a server deploy.
+- Android: files attached to a private (encrypted) note did nothing when tapped. The app's blob download hook re-fetched the decrypted blob, which the CSP blocks; notes now hand the bytes to the app's save bridge directly, keeping the file name. Web-only change, no APK rebuild.
+
 ### 2026-11-11
 #### Added
 - Android: notifications already in the shade disappear when you read that conversation on another device. Reading on PC wakes the phone (UnifiedPush) or the next background check, which takes down everything at or below your read position; the poll now also returns your read positions (`read`). Needs a server deploy and a new APK.

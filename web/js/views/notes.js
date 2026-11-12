@@ -105,7 +105,19 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
     try {
       const bytes = await fetchPlain(file);
       if (!bytes) throw new Error('decrypt');
-      const url = URL.createObjectURL(new Blob([bytes], { type: file.type || 'application/octet-stream' }));
+      const blob = new Blob([bytes], { type: file.type || 'application/octet-stream' });
+      // The Android WebView's blob: download hook re-fetches the blob, which the CSP blocks; hand the bytes to the app directly.
+      if (typeof window.MeshCrowdAndroid?.saveFile === 'function') {
+        const b64 = await new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(String(fr.result).split(',')[1] || '');
+          fr.onerror = reject;
+          fr.readAsDataURL(blob);
+        });
+        if (!window.MeshCrowdAndroid.saveFile(b64, file.name, blob.type)) throw new Error('save');
+        return;
+      }
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 10000);
