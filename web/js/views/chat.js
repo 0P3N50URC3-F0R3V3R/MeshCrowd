@@ -197,7 +197,9 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       const fresh = fetched.filter((m) => !known.has(m.id) && m.id > lastKnown);
       const nearBottom = isNearBottom();
       messages = messages.concat(fresh);
-      if (!isEditing()) { renderKeepingPosition(); if (nearBottom) scrollToBottom(); }
+      const editing = isEditing();
+      renderKeepingPosition();
+      if (nearBottom && !editing) scrollToBottom();
       if (fresh.length) markRead(fresh[fresh.length - 1].id);
     } catch { /* the next event or reload catches up */ }
   });
@@ -216,7 +218,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   });
   // Only matters for a DM: the other member's read pointer moving is what drives the "Seen" tag.
   const offDms = scope.kind === 'dm' ? bus.on('state:dms', () => {
-    if (!isEditing()) renderAll();
+    renderAll();
   }) : null;
   setComposerConnected(state.wsConnected);
   const onScroll = debounce(checkEdges, 150);
@@ -388,6 +390,12 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
 
   function renderAll() {
     paintUnreadBanner();
+    const editBox = isEditing() ? listEl.querySelector('.msg-edit-box') : null;
+    const editTa = editBox?.querySelector('textarea');
+    const editFocused = !!editTa && document.activeElement === editTa;
+    const editSel = editTa ? [editTa.selectionStart, editTa.selectionEnd] : null;
+    const editScroll = editTa ? editTa.scrollTop : 0;
+    if (editBox) editBox.remove();
     if (messages.length === 0) {
       listEl.innerHTML = `
         <div class="channel-intro">
@@ -419,6 +427,17 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     for (const e of ephemerals) html += renderEphemeral(e);
     html += renderSeenTag();
     listEl.innerHTML = html;
+    if (editBox) {
+      const body = listEl.querySelector(`.msg-group[data-id="${editingId}"] .body`);
+      if (body) {
+        const line = body.querySelector('.msg-line');
+        if (line) line.style.display = 'none';
+        body.appendChild(editBox);
+        autoGrow(editTa);
+        editTa.scrollTop = editScroll;
+        if (editFocused) { editTa.focus({ preventScroll: true }); editTa.setSelectionRange(editSel[0], editSel[1]); }
+      } else editingId = null;
+    }
   }
 
   // 1:1 DMs get a plain "Seen" text tag (matches real Discord's own DM read-state UI); group DMs
@@ -1107,8 +1126,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
           await api.deleteMessage(msg.id);
           messages = messages.filter((m) => m.id !== msg.id);
           if (editingId === msg.id) editingId = null;
-          if (!isEditing()) renderAll();
-          else listEl.querySelector(`[data-id="${msg.id}"]`)?.remove();
+          renderAll();
         } catch (err) {
           toast(apiErrorMessage(err, t('chat.couldNotDeleteMessageError')), { type: 'error' });
         }
@@ -1923,7 +1941,8 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     if (dupIdx !== -1) messages.splice(dupIdx, 1);
     const nearBottom = isNearBottom();
     messages.push(message);
-    if (!isEditing()) {
+    if (isEditing()) renderKeepingPosition();
+    else {
       renderAll();
       if (nearBottom) scrollToBottom();
     }
@@ -1939,7 +1958,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     const idx = messages.findIndex((m) => m.id === message.id);
     if (idx !== -1) {
       messages[idx] = message;
-      if (!isEditing()) renderAll();
+      if (isEditing()) renderKeepingPosition(); else renderAll();
     }
   }
 
@@ -1949,7 +1968,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     if (hadIt) {
       messages = messages.filter((m) => m.id !== payload.messageId);
       if (editingId === payload.messageId) editingId = null;
-      if (!isEditing()) renderAll();
+      if (isEditing()) renderKeepingPosition(); else renderAll();
     }
   }
 

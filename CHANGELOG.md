@@ -4,6 +4,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ### 2026-11-12
 #### Fixed
+- Chat (all channels, DMs and forum threads): new messages, edits, deletes and reconnect catch-up now appear live while you are editing a message, instead of waiting until you save or cancel. The open edit box keeps its text, cursor and focus, and the list does not jump to the latest message. Web-only change.
 - Chat composer: the input now moves its buttons below the text as soon as the text wraps to a second line (it used to wait for about five lines), so narrow windows no longer get a thin column of text. It returns to one row when the box is emptied. Web-only change.
 - Chat (all channels, DMs and forum threads): after deleting a message while another was open for editing, editing stopped working until a full page reload (Up-arrow and the edit button did nothing, live updates froze). The edit state now clears itself when its box is gone, a delete no longer wipes an open edit, and deleting the message being edited cancels the edit. Web-only change.
 - Phone: the private notes composer now puts the text field on its own full-width line with the attach, emoji, save and trim buttons on the next line.

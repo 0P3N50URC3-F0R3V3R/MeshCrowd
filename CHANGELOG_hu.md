@@ -4,6 +4,7 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 
 ### 2026-11-12
 #### Javítva
+- Chat (minden csatorna, DM és fórumszál): az új üzenetek, szerkesztések, törlések és az újracsatlakozás utáni pótlás mostantól élőben megjelenik üzenetszerkesztés közben is, nem kell megvárni a mentést vagy a megszakítást. A nyitott szerkesztőmező megtartja a szövegét, a kurzort és a fókuszt, a lista pedig nem ugrik az utolsó üzenetre. Csak webes változás.
 - Chat szövegmező: a gombok a szöveg alá kerülnek, amint a szöveg második sorba tör (korábban kb. öt sorig várt), így keskeny ablakban nem marad vékony szövegoszlop. A mező kiürítésekor visszaáll egy sorba. Csak web változás.
 - Chat (minden csatorna, DM és fórumszál): ha törölsz egy üzenetet, miközben egy másik szerkesztés alatt áll, a szerkesztés teljes oldalfrissítésig nem működött (a felfelé nyíl és a szerkesztés gomb nem csinált semmit, az élő frissítések megálltak). A szerkesztési állapot mostantól magától törlődik, ha a szerkesztőmező eltűnt, a törlés nem törli le a nyitott szerkesztést, és a szerkesztett üzenet törlése megszakítja a szerkesztést. Csak webes változás.
 - Telefon: a privát jegyzet-csatorna író mezője külön, teljes szélességű sorba kerül, a csatolás, emoji, mentés és törlés gombok pedig alatta, a következő sorban.
