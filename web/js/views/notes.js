@@ -37,7 +37,7 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
       <div class="notes-list" id="notes-list" style="flex:1;overflow-y:auto;padding:16px"></div>
       <div class="notes-composer" id="notes-composer" style="padding:12px 16px;border-top:1px solid var(--border-subtle)">
         <div id="notes-draft-files" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
-        <div style="display:flex;gap:8px;align-items:flex-end">
+        <div class="notes-composer-row" style="display:flex;gap:8px;align-items:flex-end">
           <button class="btn btn-secondary" id="notes-attach" title="${escapeHtml(t('notes.attachTitle'))}">${icons.paperclip(16)}</button>
           <input type="file" id="notes-file-input" multiple style="display:none">
           <button class="btn btn-secondary" id="notes-emoji" title="${escapeHtml(t('serverSettings.navEmoji'))}">${icons.smile(16)}</button>

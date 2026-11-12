@@ -247,6 +247,9 @@ button.m-att-file { width: 100%; border: 0; text-align: left; font: inherit; }
 
 .m-hosted { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .m-hosted .site-view, .m-hosted .notes-view { flex: 1; min-height: 0; }
+.m-hosted .notes-composer-row { flex-wrap: wrap; align-items: center; }
+.m-hosted .notes-composer-row #notes-input { order: -1; flex: 1 1 100% !important; min-width: 0; }
+.m-hosted .notes-composer-row #notes-send { margin-left: auto; }
 
 /* The shared desktop overlays (user settings, server settings, admin, modals) on a phone:
    the section list becomes a scrolling tab strip above a full-width content column. */
