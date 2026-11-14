@@ -316,6 +316,26 @@
 .poll-option-pct { position: relative; z-index: 1; font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
 .poll-footer { font-size: 12px; color: var(--text-muted); }
 
+/* Checklists: unchecked rows red, checked rows green, the whole card green once every item is done.
+   The rgba lines are the fallback for engines without color-mix. */
+.cl-card { display: flex; flex-direction: column; gap: 6px; max-width: 420px; margin-top: 6px; padding: 8px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--bg-input); }
+.cl-card.cl-done { border-color: var(--green); background: rgba(35, 165, 90, 0.14); background: color-mix(in srgb, var(--green) 14%, var(--bg-input)); }
+.cl-head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-muted); }
+.cl-edit { background: none; border: 0; color: var(--text-muted); cursor: pointer; padding: 2px; }
+.cl-edit:hover { color: var(--text-primary); }
+.cl-item { display: flex; align-items: center; gap: 8px; text-align: left; min-height: 34px; padding: 6px 10px; border: 1px solid var(--red); border-left-width: 4px; border-radius: var(--radius-md); color: var(--text-primary); font-size: 14px; cursor: pointer;
+  background: rgba(242, 63, 67, 0.14); background: color-mix(in srgb, var(--red) 14%, var(--bg-input)); }
+.cl-item.on { border-color: var(--green); background: rgba(35, 165, 90, 0.2); background: color-mix(in srgb, var(--green) 20%, var(--bg-input)); }
+.cl-item:disabled { cursor: default; opacity: 0.85; }
+.cl-box { flex-shrink: 0; width: 18px; height: 18px; display: inline-grid; place-items: center; border: 2px solid var(--red); border-radius: 5px; box-sizing: border-box; }
+.cl-item.on .cl-box { background: var(--green); border-color: var(--green); color: #fff; }
+.cl-label { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.cl-item.on .cl-label { text-decoration: line-through; opacity: 0.8; }
+.cl-row { display: flex; gap: 4px; align-items: center; margin-bottom: 6px; }
+.cl-row .input { flex: 1; min-width: 0; }
+.cl-helper { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.cl-helper select { width: auto; }
+
 .msg-actions {
   position: absolute;
   top: -18px; right: 16px;

@@ -10,6 +10,7 @@ import { nameAttrs, personalFx } from '../../js/nameStyle.js';
 import { memberRoleIcon, roleIconHtml } from '../../js/roleIcon.js';
 import { shouldCompact } from '../lib/messageList.mjs';
 import { pollHtml } from './pollCard.js';
+import { checklistHtml } from './checklistCard.js';
 import { voiceMessageHtml } from '../../js/voiceMessage.js';
 
 function replyHtml(r) {
@@ -81,7 +82,7 @@ export function messageHtml(msg, ctx) {
       ${text}${msg.editedAt ? `<span class="m-edited">${t('m.edited')}</span>` : ''}
       ${msg.sound ? soundHtml(msg.sound) : ''}
       ${msg.sticker ? `<img class="m-sticker anim-limit" src="${escapeHtml(msg.sticker.imagePath)}" alt="${escapeHtml(msg.sticker.name)}">` : ''}
-      ${attachmentsHtml(msg)}${msg.poll ? pollHtml(msg.poll, ctx.meId, msg.id) : ''}${embedHtml(msg.embed)}${reactionsHtml(msg, ctx.meId, ctx.detail?.customEmoji)}
+      ${attachmentsHtml(msg)}${msg.poll ? pollHtml(msg.poll, ctx.meId, msg.id) : ''}${msg.checklist ? checklistHtml(msg.checklist, ctx.meId) : ''}${embedHtml(msg.embed)}${reactionsHtml(msg, ctx.meId, ctx.detail?.customEmoji)}
     </div>
   </div>`;
 }

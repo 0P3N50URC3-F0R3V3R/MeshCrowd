@@ -97,10 +97,12 @@ export function mountComposer(host, opts) {
       { id: 'media', icon: icons.image(20), label: t('m.attachPhoto') },
       { id: 'file', icon: icons.file(20), label: t('m.attachFile') },
       opts.onPoll && { id: 'poll', icon: icons.users(20), label: t('m.attachPoll') },
+      opts.onChecklist && { id: 'checklist', icon: icons.check(20), label: t('checklist.createTitle') },
     ].filter(Boolean) });
     if (id === 'media') host.querySelector('#c-file-media').click();
     else if (id === 'file') host.querySelector('#c-file-any').click();
     else if (id === 'poll') opts.onPoll();
+    else if (id === 'checklist') opts.onChecklist();
   });
   function insertText(text, focus = true) {
     const a = input.selectionStart ?? input.value.length;

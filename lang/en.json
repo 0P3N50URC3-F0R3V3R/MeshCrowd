@@ -979,6 +979,40 @@
     "deleteThreadTitle": "Delete thread",
     "deleteThreadMessage": "Delete \"{title}\" and all of its messages? This cannot be undone."
   },
+  "dmPicker": {
+    "newTitle": "New message",
+    "startButton": "Start conversation",
+    "addTitle": "Add people",
+    "addButton": "Add to conversation",
+    "noFriends": "No friends to pick from yet. Add friends first.",
+    "groupName": "Group name (optional)",
+    "groupNamePh": "e.g. Weekend plans",
+    "couldNotStart": "Could not update the conversation."
+  },
+  "checklist": {
+    "createTitle": "Create Checklist",
+    "editTitle": "Edit Checklist",
+    "titleLabel": "Title",
+    "titlePh": "e.g. Shopping list",
+    "itemsLabel": "Items",
+    "itemPh": "Item {n}",
+    "addItem": "Add item",
+    "removeItem": "Remove",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "helpersLabel": "Who else can help?",
+    "helperNone": "No access",
+    "helperCheck": "Can check",
+    "helperEdit": "Can edit",
+    "create": "Create checklist",
+    "save": "Save",
+    "progress": "{done}/{total} done",
+    "noteChip": "Checklist: {n} items",
+    "titleRequired": "A checklist needs a title.",
+    "needItem": "Add at least one item.",
+    "couldNotSave": "Could not save the checklist.",
+    "couldNotCheck": "Could not update the item."
+  },
   "threadsPanel": {
     "heading": "Threads",
     "loadError": "Could not load threads.",
@@ -2817,6 +2851,10 @@
       "manageBots": {
         "name": "Manage Bots",
         "desc": "Create, edit and delete this server's AI bots."
+      },
+      "createChecklists": {
+        "name": "Create Checklists",
+        "desc": "Post checklists in public channels. Not needed in private channels or DMs."
       }
     },
     "site": {

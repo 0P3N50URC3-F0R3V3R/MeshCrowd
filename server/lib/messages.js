@@ -31,6 +31,20 @@ function getReplyTo(replyToId) {
   return { id: row.id, author: toPublicUser(author, {}), content: open(row.content), sticker: getSticker(row.sticker_id) };
 }
 
+function getChecklist(messageId) {
+  const list = db.prepare('SELECT * FROM checklists WHERE message_id = ?').get(messageId);
+  if (!list) return null;
+  const items = db.prepare('SELECT * FROM checklist_items WHERE checklist_id = ? ORDER BY position ASC, id ASC').all(list.id);
+  const editors = db.prepare('SELECT user_id, level FROM checklist_editors WHERE checklist_id = ?').all(list.id);
+  return {
+    id: list.id,
+    creatorId: list.creator_id,
+    items: items.map((i) => ({ id: i.id, label: open(i.label), checked: !!i.checked, checkedBy: i.checked_by })),
+    editors: editors.map((e) => ({ userId: e.user_id, level: e.level })),
+    allChecked: items.length > 0 && items.every((i) => i.checked),
+  };
+}
+
 // Raw per-option voter id aggregates, same "let the client compute did-I-vote" pattern as
 // getReactions — a single serialized message is broadcast to every viewer over WS.
 function getPoll(messageId) {
@@ -124,6 +138,7 @@ function serializeMessage(row) {
     pinnedBy: row.pinned_by ? toPublicUser(db.prepare('SELECT * FROM users WHERE id = ?').get(row.pinned_by), {}) : null,
     embed: row.embed ? JSON.parse(open(row.embed)) : null,
     poll: getPoll(row.id),
+    checklist: getChecklist(row.id),
     forwardedFrom: row.forwarded_from_message_id ? getForwardedFrom(row.forwarded_from_message_id) : null,
     sticker: getSticker(row.sticker_id),
     sound: getSound(row.sound_id),

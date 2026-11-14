@@ -16,7 +16,8 @@ import { stickerRef, previewText } from '../stickers.mjs';
 import { confirmModal, promptModal, openModal } from './modal.js';
 import { MAX_TEXT_FILE_BYTES, textByteLength, textToFile } from '../longText.js';
 import { openInviteModal } from './sidebar.js';
-import { memberNameColor, memberNameFx } from '../permissions.js';
+import { memberNameColor, memberNameFx, memberPermissionBits, channelPermissionBits, has, PERMISSIONS } from '../permissions.js';
+import { checklistHtml, toggleChecklistItem, openChecklistForm } from '../checklist.js';
 import { nameAttrs, personalFx } from '../nameStyle.js';
 import { memberRoleIcon, roleIconHtml } from '../roleIcon.js';
 import { isAgeGateError, renderAgeGate } from '../ageGate.js';
@@ -566,6 +567,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     if (m.sticker) parts.push(`<img class="sticker-message anim-limit" src="${escapeHtml(m.sticker.imagePath)}" alt="${escapeHtml(m.sticker.name)}" title="${escapeHtml(m.sticker.name)}">`);
     if (m.sound) parts.push(`<div class="sound-message"><button type="button" class="btn sound-play" data-sound-src="${escapeHtml(m.sound.audioPath)}" title="${escapeHtml(m.sound.name)}">${icons.music(18)} ${m.sound.emoji ? `${escapeHtml(m.sound.emoji)} ` : ''}${escapeHtml(m.sound.name)}</button></div>`);
     if (m.poll) parts.push(renderPoll(m));
+    if (m.checklist) parts.push(checklistHtml(m.checklist, state.me.id));
     if (m.attachments && m.attachments.length) {
       parts.push(`<div class="attachments">${m.attachments.map(renderAttachment).join('')}</div>`);
     }
@@ -753,6 +755,10 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
 
     const pollOptTarget = e.target.closest('[data-poll-vote]');
     if (pollOptTarget) return msg.poll && votePoll(msg, Number(pollOptTarget.dataset.pollVote));
+
+    const clToggle = e.target.closest('[data-cl-toggle]');
+    if (clToggle) return msg.checklist && toggleChecklist(msg, Number(clToggle.dataset.clToggle));
+    if (e.target.closest('[data-cl-edit]')) return msg.checklist && openChecklistModal(msg);
 
     const actionBtn = e.target.closest('[data-action]');
     if (!actionBtn) return;
@@ -986,6 +992,35 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     });
   }
 
+  function checklistMembers() {
+    if (scope.kind === 'dm') return (state.dms.find((d) => d.id === scope.dmId)?.members || []).map((u) => ({ id: u.id, name: u.displayName }));
+    const detail = getServerDetail(scope.serverId);
+    const channel = detail?.channels.find((c) => c.id === scope.channelId);
+    if (!detail || !channel) return [];
+    const isOwner = detail.server.owner_id === state.me.id;
+    return detail.members.filter((m) => m.user.id !== state.me.id && !m.user.isBot).filter((m) => {
+      const mBits = memberPermissionBits(detail.server, detail.roles, m, m.user.id);
+      return has(channelPermissionBits(channel, detail.roles, m, mBits, detail.server.owner_id === m.user.id), PERMISSIONS.VIEW_CHANNEL);
+    }).map((m) => ({ id: m.user.id, name: m.nickname || m.user.displayName }));
+  }
+
+  const openPanel = ({ title, html, onMount }) => openModal({ title, render(body, close) { body.innerHTML = html; onMount(body, close); } });
+
+  function openChecklistModal(msg) {
+    openChecklistForm({
+      openPanel, members: checklistMembers(), meId: state.me.id,
+      ...(msg ? { mode: 'edit', message: msg, onDone: (res) => { const idx = messages.findIndex((mm) => mm.id === msg.id); if (idx !== -1 && res) { messages[idx] = res.message; renderAll(); } } }
+        : { mode: 'create', scope: { scopeType, scopeId } }),
+    });
+  }
+
+  function toggleChecklist(msg, itemId) {
+    toggleChecklistItem(msg.checklist, itemId)?.then((res) => {
+      const idx = messages.findIndex((mm) => mm.id === msg.id);
+      if (idx !== -1) { messages[idx] = res.message; renderAll(); }
+    }).catch((err) => toast(apiErrorMessage(err, t('checklist.couldNotCheck')), { type: 'error' }));
+  }
+
   function votePoll(msg, optionId) {
     const alreadyMine = (msg.poll.options.find((o) => o.id === optionId)?.voterIds || []).includes(state.me.id);
     const call = alreadyMine ? api.unvotePoll(msg.poll.id, optionId) : api.votePoll(msg.poll.id, optionId);
@@ -1168,6 +1203,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
         <input type="file" id="file-input" multiple class="hidden" accept="*/*">
         <textarea id="composer-input" rows="1" enterkeyhint="send" placeholder="${escapeHtml(placeholderFor(scope))}"></textarea>
         <button type="button" class="composer-btn" id="btn-poll" title="${t('chat.createPollTitle')}">${icons.barChart(20)}</button>
+        ${scope.kind === 'dm' || scope.canChecklist ? `<button type="button" class="composer-btn" id="btn-checklist" title="${escapeHtml(t('checklist.createTitle'))}">${icons.check(20)}</button>` : ''}
         <button type="button" class="composer-btn" id="btn-sticker" title="${t('admin.stickersTab')}">${icons.image(22)}</button>
         <button type="button" class="composer-btn" id="btn-emoji" title="${t('serverSettings.navEmoji')}">${icons.smile(22)}</button>
         ${scope.channelType === 'stage' || !canRecordVoice() ? '' : `<button type="button" class="composer-btn" id="btn-voice" title="${t('voiceMsg.record')}">${icons.mic(22)}</button>`}
@@ -1205,6 +1241,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     });
 
     composerWrap.querySelector('#btn-poll').addEventListener('click', () => openCreatePollModal());
+    composerWrap.querySelector('#btn-checklist')?.addEventListener('click', () => openChecklistModal());
     composerWrap.querySelector('#btn-voice')?.addEventListener('click', async () => {
       const host = composerWrap.querySelector('#upload-tray');
       if (host.querySelector('.voice-recorder')) return;

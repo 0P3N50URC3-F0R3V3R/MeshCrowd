@@ -119,6 +119,7 @@ app.use('/api/servers/:id/channels/:channelId/messages', writeLimiter);
 app.use('/api/servers/:id/channels/:channelId/threads/:threadId/messages', writeLimiter);
 app.use('/api/dms/:dmId/messages', writeLimiter);
 app.use('/api/polls', writeLimiter);
+app.use('/api/checklists', writeLimiter);
 app.use('/api/scheduled', rateLimit({ windowMs: 60_000, max: 60 }));
 app.use('/api/templates', rateLimit({ windowMs: 60_000, max: 20 }));
 app.use('/api/push', rateLimit({ windowMs: 60_000, max: 30 }));
@@ -178,6 +179,7 @@ app.use('/api/remote', rateLimit({ windowMs: 60_000, max: 600 }),
 app.use('/api/dms', require('./routes/dms'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/polls', require('./routes/polls'));
+app.use('/api/checklists', require('./routes/checklists'));
 app.use('/api/admin/ai', require('./routes/adminAi'));
 app.use('/api/bot', require('./routes/botApi'));
 app.use('/api/admin/languages', require('./routes/adminLanguages'));

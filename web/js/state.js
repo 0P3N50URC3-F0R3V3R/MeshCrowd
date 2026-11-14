@@ -170,6 +170,15 @@ export function upsertDm(dm) {
   bus.emit('state:dms');
 }
 
+// Someone was added to a group we are already in: take the new member list (and name) from the server.
+export function updateDm(dm) {
+  const cur = dm && state.dms.find((d) => d.id === dm.id);
+  if (!cur) return upsertDm(dm);
+  cur.members = dm.members;
+  cur.name = dm.name;
+  bus.emit('state:dms');
+}
+
 export function removeDm(dmId) {
   state.dms = state.dms.filter((d) => d.id !== dmId);
   bus.emit('state:dms');

@@ -979,6 +979,40 @@
     "deleteThreadTitle": "Szál törlése",
     "deleteThreadMessage": "Törlöd a(z) \"{title}\" szálat és az összes üzenetét? Ez nem vonható vissza."
   },
+  "dmPicker": {
+    "newTitle": "Új üzenet",
+    "startButton": "Beszélgetés indítása",
+    "addTitle": "Emberek hozzáadása",
+    "addButton": "Hozzáadás a beszélgetéshez",
+    "noFriends": "Még nincs kiválasztható ismerősöd. Előbb adj hozzá ismerősöket.",
+    "groupName": "Csoport neve (nem kötelező)",
+    "groupNamePh": "pl. Hétvégi tervek",
+    "couldNotStart": "Nem sikerült frissíteni a beszélgetést."
+  },
+  "checklist": {
+    "createTitle": "Ellenőrzőlista létrehozása",
+    "editTitle": "Ellenőrzőlista szerkesztése",
+    "titleLabel": "Cím",
+    "titlePh": "pl. Bevásárlólista",
+    "itemsLabel": "Tételek",
+    "itemPh": "{n}. tétel",
+    "addItem": "Tétel hozzáadása",
+    "removeItem": "Eltávolítás",
+    "moveUp": "Feljebb",
+    "moveDown": "Lejjebb",
+    "helpersLabel": "Ki segíthet még?",
+    "helperNone": "Nincs hozzáférés",
+    "helperCheck": "Pipálhat",
+    "helperEdit": "Szerkeszthet",
+    "create": "Lista létrehozása",
+    "save": "Mentés",
+    "progress": "{done}/{total} kész",
+    "noteChip": "Ellenőrzőlista: {n} tétel",
+    "titleRequired": "Az ellenőrzőlistához cím kell.",
+    "needItem": "Adj hozzá legalább egy tételt.",
+    "couldNotSave": "Nem sikerült menteni az ellenőrzőlistát.",
+    "couldNotCheck": "Nem sikerült frissíteni a tételt."
+  },
   "threadsPanel": {
     "heading": "Szálak",
     "loadError": "Nem sikerült betölteni a szálakat.",
@@ -2817,6 +2851,10 @@
       "manageBots": {
         "name": "Botok kezelése",
         "desc": "A szerver MI-botjainak létrehozása, szerkesztése és törlése."
+      },
+      "createChecklists": {
+        "name": "Ellenőrzőlisták létrehozása",
+        "desc": "Ellenőrzőlisták küldése nyilvános csatornákban. Privát csatornákban és üzenetekben nem szükséges."
       }
     },
     "site": {

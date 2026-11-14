@@ -732,6 +732,33 @@ CREATE TABLE IF NOT EXISTS poll_votes (
 );
 CREATE INDEX IF NOT EXISTS idx_poll_votes_poll_user ON poll_votes(poll_id, user_id);
 
+-- A checklist is a normal message (its `content` holds the title) with items normalized here.
+-- `level` on editors: 'check' = tick items only, 'edit' = tick + change items/title.
+CREATE TABLE IF NOT EXISTS checklists (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  message_id INTEGER NOT NULL UNIQUE REFERENCES messages(id) ON DELETE CASCADE,
+  creator_id INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+CREATE TABLE IF NOT EXISTS checklist_items (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  checklist_id INTEGER NOT NULL REFERENCES checklists(id) ON DELETE CASCADE,
+  position     INTEGER NOT NULL DEFAULT 0,
+  label        TEXT NOT NULL,
+  checked      INTEGER NOT NULL DEFAULT 0,
+  checked_by   INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  checked_at   TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_checklist_items_list ON checklist_items(checklist_id, position);
+
+CREATE TABLE IF NOT EXISTS checklist_editors (
+  checklist_id INTEGER NOT NULL REFERENCES checklists(id) ON DELETE CASCADE,
+  user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  level        TEXT NOT NULL CHECK (level IN ('check', 'edit')),
+  PRIMARY KEY (checklist_id, user_id)
+);
+
 CREATE TABLE IF NOT EXISTS federation_peers (
   id                     INTEGER PRIMARY KEY AUTOINCREMENT,
   domain                 TEXT NOT NULL UNIQUE,

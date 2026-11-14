@@ -63,12 +63,18 @@ export async function decryptBytes(key, channelId, blob, binding) {
 
 // A note's encrypted body: { v: 1, text, files: [{ id, name, type, size, fk? }], ref? }. `ref` is set when
 // the note was saved from a chat message: { kind, ids, messageId, author, postedAt }. Older notes are bare text.
-export function packNote(text, files, ref) { return JSON.stringify(ref ? { v: 1, text, files, ref } : { v: 1, text, files }); }
+// `checklist` is an optional [{ id, text, checked }] list that lives only inside the encrypted body.
+export function packNote(text, files, ref, checklist) {
+  return JSON.stringify({ v: 1, text, files, ...(ref ? { ref } : {}), ...(checklist && checklist.length ? { checklist } : {}) });
+}
 export function unpackNote(plain) {
   if (plain === null) return null;
   try {
     const o = JSON.parse(plain);
-    if (o && o.v === 1 && typeof o.text === 'string' && Array.isArray(o.files)) return o;
+    if (o && o.v === 1 && typeof o.text === 'string' && Array.isArray(o.files)) {
+      if (o.checklist !== undefined && !Array.isArray(o.checklist)) delete o.checklist;
+      return o;
+    }
   } catch { /* bare text from before attachments */ }
   return { v: 1, text: plain, files: [] };
 }

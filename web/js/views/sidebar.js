@@ -13,6 +13,7 @@ import { previewText } from '../stickers.mjs';
 import { userActionItems, muteSubmenu, unmute } from './userMenu.js';
 import { openFullProfile } from './fullProfile.js';
 import { openReportModal } from './profile.js';
+import { openDmPicker, startConversation, navigateToDm } from '../dmPicker.js';
 
 const CHANNEL_ICON = { public: icons.hash, private: icons.lock, announcement: icons.megaphone, readonly: icons.eye, voice: icons.headphones, forum: icons.messageSquare, stage: icons.stage, notes: icons.book };
 
@@ -621,34 +622,13 @@ export function mountHomeSidebar(container) {
   return { destroy };
 }
 
+// Pick one friend for a 1:1 DM or several for a group DM.
 export function openNewDmModal() {
-  const m = openModal({
-    title: t('sidebar.selectFriendModalTitle'),
-    render(body) {
-      const friends = state.friends.friends || [];
-      if (friends.length === 0) {
-        body.innerHTML = `<div class="empty-state" style="padding:20px 0"><p>${t('sidebar.addFriendsFirstHint')}</p></div>`;
-        return;
-      }
-      body.innerHTML = `<div>${friends.map((f) => `
-        <div class="list-row" data-pick="${f.user.id}" style="cursor:pointer">
-          ${avatarHtml(f.user, 36)}
-          <div class="lr-main"><div class="lr-title">${escapeHtml(f.user.displayName)}</div><div class="lr-sub">@${escapeHtml(f.user.username)}</div></div>
-        </div>`).join('')}</div>`;
-      body.querySelectorAll('[data-pick]').forEach((node) => {
-        node.addEventListener('click', async () => {
-          try {
-            const res = await api.openDm(Number(node.dataset.pick));
-            const dmsRes = await api.listDms();
-            state.dms = dmsRes.dms;
-            bus.emit('state:dms');
-            bus.emit('ui:navigate', { type: 'dm', dmId: res.dmId });
-            m.close();
-          } catch (err) {
-            toast(apiErrorMessage(err, t('sidebar.couldNotStartConversation')), { type: 'error' });
-          }
-        });
-      });
-    },
+  openDmPicker({
+    openPanel: ({ title, html, onMount }) => openModal({ title, render(body, close) { body.innerHTML = html; onMount(body, close); } }),
+    title: t('dmPicker.newTitle'),
+    confirmLabel: t('dmPicker.startButton'),
+    askName: true,
+    onConfirm: async (userIds, name) => navigateToDm(await startConversation(userIds, name)),
   });
 }

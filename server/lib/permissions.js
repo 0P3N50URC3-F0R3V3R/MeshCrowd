@@ -19,6 +19,7 @@ const PERMISSIONS = {
   MODERATE_MEMBERS:   1 << 14,  // timeout members, set channel slowmode
   PRUNE_CONTENT:      1 << 15,  // bulk-delete this server's own channel history before a cutoff date
   MANAGE_BOTS:        1 << 16,  // create/edit/delete this server's AI bots
+  CREATE_CHECKLISTS:  1 << 17,  // post checklists in non-private channels
 };
 
 const DEFAULT_EVERYONE_PERMISSIONS =

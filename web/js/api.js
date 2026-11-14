@@ -409,6 +409,7 @@ export const api = {
   listDms: () => get('/api/dms'),
   openDm: (userId) => post('/api/dms', { userId }),
   openGroupDm: (userIds, name) => post('/api/dms/group', { userIds, name }),
+  addDmMembers: (dmId, userIds, name) => post(`/api/dms/${dmId}/members`, { userIds, name }),
   listDmMessages: (dmId, { before, after, limit, around } = {}) => get(`/api/dms/${dmId}/messages`, { before, after, limit, around }),
   listAvailableStickers: () => get('/api/dms/stickers'),
   sendDmMessage: (dmId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal }) =>
@@ -432,6 +433,17 @@ export const api = {
   createPoll: (payload) => post('/api/polls', payload),
   votePoll: (pollId, optionId) => put(`/api/polls/${pollId}/vote/${optionId}`),
   unvotePoll: (pollId, optionId) => del(`/api/polls/${pollId}/vote/${optionId}`),
+
+  // checklists
+  createChecklist: (payload) => post('/api/checklists', payload),
+  checkChecklistItem: (id, itemId) => put(`/api/checklists/${id}/items/${itemId}/check`),
+  uncheckChecklistItem: (id, itemId) => del(`/api/checklists/${id}/items/${itemId}/check`),
+  setChecklistTitle: (id, title) => patch(`/api/checklists/${id}`, { title }),
+  addChecklistItem: (id, label) => post(`/api/checklists/${id}/items`, { label }),
+  renameChecklistItem: (id, itemId, label) => patch(`/api/checklists/${id}/items/${itemId}`, { label }),
+  deleteChecklistItem: (id, itemId) => del(`/api/checklists/${id}/items/${itemId}`),
+  orderChecklist: (id, itemIds) => put(`/api/checklists/${id}/order`, { itemIds }),
+  setChecklistEditors: (id, editors) => put(`/api/checklists/${id}/editors`, { editors }),
 
   // notifications
   getUserAnnotations: () => get('/api/user-annotations'),

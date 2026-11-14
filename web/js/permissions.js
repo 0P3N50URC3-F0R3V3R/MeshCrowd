@@ -19,6 +19,7 @@ export const PERMISSIONS = {
   MODERATE_MEMBERS: 1 << 14,
   PRUNE_CONTENT: 1 << 15,
   MANAGE_BOTS: 1 << 16,
+  CREATE_CHECKLISTS: 1 << 17,
 };
 
 export const PERMISSION_INFO = [
@@ -39,6 +40,7 @@ export const PERMISSION_INFO = [
   { flag: PERMISSIONS.MODERATE_MEMBERS, key: 'moderateMembers', name: 'Moderate Members', desc: 'Time out members and set channel slowmode.' },
   { flag: PERMISSIONS.PRUNE_CONTENT, key: 'pruneData', name: 'Prune Data', desc: "Bulk-delete this server's own channel history before a cutoff date, to free up space." },
   { flag: PERMISSIONS.MANAGE_BOTS, key: 'manageBots', name: 'Manage Bots', desc: "Create, edit and delete this server's AI bots." },
+  { flag: PERMISSIONS.CREATE_CHECKLISTS, key: 'createChecklists', name: 'Create Checklists', desc: 'Post checklists in public channels. Not needed in private channels or DMs.' },
 ];
 
 export const SITE_PERMISSIONS = {

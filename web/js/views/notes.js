@@ -7,6 +7,10 @@ import { openRef } from '../saveToNotes.js';
 import { getNotesKey, encryptNote, decryptNote, encryptBytes, decryptBytes, newFileTag, packNote, unpackNote } from '../e2ee/notes.js';
 import { t } from '../i18n.js';
 import { openEmojiPicker } from './emojiPicker.js';
+import { checklistHtml, openChecklistForm } from '../checklist.js';
+
+const toCard = (n) => ({ id: n.id, items: n.body.checklist.map((i) => ({ id: i.id, label: i.text, checked: !!i.checked })) });
+const noteOpenPanel = ({ title, html, onMount }) => openModal({ title, render(body, close) { body.innerHTML = html; onMount(body, close); } });
 
 const MAX_FILES = 5;
 const INLINE_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
@@ -25,6 +29,7 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
   let key = null;
   let editingId = null;
   let draftFiles = [];
+  let draftChecklist = null;
   const pendingFiles = [];
   let destroyed = false;
   const imageUrls = new Map();
@@ -41,6 +46,7 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
           <button class="btn btn-secondary" id="notes-attach" title="${escapeHtml(t('notes.attachTitle'))}">${icons.paperclip(16)}</button>
           <input type="file" id="notes-file-input" multiple style="display:none">
           <button class="btn btn-secondary" id="notes-emoji" title="${escapeHtml(t('serverSettings.navEmoji'))}">${icons.smile(16)}</button>
+          <button class="btn btn-secondary" id="notes-checklist" title="${escapeHtml(t('checklist.createTitle'))}">${icons.check(16)}</button>
           <textarea class="textarea" id="notes-input" rows="2" maxlength="4000" style="flex:1;resize:none" placeholder="${escapeHtml(t('notes.placeholder', { channel: channelName || '' }))}"></textarea>
           <button class="btn btn-primary" id="notes-send">${t('notes.saveButton')}</button>
           ${canTrim ? `<button class="btn btn-secondary" id="notes-trim" title="${escapeHtml(t('notes.trimTitle'))}">${icons.trash(16)}</button>` : ''}
@@ -156,6 +162,7 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
         </div>
         <div class="note-ref" style="display:none"></div>
         <div class="note-text" style="white-space:pre-wrap;word-break:break-word"></div>
+        <div class="note-checklist"></div>
         <div class="note-files" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px"></div>
       </div>`).join('');
     listEl.querySelectorAll('.note-entry').forEach((el) => {
@@ -166,6 +173,7 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
         textEl.textContent = t('notes.undecryptable'); textEl.style.fontStyle = 'italic'; textEl.style.color = 'var(--text-muted)';
       } else {
         textEl.textContent = n.body.text;
+        if (n.body.checklist?.length) el.querySelector('.note-checklist').innerHTML = checklistHtml(toCard(n), state.me.id, 'edit');
         if (n.body.ref) {
           const refEl = el.querySelector('.note-ref');
           refEl.style.cssText = 'margin:4px 0;padding:4px 8px;border-left:3px solid var(--brand);font-size:12px;color:var(--text-muted);cursor:pointer';
@@ -205,6 +213,29 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
     if (scrollDown) listEl.scrollTop = listEl.scrollHeight;
   }
 
+  async function persistChecklist(n, checklist) {
+    try {
+      const files = n.body.files.map(({ id, name, type, size, fk }) => ({ id, name, type, size, ...(fk ? { fk } : {}) }));
+      const payload = { ...(await encryptNote(key, channelId, packNote(n.body.text, files, n.body.ref, checklist), scope)), fileIds: files.map((f) => f.id) };
+      const { note } = await api.updateNote(serverId, channelId, n.id, payload);
+      const idx = notes.findIndex((x) => x.id === n.id);
+      if (idx !== -1) notes[idx] = { ...note, body: { ...n.body, checklist } };
+      render();
+    } catch (err) { toast(apiErrorMessage(err, t('notes.saveError')), { type: 'error' }); }
+  }
+
+  listEl.addEventListener('click', (e) => {
+    const entry = e.target.closest('.note-entry');
+    if (!entry || !e.target.closest('.note-checklist')) return;
+    const n = notes.find((x) => x.id === Number(entry.dataset.id));
+    if (!n?.body?.checklist) return;
+    const toggle = e.target.closest('[data-cl-toggle]');
+    if (toggle) return persistChecklist(n, n.body.checklist.map((i) => (String(i.id) === toggle.dataset.clToggle ? { ...i, checked: !i.checked } : i)));
+    if (e.target.closest('[data-cl-edit]')) {
+      openChecklistForm({ openPanel: noteOpenPanel, mode: 'local', items: n.body.checklist, onSave: (items) => persistChecklist(n, items) });
+    }
+  });
+
   async function openOriginal(ref) {
     let exists = false;
     try { exists = (await api.messageExists(ref.messageId)).exists; } catch (err) { return toast(apiErrorMessage(err), { type: 'error' }); }
@@ -220,6 +251,17 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
 
   function renderDraft() {
     draftEl.innerHTML = '';
+    if (draftChecklist?.length) {
+      const chip = document.createElement('span');
+      chip.className = 'pill-static';
+      chip.style.cssText = 'display:inline-flex;gap:6px;align-items:center';
+      chip.append(t('checklist.noteChip', { n: draftChecklist.length }));
+      const rm = document.createElement('button');
+      rm.type = 'button'; rm.className = 'btn-icon'; rm.innerHTML = icons.x(12);
+      rm.addEventListener('click', () => { draftChecklist = null; renderDraft(); });
+      chip.appendChild(rm);
+      draftEl.appendChild(chip);
+    }
     draftFiles.forEach((f, i) => {
       const chip = document.createElement('span');
       chip.className = 'pill-static';
@@ -278,6 +320,9 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
     }
   });
   container.querySelector('#notes-attach').addEventListener('click', () => fileInput.click());
+  container.querySelector('#notes-checklist').addEventListener('click', () => {
+    openChecklistForm({ openPanel: noteOpenPanel, mode: 'local', items: draftChecklist || [], onSave: (items) => { draftChecklist = items; renderDraft(); } });
+  });
   const emojiBtn = container.querySelector('#notes-emoji');
   emojiBtn.addEventListener('click', () => {
     openEmojiPicker(emojiBtn, (emoji) => {
@@ -293,32 +338,34 @@ export function mountNotes(container, { serverId, channelId, channelName, canTri
     for (const f of draftFiles) if (!f.attached) api.deleteNoteFile(serverId, channelId, f.id).catch(() => {});
     editingId = n.id; input.value = n.body.text;
     draftFiles = n.body.files.map((f) => ({ ...f, attached: true }));
+    draftChecklist = n.body.checklist || null;
     renderDraft(); input.focus(); sendBtn.textContent = t('notes.updateButton');
   }
   function cancelEdit() {
     for (const f of draftFiles) if (!f.attached) api.deleteNoteFile(serverId, channelId, f.id).catch(() => {});
-    editingId = null; draftFiles = []; input.value = ''; renderDraft(); sendBtn.textContent = t('notes.saveButton');
+    editingId = null; draftFiles = []; draftChecklist = null; input.value = ''; renderDraft(); sendBtn.textContent = t('notes.saveButton');
   }
 
   async function submit() {
     const text = input.value.trim();
-    if ((!text && draftFiles.length === 0) || !key || sendBtn.disabled || pendingFiles.length) return;
+    if ((!text && draftFiles.length === 0 && !draftChecklist?.length) || !key || sendBtn.disabled || pendingFiles.length) return;
     sendBtn.disabled = true;
     try {
       const files = draftFiles.map(({ id, name, type, size, fk }) => ({ id, name, type, size, ...(fk ? { fk } : {}) }));
       const ref = editingId ? notes.find((n) => n.id === editingId)?.body?.ref : undefined;
-      const payload = { ...(await encryptNote(key, channelId, packNote(text, files, ref), scope)), fileIds: files.map((f) => f.id) };
-      const body = { v: 1, text, files, ...(ref ? { ref } : {}) };
+      const checklist = draftChecklist?.length ? draftChecklist : undefined;
+      const payload = { ...(await encryptNote(key, channelId, packNote(text, files, ref, checklist), scope)), fileIds: files.map((f) => f.id) };
+      const body = { v: 1, text, files, ...(ref ? { ref } : {}), ...(checklist ? { checklist } : {}) };
       if (editingId) {
         const { note } = await api.updateNote(serverId, channelId, editingId, payload);
         const idx = notes.findIndex((n) => n.id === editingId);
         if (idx !== -1) notes[idx] = { ...note, body };
-        editingId = null; draftFiles = []; input.value = ''; renderDraft(); sendBtn.textContent = t('notes.saveButton');
+        editingId = null; draftFiles = []; draftChecklist = null; input.value = ''; renderDraft(); sendBtn.textContent = t('notes.saveButton');
         render();
       } else {
         const { note } = await api.createNote(serverId, channelId, payload);
         notes.push({ ...note, body });
-        draftFiles = []; input.value = ''; renderDraft(); render(true);
+        draftFiles = []; draftChecklist = null; input.value = ''; renderDraft(); render(true);
       }
     } catch (err) {
       toast(apiErrorMessage(err, t('notes.saveError')), { type: 'error' });

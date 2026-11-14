@@ -19,6 +19,8 @@ import { messageHtml, pendingHtml, ephemeralHtml } from '../components/messageIt
 import { mountComposer } from '../components/composer.js';
 import { openMessageSheet } from '../components/messageSheet.js';
 import { onPollClick, openPollSheet } from '../components/pollCard.js';
+import { onChecklistClick, openChecklistSheet } from '../components/checklistCard.js';
+import { openDmPicker, addPeople } from '../../js/dmPicker.js';
 import { openEmojiSheet, openStickerSheet, openSoundSheet } from '../components/emojiSheet.js';
 import { stickerRef } from '../../js/stickers.mjs';
 import { playSoundboardAudio } from '../../js/soundboardPrefs.js';
@@ -61,7 +63,7 @@ export function mountChat(el, params) {
   const deleted = new Set(); // ids deleted over the websocket, so a racing create cannot bring them back
   let pending = uploads.forScope(scopeKey);
   let detail = null; let channel = null; let thread = null;
-  let canSend = true; let canManage = false;
+  let canSend = true; let canManage = false; let canChecklist = false;
   let atStart = false; let isLatest = true; let loadingOlder = false; let destroyed = false; let stickToBottom = true;
   let composer = null; let readTimer = null; let queue = Promise.resolve();
   const typing = new Map();
@@ -119,6 +121,7 @@ export function mountChat(el, params) {
     const chBits = channelPermissionBits(channel, detail.roles, me, memberBits, isOwner);
     canSend = has(chBits, PERMISSIONS.SEND_MESSAGES) && !(me?.timeoutUntil && new Date(me.timeoutUntil) > new Date());
     canManage = has(chBits, PERMISSIONS.MANAGE_MESSAGES);
+    canChecklist = channel.type === 'private' || canManage || has(chBits, PERMISSIONS.CREATE_CHECKLISTS);
     if (kind === 'thread') {
       const res = await api.getThread(params.serverId, params.channelId, params.threadId);
       thread = res.thread;
@@ -464,6 +467,7 @@ export function mountChat(el, params) {
         } catch (err) { handleError(err, 'm.scheduleFailed'); return false; }
       },
       onPoll: () => openPollSheet(ctxForSheets()),
+      onChecklist: kind === 'dm' || canChecklist ? () => openChecklistSheet(ctxForSheets()) : undefined,
       onSound: kind === 'dm' || !params.serverId ? undefined : async () => {
         const sound = await openSoundSheet(ctxForSheets());
         if (!sound) return;
@@ -646,10 +650,22 @@ export function mountChat(el, params) {
     const box = el.querySelector('#m-actions');
     box.innerHTML = `<button class="m-icon-btn" id="m-search" aria-label="${t('m.searchAction')}">${icons.search(20)}</button>`
       + (kind === 'dm' ? `<button class="m-icon-btn" id="m-call" aria-label="${t('m.callAction')}">${icons.phone(20)}</button>` : '')
+      + (kind === 'dm' && dm() && !dm().closedBy ? `<button class="m-icon-btn" id="m-add-people" aria-label="${t('dmPicker.addTitle')}">${icons.userPlus(20)}</button>` : '')
       + (kind === 'channel' ? `<button class="m-icon-btn${channelHasUnreadThreads(params.channelId) ? ' m-pin-dot' : ''}" id="m-threads" aria-label="${t('m.threads')}">${icons.messageSquare(20)}</button>` : '')
       + (kind === 'thread' && thread && (canEditPost(thread, state.me) || canDeletePost(thread, state.me, { canManage })) ? `<button class="m-icon-btn" id="m-post-menu" aria-label="${t('forum.postActions')}">${icons.more(20)}</button>` : '')
       + `<button class="m-icon-btn${pinUnseen(kind, kind === 'dm' ? params.dmId : kind === 'thread' ? params.threadId : params.channelId) ? ' m-pin-dot' : ''}" id="m-info" aria-label="${t('m.infoMembers')}">${icons.users(20)}</button>`;
     box.querySelector('#m-call')?.addEventListener('click', () => nav.push('voice', { kind: 'dm', dmId: params.dmId }));
+    box.querySelector('#m-add-people')?.addEventListener('click', () => {
+      const cur = dm();
+      openDmPicker({
+        openPanel: openSheet, title: t('dmPicker.addTitle'), confirmLabel: t('dmPicker.addButton'), askName: !cur.isGroup,
+        exclude: new Set([state.me.id, ...cur.members.map((u) => u.id)]),
+        onConfirm: async (userIds, name) => {
+          const id = await addPeople(cur.id, userIds, name);
+          if (id !== cur.id) nav.replace('chat', { kind: 'dm', dmId: id });
+        },
+      });
+    });
     box.querySelector('#m-search').addEventListener('click', () => nav.push('search', { serverId: params.serverId, channelId: params.channelId, dmId: params.dmId }));
     box.querySelector('#m-post-menu')?.addEventListener('click', openPostMenu);
     box.querySelector('#m-threads')?.addEventListener('click', () => nav.push('threads', { serverId: params.serverId, channelId: params.channelId }));
@@ -702,7 +718,7 @@ export function mountChat(el, params) {
       try { await (mine ? api.removeReaction(msg.id, react.dataset.react) : api.addReaction(msg.id, react.dataset.react)); } catch (err) { handleError(err); }
       return;
     }
-    if (msg) onPollClick(e.target, msg);
+    if (msg && !onChecklistClick(e.target, msg, ctxForSheets())) onPollClick(e.target, msg);
   });
   onLongPress(msgsEl, '.m-msg[data-id]', (node) => { const msg = findMsg(node); if (msg) openMessageSheet(msg, ctxForSheets()); });
   let swipe = null;

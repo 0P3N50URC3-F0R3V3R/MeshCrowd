@@ -12,7 +12,7 @@ import { eventNotice } from '../js/notifyEvent.mjs';
 import { refreshRemoteServers } from '../js/views/remoteServer.js';
 import {
   state, setServers, setDms, setFriends, setNotificationPrefs, setServerPrefs, setUserAnnotations, setDmPrefs, setBookmarkIds,
-  setReadStateBulk, setServerLayout, setServerDetail, getServerDetail, upsertServer, removeServer, upsertDm, removeDm,
+  setReadStateBulk, setServerLayout, setServerDetail, getServerDetail, upsertServer, removeServer, upsertDm, updateDm, removeDm,
   upsertDmPreview, noteChannelMessage, setDmPref, dmPrefFor, upsertPresence, setWsConnected, pushActivity,
   shouldPlayNotifySound, isSelf, applyDmRead, setReadState, setServerVoiceBulk, applyServerVoiceState,
 } from '../js/state.js';
@@ -170,6 +170,7 @@ export function wireRealtime() {
   bus.on('ws:friend_request', async () => { try { setFriends(await api.friends()); } catch { /* ignore */ } });
   bus.on('ws:friend_accept', async () => { try { setFriends(await api.friends()); } catch { /* ignore */ } });
   bus.on('ws:dm_create', ({ dm }) => upsertDm(dm));
+  bus.on('ws:dm_update', ({ dm }) => updateDm(dm));
   bus.on('ws:dm_closed', async ({ dmId, closedBy }) => {
     const dm = state.dms.find((d) => d.id === dmId);
     if (!dm) return;

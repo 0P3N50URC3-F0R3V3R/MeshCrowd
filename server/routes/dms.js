@@ -194,29 +194,63 @@ router.post('/group', (req, res) => {
   if (uniqueIds.length < 2) return res.status(400).json({ error: 'group DM needs at least 2 other members' });
   if (uniqueIds.length > 9) return res.status(400).json({ error: 'group DMs are limited to 10 members' });
 
-  const targets = uniqueIds.map((id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id));
-  const missing = targets.some((t) => !t);
-  if (missing) return res.status(404).json({ error: 'one or more users not found' });
-  if (targets.some((t) => t.is_bot)) return res.status(400).json({ error: 'bots cannot be added to group conversations' });
-  const forbidden = targets.some((t) => !canDm(req.user, t));
-  if (forbidden) return res.status(403).json({ error: 'one or more users are not accepting messages from you' });
+  const targets = loadAddableTargets(req.user, uniqueIds);
+  if (targets.error) return res.status(targets.status).json({ error: targets.error });
 
-  const info = db.prepare('INSERT INTO dm_channels (is_group, name, created_by) VALUES (1, ?, ?)')
-    .run(String(name || '').slice(0, 100) || null, req.user.id);
-  const dmId = info.lastInsertRowid;
-  db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?)').run(dmId, req.user.id);
-  for (const t of targets) {
-    db.prepare('INSERT OR IGNORE INTO dm_members (dm_channel_id, user_id) VALUES (?, ?)').run(dmId, t.id);
-  }
+  res.status(201).json({ dmId: createGroupDm(req.user, targets.users, name) });
+});
 
+// Users must exist, not be bots, and accept DMs from `actor`.
+function loadAddableTargets(actor, ids) {
+  const users = ids.map((id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id));
+  if (users.some((u) => !u)) return { status: 404, error: 'one or more users not found' };
+  if (users.some((u) => u.is_bot)) return { status: 400, error: 'bots cannot be added to group conversations' };
+  if (users.some((u) => !canDm(actor, u))) return { status: 403, error: 'one or more users are not accepting messages from you' };
+  return { users };
+}
+
+function dmPayloadFor(dm, userId) {
+  const members = db.prepare(
+    `SELECT u.* FROM dm_members dm JOIN users u ON u.id = dm.user_id WHERE dm.dm_channel_id = ? AND dm.user_id != ?`
+  ).all(dm.id, userId).map((u) => toPublicUser(u, {}));
+  return { id: dm.id, isGroup: !!dm.is_group, name: dm.name, createdBy: dm.created_by, members, lastMessage: null, readStates: [] };
+}
+
+// `others` are every member besides the creator; each one gets a dm_create.
+function createGroupDm(creator, others, name) {
+  const dmId = db.prepare('INSERT INTO dm_channels (is_group, name, created_by) VALUES (1, ?, ?)')
+    .run(String(name || '').slice(0, 100) || null, creator.id).lastInsertRowid;
+  db.prepare('INSERT INTO dm_members (dm_channel_id, user_id) VALUES (?, ?)').run(dmId, creator.id);
+  for (const u of others) db.prepare('INSERT OR IGNORE INTO dm_members (dm_channel_id, user_id) VALUES (?, ?)').run(dmId, u.id);
   const dm = db.prepare('SELECT * FROM dm_channels WHERE id = ?').get(dmId);
-  for (const t of targets) {
-    const members = db.prepare(
-      `SELECT u.* FROM dm_members dm JOIN users u ON u.id = dm.user_id WHERE dm.dm_channel_id = ? AND dm.user_id != ?`
-    ).all(dmId, t.id).map((u) => toPublicUser(u, {}));
-    notifyUser(t.id, { type: 'dm_create', dm: { id: dm.id, isGroup: true, name: dm.name, createdBy: dm.created_by, members, lastMessage: null, readStates: [] } });
+  for (const u of others) notifyUser(u.id, { type: 'dm_create', dm: dmPayloadFor(dm, u.id) });
+  return dmId;
+}
+
+const MAX_GROUP_MEMBERS = 10;
+
+// From a 1:1 this starts a NEW group with the caller, the other person and the added users (the 1:1
+// and its history stay untouched); on a group it adds the users in place.
+router.post('/:dmId/members', loadDm, (req, res) => {
+  if (req.dm.e2ee_enabled) return res.status(400).json({ error: 'people cannot be added to an end-to-end encrypted conversation' });
+  const current = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(req.dm.id).map((r) => r.user_id);
+  const ids = [...new Set((Array.isArray(req.body?.userIds) ? req.body.userIds : []).map(Number).filter((id) => Number.isInteger(id)))]
+    .filter((id) => !current.includes(id));
+  if (!ids.length) return res.status(400).json({ error: 'nobody new to add' });
+  if (current.length + ids.length > MAX_GROUP_MEMBERS) return res.status(400).json({ error: 'group DMs are limited to 10 members' });
+  const targets = loadAddableTargets(req.user, ids);
+  if (targets.error) return res.status(targets.status).json({ error: targets.error });
+
+  if (!req.dm.is_group) {
+    const partner = db.prepare('SELECT * FROM users WHERE id = ?').get(current.find((id) => id !== req.user.id));
+    const dmId = createGroupDm(req.user, [partner, ...targets.users].filter(Boolean), req.body?.name);
+    return res.status(201).json({ dmId, created: true });
   }
-  res.status(201).json({ dmId });
+
+  for (const u of targets.users) db.prepare('INSERT OR IGNORE INTO dm_members (dm_channel_id, user_id) VALUES (?, ?)').run(req.dm.id, u.id);
+  for (const id of current) notifyUser(id, { type: 'dm_update', dm: dmPayloadFor(req.dm, id) });
+  for (const u of targets.users) notifyUser(u.id, { type: 'dm_create', dm: dmPayloadFor(req.dm, u.id) });
+  res.json({ dmId: req.dm.id, created: false });
 });
 
 router.delete('/:dmId/members/me', loadDm, (req, res) => {

@@ -54,6 +54,13 @@ test('the file tag survives the encrypted note body', async () => {
   assert.equal(body.files[0].fk, fk);
 });
 
+test('a note keeps its checklist through pack/unpack; a malformed one is dropped', () => {
+  const checklist = [{ id: 'a', text: 'milk', checked: true }, { id: 'b', text: 'eggs', checked: false }];
+  assert.deepEqual(unpackNote(packNote('list', [], undefined, checklist)).checklist, checklist);
+  assert.equal(unpackNote(packNote('list', [], undefined, [])).checklist, undefined);
+  assert.equal(unpackNote('{"v":1,"text":"x","files":[],"checklist":"nope"}').checklist, undefined);
+});
+
 test('a note saved from a message keeps its ref through pack/unpack', () => {
   const ref = { kind: 'channel', ids: [1, 2], messageId: 9, author: 'Ann', postedAt: '2026-11-07T10:00:00.000Z' };
   assert.deepEqual(unpackNote(packNote('hi', [], ref)).ref, ref);
