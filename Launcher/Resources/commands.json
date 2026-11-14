@@ -1,0 +1,568 @@
+[
+  {
+    "name": "help",
+    "aliases": [],
+    "area": "general",
+    "summary": "List commands, or show details for a command or area",
+    "usage": "help [command|area]",
+    "examples": [
+      "help",
+      "help account",
+      "help account create"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "exit",
+    "aliases": [
+      "quit"
+    ],
+    "area": "general",
+    "summary": "Close this console session",
+    "usage": "exit",
+    "examples": [],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "account list",
+    "aliases": [],
+    "area": "account",
+    "summary": "List accounts, optionally filtered by username or email",
+    "usage": "account list [filter]",
+    "examples": [
+      "account list",
+      "account list ali"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "account info",
+    "aliases": [],
+    "area": "account",
+    "summary": "Show details of an account",
+    "usage": "account info <user>",
+    "examples": [
+      "account info alice"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "account create",
+    "aliases": [],
+    "area": "account",
+    "summary": "Create a password-mode account (prompts for the password when omitted)",
+    "usage": "account create <username> <email> [password]",
+    "examples": [
+      "account create alice alice@example.com"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "account passwd",
+    "aliases": [],
+    "area": "account",
+    "summary": "Reset an account password; ends its sessions and live connections",
+    "usage": "account passwd <user> [password]",
+    "examples": [
+      "account passwd alice"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "account delete",
+    "aliases": [],
+    "area": "account",
+    "summary": "Permanently delete an account",
+    "usage": "account delete <user> [--yes]",
+    "examples": [
+      "account delete alice",
+      "account delete alice --yes"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "account disable",
+    "aliases": [],
+    "area": "account",
+    "summary": "Disable an account and end its sessions",
+    "usage": "account disable <user>",
+    "examples": [
+      "account disable alice"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "account enable",
+    "aliases": [],
+    "area": "account",
+    "summary": "Re-enable a disabled account",
+    "usage": "account enable <user>",
+    "examples": [
+      "account enable alice"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "account roles",
+    "aliases": [],
+    "area": "account",
+    "summary": "List site roles",
+    "usage": "account roles",
+    "examples": [],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "account setrole",
+    "aliases": [
+      "account grant"
+    ],
+    "area": "account",
+    "summary": "Give an account a site role",
+    "usage": "account setrole <user> <role>",
+    "examples": [
+      "account setrole alice Moderator"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "account unsetrole",
+    "aliases": [
+      "account revoke"
+    ],
+    "area": "account",
+    "summary": "Remove a site role from an account",
+    "usage": "account unsetrole <user> <role>",
+    "examples": [
+      "account unsetrole alice Moderator"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "account roleperm",
+    "aliases": [],
+    "area": "account",
+    "summary": "Add or remove the console permission (MANAGE_CONSOLE) on a site role; local window only",
+    "usage": "account roleperm <role> +console|-console [--yes]",
+    "examples": [
+      "account roleperm Owner +console"
+    ],
+    "audit": true,
+    "local": true
+  },
+  {
+    "name": "kick",
+    "aliases": [],
+    "area": "moderation",
+    "summary": "Disconnect a user's live connections (the account stays enabled)",
+    "usage": "kick <user>",
+    "examples": [
+      "kick alice"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "ban",
+    "aliases": [],
+    "area": "moderation",
+    "summary": "Disable an account and end its sessions",
+    "usage": "ban <user> [reason] [--yes]",
+    "examples": [
+      "ban alice spamming",
+      "ban alice --yes"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "unban",
+    "aliases": [],
+    "area": "moderation",
+    "summary": "Re-enable a banned account",
+    "usage": "unban <user>",
+    "examples": [
+      "unban alice"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "ipban",
+    "aliases": [],
+    "area": "moderation",
+    "summary": "Ban an IP, range or CIDR, optionally for a number of minutes",
+    "usage": "ipban <ip|cidr> [minutes] [reason]",
+    "examples": [
+      "ipban 10.0.0.0/24 5 scanning",
+      "ipban 192.0.2.7"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "ipunban",
+    "aliases": [],
+    "area": "moderation",
+    "summary": "Remove an IP ban",
+    "usage": "ipunban <ip|cidr>",
+    "examples": [
+      "ipunban 10.0.0.0/24"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "ipbans",
+    "aliases": [],
+    "area": "moderation",
+    "summary": "List IP bans",
+    "usage": "ipbans",
+    "examples": [],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "config list",
+    "aliases": [],
+    "area": "config",
+    "summary": "List configuration values (secrets are shown as ***)",
+    "usage": "config list [prefix]",
+    "examples": [
+      "config list",
+      "config list logging"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "config get",
+    "aliases": [],
+    "area": "config",
+    "summary": "Show one configuration value",
+    "usage": "config get <key>",
+    "examples": [
+      "config get port"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "config set",
+    "aliases": [],
+    "area": "config",
+    "summary": "Validate and save a configuration value",
+    "usage": "config set <key> <value>",
+    "examples": [
+      "config set logging.level warn",
+      "config set registrationMode invite"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "config reset",
+    "aliases": [],
+    "area": "config",
+    "summary": "Restore a configuration value to its default",
+    "usage": "config reset <key>",
+    "examples": [
+      "config reset logging.level"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "config path",
+    "aliases": [],
+    "area": "config",
+    "summary": "Show the path of the configuration file",
+    "usage": "config path",
+    "examples": [],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "backup create",
+    "aliases": [],
+    "area": "backup",
+    "summary": "Create a backup now (database, config, small media)",
+    "usage": "backup create",
+    "examples": [
+      "backup create"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "backup list",
+    "aliases": [],
+    "area": "backup",
+    "summary": "List backups, newest first",
+    "usage": "backup list",
+    "examples": [
+      "backup list"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "backup delete",
+    "aliases": [],
+    "area": "backup",
+    "summary": "Delete a backup",
+    "usage": "backup delete <name> [--yes]",
+    "examples": [
+      "backup delete backup-20261031-120000-000-manual.zip"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "backup verify",
+    "aliases": [],
+    "area": "backup",
+    "summary": "Check a backup against its manifest hashes",
+    "usage": "backup verify <name>",
+    "examples": [
+      "backup verify backup-20261031-120000-000-manual.zip"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "backup keep",
+    "aliases": [],
+    "area": "backup",
+    "summary": "Set how many normal backups to keep (1-100) and prune",
+    "usage": "backup keep <n>",
+    "examples": [
+      "backup keep 14"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "backup auto",
+    "aliases": [],
+    "area": "backup",
+    "summary": "Schedule a daily backup at HH:MM (server local time), or turn it off",
+    "usage": "backup auto <HH:MM|off>",
+    "examples": [
+      "backup auto 03:30",
+      "backup auto off"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "backup restore",
+    "aliases": [],
+    "area": "backup",
+    "summary": "Replace the database, media and config from a backup, then restart the server",
+    "usage": "backup restore <name> [--yes]",
+    "examples": [
+      "backup restore backup-20261031-120000-000-manual.zip"
+    ],
+    "audit": true,
+    "local": true
+  },
+  {
+    "name": "purge",
+    "aliases": [],
+    "area": "server",
+    "summary": "Reset the whole server to a factory state (all accounts, servers, messages and media), then restart",
+    "usage": "purge",
+    "examples": [
+      "purge"
+    ],
+    "audit": true,
+    "local": true
+  },
+  {
+    "name": "server stop",
+    "aliases": [],
+    "area": "server",
+    "summary": "Stop the server",
+    "usage": "server stop [seconds] [--yes]",
+    "examples": [
+      "server stop",
+      "server stop 60",
+      "server stop --yes"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "server restart",
+    "aliases": [],
+    "area": "server",
+    "summary": "Restart the server (needs the supervisor: npm start or start-server)",
+    "usage": "server restart [seconds] [--yes]",
+    "examples": [
+      "server restart",
+      "server restart 60",
+      "server restart --yes"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "server cancel",
+    "aliases": [],
+    "area": "server",
+    "summary": "Abort a pending stop or restart countdown",
+    "usage": "server cancel",
+    "examples": [
+      "server cancel"
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "status",
+    "aliases": [],
+    "area": "server",
+    "summary": "Show version, uptime, memory, online users, ports and feature state",
+    "usage": "status",
+    "examples": [
+      "status"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "announce",
+    "aliases": [],
+    "area": "server",
+    "summary": "Show a notice to every online user",
+    "usage": "announce <text>",
+    "examples": [
+      "announce \"Maintenance in 10 minutes\""
+    ],
+    "audit": true,
+    "local": false
+  },
+  {
+    "name": "list",
+    "aliases": [],
+    "area": "server",
+    "summary": "List online users (optionally filtered by a substring)",
+    "usage": "list [filter]",
+    "examples": [
+      "list",
+      "list ali"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "stats",
+    "aliases": [],
+    "area": "server",
+    "summary": "Show CPU, memory, event loop, request, database and log statistics",
+    "usage": "stats",
+    "examples": [
+      "stats"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "stats watch",
+    "aliases": [],
+    "area": "server",
+    "summary": "Refresh stats in place until q or Ctrl+C",
+    "usage": "stats watch [seconds]",
+    "examples": [
+      "stats watch",
+      "stats watch 5"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "log tail",
+    "aliases": [],
+    "area": "log",
+    "summary": "Stream the live log until q or Ctrl+C (the server window always streams it)",
+    "usage": "log tail [level]",
+    "examples": [
+      "log tail",
+      "log tail warn"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "log show",
+    "aliases": [],
+    "area": "log",
+    "summary": "Show the last log entries from today's log files",
+    "usage": "log show [n=50] [level]",
+    "examples": [
+      "log show",
+      "log show 100 warn"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "log level",
+    "aliases": [],
+    "area": "log",
+    "summary": "Show or set the log level (applies now and is saved to config)",
+    "usage": "log level [debug|info|warn|error]",
+    "examples": [
+      "log level",
+      "log level debug"
+    ],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "log files",
+    "aliases": [],
+    "area": "log",
+    "summary": "List the log files and their sizes",
+    "usage": "log files",
+    "examples": [],
+    "audit": false,
+    "local": false
+  },
+  {
+    "name": "ssh status",
+    "aliases": [],
+    "area": "ssh",
+    "summary": "Show the ssh console: host key fingerprint, listen address and active sessions",
+    "usage": "ssh status",
+    "examples": [
+      "ssh status"
+    ],
+    "audit": false,
+    "local": true
+  },
+  {
+    "name": "ssh kick",
+    "aliases": [],
+    "area": "ssh",
+    "summary": "Disconnect an ssh session by its number from ssh status",
+    "usage": "ssh kick <n>",
+    "examples": [
+      "ssh kick 1"
+    ],
+    "audit": true,
+    "local": true
+  }
+]

@@ -133,6 +133,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'status',
     area: 'server',
+    quiet: true,
     summary: 'Show version, uptime, memory, online users, ports and feature state',
     usage: 'status',
     examples: ['status'],
@@ -178,6 +179,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'list',
     area: 'server',
+    quiet: true,
     summary: 'List online users (optionally filtered by a substring)',
     usage: 'list [filter]',
     examples: ['list', 'list ali'],
@@ -205,6 +207,7 @@ module.exports = function register(registry) {
   registry.register({
     name: 'stats',
     area: 'server',
+    quiet: true,
     summary: 'Show CPU, memory, event loop, request, database and log statistics',
     usage: 'stats',
     examples: ['stats'],

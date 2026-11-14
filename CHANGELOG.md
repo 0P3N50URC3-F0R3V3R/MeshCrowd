@@ -2,6 +2,13 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-14
+#### Added
+- Launcher (`Launcher/`, optional, one self-contained exe `Launcher.exe` next to the bat files; build with `Launcher/build.bat`). Dark Discord-style control panel for the server: creates the data folders and a default config.json if missing; edits every config.json setting with description, range, default and restart-needed hints, a diff before saving and config backups; starts, stops and restarts the server; live console with filters and a command line; all console commands documented with argument forms; log browser; crash recovery with backoff, watchdog, daily restart, memory limit, crash reports, event timeline, tray alerts and optional webhook; online users, accounts, backups, a Doctor health check and a diagnostics bundle.
+
+#### Changed
+- Server: `MESHCROWD_FORCE_CONSOLE=1` enables the local console on piped stdin (used by the Launcher); `status`, `stats` and `list` are no longer written to the log (`quiet` console commands). Needs a server deploy for the Launcher to work with the console.
+
 ### 2026-11-12
 #### Fixed
 - Chat (all channels, DMs and forum threads): new messages, edits, deletes and reconnect catch-up now appear live while you are editing a message, instead of waiting until you save or cancel. The open edit box keeps its text, cursor and focus, and the list does not jump to the latest message. Web-only change.

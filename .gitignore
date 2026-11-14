@@ -1,0 +1,5 @@
+# Launcher build output
+Launcher/bin/
+Launcher/obj/
+Launcher/dist/
+/Launcher.exe

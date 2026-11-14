@@ -307,7 +307,7 @@ for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) {
 }
 
 // One registry for every console front end: registerAll throws on a second registration.
-const localConsoleWanted = process.stdin.isTTY && !process.env.MESHCROWD_NO_CONSOLE;
+const localConsoleWanted = (process.stdin.isTTY || process.env.MESHCROWD_FORCE_CONSOLE === '1') && !process.env.MESHCROWD_NO_CONSOLE;
 const sshWanted = !!(config.ssh && config.ssh.enabled);
 const consoleRegistry = localConsoleWanted || sshWanted ? require('./console/registry') : null;
 if (consoleRegistry) require('./console/bootstrap').registerAll(consoleRegistry);

@@ -134,7 +134,7 @@ function createRegistry() {
     const { def, args } = found;
     const record = `${ctx.session.username} ran: ${[def.name, ...maskArgs(args, isSecret(def, args))].join(' ')}`;
     if (def.audit) log.warn(record);
-    else log.info(record);
+    else if (!def.quiet) log.info(record);
     try {
       const result = await def.run(args, ctx);
       if (typeof result === 'string') ctx.writeln(result);

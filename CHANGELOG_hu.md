@@ -2,6 +2,13 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-14
+#### Hozzáadva
+- Launcher (`Launcher/`, opcionális, egyetlen önálló exe: `Launcher.exe` a bat fájlok mellett; építés: `Launcher/build.bat`). Sötét, Discord-stílusú vezérlőpult a szerverhez: létrehozza a hiányzó adatmappákat és az alap config.json-t; a config.json minden beállítását szerkeszti leírással, tartománnyal, alapértékkel és újraindítás-jelzéssel, mentés előtt változáslistával és config-mentésekkel; indítja, leállítja, újraindítja a szervert; élő konzol szűrőkkel és parancssorral; minden konzolparancs dokumentálva argumentum-űrlappal; naplóböngésző; összeomlás utáni újraindítás késleltetéssel, watchdog, napi újraindítás, memóriahatár, összeomlás-jelentések, eseményidővonal, tálcaértesítés és opcionális webhook; online felhasználók, fiókok, mentések, Doctor állapotellenőrzés és diagnosztikai csomag.
+
+#### Módosítva
+- Szerver: a `MESHCROWD_FORCE_CONSOLE=1` bekapcsolja a helyi konzolt csövezett bemeneten is (ezt használja a Launcher); a `status`, `stats` és `list` többé nem kerül a naplóba (`quiet` konzolparancsok). A Launcher konzolos működéséhez szerver-telepítés kell.
+
 ### 2026-11-12
 #### Javítva
 - Chat (minden csatorna, DM és fórumszál): az új üzenetek, szerkesztések, törlések és az újracsatlakozás utáni pótlás mostantól élőben megjelenik üzenetszerkesztés közben is, nem kell megvárni a mentést vagy a megszakítást. A nyitott szerkesztőmező megtartja a szövegét, a kurzort és a fókuszt, a lista pedig nem ugrik az utolsó üzenetre. Csak webes változás.
