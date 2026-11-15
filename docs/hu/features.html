@@ -53,6 +53,7 @@
           <li><b>Piros „Új” vonal</b> jelöli az első olvasatlan üzenetet egy csevegés megnyitásakor, és a nézet oda ugrik. Te döntöd el, milyen messzire ugorjon, és hány üzenet töltődjön be. Egy sáv felkínálja az ugrást és az olvasottnak jelölést.</li>
           <li><b>Discord-stílusú profilkártyák</b> a kattintott név mellett jelennek meg. A sajátodon Profil szerkesztése van, másokén Üzenet és gyors üzenet mező.</li>
           <li><b>Szavazások</b>, kitűzések, linkelőnézetek, kódblokkok szintaxiskiemeléssel és spoilerek.</li>
+          <li><b>Ellenőrzőlisták</b>: bevásárló- vagy teendőlista, amit az emberek kipipálnak. A pipálatlan tételek pirosak, a pipáltak zöldek, és az egész kártya zöld lesz, ha minden kész. Küldhető csatornákba, szálakba, privát üzenetekbe és Jegyzetekbe; a létrehozó később szerkesztheti a listát, és kiválasztott tagoknak pipálási vagy szerkesztési jogot adhat. Nyilvános csatornában az Ellenőrzőlisták létrehozása jog kell; privát csatornában és privát üzenetben bárki indíthat egyet.</li>
           <li><b>Hangüzenetek</b> öt percig, beépített lejátszóval, a böngészőben, az asztali alkalmazásban vagy a telefonon rögzítve.</li>
           <li><b>Időzített üzenetek</b>: válassz időpontot, és az üzenet a nevedben megy ki, ugyanazokkal az ellenőrzésekkel, mint egy sima üzenet. A függőben lévők a listából szerkeszthetők.</li>
           <li><b>Keresés</b> az üzenetszövegben (SQLite FTS5), a felhasználónevekben, a csatornanevekben és a mellékletnevekben.</li>
@@ -68,6 +69,7 @@
       <p class="lead">A hívások WebRTC-n keresztül, közvetlenül a résztvevők között futnak: nincs médiaszerver, amit telepíteni, üzemeltetni vagy fizetni kellene.</p>
       <div class="feat-split flip">
         <ul class="checks">
+          <li><b>Csoportos privát üzenetek</b>: válassz több barátot az új üzenet gombbal, vagy nyomd meg az Emberek hozzáadása gombot bármely beszélgetésben. Kettesben új csoport jön létre, az eredeti változatlan marad; a csoportok legfeljebb tíz emberesek.</li>
           <li><b>Hangcsatornák, színpadcsatornák és privát hívások</b> kamerával és képernyőmegosztással, külön csempékként.</li>
           <li><b>Minőség-előbeállítások</b> a csatorna létrehozásakor: Mobil, Alacsony, Közepes, Magas és HD Zene, 8 kHz-től egészen 48 kHz sztereóig.</li>
           <li><b>Opcionális RNNoise</b> zajszűrés, egy kis neurális hálózat, ami a te eszközödön fut.</li>
@@ -90,7 +92,7 @@
           <li><b>Kategóriák</b>, a csatornák és kategóriák húzással rendezhetők.</li>
           <li><b>Szerepkörök</b> 17 jogosultsággal, színekkel és <b>ikonokkal</b> (emoji vagy kép). Senki nem adhat olyan jogot, ami neki magának nincs meg.</li>
           <li><b>Szerepkörönkénti és felhasználónkénti csatorna-felülbírálások</b>, lassított mód, témák, ikonok és üdvözlőképernyő.</li>
-          <li><b>Privát Jegyzetcsatornák</b>: titkosított jegyzetfüzet minden tagnak, amit még az adminok sem olvashatnak.</li>
+          <li><b>Privát Jegyzetcsatornák</b>: titkosított jegyzetfüzet minden tagnak, amit még az adminok sem olvashatnak. A jegyzetek ellenőrzőlistát is tartalmazhatnak.</li>
           <li>Személyes <b>szerversáv</b> mappákkal, és nyilvános szerverek felfedezhető könyvtára.</li>
         </ul>
         <figure class="shot"><div class="window"><img src="../assets/img/settings-roles.jpg" alt="A Szerepkörök fül jogosultsági kapcsolókkal" loading="lazy"></div><figcaption>Szerepkörök jogosultságokkal, színekkel és ikonokkal.</figcaption></figure>

@@ -5,6 +5,7 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 ### 2026-11-15
 #### Módosítva
 - Wiki: dokumentálva az ellenőrzőlisták (Üzenetküldés, Szerverek és csatornák jogai, Jegyzetek) és az emberek hozzáadása privát üzenetekhez és csoportokhoz (Fiókok), angolul és magyarul.
+- Weboldal: a Funkciók és a Főoldal mostantól említi az ellenőrzőlistákat és a csoportos privát üzeneteket (angolul és magyarul), a wiki oldalak mellett.
 
 ### 2026-11-14
 #### Hozzáadva

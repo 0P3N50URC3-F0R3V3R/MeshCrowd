@@ -5,6 +5,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 ### 2026-11-15
 #### Changed
 - Wiki: documented checklists (Messaging, Server and channels permissions, Notes) and adding people to DMs and group DMs (Accounts), in English and Hungarian.
+- Website: the Features and Home pages now list checklists and group DMs (English and Hungarian), alongside the wiki pages.
 
 ### 2026-11-14
 #### Added

@@ -53,6 +53,7 @@
           <li><b>A red "New" line</b> marks the first unread message when you open a chat, and the view jumps there. How far it jumps and how many messages load is up to you. A banner offers jump and mark-as-read.</li>
           <li><b>Discord-style profile cards</b> pop up next to the name you click. Your own card has Edit Profile, others have Message and a quick-message field.</li>
           <li><b>Polls</b>, pins, link previews, code blocks with syntax highlighting and spoilers.</li>
+          <li><b>Checklists</b>: a shopping or to-do list people tick off. Unticked items are red, ticked ones green, and the whole card turns green when everything is done. Post them in channels, threads, DMs and Notes; the creator can edit the list later and let chosen members tick or edit items. Public channels need the Create Checklists permission; private channels and DMs let anyone start one.</li>
           <li><b>Voice messages</b> up to five minutes with an inline player, recorded in the browser, desktop app or phone.</li>
           <li><b>Scheduled messages</b>: pick a time and the message is posted as you, with the same checks as a normal one. Pending ones can be edited from the list.</li>
           <li><b>Search</b> across message text (SQLite FTS5), usernames, channel names and attachment names.</li>
@@ -68,6 +69,7 @@
       <p class="lead">Calls run peer to peer over WebRTC: there is no media server to install, host or pay for.</p>
       <div class="feat-split flip">
         <ul class="checks">
+          <li><b>Group DMs</b>: pick several friends from the new-message button, or press Add people in any conversation. Adding to a 1:1 starts a new group and leaves the original untouched; groups hold up to ten people.</li>
           <li><b>Voice channels, stage channels and private DM calls</b> with camera and screen share as separate tiles.</li>
           <li><b>Quality presets</b> chosen when a channel is created: Mobile, Low, Medium, High and HD Music, from 8 kHz up to 48 kHz stereo.</li>
           <li><b>Optional RNNoise</b> noise suppression, a small neural network that runs on your device.</li>
@@ -90,7 +92,7 @@
           <li><b>Categories</b> with drag-and-drop ordering of channels and categories.</li>
           <li><b>Roles</b> with 17 permissions, colors and <b>icons</b> (an emoji or an image). Nobody can grant a permission they do not hold.</li>
           <li><b>Per-role and per-user channel overrides</b>, slowmode, topics, icons and a welcome screen.</li>
-          <li><b>Private Notes channels</b>: an encrypted notebook for every member, unreadable even by admins.</li>
+          <li><b>Private Notes channels</b>: an encrypted notebook for every member, unreadable even by admins. Notes can hold checklists too.</li>
           <li>A personal <b>server rail</b> with folders, and a discoverable directory of public servers.</li>
         </ul>
         <figure class="shot"><div class="window"><img src="assets/img/settings-roles.jpg" alt="The Roles tab with permission switches" loading="lazy"></div><figcaption>Roles with permissions, colors and icons.</figcaption></figure>
