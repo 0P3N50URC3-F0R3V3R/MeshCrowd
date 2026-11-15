@@ -49,4 +49,4 @@ Your avatar, banner, bio, custom status and presence are covered in [Profiles, s
 
 ## Friends and direct messages
 
-Send a friend request by username. Friends can start 1:1 DMs; group DMs hold up to ten people. DM text is encrypted at rest on the server; details are on [Security and privacy](security.html).
+Send a friend request by username. Friends can start 1:1 DMs. The **+** next to Direct Messages lets you pick one friend for a DM or several for a group DM (with an optional name), and group DMs hold up to ten people. Every conversation has an **Add people** button: on a 1:1 it starts a new group with you, the other person and the people you add (the 1:1 and its history stay as they are); on a group it adds them in place, with no bots and the usual DM privacy rules. End-to-end encrypted DMs cannot be extended. Groups appear in everyone's normal conversation list. DM text is encrypted at rest on the server; details are on [Security and privacy](security.html).

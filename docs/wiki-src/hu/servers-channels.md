@@ -62,6 +62,7 @@ A szerepkörök jogosultsági jelzők halmazai. Mindenki megkapja a beépített 
 | Napló megtekintése | A moderátori műveletek naplójának olvasása |
 | Tartalom ritkítása | Régi előzmények törlése ezen a szerveren |
 | Botok kezelése | A szerver botjainak létrehozása és szerkesztése |
+| Ellenőrzőlisták létrehozása | [Ellenőrzőlisták](messaging.html) küldése nyilvános csatornákban |
 | Adminisztrátor | Minden |
 
 **Senki nem adhat olyan jogosultságot, amellyel ő maga nem rendelkezik.** A tulajdonos mindig minden jogosultsággal rendelkezik, és ezt a szabályt a szerver érvényesíti, nem a felület.
@@ -76,7 +77,7 @@ Nyisd meg a csatorna beállításait, és engedélyezz vagy tiltsz jogosultságo
 
 ## Jegyzetcsatornák
 
-A **Jegyzet** csatorna minden tagnak privát jegyzetfüzetet ad a szerveren belül, szöveggel és jegyzetenként legfeljebb öt melléklettel. Minden a böngészőben, az Útleveledből származtatott kulccsal titkosított, így az adatbázis és az adminok nem tudják elolvasni. Az adminok csak egy dátumnál régebbi jegyzeteket törölhetnek. A jegyzetek nem kereshetők, nem továbbíthatók és nem alakíthatók más csatornatípussá, az Útlevél elvesztése pedig a jegyzetek elvesztését jelenti. A jegyzetek szövege kijelölhető és másolható, és bármely üzenetre jobb kattintva a **Mentés a Jegyzetekbe** is elérhető (asztali gépen). Nagy fájl csatolásakor titkosítási lépés, majd feltöltési folyamatjelző látszik a piszkozatban; a Mentés megvárja a feltöltés végét.
+A **Jegyzet** csatorna minden tagnak privát jegyzetfüzetet ad a szerveren belül, szöveggel és jegyzetenként legfeljebb öt melléklettel. Minden a böngészőben, az Útleveledből származtatott kulccsal titkosított, így az adatbázis és az adminok nem tudják elolvasni. Az adminok csak egy dátumnál régebbi jegyzeteket törölhetnek. A jegyzetek nem kereshetők, nem továbbíthatók és nem alakíthatók más csatornatípussá, az Útlevél elvesztése pedig a jegyzetek elvesztését jelenti. A jegyzet [ellenőrzőlistát](messaging.html) is tartalmazhat, amely a titkosított jegyzeten belül tárolódik. A jegyzetek szövege kijelölhető és másolható, és bármely üzenetre jobb kattintva a **Mentés a Jegyzetekbe** is elérhető (asztali gépen). Nagy fájl csatolásakor titkosítási lépés, majd feltöltési folyamatjelző látszik a piszkozatban; a Mentés megvárja a feltöltés végét.
 
 ![Kattints jobb gombbal egy üzenetre, és válaszd a Mentés a jegyzetekbe parancsot](../assets/img/msg-menu-notes.jpg)
 

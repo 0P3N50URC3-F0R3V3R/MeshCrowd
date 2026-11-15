@@ -1,6 +1,6 @@
 ---
 title: Messaging and search
-desc: Writing, editing, replies, threads, forums, polls, voice and scheduled messages, attachments and search.
+desc: Writing, editing, replies, threads, forums, polls, checklists, voice and scheduled messages, attachments and search.
 group: Using MeshCrowd
 order: 3
 ---
@@ -33,6 +33,16 @@ Type in the box at the bottom and press **Enter**. Use **Shift+Enter** for a new
 ## Reactions, polls and pins
 
 Click a reaction to add yours. **Polls** take a question and options and show live percentages; you can choose several options when the poll allows it. Pinned messages are listed in the pin panel.
+
+## Checklists
+
+A **checklist** is a list of items that people tick off, such as a shopping list or a to-do list. Use the **check** button next to the message box (on a phone, **+** then **Create Checklist**), give it a title and add one item per line. Unticked items are red, ticked items are green, and the whole card turns green when every item is done. The card follows your theme.
+
+- **Where:** public and private channels, threads, DMs, group DMs and your Notes channels. Checklists are not available in end-to-end encrypted DMs.
+- **Who can create:** in public channels you need the **Create Checklists** role permission (admins and moderators with **Manage Messages** always can). In private channels and DMs every member can create one. In a Notes channel it is always you.
+- **Who can tick:** by default only the creator. The creator can give other members **Can check** (tick items) or **Can edit** (also add, rename, remove and reorder items and change the title) from the pencil on the card. Only the creator changes who has access.
+- **Editing later:** the creator and members with **Can edit** can change the list at any time; changes appear live for everyone.
+- **In Notes:** a checklist is stored inside the encrypted note, so the server and admins cannot read it. Use the check button in the Notes composer; tick and edit items on the saved note.
 
 ![The emoji picker with your recently used emoji](../assets/img/emoji-recents.jpg)
 

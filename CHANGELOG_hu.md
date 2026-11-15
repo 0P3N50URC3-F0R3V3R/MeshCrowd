@@ -2,6 +2,10 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-15
+#### Módosítva
+- Wiki: dokumentálva az ellenőrzőlisták (Üzenetküldés, Szerverek és csatornák jogai, Jegyzetek) és az emberek hozzáadása privát üzenetekhez és csoportokhoz (Fiókok), angolul és magyarul.
+
 ### 2026-11-14
 #### Hozzáadva
 - Csoportos DM asztali gépen és telefonon: a Közvetlen üzenetek melletti „+” mostantól több ismerőst is felkínál (egy ember sima DM-et, kettő vagy több csoportot indít, opcionális névvel), és minden beszélgetésen van „Emberek hozzáadása” gomb. 1:1 DM-hez hozzáadva új csoport jön létre veled, a másik féllel és a hozzáadottakkal (az eredeti 1:1 és előzménye változatlan marad); csoporthoz hozzáadva a helyén bővül, legfeljebb 10 tagig, botok nélkül, a szokásos DM-adatvédelmi szabályok szerint. Végpontok közt titkosított DM-ben nem elérhető. A csoportok mindenki normál beszélgetéslistájában megjelennek és élőben frissülnek. Szerver-telepítés kell hozzá.

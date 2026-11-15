@@ -62,6 +62,7 @@ Roles are sets of permission flags. Everyone has the built-in **@everyone** role
 | View Audit Log | Read the log of moderator actions |
 | Prune Content | Delete old history in this server |
 | Manage Bots | Create and edit this server's bots |
+| Create Checklists | Post [checklists](messaging.html) in public channels |
 | Administrator | Everything |
 
 **Nobody can grant a permission they do not hold themselves.** The owner always has every permission, and the server enforces this rule rather than the interface.
@@ -76,7 +77,7 @@ Open a channel's settings to allow or deny permissions for a role or a single me
 
 ## Notes channels
 
-A **Notes** channel gives every member a private notebook inside the server, with text and up to five attachments per note. Everything is encrypted in the browser with a key derived from your Passport, so the database and the admins cannot read it. Admins can only delete notes older than a date. Notes cannot be searched, forwarded or converted to another channel type, and losing your Passport means losing your notes. Note text can be selected and copied, and right-clicking any message offers **Save to Notes** (desktop). Attaching a large file shows an encrypting step and then an upload progress bar in the draft; Save waits until the upload has finished.
+A **Notes** channel gives every member a private notebook inside the server, with text and up to five attachments per note. Everything is encrypted in the browser with a key derived from your Passport, so the database and the admins cannot read it. Admins can only delete notes older than a date. Notes cannot be searched, forwarded or converted to another channel type, and losing your Passport means losing your notes. A note can also hold a [checklist](messaging.html), stored inside the encrypted note. Note text can be selected and copied, and right-clicking any message offers **Save to Notes** (desktop). Attaching a large file shows an encrypting step and then an upload progress bar in the draft; Save waits until the upload has finished.
 
 ![Right-click a message and choose Save to Notes](../assets/img/msg-menu-notes.jpg)
 

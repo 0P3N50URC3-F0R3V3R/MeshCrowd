@@ -2,6 +2,10 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-15
+#### Changed
+- Wiki: documented checklists (Messaging, Server and channels permissions, Notes) and adding people to DMs and group DMs (Accounts), in English and Hungarian.
+
 ### 2026-11-14
 #### Added
 - Group DMs on desktop and phone: the "+" next to Direct Messages now lets you pick several friends (one starts a normal DM, two or more start a group, with an optional name), and every conversation has an "Add people" button. Adding to a 1:1 DM starts a new group with you, the other person and the added people (the 1:1 and its history stay as they are); adding to a group adds them in place, up to 10 members, no bots, and the usual DM privacy rules apply. Not available in end-to-end encrypted DMs. Groups appear in everyone's normal conversation list and update live. Needs a server deploy.
