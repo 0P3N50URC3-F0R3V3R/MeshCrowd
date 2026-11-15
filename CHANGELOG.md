@@ -14,7 +14,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 #### Fixed
 - Forum posts: the checklist button was missing from the message box of a forum thread on desktop. Needs the web deploy.
-- Android: the permanent "MeshCrowd is connected" notification now follows the network: it says "MeshCrowd is offline" while there is no working internet and switches back when it returns. Needs a new APK.
+- Android: the permanent "MeshCrowd is connected" notification now follows the network: it says "MeshCrowd is offline" while there is no working internet and switches back when it returns. Needs the new APK (3.22).
 
 ### 2026-11-14
 #### Added

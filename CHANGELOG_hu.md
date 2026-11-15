@@ -14,7 +14,7 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 
 #### Javítva
 - Fórumbejegyzések: az asztali gépen a fórumszál üzenetmezőjéből hiányzott az ellenőrzőlista gomb. Webes telepítés kell hozzá.
-- Android: az állandó „A MeshCrowd csatlakoztatva van” értesítés mostantól követi a hálózatot: működő internet nélkül „A MeshCrowd nincs kapcsolatban” szöveget mutat, és visszaváltozik, ha visszajön a net. Új APK kell hozzá.
+- Android: az állandó „A MeshCrowd csatlakoztatva van” értesítés mostantól követi a hálózatot: működő internet nélkül „A MeshCrowd nincs kapcsolatban” szöveget mutat, és visszaváltozik, ha visszajön a net. Az új APK (3.22) kell hozzá.
 
 ### 2026-11-14
 #### Hozzáadva
