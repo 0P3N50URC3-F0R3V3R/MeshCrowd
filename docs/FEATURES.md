@@ -165,7 +165,7 @@ Two independent, fully-editable (not hardcoded) permission systems:
 
 1. **Per-server roles** — bitflags (`VIEW_CHANNEL`, `SEND_MESSAGES`,
    `MANAGE_CHANNELS`, `KICK_MEMBERS`, `BAN_MEMBERS`, `MODERATE_MEMBERS`, `VIEW_AUDIT_LOG`,
-   `ADMINISTRATOR`, `PRUNE_CONTENT`, and more — full list in
+   `ADMINISTRATOR`, `PRUNE_CONTENT`, `CREATE_CHECKLISTS`, and more — full list in
    [API.md](API.md#permission-bitflags)). Create/rename/recolor/reorder roles, assign to members,
    edit the permission grid via checkboxes. Members with `MANAGE_NICKNAMES` can also give an
    individual member a name color that overrides their role color (`server_members.name_color`).
@@ -186,6 +186,12 @@ themselves `ADMINISTRATOR`).
   classic-style — not a floating popover — listing every pinned post with click-to-jump).
 - Reactions: any Unicode emoji, including reacting to your own message.
 - Polls: 2-10 options, single- or multi-select, embedded as a message.
+- **Checklists**: a titled list of 1-50 items posted as a message (`server/routes/checklists.js`). Unticked items are red, ticked
+  items green, and the whole card turns green when everything is done, using the active theme's colours. They work in public and
+  private channels, threads, DMs, group DMs and Notes channels. Creating one in a public channel needs the `CREATE_CHECKLISTS` role
+  permission (or `MANAGE_MESSAGES` / admin); private channels and DMs let any member create; end-to-end encrypted DMs are refused.
+  By default only the creator ticks items; the creator can grant `check` (tick) or `edit` (tick plus add, rename, remove, reorder,
+  retitle) access to chosen members, and the list stays editable later. Changes broadcast live.
 - Custom server emoji and stickers (uploaded per-server, used like built-ins).
 - A soundboard per server — short audio clips anyone can trigger, played live to everyone in a
   voice channel.
@@ -244,7 +250,9 @@ themselves `ADMINISTRATOR`).
 
 - Friend request / accept / decline / remove / block, with a discoverable-by-search directory
   (opt-out per user) in addition to exact-username requests.
-- 1:1 DMs and group DMs (up to 10 members); DM privacy (`everyone`/`friends`/`none`) and blocks
+- 1:1 DMs and group DMs (up to 10 members), created from a multi-select picker on the Direct Messages "+". **Add people**
+  (`POST /api/dms/:dmId/members`) starts a new group from a 1:1 (the 1:1 and its history stay untouched) or adds members to a group in
+  place, with live `dm_update`/`dm_create` events; not available in end-to-end encrypted DMs. DM privacy (`everyone`/`friends`/`none`) and blocks
   are enforced on every send, not just at creation time.
 - **End-to-end encrypted 1:1 DMs** (opt-in): both parties must be local users on the same instance
   (no federation). Once enabled (`POST /api/dms/:dmId/encryption/enable`), all future messages are
@@ -341,7 +349,8 @@ and RSVP ("interested") tracking, broadcast live to the server as they're create
 A per-member encrypted personal journal (channel type `notes`). Each member gets their own private
 stream: the server stores only client-side encrypted ciphertext in the `note_entries` table
 (nonce + XChaCha20-Poly1305 ciphertext), keyed per (channel, user). The key is derived from the
-owner's Passport seed, so neither the database nor any admin can read the plaintext.
+owner's Passport seed, so neither the database nor any admin can read the plaintext. A note can hold a checklist, stored inside the
+encrypted body, so it is never visible to the server.
 
 - **Quotas per member, per channel**: max 5,000 notes, max 1 GB of attached encrypted files.
 - **Attachments**: encrypted blobs uploaded client-side (`note_files` table stores only sizes).

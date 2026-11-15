@@ -100,6 +100,8 @@ Core tables and how they relate:
 - `pending_prunes` — data-prune jobs deferred by the 24-hour notice period; drained by a worker
   in `server/lib/prune.js` that runs every minute. Immediate prunes never create a row.
 - `polls` / `poll_options` / `poll_votes` — a poll is always attached 1:1 to a `messages` row.
+- `checklists` / `checklist_items` / `checklist_editors` — a checklist is attached 1:1 to a `messages` row (title in `content`); items
+  are sealed at rest in DMs, helpers carry a `check`/`edit` level. Checklists in Notes live inside the encrypted note body instead.
   Polls cannot be created in encrypted DMs or notes channels.
 - `federation_peers`, `remote_memberships`, `federation_invites`, `federation_outbox`, `federation_inbox_seen`,
   `federation_admin_sessions`, `federation_audit_log` — federation state and relay infrastructure.

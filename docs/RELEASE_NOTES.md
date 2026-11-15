@@ -5,7 +5,7 @@ Draft for the first public release. Version number to be decided (package.json i
 ## Highlights
 
 - **Self-hosted chat for communities**: servers, text, forum, notes, voice, stage and Sites (PHP intranet) channels, threads,
-  polls, reactions, search, roles with per-channel overrides, onboarding, AutoMod and verification levels.
+  polls, checklists, reactions, search, roles with per-channel overrides, onboarding, AutoMod and verification levels.
 - **Private by design**: split-password sign-in so the server never sees your password, portable Passport identity,
   end-to-end encrypted DMs and notes, TOTP two-factor, and no third-party services.
 - **Calls that work**: WebRTC voice, video and screen sharing with a built-in STUN/TURN server for NAT traversal.
@@ -14,6 +14,18 @@ Draft for the first public release. Version number to be decided (package.json i
 - **Bots and AI**: Bot API, webhooks, slash commands, and AI bots with your own providers.
 - **Every screen**: web, Electron desktop client, phone UI at `/m/` and an Android app, all served by one portable
   server (bundled Node and PHP, nothing to install).
+
+## New: checklists and group DM management
+
+**Checklists** are poll-like messages with per-line items: unticked items are red, ticked ones green and the whole card turns green
+when everything is done (themed). Post them in channels, threads, DMs, group DMs and encrypted Notes. Public channels need the new
+**Create Checklists** permission (admins and moderators with Manage Messages always can); private channels and DMs let anyone
+start one. By default only the creator ticks items; the creator can give chosen members tick or edit access and can edit the list
+later. Checklists in Notes are stored inside the encrypted note.
+
+**Group DMs**: the Direct Messages "+" now picks several friends, and every conversation has **Add people**. On a 1:1 it starts a
+new group (the 1:1 stays as it is); on a group it adds people in place, up to ten, with live updates. Works on web, desktop, phone
+and Android. Needs a server deploy.
 
 ## New: invite links
 
