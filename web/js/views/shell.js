@@ -985,7 +985,7 @@ export async function mountShell(root) {
         // would duplicate them, and pins live inside each post.
         mainEl.querySelectorAll('#threads-btn, #pins-btn').forEach((b) => { b.style.display = 'none'; });
         currentChat = mountForum(document.getElementById('chat-body'), {
-          serverId: view.serverId, channelId: view.channelId, channelName: channel.name, canSend, canManage,
+          serverId: view.serverId, channelId: view.channelId, channelName: channel.name, canSend, canManage, canChecklist,
           channels: detail.channels, customEmoji: detail.customEmoji, stickers: detail.stickers, rawHtmlEnabled: !!detail.server.raw_html_enabled,
           roles: detail.roles, members: detail.members,
         });

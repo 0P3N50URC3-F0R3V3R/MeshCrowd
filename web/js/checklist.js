@@ -7,12 +7,12 @@ import { checklistLevel, checklistProgress, moveRow } from './checklistModel.mjs
 export const MAX_CHECKLIST_ITEMS = 50;
 
 // Card markup shared by desktop chat, mobile chat and Notes. `level` overrides the computed access
-// (Notes pass 'edit': the single owner can do everything). The title is the message text above the card.
-export function checklistHtml(cl, meId, level = checklistLevel(cl, meId)) {
+// (Notes pass 'edit': the single owner can do everything). The title (the message text) is shown as the card's header.
+export function checklistHtml(cl, meId, level = checklistLevel(cl, meId), title = '') {
   const { done, total } = checklistProgress(cl);
   const complete = total > 0 && done === total;
   return `<div class="cl-card${complete ? ' cl-done' : ''}" data-cl="${cl.id}">
-    <div class="cl-head"><span class="cl-progress">${t('checklist.progress', { done, total })}</span>${level === 'edit' ? `<button type="button" class="cl-edit" data-cl-edit title="${escapeHtml(t('checklist.editTitle'))}">${icons.edit(14)}</button>` : ''}</div>
+    <div class="cl-head">${title ? `<span class="cl-title">${escapeHtml(title)}</span>` : ''}<span class="cl-progress">${t('checklist.progress', { done, total })}</span>${level === 'edit' ? `<button type="button" class="cl-edit" data-cl-edit title="${escapeHtml(t('checklist.editTitle'))}">${icons.edit(14)}</button>` : ''}</div>
     ${cl.items.map((i) => `<button type="button" class="cl-item${i.checked ? ' on' : ''}" data-cl-toggle="${i.id}"${level ? '' : ' disabled'}>
       <span class="cl-box">${i.checked ? icons.check(14) : ''}</span><span class="cl-label">${escapeHtml(i.label)}</span></button>`).join('')}
   </div>`;
@@ -27,10 +27,10 @@ export function toggleChecklistItem(cl, itemId) {
 // `openPanel({ title, html, onMount(body, close) })` is the host's modal (desktop) or sheet (mobile).
 // mode 'create': { scope: { scopeType, scopeId }, members }
 // mode 'edit':   { message, members, meId, onDone }  — message carries the serialized `checklist`; its title is `content`
-// mode 'local':  { items: [{ id, text, checked }], onSave(items) }  — Notes, nothing is sent to the server
-export function openChecklistForm({ openPanel, mode, scope, message, members = [], items = [], onSave, onDone, meId }) {
+// mode 'local':  { title, items: [{ id, text, checked }], onSave(items, title) }  — Notes, nothing is sent to the server; the title is optional there
+export function openChecklistForm({ openPanel, mode, scope, message, members = [], items = [], title: localTitle = '', onSave, onDone, meId }) {
   const cl = message?.checklist;
-  const title = message?.content || '';
+  const title = mode === 'local' ? localTitle : (message?.content || '');
   let rows = mode === 'edit'
     ? cl.items.map((i) => ({ id: i.id, text: i.label, orig: i.label }))
     : mode === 'local' && items.length ? items.map((i) => ({ id: i.id, text: i.text, checked: i.checked })) : [{ text: '' }, { text: '' }];
@@ -39,7 +39,7 @@ export function openChecklistForm({ openPanel, mode, scope, message, members = [
 
   openPanel({
     title: mode === 'create' ? t('checklist.createTitle') : t('checklist.editTitle'),
-    html: `${mode === 'local' ? '' : `<div class="field"><label>${t('checklist.titleLabel')}</label><input class="input m-input" id="cl-title" maxlength="300" placeholder="${escapeHtml(t('checklist.titlePh'))}" value="${escapeHtml(title)}"></div>`}
+    html: `${`<div class="field"><label>${t('checklist.titleLabel')}${mode === 'local' ? ` (${t('checklist.optional')})` : ''}</label><input class="input m-input" id="cl-title" maxlength="300" placeholder="${escapeHtml(t('checklist.titlePh'))}" value="${escapeHtml(title)}"></div>`}
       <div class="field"><label>${t('checklist.itemsLabel')}</label><div id="cl-rows"></div>
       <button type="button" class="btn btn-secondary btn-sm" id="cl-add">${icons.plus(14)} ${t('checklist.addItem')}</button></div>
       ${showHelpers ? `<div class="field"><label>${t('checklist.helpersLabel')}</label><div id="cl-helpers"></div></div>` : ''}
@@ -89,14 +89,14 @@ export function openChecklistForm({ openPanel, mode, scope, message, members = [
       saveBtn.addEventListener('click', async () => {
         err.textContent = '';
         const clean = rows.map((r) => ({ ...r, text: r.text.trim() })).filter((r) => r.text);
-        const newTitle = mode === 'local' ? '' : body.querySelector('#cl-title').value.trim();
+        const newTitle = body.querySelector('#cl-title').value.trim();
         if (mode !== 'local' && !newTitle) { err.textContent = t('checklist.titleRequired'); return; }
         if (!clean.length) { err.textContent = t('checklist.needItem'); return; }
         saveBtn.disabled = true;
         try {
           const editors = [...helpers].map(([userId, level]) => ({ userId, level }));
           if (mode === 'local') {
-            onSave(clean.map((r) => ({ id: r.id || `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`, text: r.text, checked: !!r.checked })));
+            onSave(clean.map((r) => ({ id: r.id || `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`, text: r.text, checked: !!r.checked })), newTitle);
           } else if (mode === 'create') {
             await api.createChecklist({ ...scope, title: newTitle, items: clean.map((r) => r.text), ...(showHelpers ? { editors } : {}) });
           } else {

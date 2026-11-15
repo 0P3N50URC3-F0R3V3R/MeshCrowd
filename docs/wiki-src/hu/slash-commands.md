@@ -24,6 +24,16 @@ Gépelj `/` jelet egy szervercsatornában, hogy lásd a használható parancsoka
 | `/invite` | Meghívót mutat |
 | `/wipe <szám>` | Csak adminoknak: törli az aktuális csatorna utolsó N üzenetét (1-1000), a fájlokkal együtt |
 | `/ping`, `/help` | Kapcsolatellenőrzés és a parancsok listája |
+| `/poll`, `/checklist` | Szavazást vagy [ellenőrzőlistát](messaging.html) küld; lásd lent |
+
+### Szavazások és ellenőrzőlisták
+
+A részeket függőleges vonallal válaszd el:
+
+- `/poll Kérdés? | A opció | B opció | C opció` 2-10 opciós szavazást küld. A végére írt `--multi` több választ enged.
+- `/checklist Cím | első tétel | második tétel | harmadik tétel` 1-50 tételes ellenőrzőlistát küld; a cím a kártya fejléce lesz.
+
+Ha a parancs hiányos, megjelenik a használat, és a begépelt szöveg az üzenetmezőben marad, hogy kijavíthasd. A szokásos jogok érvényesek: nyilvános csatornában az ellenőrzőlistához az **Ellenőrzőlisták létrehozása** jog kell.
 
 ## Egy bot parancsának használata
 

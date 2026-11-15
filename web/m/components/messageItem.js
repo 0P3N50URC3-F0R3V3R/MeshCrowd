@@ -69,7 +69,7 @@ export function messageHtml(msg, ctx) {
   const compact = shouldCompact(ctx.prev, msg);
   const member = ctx.detail?.members?.find((m) => m.user.id === msg.author.id);
   const fx = member ? memberNameFx(ctx.detail.roles, member) : (ctx.detail ? {} : personalFx(msg.author));
-  const text = (msg.content ? `<div class="m-text${isEmojiOnly(msg.content, ctx.detail?.customEmoji) ? ' m-emoji-only' : ''}">${renderMessageContent(msg.content, { channels: ctx.detail?.channels, customEmoji: ctx.detail?.customEmoji, rawHtmlEnabled: !!ctx.detail?.server?.raw_html_enabled })}</div>` : '');
+  const text = (msg.content && !msg.checklist ? `<div class="m-text${isEmojiOnly(msg.content, ctx.detail?.customEmoji) ? ' m-emoji-only' : ''}">${renderMessageContent(msg.content, { channels: ctx.detail?.channels, customEmoji: ctx.detail?.customEmoji, rawHtmlEnabled: !!ctx.detail?.server?.raw_html_enabled })}</div>` : '');
   return `
   <div class="m-msg${compact ? ' compact' : ''}${msg.author.id === ctx.meId ? ' mine' : ''}" data-id="${msg.id}">
     <div class="m-msg-avatar" ${compact ? '' : `data-user="${msg.author.id}"`}>${compact ? '' : avatarHtml(msg.author, 36)}</div>
@@ -82,7 +82,7 @@ export function messageHtml(msg, ctx) {
       ${text}${msg.editedAt ? `<span class="m-edited">${t('m.edited')}</span>` : ''}
       ${msg.sound ? soundHtml(msg.sound) : ''}
       ${msg.sticker ? `<img class="m-sticker anim-limit" src="${escapeHtml(msg.sticker.imagePath)}" alt="${escapeHtml(msg.sticker.name)}">` : ''}
-      ${attachmentsHtml(msg)}${msg.poll ? pollHtml(msg.poll, ctx.meId, msg.id) : ''}${msg.checklist ? checklistHtml(msg.checklist, ctx.meId) : ''}${embedHtml(msg.embed)}${reactionsHtml(msg, ctx.meId, ctx.detail?.customEmoji)}
+      ${attachmentsHtml(msg)}${msg.poll ? pollHtml(msg.poll, ctx.meId, msg.id) : ''}${msg.checklist ? checklistHtml(msg.checklist, ctx.meId, undefined, msg.content) : ''}${embedHtml(msg.embed)}${reactionsHtml(msg, ctx.meId, ctx.detail?.customEmoji)}
     </div>
   </div>`;
 }

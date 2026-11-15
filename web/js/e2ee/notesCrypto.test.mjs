@@ -61,6 +61,14 @@ test('a note keeps its checklist through pack/unpack; a malformed one is dropped
   assert.equal(unpackNote('{"v":1,"text":"x","files":[],"checklist":"nope"}').checklist, undefined);
 });
 
+test('a note checklist keeps its optional header; the header is dropped without a checklist', () => {
+  const checklist = [{ id: 'a', text: 'milk', checked: false }];
+  assert.equal(unpackNote(packNote('x', [], undefined, checklist, 'Groceries')).checklistTitle, 'Groceries');
+  assert.equal(unpackNote(packNote('x', [], undefined, checklist)).checklistTitle, undefined);
+  assert.equal(unpackNote(packNote('x', [], undefined, [], 'Orphan header')).checklistTitle, undefined);
+  assert.equal(unpackNote('{"v":1,"text":"x","files":[],"checklistTitle":"no list"}').checklistTitle, undefined);
+});
+
 test('a note saved from a message keeps its ref through pack/unpack', () => {
   const ref = { kind: 'channel', ids: [1, 2], messageId: 9, author: 'Ann', postedAt: '2026-11-07T10:00:00.000Z' };
   assert.deepEqual(unpackNote(packNote('hi', [], ref)).ref, ref);

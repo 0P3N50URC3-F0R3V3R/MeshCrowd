@@ -15,7 +15,7 @@ import { editPost, deletePost } from './postActions.js';
 
 // Discord-style forum channel: a list of titled posts (each its own thread) instead of one flat
 // message log. Posting = creating a thread with a title + opening message.
-export function mountForum(container, { serverId, channelId, channelName, canSend, canManage, channels, customEmoji, stickers, rawHtmlEnabled, roles = [], members = [] }) {
+export function mountForum(container, { serverId, channelId, channelName, canSend, canManage, canChecklist, channels, customEmoji, stickers, rawHtmlEnabled, roles = [], members = [] }) {
   const colorFor = (userId) => memberNameColor(roles, members.find((m) => m.user.id === userId));
   let posts = [];
   let loading = true;
@@ -147,7 +147,7 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
     openChat?.destroy?.();
     openChat = mountChat(container.querySelector('#forum-pane-body'), {
       kind: 'thread', serverId, channelId, threadId: post.id, jumpToMessageId,
-      canSend: canSend && !post.archived, canManage, channels, customEmoji, stickers, rawHtmlEnabled,
+      canSend: canSend && !post.archived, canManage, canChecklist, channels, customEmoji, stickers, rawHtmlEnabled,
     }, { emptyTitle: t('shell.startOfThread'), emptyBody: '' });
   }
 

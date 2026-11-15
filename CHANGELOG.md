@@ -3,9 +3,18 @@
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
 ### 2026-11-15
+#### Added
+- Slash commands `/poll <question> | <option> | <option> ... [--multi]` and `/checklist <title> | <item> | <item> ...` post a poll or a checklist straight from the message box on web, desktop and phone (a poll takes 2-10 options, a checklist 1-50 items). A malformed command keeps what you typed and shows the usage.
+- Notes checklists can have an optional header, stored inside the encrypted note and editable later.
+
 #### Changed
+- Checklist titles are now the header inside the checklist card instead of a separate line of text above it (web, desktop and phone).
 - Wiki: documented checklists (Messaging, Server and channels permissions, Notes) and adding people to DMs and group DMs (Accounts), in English and Hungarian.
 - Website: the Features and Home pages now list checklists and group DMs (English and Hungarian), alongside the wiki pages.
+
+#### Fixed
+- Forum posts: the checklist button was missing from the message box of a forum thread on desktop. Needs the web deploy.
+- Android: the permanent "MeshCrowd is connected" notification now follows the network: it says "MeshCrowd is offline" while there is no working internet and switches back when it returns. Needs a new APK.
 
 ### 2026-11-14
 #### Added

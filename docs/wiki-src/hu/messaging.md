@@ -36,13 +36,13 @@ Kattints egy reakcióra, hogy a tiéd is megjelenjen. A **szavazások** kérdés
 
 ## Ellenőrzőlisták
 
-Az **ellenőrzőlista** olyan tételek listája, amelyeket az emberek pipálnak ki, például egy bevásárlólista vagy teendőlista. Használd az üzenetmező melletti **pipa** gombot (telefonon a **+**, majd az **Ellenőrzőlista létrehozása**), adj neki címet, és soronként egy tételt. A pipálatlan tételek pirosak, a pipáltak zöldek, és az egész kártya zöld lesz, ha minden kész. A kártya követi a témádat.
+Az **ellenőrzőlista** olyan tételek listája, amelyeket az emberek pipálnak ki, például egy bevásárlólista vagy teendőlista. Használd az üzenetmező melletti **pipa** gombot (telefonon a **+**, majd az **Ellenőrzőlista létrehozása**), adj neki címet (ez a kártya fejléce), és soronként egy tételt. Begépelheted azt is, hogy `/checklist Cím | tétel | tétel` vagy `/poll Kérdés | opció | opció`. A pipálatlan tételek pirosak, a pipáltak zöldek, és az egész kártya zöld lesz, ha minden kész. A kártya követi a témádat.
 
 - **Hol:** nyilvános és privát csatornákban, szálakban, privát üzenetekben, csoportos privát üzenetekben és a Jegyzet csatornákban. Végpontok közt titkosított privát üzenetben nem elérhető.
 - **Ki hozhatja létre:** nyilvános csatornában az **Ellenőrzőlisták létrehozása** szerepköri jog kell (az adminok és az **Üzenetek kezelése** joggal rendelkező moderátorok mindig létrehozhatnak). Privát csatornában és privát üzenetben bármely tag. Jegyzet csatornában mindig te.
 - **Ki pipálhat:** alapból csak a létrehozó. A létrehozó a kártya ceruza gombjával **Pipálhat** (tételek kipipálása) vagy **Szerkeszthet** (tételek hozzáadása, átnevezése, törlése, átrendezése és a cím módosítása is) hozzáférést adhat másoknak. Hogy kinek van hozzáférése, azt csak a létrehozó módosíthatja.
 - **Későbbi szerkesztés:** a létrehozó és a **Szerkeszthet** jogúak bármikor módosíthatják a listát; a változások élőben megjelennek mindenkinél.
-- **Jegyzetben:** az ellenőrzőlista a titkosított jegyzeten belül tárolódik, így a szerver és az adminok nem olvashatják. Használd a Jegyzet szövegmezőjének pipa gombját; a mentett jegyzeten pipálj és szerkessz.
+- **Jegyzetben:** az ellenőrzőlista a titkosított jegyzeten belül tárolódik, így a szerver és az adminok nem olvashatják. Használd a Jegyzet szövegmezőjének pipa gombját; a fejléc ott nem kötelező. A mentett jegyzeten pipálhatsz és szerkeszthetsz, a fejlécet is módosíthatod.
 
 ![Az emojiválasztó a legutóbb használt emojikkal](../assets/img/emoji-recents.jpg)
 

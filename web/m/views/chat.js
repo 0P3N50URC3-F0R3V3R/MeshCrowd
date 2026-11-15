@@ -21,6 +21,7 @@ import { openMessageSheet } from '../components/messageSheet.js';
 import { onPollClick, openPollSheet } from '../components/pollCard.js';
 import { onChecklistClick, openChecklistSheet } from '../components/checklistCard.js';
 import { openDmPicker, addPeople } from '../../js/dmPicker.js';
+import { parsePollArgs, parseChecklistArgs } from '../../js/slashLists.mjs';
 import { openEmojiSheet, openStickerSheet, openSoundSheet } from '../components/emojiSheet.js';
 import { stickerRef } from '../../js/stickers.mjs';
 import { playSoundboardAudio } from '../../js/soundboardPrefs.js';
@@ -558,6 +559,16 @@ export function mountChat(el, params) {
   async function runBuiltinSlash(cmd, rest) {
     const serverScoped = kind !== 'dm';
     switch (cmd) {
+      case 'poll': case 'checklist': {
+        const isPoll = cmd === 'poll';
+        const parsed = isPoll ? parsePollArgs(rest) : parseChecklistArgs(rest);
+        if (!parsed.ok) { toast(t('chat.slashListUsageError', { usage: t(isPoll ? 'chat.pollSlashUsage' : 'chat.checklistSlashUsage') }), { type: 'error' }); return false; }
+        try {
+          if (isPoll) await api.createPoll({ scopeType, scopeId, question: parsed.question, options: parsed.options, multiSelect: parsed.multiSelect });
+          else await api.createChecklist({ scopeType, scopeId, title: parsed.title, items: parsed.items });
+        } catch (err) { handleError(err, isPoll ? 'chat.couldNotCreatePollError' : 'checklist.couldNotSave'); return false; }
+        return true;
+      }
       case 'afk':
         try {
           await api.setStatus({ status: 'idle', customStatusText: rest || 'AFK' });

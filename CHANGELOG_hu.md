@@ -3,9 +3,18 @@
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
 ### 2026-11-15
+#### Hozzáadva
+- A `/poll <kérdés> | <opció> | <opció> ... [--multi]` és a `/checklist <cím> | <tétel> | <tétel> ...` perjeles parancs közvetlenül az üzenetmezőből küld szavazást vagy ellenőrzőlistát weben, asztali gépen és telefonon (a szavazás 2-10 opciót, az ellenőrzőlista 1-50 tételt vesz fel). Hibás parancsnál a begépelt szöveg megmarad, és a használat látszik.
+- A Jegyzetek ellenőrzőlistái opcionális fejlécet kaphatnak, amely a titkosított jegyzeten belül tárolódik, és később szerkeszthető.
+
 #### Módosítva
+- Az ellenőrzőlista címe mostantól a kártyán belüli fejléc, nem külön szöveges sor fölötte (web, asztali gép és telefon).
 - Wiki: dokumentálva az ellenőrzőlisták (Üzenetküldés, Szerverek és csatornák jogai, Jegyzetek) és az emberek hozzáadása privát üzenetekhez és csoportokhoz (Fiókok), angolul és magyarul.
 - Weboldal: a Funkciók és a Főoldal mostantól említi az ellenőrzőlistákat és a csoportos privát üzeneteket (angolul és magyarul), a wiki oldalak mellett.
+
+#### Javítva
+- Fórumbejegyzések: az asztali gépen a fórumszál üzenetmezőjéből hiányzott az ellenőrzőlista gomb. Webes telepítés kell hozzá.
+- Android: az állandó „A MeshCrowd csatlakoztatva van” értesítés mostantól követi a hálózatot: működő internet nélkül „A MeshCrowd nincs kapcsolatban” szöveget mutat, és visszaváltozik, ha visszajön a net. Új APK kell hozzá.
 
 ### 2026-11-14
 #### Hozzáadva

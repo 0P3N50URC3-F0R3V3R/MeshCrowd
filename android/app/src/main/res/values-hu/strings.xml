@@ -6,6 +6,8 @@
     <string name="channel_call">Hanghívások</string>
     <string name="connection_title">A MeshCrowd csatlakoztatva van</string>
     <string name="connection_text">A háttérben is csatlakozva marad, hogy az üzenetek azonnal megérkezzenek.</string>
+    <string name="connection_offline_title">A MeshCrowd nincs kapcsolatban</string>
+    <string name="connection_offline_text">Nincs internetkapcsolat. A hálózat visszatérésekor magától újracsatlakozik.</string>
     <string name="call_title">MeshCrowd hívás folyamatban</string>
     <string name="call_text">Koppints a híváshoz való visszatéréshez.</string>
     <string name="service_title">A MeshCrowd üzeneteket keres</string>

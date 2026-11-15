@@ -24,6 +24,16 @@ Type `/` in a server channel to see the commands you can use. The list mixes the
 | `/invite` | Shows an invite |
 | `/wipe <count>` | Admins only: deletes the last N messages (1-1000) of the current channel, files included |
 | `/ping`, `/help` | Connectivity check and the command list |
+| `/poll`, `/checklist` | Post a poll or a [checklist](messaging.html); see below |
+
+### Polls and checklists
+
+Separate the parts with the vertical bar character:
+
+- `/poll Question? | Option A | Option B | Option C` posts a poll with 2 to 10 options. Add `--multi` at the end to allow several answers.
+- `/checklist Title | item one | item two | item three` posts a checklist with 1 to 50 items; the title becomes the card's header.
+
+If the command is incomplete, the usage is shown and what you typed stays in the message box so you can fix it. The usual permissions apply: in a public channel a checklist needs the **Create Checklists** permission.
 
 ## Using a bot's command
 

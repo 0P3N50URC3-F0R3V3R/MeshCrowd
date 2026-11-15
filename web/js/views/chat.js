@@ -18,6 +18,7 @@ import { MAX_TEXT_FILE_BYTES, textByteLength, textToFile } from '../longText.js'
 import { openInviteModal } from './sidebar.js';
 import { memberNameColor, memberNameFx, memberPermissionBits, channelPermissionBits, has, PERMISSIONS } from '../permissions.js';
 import { checklistHtml, toggleChecklistItem, openChecklistForm } from '../checklist.js';
+import { parsePollArgs, parseChecklistArgs } from '../slashLists.mjs';
 import { nameAttrs, personalFx } from '../nameStyle.js';
 import { memberRoleIcon, roleIconHtml } from '../roleIcon.js';
 import { isAgeGateError, renderAgeGate } from '../ageGate.js';
@@ -560,14 +561,14 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
         <span class="rp-snippet">${escapeHtml((m.forwardedFrom.content || (m.forwardedFrom.sticker ? t('chat.stickerFallback') : t('chat.noTextFallback'))).replace(/\s+/g, ' ').slice(0, 150))}</span>
       </div>`);
     }
-    if (m.content) {
+    if (m.content && !m.checklist) {
       const emojiOnly = isEmojiOnly(m.content, scope.customEmoji) && !m.poll;
       parts.push(`<div class="msg-line ${emojiOnly ? 'msg-emoji-only' : ''}">${renderMessageContent(m.content, { channels: scope.channels, customEmoji: scope.customEmoji, rawHtmlEnabled: scope.rawHtmlEnabled })}${m.editedAt ? `<span class="edited-tag">${t('chat.editedTag')}</span>` : ''}</div>`);
     }
     if (m.sticker) parts.push(`<img class="sticker-message anim-limit" src="${escapeHtml(m.sticker.imagePath)}" alt="${escapeHtml(m.sticker.name)}" title="${escapeHtml(m.sticker.name)}">`);
     if (m.sound) parts.push(`<div class="sound-message"><button type="button" class="btn sound-play" data-sound-src="${escapeHtml(m.sound.audioPath)}" title="${escapeHtml(m.sound.name)}">${icons.music(18)} ${m.sound.emoji ? `${escapeHtml(m.sound.emoji)} ` : ''}${escapeHtml(m.sound.name)}</button></div>`);
     if (m.poll) parts.push(renderPoll(m));
-    if (m.checklist) parts.push(checklistHtml(m.checklist, state.me.id));
+    if (m.checklist) parts.push(checklistHtml(m.checklist, state.me.id, undefined, m.content));
     if (m.attachments && m.attachments.length) {
       parts.push(`<div class="attachments">${m.attachments.map(renderAttachment).join('')}</div>`);
     }
@@ -1797,6 +1798,16 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
         const res = await api.wipeMessages(scope.serverId, scope.channelId, count);
         toast(t('chat.wipeDoneToast', { count: res.deleted }));
       } catch (err) { toast(apiErrorMessage(err, t('chat.wipeFailedError')), { type: 'error' }); }
+      return { handled: true };
+    }
+    if (cmd === '/poll' || cmd === '/checklist') {
+      const isPoll = cmd === '/poll';
+      const parsed = isPoll ? parsePollArgs(rest) : parseChecklistArgs(rest);
+      if (!parsed.ok) { toast(t('chat.slashListUsageError', { usage: t(isPoll ? 'chat.pollSlashUsage' : 'chat.checklistSlashUsage') }), { type: 'error' }); return { handled: true, keepInput: true }; }
+      try {
+        if (isPoll) await api.createPoll({ scopeType, scopeId, question: parsed.question, options: parsed.options, multiSelect: parsed.multiSelect });
+        else await api.createChecklist({ scopeType, scopeId, title: parsed.title, items: parsed.items });
+      } catch (err) { toast(apiErrorMessage(err, t(isPoll ? 'chat.couldNotCreatePollError' : 'checklist.couldNotSave')), { type: 'error' }); return { handled: true, keepInput: true }; }
       return { handled: true };
     }
     if (cmd === '/me') {

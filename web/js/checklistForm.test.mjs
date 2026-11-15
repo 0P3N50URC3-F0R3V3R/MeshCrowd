@@ -64,8 +64,22 @@ test('Notes form (local mode) opens with two empty rows when there are no items 
   if (skipReason) return t.skip(skipReason);
   await page.evaluate(() => window.openChecklistForm({ openPanel: window.openPanel, mode: 'local', items: [], onSave: () => {} }));
   assert.equal(await page.locator('#cl-rows input').count(), 2);
-  assert.equal(await page.locator('#cl-title').count(), 0, 'no title field: the note text is the title');
+  assert.equal(await page.locator('#cl-title').count(), 1, 'Notes get an optional header field');
+  assert.equal(await page.locator('#cl-title').inputValue(), '');
   assert.equal(await page.locator('#cl-helpers').count(), 0, 'no helper picker for a single-owner note');
+});
+
+test('Notes form (local mode) saves without a header and hands back the header when one is typed', async (t) => {
+  if (skipReason) return t.skip(skipReason);
+  await page.evaluate(() => { window.__saved = null; window.openChecklistForm({ openPanel: window.openPanel, mode: 'local', items: [], onSave: (items, title) => { window.__saved = { items: items.map((i) => i.text), title }; } }); });
+  await page.locator('#cl-rows input').nth(0).fill('passport');
+  await page.click('#cl-save');
+  assert.deepEqual(await page.evaluate(() => window.__saved), { items: ['passport'], title: '' }, 'header is optional in Notes');
+  await page.evaluate(() => { window.__saved = null; document.getElementById('host').innerHTML = ''; window.openChecklistForm({ openPanel: window.openPanel, mode: 'local', title: 'Trip', items: [{ id: 'a', text: 'visa', checked: false }], onSave: (items, title) => { window.__saved = { items: items.map((i) => i.text), title }; } }); });
+  assert.equal(await page.locator('#cl-title').inputValue(), 'Trip');
+  await page.locator('#cl-title').fill('Trip v2');
+  await page.click('#cl-save');
+  assert.deepEqual(await page.evaluate(() => window.__saved), { items: ['visa'], title: 'Trip v2' });
 });
 
 test('Notes form (local mode) keeps existing items and their checked state on save', async (t) => {

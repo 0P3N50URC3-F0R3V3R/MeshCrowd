@@ -7,6 +7,7 @@ export const SHRUG = '¯\\\\_(ツ)\\_/¯';
 export function builtinSlashCommands(isAdmin = false) {
   return [
     { name: 'afk', usage: '/afk [message]', description: t('chat.slashAfkDesc') },
+    { name: 'checklist', usage: '/checklist <title> | <item> | <item> ...', description: t('chat.slashChecklistDesc') },
     { name: 'dm', usage: '/dm <username> [message]', description: t('chat.slashDmDesc') },
     { name: 'help', usage: '/help', description: t('chat.slashHelpDesc') },
     { name: 'invite', usage: '/invite', description: t('chat.slashInviteDesc') },
@@ -14,6 +15,7 @@ export function builtinSlashCommands(isAdmin = false) {
     { name: 'msg', usage: '/msg <username> [message]', description: t('chat.slashMsgDesc') },
     { name: 'nick', usage: '/nick [name]', description: t('chat.slashNickDesc') },
     { name: 'ping', usage: '/ping', description: t('chat.slashPingDesc') },
+    { name: 'poll', usage: '/poll <question> | <option> | <option> ... [--multi]', description: t('chat.slashPollDesc') },
     { name: 'shrug', usage: '/shrug [message]', description: t('chat.slashShrugDesc') },
     { name: 'spoiler', usage: '/spoiler <text>', description: t('chat.slashSpoilerDesc') },
     { name: 'tableflip', usage: '/tableflip [message]', description: t('chat.slashTableflipDesc') },
