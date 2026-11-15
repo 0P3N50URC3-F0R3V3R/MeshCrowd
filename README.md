@@ -40,9 +40,3 @@ npm start
 - Licensed under the [GNU GPL v3](LICENSE).
 - Not a secret: this project is partially vibe-coded with AI-assisted tools, and has been supervised, tested and fixed by humans too.
 - Status: in development. Known limitations are listed in the wiki's troubleshooting page.
-
-## Do you like my work?
-
-You can support me if you want:
-
-<a href="https://buymeacoffee.com/meshcrowd" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="140"></a>
