@@ -72,6 +72,20 @@ Ha zavarnak mások hangklipjei, a **Beállítások, Hang és videó** alatt pip�
 
 A **Beállítások, Hang és videó, Fejlett zajszűrés (RNNoise)** a mikrofonodat egy WebAssemblyre fordított kis neurális hálózaton engedi át, ami eltávolítja a billentyűzet-, ventilátor- és háttérzajt. A saját eszközödön működik, nagyjából tíz milliszekundum késleltetést ad, és alapból ki van kapcsolva. A modul (kb. 5 MB) csak akkor töltődik le, amikor először indul hívás bekapcsolt állapotban. Ha nem tud elindulni, a hívás egyszerűen nélküle folytatódik.
 
+## Beviteli mód, nyomd és beszélj, visszhangcsökkentés
+
+A mikrofonodon mindig be van kapcsolva a böngésző **visszhangszűrése**, **zajszűrése** és **automatikus erősítésszabályozása**. A **Beállítások, Hang és videó, Bemeneti mód** alatt választod ki, hogyan nyíljon meg a mikrofon:
+
+- **Mindig bekapcsolva**: a mikrofon él, amíg nem némítod.
+- **Hangaktivitás**: a mikrofon csak akkor küld, ha hangosabb vagy az **Érzékenység** csúszkánál.
+- **Nyomd és beszélj**: tartsd lenyomva a kiválasztott gombot a beszédhez. Két további opció jelenik meg:
+  - **Elengedési késleltetés (ms)**, 0 és 2000 között: a gomb elengedése után ennyi ideig nyitva marad a mikrofon, így a mondat vége nem vágódik le. Ha a késleltetés alatt újra megnyomod a gombot, nyitva marad.
+  - **Hangaktivitás a nyomd és beszélj mellett**: a mikrofon akkor is megnyílik, ha az érzékenységi küszöbnél hangosabban beszélsz, a gomb nyomása nélkül. A gomb nyomva tartása továbbra is mindig működik.
+
+A **visszhangcsökkentés** (külön jelölőnégyzet) hangszóró vagy nyitott mikrofon esetén segít: amíg a mikrofonod a hangodat érzékeli, mindenki más lejátszása adott számú decibellel halkabb lesz, alapból 10-zel. Írj be 1 és 30 közötti értéket, vagy használd a fel és le nyilakat. Ugyanazt az érzékenységi küszöböt használja, mint a hangaktivitás, és csak akkor érvényes, amikor valóban adsz.
+
+Mindez azon az eszközön marad meg, amelyen beállítod.
+
 ![Beállítások > Hang és videó](../assets/img/voice-settings.jpg)
 
 ## Hogyan választ útvonalat a kapcsolat

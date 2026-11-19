@@ -15,7 +15,7 @@ import { bioToolbarHtml, wireBioToolbar } from '../bioEditor.js';
 import { avatarHtml, BIO_MAX, colorForId, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle, navScroll, restoreNavScroll } from '../utils.js';
 import { openAdminPanel } from './admin.js';
 import { nextZIndex } from '../zstack.js';
-import { voicePrefs, keyLabel } from '../voicePrefs.js';
+import { voicePrefs, keyLabel, PTT_DELAY_MAX_MS, ECHO_DB_MIN, ECHO_DB_MAX } from '../voicePrefs.js';
 import { soundboardPrefs } from '../soundboardPrefs.js';
 import { statusEmojiFieldHtml, bindStatusEmojiField } from './statusEmojiField.js';
 import { startMicMeter } from '../micMeter.js';
@@ -530,7 +530,7 @@ export function openUserSettings(initialTab = 'account') {
         <label class="checkbox-row"><input type="radio" name="f-input-mode" value="vad" ${prefs.vadEnabled ? 'checked' : ''}><span>${t('userSettings.voiceActivityOption')}</span></label>
         <label class="checkbox-row"><input type="radio" name="f-input-mode" value="ptt" ${prefs.pttEnabled ? 'checked' : ''}><span>${t('userSettings.pushToTalkOption')}</span></label>
       </div>
-      ${prefs.vadEnabled ? `
+      ${prefs.vadEnabled || (prefs.pttEnabled && prefs.pttVadAlt) ? `
       <div class="field">
         <label>${t('userSettings.sensitivityLabelPrefix')}<span id="vad-threshold-val">${prefs.vadThreshold}</span>${t('userSettings.sensitivityLabelSuffix')}</label>
         <div class="vad-meter"><div class="vad-track"></div><div class="vad-fill" id="vad-fill"></div>
@@ -541,7 +541,23 @@ export function openUserSettings(initialTab = 'account') {
       <div class="field">
         <label>${t('userSettings.pushToTalkKeyLabel')}</label>
         <button type="button" class="btn btn-secondary" id="f-ptt-key" style="width:160px">${keyLabel(prefs.pttKey)}</button>
-      </div>` : ''}`;
+      </div>
+      <div class="field">
+        <label>${t('userSettings.pttReleaseDelayLabel')}</label>
+        <input type="number" class="input" id="f-ptt-delay" min="0" max="${PTT_DELAY_MAX_MS}" step="50" value="${prefs.pttReleaseDelayMs}" style="width:120px">
+        <div class="hint">${t('userSettings.pttReleaseDelayHint')}</div>
+      </div>
+      <div class="field">
+        <label class="checkbox-row"><input type="checkbox" id="f-ptt-vad" ${prefs.pttVadAlt ? 'checked' : ''}><span>${t('userSettings.pttVadAltLabel')}</span></label>
+        <div class="hint">${t('userSettings.pttVadAltHint')}</div>
+      </div>` : ''}
+      <div class="divider"></div>
+      <div class="field">
+        <label class="checkbox-row"><input type="checkbox" id="f-echo-reduction" ${prefs.echoReduction ? 'checked' : ''}><span>${t('userSettings.echoReductionLabel')}</span></label>
+        ${prefs.echoReduction ? `<label>${t('userSettings.echoReductionDbLabel')}</label>
+        <input type="number" class="input" id="f-echo-db" min="${ECHO_DB_MIN}" max="${ECHO_DB_MAX}" step="1" value="${prefs.echoReductionDb}" style="width:120px">` : ''}
+        <div class="hint">${t('userSettings.echoReductionHint')}</div>
+      </div>`;
 
     inner.querySelector('#f-input-device').addEventListener('change', (e) => {
       voicePrefs.set({ inputDeviceId: e.target.value || null });
@@ -582,6 +598,26 @@ export function openUserSettings(initialTab = 'account') {
     inner.querySelector('#f-vad-threshold')?.addEventListener('input', (e) => {
       inner.querySelector('#vad-threshold-val').textContent = e.target.value;
       voicePrefs.set({ vadThreshold: Number(e.target.value) });
+    });
+
+    inner.querySelector('#f-ptt-delay')?.addEventListener('change', (e) => {
+      const v = Math.max(0, Math.min(PTT_DELAY_MAX_MS, Math.round(Number(e.target.value)) || 0));
+      e.target.value = v;
+      voicePrefs.set({ pttReleaseDelayMs: v });
+    });
+    inner.querySelector('#f-ptt-vad')?.addEventListener('change', (e) => {
+      voicePrefs.set({ pttVadAlt: e.target.checked });
+      renderVoice(inner);
+    });
+    inner.querySelector('#f-echo-reduction').addEventListener('change', (e) => {
+      voicePrefs.set({ echoReduction: e.target.checked });
+      renderVoice(inner);
+    });
+    inner.querySelector('#f-echo-db')?.addEventListener('change', (e) => {
+      const n = Math.round(Number(e.target.value));
+      const v = e.target.value.trim() === '' || !Number.isFinite(n) ? 10 : Math.max(ECHO_DB_MIN, Math.min(ECHO_DB_MAX, n));
+      e.target.value = v;
+      voicePrefs.set({ echoReductionDb: v });
     });
 
     const keyBtn = inner.querySelector('#f-ptt-key');

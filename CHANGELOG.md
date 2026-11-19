@@ -2,6 +2,14 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-19
+#### Added
+- Voice settings: push-to-talk release delay (0-2000 ms), an option to also open the mic by voice activity while push-to-talk is on, and echo reduction that lowers everyone's playback by a chosen 1-30 dB (default 10) while you are speaking. Echo cancellation and automatic gain control were already always on. Needs the web deploy.
+- Developer: `scripts/tour/sfu-hunt/voice-input.mjs --target web|electron|csharp|android` tests these settings on every client.
+
+#### Fixed
+- Voice: the microphone level meter now reads its own copy of the mic, so a closed gate (voice activation, push-to-talk with voice activation) can hear you start speaking again; before, the meter went silent together with the closed mic.
+
 ### 2026-11-18
 #### Added
 - Developer: `scripts/tour/sfu-hunt/*.mjs` are scenario scripts for voice in SFU and mesh mode with real browsers and the desktop client (DM and group calls, stage, video, controls, reconnects, server restarts and IP changes, abuse over raw sockets, admin panel EN/HU, navigation, soak, the mobile web layout, the Android app on the emulator, and the C# client). Each starts its own throwaway server on ports 8070-8079.

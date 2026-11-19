@@ -72,6 +72,20 @@ If clips from other people annoy you, open **Settings, Voice & Video** and tick 
 
 **Settings, Voice, Advanced noise suppression (RNNoise)** runs your microphone through a small neural network compiled to WebAssembly, which removes keyboard, fan and background noise. It works on your own device, adds about ten milliseconds of delay and is off by default. The module (about 5 MB) is only downloaded the first time a call starts with it on. If it cannot start, the call simply continues without it.
 
+## Input mode, push-to-talk and echo reduction
+
+Your microphone always has the browser's **echo cancellation**, **noise suppression** and **automatic gain control** switched on. Under **Settings, Voice & Video, Input Mode** you choose how the mic opens:
+
+- **Always On**: the mic is live whenever you are not muted.
+- **Voice Activity**: the mic only sends while you are louder than the **Sensitivity** slider.
+- **Push to Talk**: hold the chosen key to talk. Two extra options appear:
+  - **Release delay (ms)**, 0 to 2000: the mic stays open this long after you let go of the key, so the end of a sentence is not cut off. Pressing the key again during the delay keeps it open.
+  - **Voice activation while using push-to-talk**: the mic also opens when you speak louder than the sensitivity threshold, without holding the key. Holding the key always works too.
+
+**Echo reduction** (a separate checkbox) helps when you use speakers or an open mic: while your mic is picking up your voice, everyone else's playback is lowered by a number of decibels, by default 10. Type a value from 1 to 30 or use the up and down arrows. It uses the same sensitivity threshold as voice activation and only applies while you are actually transmitting.
+
+All of these are saved on the device you set them on.
+
 ![Settings > Voice & Video](../assets/img/voice-settings.jpg)
 
 ## How the connection path is chosen

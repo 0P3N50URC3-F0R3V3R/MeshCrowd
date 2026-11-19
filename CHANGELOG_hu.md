@@ -2,6 +2,14 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-19
+#### Hozzáadva
+- Hangbeállítások: nyomd és beszélj elengedési késleltetés (0–2000 ms), opció, amellyel a mikrofon nyomd és beszélj mellett hangaktivitásra is megnyílik, és visszhangcsökkentés, amely beszéd közben a választott 1–30 dB-lel (alapból 10) halkítja mindenki lejátszását. A visszhangszűrés és az automatikus erősítésszabályozás eddig is mindig be volt kapcsolva. Webes telepítés kell hozzá.
+- Fejlesztői: a `scripts/tour/sfu-hunt/voice-input.mjs --target web|electron|csharp|android` minden kliensen teszteli ezeket a beállításokat.
+
+#### Javítva
+- Hang: a mikrofon szintmérője mostantól a mikrofon saját másolatát olvassa, így a zárt kapu (hangaktivitás, nyomd és beszélj hangaktivitással) meghallja, ha újra beszélni kezdesz; korábban a mérő a lezárt mikrofonnal együtt elnémult.
+
 ### 2026-11-18
 #### Hozzáadva
 - Fejlesztői: a `scripts/tour/sfu-hunt/*.mjs` forgatókönyv-szkriptek a hangot tesztelik SFU és mesh módban valódi böngészőkkel és az asztali klienssel (DM és csoportos hívások, színpad, videó, vezérlők, újracsatlakozás, szerver-újraindítás és IP-váltás, visszaélés nyers socketen, admin panel angolul és magyarul, navigáció, tartósteszt, a mobil webes felület, az Android-alkalmazás emulátoron és a C# kliens). Mindegyik saját eldobható szervert indít a 8070-8079 portokon.

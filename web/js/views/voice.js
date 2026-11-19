@@ -117,8 +117,12 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   let forceMuted = false;
   let deafened = state.voice.deafened;
   let mutedBeforeDeafen = false;
-  let pttActive = false; // key currently held, only meaningful when voicePrefs().pttEnabled
+  let pttActive = false; // key currently held (or within its release delay), only meaningful when voicePrefs().pttEnabled
+  let pttReleaseTimer = null;
+  let pttVadOpen = false; // voice activity currently above threshold, only used when pttEnabled && pttVadAlt
+  let duckUntil = 0; // playback stays lowered (echo reduction) until this timestamp
   let rawStream = null; // straight from getUserMedia, kept only to stop() its tracks
+  let meterStream = null; // clone of rawStream for the level meter, so closing the gate does not blind it
   let sendTrack = null; // post-gain track actually handed to the engine
   let audioCtx = null;
   let gainNode = null;
@@ -496,8 +500,9 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
 
   function applyOutputVolume(peer) {
     if (!peer.audioEl) return;
-    const master = voicePrefs.get().outputVolume;
-    peer.audioEl.volume = deafened ? 0 : Math.max(0, Math.min(1, master * (peer.volume ?? 1)));
+    const { outputVolume: master, echoReduction, echoReductionDb } = voicePrefs.get();
+    const duck = echoReduction && Date.now() < duckUntil ? 10 ** (-echoReductionDb / 20) : 1;
+    peer.audioEl.volume = deafened ? 0 : Math.max(0, Math.min(1, master * duck * (peer.volume ?? 1)));
   }
 
   function applyOutputVolumes() {
@@ -516,11 +521,16 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     playSoundboardAudio(sound.audioPath, voicePrefs.get().outputVolume, applySinkId);
   }
 
+  const graphSig = (p) => [p.inputDeviceId, p.inputVolume, p.noiseSuppression].join('|');
+  let lastGraphSig = graphSig(voicePrefs.get());
+
   function onPrefsChanged() {
     if (!call.joined) { render(); return; }
+    if (!voicePrefs.get().echoReduction) duckUntil = 0;
     applyOutputVolumes();
     for (const peer of peers.values()) if (peer.audioEl) applySinkId(peer.audioEl);
-    rebuildInputGraph();
+    const sig = graphSig(voicePrefs.get());
+    if (sig !== lastGraphSig) { lastGraphSig = sig; rebuildInputGraph(); }
     updateSendEnabled();
     render();
   }
@@ -571,11 +581,16 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     }
     updateSendEnabled();
     call.engine?.setLocalTrack('audio', sendTrack);
-    startLocalMeter(source);
+    // The meter reads its own clone of the mic: a disabled track (closed gate) feeds silence, so a meter on
+    // the sent track could never see the voice that is supposed to open it again.
+    meterStream = rawStream.clone();
+    startLocalMeter(audioCtx.createMediaStreamSource(meterStream));
   }
 
   function teardownInputGraph() {
     if (rawStream) for (const t of rawStream.getTracks()) t.stop();
+    if (meterStream) for (const t of meterStream.getTracks()) t.stop();
+    meterStream = null;
     rawStream = null;
     sendTrack = null;
     // startLocalMeter() builds its meter straight off the shared audioCtx (not its own), so
@@ -603,7 +618,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     if (forceMuted) { sendTrack.enabled = false; return; }
     const prefs = voicePrefs.get();
     if (deafened || muted) { sendTrack.enabled = false; return; }
-    if (prefs.pttEnabled) { sendTrack.enabled = pttActive; return; }
+    if (prefs.pttEnabled) { sendTrack.enabled = pttActive || (prefs.pttVadAlt && pttVadOpen); return; }
     if (prefs.vadEnabled) return; // left alone — the meter tick opens/closes it off the live level
     sendTrack.enabled = true;
   }
@@ -773,15 +788,20 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   function onPttKeyDown(e) {
     if (isTypingTarget(e.target)) return;
     const prefs = voicePrefs.get();
-    if (!prefs.pttEnabled || e.code !== prefs.pttKey || pttActive) return;
+    if (!prefs.pttEnabled || e.code !== prefs.pttKey) return;
+    clearTimeout(pttReleaseTimer);
+    pttReleaseTimer = null;
+    if (pttActive) return;
     pttActive = true;
     updateSendEnabled();
   }
   function onPttKeyUp(e) {
     const prefs = voicePrefs.get();
     if (!prefs.pttEnabled || e.code !== prefs.pttKey) return;
-    pttActive = false;
-    updateSendEnabled();
+    clearTimeout(pttReleaseTimer);
+    const release = () => { pttReleaseTimer = null; pttActive = false; updateSendEnabled(); };
+    if (prefs.pttReleaseDelayMs > 0) pttReleaseTimer = setTimeout(release, prefs.pttReleaseDelayMs);
+    else release();
   }
   function isTypingTarget(el) {
     const tag = el?.tagName;
@@ -794,7 +814,10 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   function unregisterPtt() {
     document.removeEventListener('keydown', onPttKeyDown);
     document.removeEventListener('keyup', onPttKeyUp);
+    clearTimeout(pttReleaseTimer);
+    pttReleaseTimer = null;
     pttActive = false;
+    pttVadOpen = false;
   }
 
   function attachRemoteAudio(userId, stream) {
@@ -886,6 +909,18 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
       if (localMeter) level = readLevel(localMeter);
       if (prefs.vadEnabled && !prefs.pttEnabled && !deafened && !muted && sendTrack && level !== undefined) {
         sendTrack.enabled = level > prefs.vadThreshold;
+      }
+      if (prefs.pttEnabled && prefs.pttVadAlt && level !== undefined) {
+        const open = level > prefs.vadThreshold;
+        if (open !== pttVadOpen) { pttVadOpen = open; updateSendEnabled(); }
+      }
+      if (prefs.echoReduction && level !== undefined && sendTrack?.enabled && level > prefs.vadThreshold) {
+        const wasDucked = Date.now() < duckUntil;
+        duckUntil = Date.now() + 500;
+        if (!wasDucked) applyOutputVolumes();
+      } else if (duckUntil && Date.now() >= duckUntil) {
+        duckUntil = 0;
+        applyOutputVolumes();
       }
       updateSpeakingIndicator(state.me.id, localMeter, !sendTrack?.enabled, prefs.vadThreshold);
     }

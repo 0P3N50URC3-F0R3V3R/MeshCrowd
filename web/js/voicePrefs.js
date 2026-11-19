@@ -15,7 +15,15 @@ const DEFAULTS = {
   vadEnabled: false, // voice activation: mic only sends while input level is above vadThreshold
   noiseSuppression: false, // RNNoise neural noise suppression on the mic (loads a ~4.8 MB module when on)
   vadThreshold: 12, // same 0-255 byte-frequency-average scale as the speaking-ring indicator
+  pttReleaseDelayMs: 0, // mic stays open this long after the push-to-talk key is released, 0-2000
+  pttVadAlt: false, // while push-to-talk is on, the mic also opens on voice activity (above vadThreshold)
+  echoReduction: false, // lower playback by echoReductionDb while you are speaking
+  echoReductionDb: 10, // 1-30
 };
+
+export const PTT_DELAY_MAX_MS = 2000;
+export const ECHO_DB_MIN = 1;
+export const ECHO_DB_MAX = 30;
 
 function load() {
   try {
