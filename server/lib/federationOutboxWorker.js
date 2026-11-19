@@ -46,7 +46,9 @@ async function drainOnce(fetchImpl = safeFetch) {
 }
 
 async function drainOnceInner(fetchImpl) {
-  const now = new Date().toISOString();
+  // +1 ms: next_attempt_at defaults to SQLite's clock, which can read a millisecond ahead of
+  // Date.now(), so an event queued just now would otherwise not be due yet.
+  const now = new Date(Date.now() + 1).toISOString();
   const peers = db.prepare(`SELECT id, public_url, status FROM federation_peers`).all();
   const controlTypes = [...CONTROL_EVENT_TYPES];
   const delivered = await Promise.all(peers.map(async (peer) => {

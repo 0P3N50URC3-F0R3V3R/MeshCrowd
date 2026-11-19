@@ -47,6 +47,10 @@ function moveToAudience(channelId, userId) {
   cleanupIfEmpty(channelId);
 }
 
+function reset(channelId) {
+  stages.delete(channelId);
+}
+
 function isSpeaker(channelId, userId) {
   return stages.get(channelId)?.speakers.has(userId) ?? false;
 }
@@ -56,4 +60,4 @@ function getState(channelId) {
   return { speakers: [...(s?.speakers || [])], raisedHands: [...(s?.raisedHands || [])] };
 }
 
-module.exports = { onJoin, onLeave, raiseHand, inviteSpeaker, moveToAudience, isSpeaker, getState };
+module.exports = { onJoin, onLeave, raiseHand, inviteSpeaker, moveToAudience, reset, isSpeaker, getState };

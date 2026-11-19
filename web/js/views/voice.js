@@ -10,8 +10,10 @@ import { openSoundboardPicker } from './soundboardPicker.js';
 import { playSoundboardAudio } from '../soundboardPrefs.js';
 import { t } from '../i18n.js';
 import { createWhiteboard } from '../whiteboard.js';
-import { tuneOpusSdp, voiceQualityPreset, DEFAULT_VOICE_QUALITY } from '../voiceQuality.js';
-import { shouldAcceptRemoteCandidate, connectionPath } from '../iceUtil.js';
+import { DEFAULT_VOICE_QUALITY } from '../voiceQuality.js';
+import { createMeshEngine } from '../voiceMesh.js';
+import { createSfuEngine, createConnectRetry } from '../voiceSfu.js';
+import { callKey, createCallRegistry, createCallMount, joinDeniedToastKey } from '../callLifecycle.mjs';
 
 // A function (not a module-level constant) so labels re-evaluate against the current language —
 // see userBar.js's statusOptions() for why a plain top-level object built with t() would freeze.
@@ -23,7 +25,7 @@ function qualityLabel() {
 // NAT-traversed through STUN, or relayed by TURN). Path is unknown until the first stats poll.
 function qualityTitle(peer) {
   const q = qualityLabel()[peer?.quality || 'good'];
-  const p = peer?.path ? { direct: t('voice.pathDirect'), stun: t('voice.pathStun'), relay: t('voice.pathRelay') }[peer.path] : '';
+  const p = peer?.path ? { direct: t('voice.pathDirect'), stun: t('voice.pathStun'), relay: t('voice.pathRelay'), sfu: t('voice.pathSfu') }[peer.path] : '';
   const base = p ? `${q} - ${p}` : q;
   return localNetworks ? `${base}\n${t('voice.yourNetworks')}: ${localNetworks}` : base;
 }
@@ -58,26 +60,24 @@ async function getIceConfig() {
 }
 export const resetIceServers = () => { iceCache = null; };
 
-// Discord-shaped voice channel: WebRTC mesh (every participant connects directly to every
-// other participant), signalled over the existing app WebSocket. Opus is not a separate
-// library: it's compiled into the browser/Electron's native WebRTC stack, nothing to vendor.
+// Discord-shaped voice channel; the WebRTC topology lives in an engine (voiceMesh.js for a full
+// mesh, voiceSfu.js for the server's SFU), signalled over the existing app WebSocket.
 // Pass either { serverId, channelId, channelName } for a server voice channel, or { dmId, dmName }
-// for an invite-only DM/group call — same mesh/signalling code, just a different room scope.
+// for an invite-only DM/group call — same engine/signalling code, just a different room scope.
 // The one voice room this client is currently joined to. Its instance outlives the view that
 // mounted it: navigating elsewhere only detaches the UI (see destroy()), the call keeps running
-// until the user presses Leave.
-let activeCall = null; // { key, attach(container), leave() }
-export const leaveActiveCall = () => activeCall?.leave();
-const callKey = ({ dmId, channelId }) => (dmId ? `dm:${dmId}` : `ch:${channelId}`);
+// until the user presses Leave or joins another room.
+const calls = createCallRegistry();
+export const leaveActiveCall = () => calls.leaveActive();
 
 export function mountVoiceChannel(container, opts) {
-  if (activeCall && activeCall.key === callKey(opts)) return activeCall.attach(container);
-  return createVoiceMount(container, opts);
+  return calls.mount(callKey(opts), container, (c) => createVoiceMount(c, opts));
 }
 
 function createVoiceMount(container, { serverId, channelId, channelName, dmId, dmName, sounds, channelType, canManageChannel, canModerateVoice, voiceQuality, mobile }) {
   const isDm = !!dmId;
   const key = callKey({ dmId, channelId });
+  const call = createCallMount(calls, key);
   const roomLabel = isDm ? (dmName || t('voice.thisCallFallback')) : channelName;
   // Stage channels layer a speaker/audience split on top of the same voice room a regular
   // channel uses — never true for a DM (stages are server-scoped, never wired up there).
@@ -89,8 +89,8 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   // it is a purely local view choice; strokes keep arriving and are drawn into the hidden board.
   const wb = isDm ? null : createWhiteboard({
     send: (m) => ws.send({ ...m, channelId }),
-    canDraw: () => joined && (!isStage || amSpeaker(state.me.id) || !!canManageChannel),
-    canClear: () => joined && (!!canManageChannel || (isStage && amSpeaker(state.me.id))),
+    canDraw: () => call.joined && (!isStage || amSpeaker(state.me.id) || !!canManageChannel),
+    canClear: () => call.joined && (!!canManageChannel || (isStage && amSpeaker(state.me.id))),
   });
   let wbVisible = isStage;
   let wbChosen = false;
@@ -107,8 +107,6 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   function matchesThisRoom(payload) {
     return isDm ? payload.dmChannelId === dmId : payload.channelId === channelId;
   }
-  let joined = false;
-  let detached = false; // view is gone but the call lives on; torn down for real on leave()
   const quality = isDm ? DEFAULT_VOICE_QUALITY : (voiceQuality || DEFAULT_VOICE_QUALITY);
   // Seeded from the global preference (toggled from the persistent user-bar controls, which work
   // even outside this view) so muting before you join carries in, instead of always starting unmuted.
@@ -121,49 +119,128 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   let mutedBeforeDeafen = false;
   let pttActive = false; // key currently held, only meaningful when voicePrefs().pttEnabled
   let rawStream = null; // straight from getUserMedia, kept only to stop() its tracks
-  let sendTrack = null; // post-gain track actually attached to peer connections
+  let sendTrack = null; // post-gain track actually handed to the engine
   let audioCtx = null;
   let gainNode = null;
   let denoiser = null;
   let localMeter = null;
   let roster = []; // last known participants (public user objects), including self once joined
-  const peers = new Map(); // userId -> { pc, audioEl, analyser, speaking, volume, quality, cameraStream, screenStream }
+  // UI-side state per remote participant the engine has reported media or stats for; the engine
+  // owns the connections themselves.
+  const peers = new Map(); // userId -> { audioEl, analyser, speaking, volume, quality, path, cameraStream, screenStream }
   let meterTimer = null;
   let statsTimer = null;
+  // The engine is created on the first voice_state that includes me, because only then is the
+  // room's mode ('mesh' | 'sfu') known; every voice_join (join, reconnect, SFU reset) re-arms it.
+  let awaitingEngine = false;
+  // The server has no ICE-restart or transport-close op, so the one retry rejoins the room in
+  // place: a voice_join for the room we are already in gives us a fresh server-side peer with new
+  // transports. No voice_leave first, which would demote an invited stage speaker and re-ring a DM.
+  // A second failure leaves.
+  const sfuRetry = createConnectRetry({
+    onRetry: () => rejoinRoom(),
+    onGiveUp: () => {
+      toast(t('voice.sfuGaveUp'), { type: 'error' });
+      leave();
+    },
+  });
 
-  // Camera/screen-share: separate optional video tracks layered onto the same mesh, added/removed
-  // from every peer connection independently of the audio track above. Since a track's `.id` is
-  // preserved end-to-end by WebRTC (signaled in the SDP), a lightweight `media-announce` message
-  // sent just before renegotiating tells each peer "the next video track with this id is my
-  // camera/screen" — avoids needing any mid-negotiation-order bookkeeping across N independent
-  // peer connections (this is a full mesh, not an SFU, so mid assignment isn't even guaranteed
-  // consistent across peers).
   let cameraTrack = null;
   let cameraFacing = 'user';
+  let cameraOpening = false;
   let screenTrack = null;
+  let screenOpening = false;
   let localCameraStream = null;
   let localScreenStream = null;
-  // userId -> ['camera'|'screen', ...] FIFO queue, consumed one entry per incoming video ontrack
-  // from that peer. Deliberately NOT keyed by track id: proven live (two-browser WebRTC test,
-  // 2026-09-06) that a video track's id is *not* reliably preserved end-to-end once a peer
-  // connection has removed and re-added a video track — Chrome appears to reuse the existing
-  // (now-inactive) transceiver/m-line slot for the next added video track, and the receiver's
-  // RTCTrackEvent.track.id in that case does not match the sender's original track.id, contrary
-  // to the naive reading of the WebRTC spec's msid-preservation guarantee. Ordering is what's
-  // actually reliable here: media-announce is always sent (and arrives, same WS connection, FIFO)
-  // strictly before the renegotiation offer that carries the track it describes, so a simple
-  // per-peer queue popped in order is correct without needing id matching at all.
-  const pendingRemoteMedia = new Map();
+
+  function uiPeer(userId) {
+    let peer = peers.get(userId);
+    if (!peer) {
+      peer = { audioEl: null, analyser: null, speaking: false, volume: 1, quality: 'good', path: null, cameraStream: null, screenStream: null };
+      peers.set(userId, peer);
+    }
+    return peer;
+  }
+
+  function createEngine(mode) {
+    const ctx = {
+      me: state.me.id,
+      ws,
+      scopePayload,
+      getIceConfig,
+      quality: () => quality,
+      hooks: {
+        attachAudio: attachRemoteAudio,
+        attachVideo: attachRemoteVideo,
+        detachVideo: detachRemoteVideo,
+        closeRemote: closeRemotePeer,
+        onPath: (userId, path) => updateQuality(userId, peers.get(userId)?.quality || 'good', path),
+        onHealthy: () => sfuRetry.healthy(),
+        onConnectFailed: onSfuConnectFailed,
+        onProduceFailed: onSfuProduceFailed,
+      },
+    };
+    return mode === 'sfu' ? createSfuEngine(ctx) : createMeshEngine(ctx);
+  }
+
+  function sendJoin() {
+    awaitingEngine = true;
+    ws.send({ type: 'voice_join', ...scopePayload(), sfu: true });
+  }
+
+  function startEngine(payload) {
+    if (!call.joined || !awaitingEngine || !payload.participants.some((u) => u.id === state.me.id)) return;
+    awaitingEngine = false;
+    const engine = createEngine(payload.mode === 'sfu' ? 'sfu' : 'mesh');
+    if (!call.setEngine(engine)) return;
+    if (sendTrack) engine.setLocalTrack('audio', sendTrack);
+    if (cameraTrack) engine.setLocalTrack('camera', cameraTrack);
+    if (screenTrack) engine.setLocalTrack('screen', screenTrack);
+    engine.setAudioPaused?.(muted || deafened);
+    engine.start();
+  }
+
+  // Drops the engine and every remote, then joins again through voice_join; the next voice_state
+  // with me in it builds a fresh engine for whatever mode the room has now.
+  function rejoinRoom() {
+    call.dropEngine();
+    for (const id of [...peers.keys()]) closeRemotePeer(id);
+    roster = roster.filter((u) => u.id !== state.me.id);
+    sendJoin();
+  }
+
+  function onSfuProduceFailed(media) {
+    if (!call.joined) return;
+    toast(t(media === 'camera' ? 'voice.cameraShareFailed' : 'voice.screenShareFailed'), { type: 'error' });
+    if (media === 'camera' && cameraTrack) toggleCamera();
+    if (media === 'screen' && screenTrack) toggleScreenShare();
+  }
+
+  function onSfuConnectFailed(direction) {
+    if (!call.joined) return;
+    if (direction) toast(t('voice.sfuConnectFailed'), { type: 'error' });
+    sfuRetry.failed(direction);
+  }
 
   render();
 
   const offVoiceState = bus.on('ws:voice_state', (payload) => {
     if (!matchesThisRoom(payload)) return;
+    startEngine(payload);
     applyRoster(payload.participants);
+  });
+  // sfu_event goes to every tab of the user, so only the tab whose call is in that room acts on it.
+  const offSfuEvent = bus.on('ws:sfu_event', (payload) => {
+    if (!call.joined || !matchesThisRoom(payload)) return;
+    if (payload.event === 'reset') { rejoinRoom(); return; }
+    call.engine?.handleEvent?.(payload);
+  });
+  const offSfuResponse = bus.on('ws:sfu_response', (payload) => {
+    call.engine?.handleResponse?.(payload);
   });
   const offVoiceSignal = bus.on('ws:voice_signal', (payload) => {
     if (!matchesThisRoom(payload)) return;
-    handleSignal(payload.fromUserId, payload.signal);
+    call.engine?.handleSignal(payload.fromUserId, payload.signal);
   });
   // Every participant (sender included) plays from this same broadcast, not optimistically on
   // click — there's no central mixer to inject the clip into anyone's outgoing WebRTC track, so
@@ -176,11 +253,12 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     if (!isStage || payload.channelId !== channelId) return;
     speakerIds = new Set(payload.speakers);
     raisedHandIds = new Set(payload.raisedHands);
+    if (amSpeaker(state.me.id)) call.engine?.retryAudio?.();
     updateSendEnabled();
     render();
   });
   const offWbStroke = bus.on('ws:wb_stroke', (payload) => {
-    if (!wb || payload.channelId !== channelId || !joined) return;
+    if (!wb || payload.channelId !== channelId || !call.joined) return;
     wb.applyStroke(payload);
     showWbIfActive();
   });
@@ -189,7 +267,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     wb.applyClear();
   });
   const offWbState = bus.on('ws:wb_state', (payload) => {
-    if (!wb || payload.channelId !== channelId || !joined) return;
+    if (!wb || payload.channelId !== channelId || !call.joined) return;
     wb.applyState(payload.strokes);
     showWbIfActive();
   });
@@ -197,24 +275,22 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   // other participant tears down their peer connection to us — so on reconnect we're a ghost:
   // still marked joined locally with peer connections nobody else recognizes. Tear ours down too
   // and re-announce, reusing the mic stream we already have.
+  // The room may even have been recreated in another mode meanwhile, so the engine is rebuilt.
   const offWsOpen = bus.on('ws:open', () => {
-    if (!joined) return;
-    for (const id of [...peers.keys()]) closePeer(id);
-    // applyRoster only offers to others when it sees us transition from absent to present
-    // (`!iWasIn && iAmIn`); our cached roster still has us in it from before the drop, so without
-    // this it'd conclude we were never gone and silently skip re-offering to anyone.
-    roster = roster.filter((u) => u.id !== state.me.id);
-    ws.send({ type: 'voice_join', ...scopePayload() });
+    if (!call.joined) return;
+    rejoinRoom();
   });
   // Server-side backstop for the one-call rule (e.g. already in a call from another tab/device).
   const offJoinDenied = bus.on('ws:voice_join_denied', (payload) => {
-    if (!joined || !matchesThisRoom(payload)) return;
-    toast(payload.reason === 'invisible' ? t('voice.joinDeniedInvisible') : t('voice.joinDeniedToast'), { type: 'error' });
+    if (!call.joined || !matchesThisRoom(payload)) return;
+    const key = joinDeniedToastKey(payload.reason);
+    if (key) toast(t(key), { type: 'error' });
+    call.end();
     cleanupAll();
-    joined = false;
-    if (activeCall?.key === key) activeCall = null;
     roster = roster.filter((u) => u.id !== state.me.id);
     setVoiceState({ serverId: null, channelId: null, channelName: null, dmId: null, dmName: null });
+    // Ended while the user is on another view: nothing will destroy this mount later.
+    if (call.detached) { destroy(); return; }
     render();
   });
   const offPrefsChanged = bus.on('voiceprefs:changed', onPrefsChanged);
@@ -237,10 +313,10 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
       <div class="voice-room">
         <div class="voice-participants" id="vc-grid"></div>
         <div class="voice-controls">
-          ${joined && prefs.pttEnabled
+          ${call.joined && prefs.pttEnabled
             ? `<span class="vc-ptt-hint" title="${t('voice.pttHintTitle')}">${icons.mic(16)} ${t('voice.holdKeyToTalk', { key: keyLabel(prefs.pttKey) })}</span>`
             : ''}
-          ${joined
+          ${call.joined
             ? `${!isStage || amSpeaker(state.me.id)
                 ? `<button class="btn-icon voice-ctl ${muted ? 'active-danger' : ''}" id="vc-mute" ${prefs.pttEnabled || forceMuted ? 'disabled' : ''} title="${forceMuted ? t('voice.mutedByModeratorTitle') : muted ? t('userBar.unmute') : t('userBar.mute')}">${muted ? icons.micOff(20) : icons.mic(20)}</button>`
                 : `<button class="btn-icon voice-ctl ${raisedHandIds.has(state.me.id) ? 'active' : ''}" id="vc-raise-hand" title="${raisedHandIds.has(state.me.id) ? t('voice.lowerHandTitle') : t('voice.raiseHandTitle')}">${icons.hand(20)}</button>`}
@@ -257,7 +333,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
       </div>`;
 
     renderGrid();
-    if (wb && joined && wbVisible) {
+    if (wb && call.joined && wbVisible) {
       container.querySelector('.voice-controls').before(wb.el);
       wb.refresh();
       wb.fit();
@@ -441,7 +517,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   }
 
   function onPrefsChanged() {
-    if (!joined) { render(); return; }
+    if (!call.joined) { render(); return; }
     applyOutputVolumes();
     for (const peer of peers.values()) if (peer.audioEl) applySinkId(peer.audioEl);
     rebuildInputGraph();
@@ -453,7 +529,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   // peer connections is the destination node's track (post-gain), never the raw mic track, so
   // the input-volume slider actually affects what others hear, not just local monitoring.
   async function rebuildInputGraph() {
-    if (!joined) return;
+    if (!call.joined) return;
     const prefs = voicePrefs.get();
     let newRaw;
     try {
@@ -494,10 +570,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
       sendTrack = rawStream.getAudioTracks()[0];
     }
     updateSendEnabled();
-    for (const { pc } of peers.values()) {
-      const sender = pc.getSenders().find((s) => s.track?.kind === 'audio');
-      if (sender) sender.replaceTrack(sendTrack);
-    }
+    call.engine?.setLocalTrack('audio', sendTrack);
     startLocalMeter(source);
   }
 
@@ -522,6 +595,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   // (or, for VAD, through the level-driven gate in the meter tick below) instead of each poking
   // track.enabled directly, so they can't fight each other.
   function updateSendEnabled() {
+    call.engine?.setAudioPaused?.(muted || deafened);
     if (!sendTrack) return;
     // Audience members can never transmit, regardless of their own mute toggle — the only way
     // out is a speaker promoting them (stage_invite_speaker), not anything they control locally.
@@ -535,30 +609,14 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   }
 
   function applyRoster(next) {
-    const prevIds = new Set(roster.map((u) => u.id));
-    const nextIds = new Set(next.map((u) => u.id));
-    const iWasIn = prevIds.has(state.me.id);
-    const iAmIn = nextIds.has(state.me.id);
-
-    // Newcomer-offers-to-existing-members convention: on the roster update where my own join
-    // lands, I'm the newcomer — I initiate offers to everyone already there. On every other
-    // update, any new arrival is someone else joining after me, so I just wait for their offer.
-    if (!iWasIn && iAmIn) {
-      for (const u of next) {
-        if (u.id !== state.me.id) initiateOfferTo(u.id);
-      }
-    }
-
-    for (const id of prevIds) {
-      if (!nextIds.has(id) && id !== state.me.id) closePeer(id);
-    }
-
+    call.engine?.onRoster(next.map((u) => u.id));
     roster = next;
     const myEntry = next.find((u) => u.id === state.me.id);
     const nowForceMuted = !!myEntry?.mutedByMod;
     if (nowForceMuted !== forceMuted) {
       forceMuted = nowForceMuted;
       if (forceMuted && !muted) { muted = true; setVoiceState({ muted }); }
+      if (!forceMuted) call.engine?.retryAudio?.();
       updateSendEnabled();
       if (forceMuted) toast(t('voice.moderatorMutedYouToast'), { type: 'error' });
       render();
@@ -568,16 +626,12 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   }
 
   async function join() {
-    if (joined) return;
-    if (activeCall && activeCall.key !== key) {
-      toast(t('voice.alreadyInCallToast', { name: state.voice.dmName || state.voice.channelName || '' }), { type: 'error' });
-      return;
-    }
-    joined = true;
+    if (!call.beginJoin()) return;
     await rebuildInputGraph();
-    if (!sendTrack) { joined = false; return; }
-    activeCall = { key, attach, leave: () => { if (joined) leave(); } };
-    ws.send({ type: 'voice_join', ...scopePayload() });
+    if (!sendTrack) { call.cancelJoin(); return; }
+    call.activate({ attach, leave: () => { if (call.joined) leave(); } });
+    sfuRetry.reset();
+    sendJoin();
     registerPtt();
     startStatsPolling();
     setVoiceState(isDm ? { dmId, dmName } : { serverId, channelId, channelName });
@@ -586,15 +640,14 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
 
   function leave() {
     ws.send({ type: 'voice_leave', ...scopePayload() });
+    call.end();
     cleanupAll();
-    joined = false;
-    if (activeCall?.key === key) activeCall = null;
     deafened = false;
     roster = roster.filter((u) => u.id !== state.me.id);
     // Mute/deafen themselves are left alone — like Discord, that's a standing preference, not
     // something a call ending should reset.
     setVoiceState({ serverId: null, channelId: null, channelName: null, dmId: null, dmName: null });
-    if (detached) { destroy(); return; }
+    if (call.detached) { destroy(); return; }
     render();
   }
 
@@ -621,26 +674,30 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   }
 
   async function toggleCamera() {
+    // A second click while the camera is still opening (or flipping) would open a second one and lose track of it.
+    if (cameraOpening) return;
     if (cameraTrack) {
-      for (const [uid, peer] of peers) {
-        const sender = peer.pc.getSenders().find((s) => s.track === cameraTrack);
-        if (sender) peer.pc.removeTrack(sender);
-        ws.send({ type: 'voice_signal', ...scopePayload(), toUserId: uid, signal: { kind: 'media-announce', media: 'camera', active: false } });
-      }
+      // Started before stop() so the senders are removed while the track is still live, as before
+      // the engine split; the renegotiation it awaits runs after.
+      const removed = call.engine?.setLocalTrack('camera', null);
       cameraTrack.stop();
       cameraTrack = null;
       localCameraStream = null;
-      await Promise.all([...peers.keys()].map(renegotiateWith));
+      await removed;
       render();
       return;
     }
+    cameraOpening = true;
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: mobile ? { facingMode: cameraFacing } : true });
     } catch {
       toast(t('voice.couldNotAccessCamera'), { type: 'error' });
       return;
+    } finally {
+      cameraOpening = false;
     }
+    if (!call.joined) { for (const tr of stream.getTracks()) tr.stop(); return; }
     cameraTrack = stream.getVideoTracks()[0];
     localCameraStream = stream;
     const thisTrack = cameraTrack;
@@ -650,14 +707,14 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     // thisTrack` guard stops a stale event from an already-replaced track re-triggering the
     // toggle-off path a second time.
     cameraTrack.onended = () => { if (cameraTrack === thisTrack) toggleCamera(); };
-    for (const [uid, peer] of peers) { peer.pc.addTrack(cameraTrack, new MediaStream([cameraTrack])); announceMediaTo(uid, 'camera', cameraTrack); }
-    await Promise.all([...peers.keys()].map(renegotiateWith));
+    await call.engine?.setLocalTrack('camera', cameraTrack);
     render();
   }
 
   // Phones usually cannot open two cameras at once, so the old track is stopped before the new one opens.
   async function flipCamera() {
-    if (!cameraTrack) return;
+    if (!cameraTrack || cameraOpening) return;
+    cameraOpening = true;
     const next = cameraFacing === 'user' ? 'environment' : 'user';
     const old = cameraTrack;
     old.onended = null;
@@ -668,53 +725,48 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     } catch {
       cameraTrack = null; localCameraStream = null;
       toast(t('voice.couldNotAccessCamera'), { type: 'error' });
-      for (const [uid, peer] of peers) {
-        const sender = peer.pc.getSenders().find((s) => s.track === old);
-        if (sender) peer.pc.removeTrack(sender);
-        ws.send({ type: 'voice_signal', ...scopePayload(), toUserId: uid, signal: { kind: 'media-announce', media: 'camera', active: false } });
-      }
-      await Promise.all([...peers.keys()].map(renegotiateWith));
+      await call.engine?.setLocalTrack('camera', null);
       render();
       return;
+    } finally {
+      cameraOpening = false;
     }
+    if (!call.joined || cameraTrack !== old) { for (const tr of stream.getTracks()) tr.stop(); return; }
     const track = stream.getVideoTracks()[0];
-    for (const peer of peers.values()) {
-      const sender = peer.pc.getSenders().find((s) => s.track === old);
-      if (sender) await sender.replaceTrack(track);
-    }
     cameraTrack = track; localCameraStream = stream; cameraFacing = next;
+    await call.engine?.setLocalTrack('camera', track);
     track.onended = () => { if (cameraTrack === track) toggleCamera(); };
     render();
   }
 
   async function toggleScreenShare() {
     if (screenTrack) {
-      for (const [uid, peer] of peers) {
-        const sender = peer.pc.getSenders().find((s) => s.track === screenTrack);
-        if (sender) peer.pc.removeTrack(sender);
-        ws.send({ type: 'voice_signal', ...scopePayload(), toUserId: uid, signal: { kind: 'media-announce', media: 'screen', active: false } });
-      }
+      const removed = call.engine?.setLocalTrack('screen', null);
       screenTrack.stop();
       screenTrack = null;
       localScreenStream = null;
-      await Promise.all([...peers.keys()].map(renegotiateWith));
+      await removed;
       render();
       return;
     }
+    if (screenOpening) return;
+    screenOpening = true;
     let stream;
     try {
       stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
     } catch {
       return; // user cancelled the picker — not an error worth a toast
+    } finally {
+      screenOpening = false;
     }
+    if (!call.joined) { for (const tr of stream.getTracks()) tr.stop(); return; }
     screenTrack = stream.getVideoTracks()[0];
     localScreenStream = stream;
     const thisTrack = screenTrack;
     // Fires when the user clicks the browser/OS's own native "Stop sharing" control, not just
     // when they click our button — same toggle-off path either way keeps state consistent.
     screenTrack.onended = () => { if (screenTrack === thisTrack) toggleScreenShare(); };
-    for (const [uid, peer] of peers) { peer.pc.addTrack(screenTrack, new MediaStream([screenTrack])); announceMediaTo(uid, 'screen', screenTrack); }
-    await Promise.all([...peers.keys()].map(renegotiateWith));
+    await call.engine?.setLocalTrack('screen', screenTrack);
     render();
   }
 
@@ -745,171 +797,11 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     pttActive = false;
   }
 
-  function preferOpus(pc) {
-    try {
-      const transceiver = pc.getTransceivers().find((t) => t.sender?.track?.kind === 'audio');
-      if (!transceiver || !transceiver.setCodecPreferences || !RTCRtpSender.getCapabilities) return;
-      const caps = RTCRtpSender.getCapabilities('audio');
-      if (!caps) return;
-      const opus = caps.codecs.filter((c) => c.mimeType.toLowerCase() === 'audio/opus');
-      const rest = caps.codecs.filter((c) => c.mimeType.toLowerCase() !== 'audio/opus');
-      if (opus.length) transceiver.setCodecPreferences([...opus, ...rest]);
-    } catch { /* setCodecPreferences isn't universally supported — Opus is already the default */ }
-  }
-
-  async function setTunedLocal(pc, desc) {
-    await pc.setLocalDescription({ type: desc.type, sdp: tuneOpusSdp(desc.sdp, quality) });
-    applySenderQuality(pc);
-  }
-
-  function applySenderQuality(pc) {
-    const sender = pc.getSenders().find((s) => s.track?.kind === 'audio');
-    if (!sender) return;
-    try {
-      const params = sender.getParameters();
-      if (!params.encodings?.length) params.encodings = [{}];
-      params.encodings[0].maxBitrate = voiceQualityPreset(quality).bitrate;
-      sender.setParameters(params).catch(() => {});
-    } catch { /* sender not negotiated yet; the post-setLocalDescription call covers it */ }
-  }
-
-  function announceMediaTo(userId, media, track) {
-    ws.send({ type: 'voice_signal', ...scopePayload(), toUserId: userId, signal: { kind: 'media-announce', media, trackId: track.id, active: true } });
-  }
-
-  async function createPeer(userId) {
-    const ice = await getIceConfig();
-    const pc = new RTCPeerConnection({ iceServers: ice.servers, iceCandidatePoolSize: 2 });
-    pc.onicecandidate = (e) => {
-      if (e.candidate) ws.send({ type: 'voice_signal', ...scopePayload(), toUserId: userId, signal: { kind: 'ice', candidate: e.candidate.toJSON() } });
-    };
-    pc.ontrack = (e) => {
-      if (e.track.kind === 'audio') { attachRemoteAudio(userId, e.streams[0]); return; }
-      const queue = pendingRemoteMedia.get(userId);
-      const media = queue?.shift() || 'camera';
-      attachRemoteVideo(userId, media, e.streams[0]);
-      e.track.onended = () => detachRemoteVideo(userId, media);
-    };
-    // A dropped path (Wi-Fi roam, VPN reconnect) is retried with an ICE restart, which gathers
-    // fresh candidates and falls back to STUN/TURN if the direct path is gone; only after repeated
-    // failures is the peer closed.
-    pc.onconnectionstatechange = () => {
-      const peer = peers.get(userId);
-      if (!peer || peer.pc !== pc) return;
-      clearTimeout(peer.restartTimer);
-      if (pc.connectionState === 'connected') peer.restarts = 0;
-      else if (pc.connectionState === 'disconnected') peer.restartTimer = setTimeout(() => restartIceFor(userId), 4000);
-      else if (pc.connectionState === 'failed') restartIceFor(userId);
-      else if (pc.connectionState === 'closed') closePeer(userId);
-    };
-    if (sendTrack) pc.addTrack(sendTrack, new MediaStream([sendTrack]));
-    if (cameraTrack) { pc.addTrack(cameraTrack, new MediaStream([cameraTrack])); announceMediaTo(userId, 'camera', cameraTrack); }
-    if (screenTrack) { pc.addTrack(screenTrack, new MediaStream([screenTrack])); announceMediaTo(userId, 'screen', screenTrack); }
-    peers.set(userId, { pc, audioEl: null, speaking: false, volume: 1, quality: 'good', cameraStream: null, screenStream: null, makingOffer: false, pendingIce: [], lanNetworks: ice.lanNetworks, restarts: 0, restartTimer: null, path: null });
-    return pc;
-  }
-
-  async function restartIceFor(userId) {
-    const peer = peers.get(userId);
-    if (!peer || peer.pc.connectionState === 'connected' || peer.pc.connectionState === 'closed') return;
-    if (peer.restarts >= 3) { closePeer(userId); return; }
-    if (peer.makingOffer || peer.pc.signalingState !== 'stable') { peer.restartTimer = setTimeout(() => restartIceFor(userId), 3000); return; }
-    peer.restarts++;
-    peer.pc.restartIce();
-    try { await renegotiateWith(userId); } catch { /* next state change retries */ }
-    peer.restartTimer = setTimeout(() => restartIceFor(userId), 8000);
-  }
-
-  async function flushPendingIce(peer) {
-    const queued = peer.pendingIce.splice(0);
-    for (const c of queued) { try { await peer.pc.addIceCandidate(c); } catch { /* stale candidate */ } }
-  }
-
-  async function initiateOfferTo(userId) {
-    if (peers.has(userId)) return;
-    const pc = await createPeer(userId);
-    const peer = peers.get(userId);
-    peer.makingOffer = true;
-    try {
-      const offer = await pc.createOffer();
-      preferOpus(pc);
-      await setTunedLocal(pc, offer);
-      ws.send({ type: 'voice_signal', ...scopePayload(), toUserId: userId, signal: { kind: 'offer', sdp: pc.localDescription.sdp } });
-    } finally {
-      peer.makingOffer = false;
-    }
-  }
-
-  // Re-offers on an already-established connection — used whenever a local track is added or
-  // removed after the initial join (camera/screen-share toggles). handleSignal's 'offer' branch
-  // already reuses an existing pc rather than assuming a first-ever offer, so no changes needed
-  // on the receiving side to support this.
-  async function renegotiateWith(userId) {
-    const peer = peers.get(userId);
-    if (!peer) return;
-    peer.makingOffer = true;
-    try {
-      const offer = await peer.pc.createOffer();
-      preferOpus(peer.pc);
-      await setTunedLocal(peer.pc, offer);
-      ws.send({ type: 'voice_signal', ...scopePayload(), toUserId: userId, signal: { kind: 'offer', sdp: peer.pc.localDescription.sdp } });
-    } finally {
-      peer.makingOffer = false;
-    }
-  }
-
-  async function handleSignal(fromUserId, signal) {
-    if (!signal || !signal.kind) return;
-    if (signal.kind === 'offer') {
-      const existing = peers.get(fromUserId);
-      const pc = existing ? existing.pc : await createPeer(fromUserId);
-      const peer = peers.get(fromUserId);
-      // Perfect-negotiation glare handling: both sides can renegotiate at once (e.g. both
-      // toggling camera around the same time). Politeness is decided the same deterministic way
-      // on both ends (higher user id is polite) so exactly one side backs off - the impolite side
-      // ignores a colliding incoming offer and keeps its own outstanding one; the polite side
-      // rolls its own back (implicit local rollback) and accepts the incoming offer instead.
-      // Without this, a later-arriving answer for a since-rolled-back offer fails outright
-      // ("Failed to set remote answer sdp: Called in wrong state: stable"), permanently breaking
-      // that peer's connection instead of just settling on one side's renegotiation.
-      const offerCollision = peer.makingOffer || pc.signalingState !== 'stable';
-      const polite = state.me.id > fromUserId;
-      if (offerCollision && !polite) return; // impolite: ignore their offer, ours will win
-      if (offerCollision) await pc.setLocalDescription({ type: 'rollback' });
-      await pc.setRemoteDescription({ type: 'offer', sdp: signal.sdp });
-      await flushPendingIce(peer);
-      const answer = await pc.createAnswer();
-      preferOpus(pc);
-      await setTunedLocal(pc, answer);
-      ws.send({ type: 'voice_signal', ...scopePayload(), toUserId: fromUserId, signal: { kind: 'answer', sdp: pc.localDescription.sdp } });
-    } else if (signal.kind === 'answer') {
-      const peer = peers.get(fromUserId);
-      // A stale answer for an offer we already rolled back (we were the polite side in a glare)
-      // has nothing to apply to - signalingState is 'stable' by then, not 'have-local-offer'.
-      if (peer && peer.pc.signalingState === 'have-local-offer') {
-        await peer.pc.setRemoteDescription({ type: 'answer', sdp: signal.sdp });
-        await flushPendingIce(peer);
-      }
-    } else if (signal.kind === 'ice' && signal.candidate) {
-      const peer = peers.get(fromUserId);
-      if (!peer || !shouldAcceptRemoteCandidate(signal.candidate, peer.lanNetworks)) return;
-      // Candidates can outrun the offer/answer they belong to; adding one before the remote
-      // description is set throws, so hold it until then.
-      if (!peer.pc.remoteDescription) { peer.pendingIce.push(signal.candidate); return; }
-      try { await peer.pc.addIceCandidate(signal.candidate); } catch { /* stray late candidate, ignore */ }
-    } else if (signal.kind === 'media-announce') {
-      if (signal.active) {
-        if (!pendingRemoteMedia.has(fromUserId)) pendingRemoteMedia.set(fromUserId, []);
-        pendingRemoteMedia.get(fromUserId).push(signal.media);
-      } else {
-        detachRemoteVideo(fromUserId, signal.media);
-      }
-    }
-  }
-
   function attachRemoteAudio(userId, stream) {
-    const peer = peers.get(userId);
-    if (!peer) return;
+    const peer = uiPeer(userId);
+    // An SFU audio producer can be replaced (mute retry, rejoin), which attaches a second stream.
+    peer.audioEl?.remove();
+    peer.analyser?.ctx?.close?.().catch(() => {});
     const audioEl = document.createElement('audio');
     audioEl.autoplay = true;
     audioEl.srcObject = stream;
@@ -921,8 +813,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   }
 
   function attachRemoteVideo(userId, media, stream) {
-    const peer = peers.get(userId);
-    if (!peer) return;
+    const peer = uiPeer(userId);
     if (media === 'camera') peer.cameraStream = stream; else peer.screenStream = stream;
     renderGrid();
   }
@@ -934,14 +825,13 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     renderGrid();
   }
 
-  function closePeer(userId) {
+  function closeRemotePeer(userId) {
     const peer = peers.get(userId);
-    if (!peer) return;
-    clearTimeout(peer.restartTimer);
-    peer.pc.close();
-    peer.audioEl?.remove();
-    peer.analyser?.ctx?.close?.().catch(() => {});
-    peers.delete(userId);
+    if (peer) {
+      peer.audioEl?.remove();
+      peer.analyser?.ctx?.close?.().catch(() => {});
+      peers.delete(userId);
+    }
     renderGrid();
   }
 
@@ -990,7 +880,7 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   }
 
   meterTimer = setInterval(() => {
-    if (joined) {
+    if (call.joined) {
       const prefs = voicePrefs.get();
       let level;
       if (localMeter) level = readLevel(localMeter);
@@ -1007,37 +897,28 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
   }
 
   async function pollStats() {
-    for (const [id, peer] of peers) {
-      try {
-        const report = await peer.pc.getStats();
-        const path = connectionPath(report);
-        let rtt = 0, lost = 0, received = 0;
-        report.forEach((stat) => {
-          if (stat.type === 'candidate-pair' && (stat.state === 'succeeded') && stat.currentRoundTripTime != null) {
-            rtt = Math.max(rtt, stat.currentRoundTripTime * 1000);
-          }
-          if (stat.type === 'inbound-rtp' && stat.kind === 'audio') {
-            lost = stat.packetsLost ?? 0;
-            received = stat.packetsReceived ?? 0;
-          }
-        });
-        const lossRatio = received > 0 ? lost / (lost + received) : 0;
-        const quality = rtt < 150 && lossRatio < 0.02 ? 'good' : rtt < 300 && lossRatio < 0.05 ? 'ok' : 'poor';
-        if (peer.quality !== quality || peer.path !== path) {
-          peer.quality = quality;
-          peer.path = path;
-          const dot = container.querySelector(`.voice-tile[data-uid="${id}"] .vc-quality`);
-          if (dot) { dot.className = `vc-quality vc-quality-${quality}`; dot.title = qualityTitle(peer); }
-        }
-      } catch { /* stats unavailable mid-negotiation — try again next tick */ }
+    const engine = call.engine;
+    if (!engine) return;
+    for (const [id, { quality, path }] of await engine.pollStats()) {
+      if (call.engine === engine) updateQuality(id, quality, path);
     }
   }
 
+  function updateQuality(userId, quality, path) {
+    const peer = uiPeer(userId);
+    if (peer.quality === quality && peer.path === path) return;
+    peer.quality = quality;
+    peer.path = path;
+    const dot = container.querySelector(`.voice-tile[data-uid="${userId}"] .vc-quality`);
+    if (dot) { dot.className = `vc-quality vc-quality-${quality}`; dot.title = qualityTitle(peer); }
+  }
+
   function cleanupAll() {
+    awaitingEngine = false;
     wb?.reset();
     wbVisible = isStage;
     wbChosen = false;
-    for (const id of [...peers.keys()]) closePeer(id);
+    for (const id of [...peers.keys()]) closeRemotePeer(id);
     teardownInputGraph();
     unregisterPtt();
     clearInterval(statsTimer);
@@ -1047,19 +928,20 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     screenTrack = null;
     localCameraStream = null;
     localScreenStream = null;
-    pendingRemoteMedia.clear();
   }
 
   function attach(newContainer) {
     container = newContainer;
-    detached = false;
+    call.attach();
     render();
     return handle;
   }
 
   function destroy() {
-    if (joined) { detached = true; return; }
+    if (!call.detach()) return;
     offVoiceState();
+    offSfuEvent();
+    offSfuResponse();
     offVoiceSignal();
     offSoundboard();
     offStageState();
@@ -1076,6 +958,6 @@ function createVoiceMount(container, { serverId, channelId, channelName, dmId, d
     cleanupAll();
   }
 
-  const handle = { destroy, leave: () => { if (joined) leave(); }, isJoined: () => joined };
+  const handle = { destroy, leave: () => { if (call.joined) leave(); }, isJoined: () => call.joined };
   return handle;
 }

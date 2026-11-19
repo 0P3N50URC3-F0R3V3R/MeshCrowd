@@ -74,7 +74,7 @@ function launchSpec({ port, docroot }) {
     '-d', `disable_functions=${DISABLED_FUNCTIONS}`,
     '-d', 'allow_url_include=0', '-d', 'allow_url_fopen=0',
     '-d', 'display_errors=0', '-d', 'log_errors=1',
-    '-d', 'file_uploads=0', '-d', 'max_execution_time=15',
+    '-d', 'file_uploads=0', '-d', 'session.upload_progress.enabled=0', '-d', 'max_execution_time=15',
     '-d', 'memory_limit=128M', '-d', 'expose_php=0',
     '-S', `127.0.0.1:${port}`, '-t', root,
   );

@@ -43,6 +43,7 @@ test('launchSpec sandboxes the process and never forwards app secrets', async ()
   assert.ok(spec.args.includes(`open_basedir="${path.resolve(docroot)}"`));
   assert.match(joined, /disable_functions=[^ ]*shell_exec/);
   assert.match(joined, /allow_url_include=0/);
+  assert.match(joined, /session.upload_progress.enabled=0/);
   assert.ok(spec.args.includes('127.0.0.1:45678'));
   assert.ok(spec.args.includes('-t'));
   assert.equal(spec.cwd, path.resolve(docroot));

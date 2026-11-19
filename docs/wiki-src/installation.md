@@ -55,6 +55,8 @@ Run the start script under your service manager of choice (systemd, a Windows se
 Stop the server and copy the whole `data/` folder. It contains the database, the configuration, the certificate and every uploaded file. Restore by putting the folder back.
 :::
 
+The SFU voice engine, when enabled, also needs `voice.sfu.port` to `port + workers - 1` (default `40000`-`40003`) open on UDP and TCP, see [SFU voice engine](configuration.html#sfu-voice-engine).
+
 Do not copy `data/dismesh.db` alone while the server runs, because uploads and the database must match.
 
 ## Updating
@@ -63,6 +65,8 @@ Do not copy `data/dismesh.db` alone while the server runs, because uploads and t
 2. Stop the server.
 3. Replace the program files with the new version, keeping your `data/` folder.
 4. Start the server. Database changes are applied automatically on start.
+
+**Updating to a version with the SFU voice engine.** Besides the usual program files (`server/`, `web/`, `lang/`, `scripts/`, `package.json`, `package-lock.json`), copy the **whole `node_modules/` folder**: it now contains `mediasoup` (with its native worker) and its dependencies, which the server needs at start. `runtime/` (PHP, ffmpeg) is unchanged by this release. The server starts as before with `voice.mode` on `mesh`; to use the SFU, follow [SFU voice engine](configuration.html#sfu-voice-engine): open the media ports, set the public address and switch the mode in Admin Panel, Calls. Run `npm install` instead of copying `node_modules/` only if the server is on a different operating system than the one the folder was built on (then also run `npm run fetch:mediasoup` on Linux or macOS).
 
 The web client and the phone interface are served by the server, so updating the server updates them everywhere. Desktop and Android apps only need a new release when their own native code changes.
 

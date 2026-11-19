@@ -9,11 +9,20 @@ order: 4
 
 ## Hogyan működnek a hívások
 
-A hang és videó **közvetlen WebRTC**. Minden résztvevő közvetlenül kapcsolódik minden másikhoz, a szerver pedig csak a jelzéseket továbbítja ugyanazon a WebSocketen, amelyet a csevegéshez is használunk. Nincs médiaszerver, amit üzemeltetni kellene.
+A szerver kétféle módban futtathat hívásokat, az adminisztrátor választ (**Adminpanel, Hívások, Hangmotor**). Minden hangcsatornára, színpadra és DM-hívásra vonatkozik, és a szoba létrehozásakor rögzül, így a váltás csak az utána létrehozott szobákat érinti.
+
+- **Mesh** (alapértelmezett): a hang és videó **közvetlen WebRTC**. Minden résztvevő közvetlenül kapcsolódik minden másikhoz, a szerver pedig csak a jelzéseket továbbítja ugyanazon a WebSocketen, amelyet a csevegéshez is használunk. Nincs médiaszerver, amit üzemeltetni kellene.
+- **SFU** (szelektív továbbítás): minden résztvevő a streamjét **egyszer** küldi el a szerver beépített médiaútválasztójának (mediasoup, a szerverfolyamaton belül fut), amely továbbítja a többieknek. A feltöltési igény nem nő a hívás méretével, ami megszünteti a szaggatást nagyobb vagy videós szobákban és gyenge feltöltésű felhasználóknál.
 
 ::: note Tervezz a hívás méretével
-Mivel teljes hálóról van szó, mindenki egyszer tölti fel a streamjét minden más résztvevőnek. Egy nagyjából nyolc vagy több fős, videós hívás sok feltöltési sávszélességet kér mindenkitől. A csak hangos szobák sokkal tovább skálázódnak.
+Mesh módban mindenki egyszer tölti fel a streamjét minden más résztvevőnek. Egy nagyjából nyolc vagy több fős, videós hívás sok feltöltési sávszélességet kér mindenkitől. A csak hangos szobák sokkal tovább skálázódnak, az SFU mód pedig megszünteti a korlátot.
 :::
+
+::: note Adatvédelem SFU módban
+Mesh módban a szerver soha nem lát médiát. SFU módban a szerver lezárja a titkosított hívásfolyamokat a továbbításhoz, így technikailag vissza tudja fejteni őket. Csak megbízható szerveren válaszd. Az admin panel figyelmeztetést mutat erről.
+:::
+
+Hívás közben használhatsz más csatornákat, így szöveges csatornákat is; a hívás az alsó sávban folytatódik. Egyszerre egy hangszobában lehetsz: egy másikba belépve az elsőt elhagyod. Ha ugyanazt a hívást egy második lapon vagy eszközön nyitod meg, a hívás odaköltözik, az elsőn pedig értesítéssel véget ér.
 
 ## Csatlakozás
 
@@ -45,7 +54,7 @@ A színpad **előadókra** és **hallgatóságra** osztott hangszoba. A hallgat�
 
 ## Moderátori eszközök
 
-A **Tagok moderálása** jogosultsággal rendelkezők **mindenki számára némíthatnak** valakit a csempéjéről. A célszemély kliense leállítja a hang küldését, a saját némításfeloldó gombja pedig le van tiltva, amíg egy moderátor fel nem oldja; egy jelvény látszik a csempén. Médiaszerver nélkül ez a célkliens utasításával működik, mint más chatalkalmazásokban.
+A **Tagok moderálása** jogosultsággal rendelkezők **mindenki számára némíthatnak** valakit a csempéjéről. A célszemély kliense leállítja a hang küldését, a saját némításfeloldó gombja pedig le van tiltva, amíg egy moderátor fel nem oldja; egy jelvény látszik a csempén. Mesh módban ez a célszemély kliensének utasításával működik; SFU módban a szerver a személy streamjét is szünetelteti, így módosított klienssel sem hallható.
 
 ## Privát hívások
 
@@ -81,4 +90,6 @@ A szerver tulajdonosa opcionálisan megadhatja a LAN és VPN alhálózatokat, l�
 | LAN-on csatlakozik, hálózatok között nem | Kapcsold be a beépített STUN/TURN szervert (`setup-turn.bat`, vagy Adminpanel, Hívások), és irányítsd át a portokat a routeren, lásd: [STUN és TURN](configuration.html#stun-s-turn) |
 | Az azonos Radmin/ZeroTier/LAN hálózaton lévők lassan vagy továbbításon át kapcsolódnak | A minőségjelző pont fölé víve látszik az útvonal. Add meg a VPN alhálózatot az **Adminpanel, Hívások, LAN / VPN hálózatok** alatt, hogy a többi adapter (Docker, WSL) ki legyen hagyva, és ellenőrizd, hogy a VPN átengedi az UDP-t a tagok között |
 | Valakit nem hallani | A böngészője letiltotta a mikrofont, vagy rossz a bemeneti eszköze az eszközválasztóban |
-| Szaggatott hang nagy hívásban | Csökkentsd az előbeállítást, vagy kérd meg az embereket, hogy kapcsolják ki a kamerát |
+| Szaggatott hang nagy hívásban | Állítsd a szervert SFU módra (Adminpanel, Hívások, Hangmotor), vagy csökkentsd az előbeállítást, és kérd meg az embereket, hogy kapcsolják ki a kamerát |
+| SFU mód: „a tűzfal blokkolhatja” értesítés | Nyisd meg az SFU-portsávot UDP-n és TCP-n a szerver tűzfalán és a routeren, és ellenőrizd, hogy a hirdetett cím a nyilvános, lásd: [SFU hangmotor](configuration.html#sfu-hangmotor) |
+| SFU mód be van állítva, de a hívások mesh módúak | Az SFU nem tudott elindulni (nincs worker ehhez az operációs rendszerhez, vagy foglaltak a portjai). Nézd meg az állapotsort az Adminpanel, Hívások, Hangmotor alatt; a szerver `[sfu]` sorokat naplóz |

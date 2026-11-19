@@ -45,6 +45,8 @@ A `./start-server.sh` ugyanezt teszi, és ha van mellékelt futtatókörnyezet, 
 
 Alapból a HTTPS a `8443`-on figyel. A sima `8080` port csak HTTPS-re irányít át. Módosításukhoz használd a `data/config.json` fájl `httpsPort` és `port` kulcsait. Lásd: [Konfiguráció](configuration.html).
 
+A bekapcsolt SFU hangmotornak a `voice.sfu.port` – `port + workers - 1` portokra (alapból `40000`-`40003`) is szüksége van nyitva UDP-n és TCP-n, lásd: [SFU hangmotor](configuration.html#sfu-hangmotor).
+
 ## Futtatás szolgáltatásként
 
 Futtasd az indítószkriptet a kedvenc szolgáltatáskezelőd alatt (systemd, Windows-szolgáltatás burkoló, ütemezett feladat). A folyamat a naplóját a szabványos kimenetre írja. Normál leállító jellel állítsd le; az adatbázis tisztán bezárul.
@@ -63,6 +65,8 @@ Ne másold egyedül a `data/dismesh.db` fájlt, miközben a szerver fut, mert a 
 2. Állítsd le a szervert.
 3. Cseréld le a programfájlokat az újra, a `data/` mappádat megtartva.
 4. Indítsd el a szervert. Az adatbázis-módosítások indításkor automatikusan lefutnak.
+
+**Frissítés SFU hangmotoros verzióra.** A szokásos programfájlokon (`server/`, `web/`, `lang/`, `scripts/`, `package.json`, `package-lock.json`) túl másold át a **teljes `node_modules/` mappát** is: már tartalmazza a `mediasoup`-ot (a natív workerével) és a függőségeit, amelyekre a szervernek indításkor szüksége van. A `runtime/` (PHP, ffmpeg) ebben a kiadásban nem változik. A szerver a korábbiak szerint indul, a `voice.mode` értéke `mesh`; az SFU használatához kövesd az [SFU hangmotor](configuration.html#sfu-hangmotor) leírását: nyisd meg a médiaportokat, add meg a nyilvános címet, és válts módot az Adminpanel, Hívások alatt. `node_modules/` másolása helyett csak akkor futtass `npm install`-t, ha a szerver más operációs rendszeren fut, mint amelyen a mappa készült (ilyenkor Linuxon vagy macOS-en az `npm run fetch:mediasoup` is kell).
 
 A webes klienst és a telefonos felületet a szerver szolgálja ki, így a szerver frissítése mindenhol frissíti őket. Az asztali és az Android-alkalmazásnak csak akkor kell új kiadás, ha a saját natív kódjuk változik.
 

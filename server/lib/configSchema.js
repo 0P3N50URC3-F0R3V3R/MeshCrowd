@@ -2,8 +2,9 @@
 
 const { DEFAULTS } = require('./config');
 
-// registrationMode is re-read from the config on every request; the logging keys go through the logger.
-const LIVE = new Set(['registrationMode', 'maxUploadMb', 'logging.level', 'logging.keepDays', 'logging.maxFileMb']);
+// registrationMode is re-read from the config on every request; the logging keys go through the logger;
+// the voice keys refresh the SFU facade's cache.
+const LIVE = new Set(['registrationMode', 'maxUploadMb', 'logging.level', 'logging.keepDays', 'logging.maxFileMb', 'voice.mode', 'voice.sfu.maxKbpsPerUser']);
 const SECRET = new Set(['turn.secret', 'purgePassword']);
 
 const port = { min: 1, max: 65535 };
@@ -27,6 +28,10 @@ const OVERRIDES = {
   'turn.autoIpSource': { enum: ['upnp', 'stun', 'http'] },
   'turn.autoIpIntervalMinutes': { min: 1, max: 1440 },
   'turn.maxKbps': { min: 0, max: 10000000 },
+  'voice.mode': { enum: ['mesh', 'sfu'] },
+  'voice.sfu.port': port,
+  'voice.sfu.workers': { min: 0, max: 16 },
+  'voice.sfu.maxKbpsPerUser': { min: 0, max: 10000000 },
   'logging.level': { enum: ['debug', 'info', 'warn', 'error'] },
   'logging.keepDays': { min: 1, max: 3650 },
   'logging.maxFileMb': { min: 1, max: 1024 },

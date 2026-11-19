@@ -12,6 +12,7 @@ const hub = require('./hub');
 const guard = require('../lib/security/guard');
 const voice = require('./voice');
 const stage = require('./stage');
+const sfuSocket = require('./sfu');
 const whiteboard = require('../lib/whiteboard');
 const { isAllowedWsOrigin } = require('../lib/wsOrigin');
 const { isInvisible } = require('../lib/invisible');
@@ -20,10 +21,26 @@ function getChannel(id) {
   return db.prepare('SELECT * FROM channels WHERE id = ?').get(id);
 }
 
-// DM voice rooms share the same in-memory registry as server voice channels (server/socket/voice.js),
-// keyed by a string so a DM id can never collide with a numeric channels.id.
-function dmRoomKey(dmChannelId) {
-  return `dm:${dmChannelId}`;
+const { dmRoomKey } = voice;
+const wsLog = require('../lib/logger').scoped('ws');
+
+// userId -> the socket whose voice_join put the user in their current room. A user can hold
+// several sockets (tabs, devices); only closing this one may end the call.
+const voiceSockets = new Map();
+
+function releaseVoiceSocket(userId, ws) {
+  if (voiceSockets.get(userId) === ws) voiceSockets.delete(userId);
+}
+
+// The joining socket closed while an SFU join was still opening the room; its close handler
+// could not drop the membership yet, so it is dropped here instead of leaving a ghost. When
+// another live socket holds the user's call, that membership is theirs and is kept.
+function dropClosedJoin(roomKey, userId, ws) {
+  const holder = voiceSockets.get(userId);
+  if (holder && holder !== ws) return false;
+  voice.leave(roomKey, userId);
+  sfuSocket.left([roomKey], userId);
+  return true;
 }
 
 function isDmMember(dmChannelId, userId) {
@@ -38,7 +55,7 @@ function broadcastDmVoiceState(dmChannelId) {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
     return user ? toPublicUser(user, {}) : null;
   }).filter(Boolean);
-  hub.broadcastToDm(dmChannelId, { type: 'voice_state', dmChannelId, participants });
+  hub.broadcastToDm(dmChannelId, { type: 'voice_state', dmChannelId, participants, mode: sfuSocket.roomMode(dmRoomKey(dmChannelId)) });
 }
 
 function broadcastVoiceState(channel) {
@@ -46,7 +63,7 @@ function broadcastVoiceState(channel) {
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
     return user ? { ...toPublicUser(user, {}), mutedByMod: voice.isForceMuted(channel.id, userId) } : null;
   }).filter(Boolean);
-  hub.broadcastToChannel(channel, { type: 'voice_state', channelId: channel.id, participants });
+  hub.broadcastToChannel(channel, { type: 'voice_state', channelId: channel.id, participants, mode: sfuSocket.roomMode(channel.id) });
 }
 
 // Sent only to people actually in the room (not every channel viewer, unlike broadcastVoiceState)
@@ -82,12 +99,101 @@ function sendWhiteboardState(channel, userId) {
   if (strokes) hub.notifyUser(userId, { type: 'wb_state', channelId: channel.id, strokes });
 }
 
-function dropWhiteboardIfEmpty(channelId) {
-  if (voice.participants(channelId).length === 0) whiteboard.dropBoard(channelId);
+// An emptied room starts its next session clean: no whiteboard, and no stage speaker or raised
+// hand left over from someone whose socket dropped (they would rejoin as a speaker much later).
+function dropRoomStateIfEmpty(channelId) {
+  if (voice.participants(channelId).length > 0) return;
+  whiteboard.dropBoard(channelId);
+  stage.reset(channelId);
+}
+
+// Leaving a DM conversation (or the group being deleted) ends the user's part in its call too:
+// they could no longer send voice_leave for it (membership is checked) and would keep hearing it.
+function dropFromDmCall(dmChannelId, userIds) {
+  const roomKey = dmRoomKey(dmChannelId);
+  const gone = userIds.filter((uid) => voice.isParticipant(roomKey, uid));
+  if (!gone.length) return;
+  for (const uid of gone) {
+    voiceSockets.delete(uid);
+    voice.leave(roomKey, uid);
+    sfuSocket.left([roomKey], uid);
+    hub.notifyUser(uid, { type: 'voice_join_denied', dmChannelId, reason: 'cancelled' });
+  }
+  broadcastDmVoiceState(dmChannelId);
+}
+
+// Access to a server voice room can end mid-call: kicked, banned, left the server, a role or
+// channel permission change, the channel or the whole server deleted. Re-checks the rooms of that
+// server (and rooms whose channel is gone) and drops whoever may no longer be there, like a leave.
+function revalidateVoiceAccess(serverId) {
+  for (const roomKey of voice.roomKeys()) {
+    if (typeof roomKey !== 'number') continue;
+    const channel = getChannel(roomKey);
+    if (channel && channel.server_id !== serverId) continue;
+    const gone = voice.participants(roomKey).filter((uid) => !channel || (channel.type !== 'voice' && channel.type !== 'stage')
+      || !canAccessChannel(channel, uid, PERMISSIONS.VIEW_CHANNEL) || isPendingMember(channel.server_id, uid));
+    if (!gone.length) continue;
+    for (const uid of gone) {
+      voiceSockets.delete(uid);
+      voice.leave(roomKey, uid);
+      sfuSocket.left([roomKey], uid);
+      if (channel?.type === 'stage') stage.onLeave(roomKey, uid);
+      hub.notifyUser(uid, { type: 'voice_join_denied', channelId: roomKey, reason: 'no_access' });
+      broadcastFriendVoiceActivity(uid, null);
+    }
+    if (channel?.type === 'stage') broadcastStageState(channel);
+    if (channel) broadcastVoiceState(channel);
+    dropRoomStateIfEmpty(roomKey);
+  }
+}
+
+function broadcastRoomState(roomKey) {
+  if (typeof roomKey === 'string' && roomKey.startsWith('dm:')) {
+    broadcastDmVoiceState(Number(roomKey.slice(3)));
+    return null;
+  }
+  const channel = getChannel(roomKey);
+  if (channel) broadcastVoiceState(channel);
+  return channel;
+}
+
+const MAX_WS_PAYLOAD = 2 * 1024 * 1024;
+let evictCleanupMs = 20_000;
+
+// A reset room normally refills within seconds as clients rejoin. Whatever nobody came back to is
+// cleaned up like a normal last leave: the whiteboard is dropped and friends stop seeing the call.
+sfuSocket.onEvicted((roomKey, userIds) => {
+  for (const uid of userIds) voiceSockets.delete(uid);
+  const channel = broadcastRoomState(roomKey);
+  if (!channel) return;
+  const timer = setTimeout(() => {
+    dropRoomStateIfEmpty(channel.id);
+    // Friends only ever see server voice channels, so a user now in a DM call is cleared too.
+    const active = voice.activeChannelFor(userIds);
+    const inChannel = (uid) => active.has(uid) && !String(active.get(uid)).startsWith('dm:');
+    for (const uid of userIds) if (!inChannel(uid)) broadcastFriendVoiceActivity(uid, null);
+  }, evictCleanupMs);
+  timer.unref?.();
+});
+
+function denyJoin(ws, scope, reason) {
+  if (ws.readyState !== ws.OPEN) return;
+  ws.send(JSON.stringify({ type: 'voice_join_denied', ...scope, ...(reason ? { reason } : {}) }));
+}
+
+// The user joined this call from another tab or device. The socket that held it has lost its
+// server-side peer, so its client is told to end the call quietly instead of retrying (and taking
+// the call back) or sending a voice_leave that would end the call for the new tab too.
+function handOverCall(userId, ws, scope) {
+  const prev = voiceSockets.get(userId);
+  voiceSockets.set(userId, ws);
+  if (prev && prev !== ws) denyJoin(prev, scope, 'moved');
 }
 
 function attach(httpServer) {
-  const wss = new WebSocketServer({ noServer: true });
+  // Client messages are small (signalling, SFU requests capped at 64 KB of data, whiteboard strokes
+  // of at most 64 points); chat and uploads go over HTTP. ws closes a larger frame with 1009.
+  const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_PAYLOAD });
   const config = loadConfig();
 
   httpServer.on('upgrade', (req, socket, head) => {
@@ -136,6 +242,10 @@ function attach(httpServer) {
     // connection existed) until the page is reloaded.
     hub.notifyUser(user.id, { type: 'presence', user: toPublicUser(user, { viewerIsSelf: true }) });
 
+    // ws closes the socket itself (e.g. 1009 for an oversize frame); without a listener the 'error'
+    // event would be an uncaught exception that takes the server down.
+    ws.on('error', (err) => wsLog.debug(`socket error for user ${user.id}: ${err.message}`));
+
     ws.on('message', (raw) => {
       let msg;
       try { msg = JSON.parse(raw.toString()); } catch { return; }
@@ -172,20 +282,26 @@ function attach(httpServer) {
         if (!isDmMember(msg.dmChannelId, user.id)) return;
         if (isInvisible(user.id)) { ws.send(JSON.stringify({ type: 'voice_join_denied', dmChannelId: msg.dmChannelId, reason: 'invisible' })); return; }
         const roomKey = dmRoomKey(msg.dmChannelId);
-        if (voice.inOtherRoom(roomKey, user.id)) { ws.send(JSON.stringify({ type: 'voice_join_denied', dmChannelId: msg.dmChannelId })); return; }
         const wasEmpty = voice.participants(roomKey).length === 0;
-        voice.join(roomKey, user.id);
-        broadcastDmVoiceState(msg.dmChannelId);
-        // Ring every other DM member the first time this call goes from empty to non-empty —
-        // not on every subsequent joiner, so a group DM doesn't re-ring people already on the call.
-        if (wasEmpty) {
-          const others = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ? AND user_id != ?')
-            .all(msg.dmChannelId, user.id);
-          for (const m of others) {
-            if (isInvisible(m.user_id)) continue;
-            hub.notifyUser(m.user_id, { type: 'voice_ring', dmChannelId: msg.dmChannelId, fromUser: toPublicUser(user, {}) });
+        sfuSocket.join(roomKey, user.id, { sfu: msg.sfu === true, isOpen: () => ws.readyState === ws.OPEN }).then((res) => {
+          if (!res.ok) { denyJoin(ws, { dmChannelId: msg.dmChannelId }, res.silent ? 'cancelled' : res.reason); return; }
+          if (ws.readyState !== ws.OPEN) {
+            if (dropClosedJoin(roomKey, user.id, ws)) broadcastDmVoiceState(msg.dmChannelId);
+            return;
           }
-        }
+          handOverCall(user.id, ws, { dmChannelId: msg.dmChannelId });
+          broadcastDmVoiceState(msg.dmChannelId);
+          // Ring every other DM member the first time this call goes from empty to non-empty —
+          // not on every subsequent joiner, so a group DM doesn't re-ring people already on the call.
+          if (wasEmpty) {
+            const others = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ? AND user_id != ?')
+              .all(msg.dmChannelId, user.id);
+            for (const m of others) {
+              if (isInvisible(m.user_id)) continue;
+              hub.notifyUser(m.user_id, { type: 'voice_ring', dmChannelId: msg.dmChannelId, fromUser: toPublicUser(user, {}) });
+            }
+          }
+        });
         return;
       }
 
@@ -195,22 +311,33 @@ function attach(httpServer) {
         if (!canAccessChannel(channel, user.id, PERMISSIONS.VIEW_CHANNEL)) return;
         if (isPendingMember(channel.server_id, user.id)) return;
         if (isInvisible(user.id)) { ws.send(JSON.stringify({ type: 'voice_join_denied', channelId: channel.id, reason: 'invisible' })); return; }
-        if (voice.inOtherRoom(channel.id, user.id)) { ws.send(JSON.stringify({ type: 'voice_join_denied', channelId: channel.id })); return; }
-        voice.join(channel.id, user.id);
-        if (channel.type === 'stage') {
-          const canManageChannel = has(getChannelPermissionBits(channel, user.id), PERMISSIONS.MANAGE_CHANNELS);
-          stage.onJoin(channel.id, user.id, canManageChannel);
-          broadcastStageState(channel);
-        }
-        broadcastVoiceState(channel);
-        sendWhiteboardState(channel, user.id);
-        broadcastFriendVoiceActivity(user.id, channel);
+        sfuSocket.join(channel.id, user.id, { sfu: msg.sfu === true, stage: channel.type === 'stage', isOpen: () => ws.readyState === ws.OPEN }).then((res) => {
+          if (!res.ok) { denyJoin(ws, { channelId: channel.id }, res.silent ? 'cancelled' : res.reason); return; }
+          if (ws.readyState !== ws.OPEN) {
+            if (dropClosedJoin(channel.id, user.id, ws)) {
+              broadcastVoiceState(channel);
+              dropRoomStateIfEmpty(channel.id);
+            }
+            return;
+          }
+          handOverCall(user.id, ws, { channelId: channel.id });
+          if (channel.type === 'stage') {
+            const canManageChannel = has(getChannelPermissionBits(channel, user.id), PERMISSIONS.MANAGE_CHANNELS);
+            stage.onJoin(channel.id, user.id, canManageChannel);
+            broadcastStageState(channel);
+          }
+          broadcastVoiceState(channel);
+          sendWhiteboardState(channel, user.id);
+          broadcastFriendVoiceActivity(user.id, channel);
+        });
         return;
       }
 
       if (msg.type === 'voice_leave' && msg.dmChannelId) {
-        if (!isDmMember(msg.dmChannelId, user.id)) return;
+        if (!isDmMember(msg.dmChannelId, user.id) && !voice.isParticipant(dmRoomKey(msg.dmChannelId), user.id)) return;
+        releaseVoiceSocket(user.id, ws);
         voice.leave(dmRoomKey(msg.dmChannelId), user.id);
+        sfuSocket.left([dmRoomKey(msg.dmChannelId)], user.id);
         broadcastDmVoiceState(msg.dmChannelId);
         return;
       }
@@ -218,13 +345,15 @@ function attach(httpServer) {
       if (msg.type === 'voice_leave' && msg.channelId) {
         const channel = getChannel(msg.channelId);
         if (!channel) return;
+        releaseVoiceSocket(user.id, ws);
         voice.leave(channel.id, user.id);
+        sfuSocket.left([channel.id], user.id);
         if (channel.type === 'stage') {
           stage.onLeave(channel.id, user.id);
           broadcastStageState(channel);
         }
         broadcastVoiceState(channel);
-        dropWhiteboardIfEmpty(channel.id);
+        dropRoomStateIfEmpty(channel.id);
         broadcastFriendVoiceActivity(user.id, null);
         return;
       }
@@ -270,6 +399,7 @@ function attach(httpServer) {
         if (!stage.isSpeaker(channel.id, user.id)) return;
         if (!voice.isParticipant(channel.id, msg.userId)) return;
         stage.inviteSpeaker(channel.id, msg.userId);
+        sfuSocket.syncMute(channel.id, msg.userId);
         broadcastStageState(channel);
         return;
       }
@@ -284,6 +414,7 @@ function attach(httpServer) {
         if (!isSelf && !canManageChannel) return;
         if (!voice.isParticipant(channel.id, msg.userId)) return;
         stage.moveToAudience(channel.id, msg.userId);
+        sfuSocket.syncMute(channel.id, msg.userId);
         broadcastStageState(channel);
         return;
       }
@@ -293,7 +424,8 @@ function attach(httpServer) {
       // and member timeouts already use. There's no central mixer to actually silence someone
       // else's outgoing audio, so this works the same way Discord's own server-mute does under
       // the hood: broadcastVoiceState tells the target's own client to stop sending (see
-      // voice.js's forceMuted and the client's applyRoster), enforced there, not here.
+      // voice.js's forceMuted and the client's applyRoster), enforced there, not here. SFU rooms
+      // additionally pause the target's audio producer server-side (socket/sfu.js syncMute).
       if ((msg.type === 'voice_force_mute' || msg.type === 'voice_force_unmute') && msg.channelId && msg.userId) {
         const channel = getChannel(msg.channelId);
         if (!channel || (channel.type !== 'voice' && channel.type !== 'stage')) return;
@@ -301,6 +433,7 @@ function attach(httpServer) {
         if (!voice.isParticipant(channel.id, msg.userId)) return;
         if (msg.type === 'voice_force_mute') voice.forceMute(channel.id, msg.userId);
         else voice.forceUnmute(channel.id, msg.userId);
+        sfuSocket.syncMute(channel.id, msg.userId);
         broadcastVoiceState(channel);
         return;
       }
@@ -327,6 +460,11 @@ function attach(httpServer) {
         return;
       }
 
+      if (msg.type === 'sfu_request') {
+        sfuSocket.handleSfuRequest(user, msg, (reply) => { if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(reply)); });
+        return;
+      }
+
       if (msg.type === 'voice_signal' && msg.toUserId && msg.signal && (msg.channelId || msg.dmChannelId)) {
         // Both parties must currently be registered participants of that voice room — this is
         // the permission check (join already required VIEW_CHANNEL/DM membership), and it stops a
@@ -344,15 +482,15 @@ function attach(httpServer) {
       hub.unregisterConnection(user.id, ws);
       if (!hub.isOnline(user.id)) hub.broadcastPresence(user.id);
 
+      const holder = voiceSockets.get(user.id);
+      if (holder && holder !== ws) return;
+      voiceSockets.delete(user.id);
       const affectedRooms = voice.leaveAll(user.id);
+      sfuSocket.left(affectedRooms, user.id);
       let leftServerVoiceChannel = false;
       for (const roomKey of affectedRooms) {
-        if (typeof roomKey === 'string' && roomKey.startsWith('dm:')) {
-          broadcastDmVoiceState(Number(roomKey.slice(3)));
-          continue;
-        }
-        const channel = getChannel(roomKey);
-        if (channel) { broadcastVoiceState(channel); dropWhiteboardIfEmpty(channel.id); leftServerVoiceChannel = true; }
+        const channel = broadcastRoomState(roomKey);
+        if (channel) { dropRoomStateIfEmpty(channel.id); leftServerVoiceChannel = true; }
       }
       if (leftServerVoiceChannel) broadcastFriendVoiceActivity(user.id, null);
     });
@@ -361,4 +499,4 @@ function attach(httpServer) {
   return wss;
 }
 
-module.exports = { attach };
+module.exports = { attach, broadcastVoiceState, broadcastDmVoiceState, dropFromDmCall, revalidateVoiceAccess, setEvictCleanupMs: (ms) => { evictCleanupMs = ms; } };

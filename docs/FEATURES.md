@@ -315,7 +315,15 @@ themselves `ADMINISTRATOR`).
   `broadcastDmVoiceState`, which is scoped server-side to DM members only).
 - A user actively in a **public** voice channel gets a small live/headphone indicator next to
   their name in the member list.
-- Everything is a peer-to-peer **WebRTC mesh** — every participant connects directly to every
+- **Voice engine (admin choice, `voice.mode`):** `mesh` (default, below) or `sfu`: media goes once to the
+  in-process **mediasoup** SFU (server/lib/sfu/) which forwards it, so upload cost no longer grows with the
+  call size. Admin Panel > Calls > Voice engine switches it; every room (voice, stage, DM calls) is fixed to
+  the mode it was created in. Needs `voice.sfu.port`..`port + workers - 1` open on UDP+TCP and the public
+  address in `turn.externalIp` or `voice.sfu.announcedHost`; restarts itself when the announced public IP
+  changes; falls back to mesh when the worker cannot run (Windows worker vendored, Linux:
+  `npm run fetch:mediasoup`). The server can decrypt SFU media, so it is opt-in. You can browse other
+  channels during a call; one voice room per user.
+- In `mesh` mode everything is a peer-to-peer **WebRTC mesh** — every participant connects directly to every
   other participant, signaled over the same WebSocket connection used for everything else. No
   media server. Opus audio codec comes from the browser/Electron's built-in WebRTC stack, not a
   separate dependency. Works out of the box on a LAN; for participants who can't reach each other

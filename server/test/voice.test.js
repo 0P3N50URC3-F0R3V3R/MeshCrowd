@@ -40,3 +40,60 @@ test('inOtherRoom detects membership in a different room only', () => {
   assert.equal(voice.inOtherRoom('dm:1', 8), false);
   voice.leaveAll(7);
 });
+
+test('modeOf is fixed at creation and cleared when the room empties', () => {
+  assert.equal(voice.modeOf(401), null);
+  voice.join(401, 1, 'sfu');
+  assert.equal(voice.modeOf(401), 'sfu');
+  voice.join(401, 2);
+  assert.equal(voice.modeOf(401), 'sfu');
+  voice.leave(401, 1);
+  assert.equal(voice.modeOf(401), 'sfu');
+  voice.leave(401, 2);
+  assert.equal(voice.modeOf(401), null);
+
+  voice.join(402, 3, 'sfu');
+  voice.leaveAll(3);
+  assert.equal(voice.modeOf(402), null);
+
+  voice.join(403, 4);
+  voice.setMode(403, 'mesh');
+  assert.equal(voice.modeOf(403), 'mesh');
+  voice.leaveAll(4);
+  assert.equal(voice.modeOf(403), null);
+});
+
+test("join(room, user, 'sfu') on an existing mesh room keeps mesh", () => {
+  voice.join(411, 1, 'mesh');
+  voice.join(411, 2, 'sfu');
+  assert.equal(voice.modeOf(411), 'mesh');
+  voice.leaveAll(1);
+  voice.leaveAll(2);
+});
+
+test('evict keeps force-mutes for a rejoin within the deadline and a later normal empty-out clears them', () => {
+  voice.join(901, 1, 'sfu');
+  voice.join(901, 2);
+  voice.forceMute(901, 2);
+  assert.deepEqual(voice.evict(901, 60_000).sort(), [1, 2]);
+  assert.deepEqual(voice.participants(901), []);
+  assert.equal(voice.modeOf(901), null);
+  voice.join(901, 2, 'mesh');
+  assert.equal(voice.isForceMuted(901, 2), true);
+  voice.leave(901, 2);
+  voice.join(901, 2);
+  assert.equal(voice.isForceMuted(901, 2), false);
+  voice.leave(901, 2);
+});
+
+test('force-mutes kept by evict expire: a room recreated after the deadline starts clean', () => {
+  voice.join(902, 3);
+  voice.forceMute(902, 3);
+  voice.evict(902, -1);
+  voice.join(902, 3);
+  assert.equal(voice.isForceMuted(902, 3), false);
+  voice.leave(902, 3);
+  voice.join(902, 3);
+  assert.equal(voice.isForceMuted(902, 3), false);
+  voice.leave(902, 3);
+});

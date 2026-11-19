@@ -48,6 +48,13 @@ function main() {
     copyRecursive(nodeModulesSrc, path.join(DIST, 'node_modules'), { skipTopNames: EXCLUDE_FROM_NODE_MODULES });
   }
 
+  const workerBin = os.platform() === 'win32' ? 'mediasoup-worker.exe' : 'mediasoup-worker';
+  const workerDest = path.join(DIST, 'node_modules', 'mediasoup', 'worker', 'out', 'Release', workerBin);
+  if (!fs.existsSync(workerDest)) {
+    console.error('[build-portable] FAILED: mediasoup worker missing from build (' + workerDest + '). Run "npm run fetch:mediasoup" first.');
+    process.exit(1);
+  }
+
   // Portable node.exe: copy from wherever the current `node` binary lives.
   const nodeExeSrc = process.execPath;
   const runtimeDir = path.join(DIST, 'runtime');

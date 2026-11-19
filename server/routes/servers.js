@@ -20,6 +20,8 @@ const { uploadSticker, createSticker, deleteSticker } = require('../lib/stickers
 const { uploadSound, createSound, deleteSound } = require('../lib/sounds');
 const { uploadWebhookIcon, createWebhook, deleteWebhook, regenerateToken } = require('../lib/webhooks');
 const voice = require('../socket/voice');
+// Lazy: socket/index loads after the routes. Drops voice participants who lost access to their room.
+const revalidateVoice = (serverId) => require('../socket').revalidateVoiceAccess(serverId);
 const prune = require('../lib/prune');
 const { signPayload } = require('../lib/federationCrypto');
 const { safeFetch } = require('../lib/federationSsrf');
@@ -774,6 +776,7 @@ router.delete('/:id', requireMember, (req, res) => {
   db.prepare('DELETE FROM servers WHERE id = ?').run(req.server.id);
   require('../lib/noteFiles').sweepNoteFiles();
   notifyUserIds(memberIds, { type: 'server_delete', serverId: req.server.id });
+  revalidateVoice(req.server.id);
   res.json({ ok: true });
 });
 
@@ -782,6 +785,7 @@ router.post('/:id/leave', requireMember, (req, res) => {
   removeMember(req.server.id, req.user.id);
   broadcastToServer(req.server.id, { type: 'member_leave', userId: req.user.id, serverId: req.server.id });
   postServerEvent(req.server.id, 'member_leave', req.user.id);
+  revalidateVoice(req.server.id);
   res.json({ ok: true });
 });
 
@@ -917,6 +921,7 @@ router.patch('/:id/channels/:channelId', requireMember, requirePerm(PERMISSIONS.
   broadcastToServer(req.server.id, { type: 'server_refresh', serverId: req.server.id });
   if (updated.name !== channel.name) postServerEvent(req.server.id, 'channel_rename', null, { from: channel.name, channel: updated.name }, req.user.id);
   if (updated.topic !== channel.topic) postServerEvent(req.server.id, 'channel_topic', null, { channel: updated.name, topic: updated.topic }, req.user.id);
+  revalidateVoice(req.server.id);
   res.json({ channel: updated });
 });
 
@@ -986,6 +991,7 @@ router.delete('/:id/channels/:channelId', requireMember, requirePerm(PERMISSIONS
   logAudit(req.server.id, req.user.id, 'channel_delete', 'channel', channel.id, { name: channel.name });
   broadcastToServer(req.server.id, { type: 'channel_delete', channelId: channel.id, serverId: req.server.id });
   postServerEvent(req.server.id, 'channel_delete', null, { channel: channel.name }, req.user.id);
+  revalidateVoice(req.server.id);
   res.json({ ok: true });
 });
 
@@ -1021,6 +1027,7 @@ router.put('/:id/channels/:channelId/overrides/:roleId', requireMember, requireP
   ).run(channel.id, role.id, allow, deny);
   logAudit(req.server.id, req.user.id, 'channel_overrides_update', 'channel', channel.id, { roleId: role.id, allow, deny });
   broadcastToServer(req.server.id, { type: 'server_refresh', serverId: req.server.id });
+  revalidateVoice(req.server.id);
   res.json({ ok: true });
 });
 
@@ -1081,6 +1088,7 @@ router.patch('/:id/roles/:roleId', requireMember, requirePerm(PERMISSIONS.MANAGE
   const updated = db.prepare('SELECT * FROM roles WHERE id = ?').get(role.id);
   logAudit(req.server.id, req.user.id, 'role_update', 'role', role.id, { name, color, permissions, position, iconEmoji });
   broadcastToServer(req.server.id, { type: 'role_update', role: updated });
+  revalidateVoice(req.server.id);
   res.json({ role: updated });
 });
 
@@ -1120,6 +1128,7 @@ router.delete('/:id/roles/:roleId', requireMember, requirePerm(PERMISSIONS.MANAG
   logAudit(req.server.id, req.user.id, 'role_delete', 'role', role.id, { name: role.name });
   broadcastToServer(req.server.id, { type: 'role_delete', roleId: role.id, serverId: req.server.id });
   postServerEvent(req.server.id, 'role_delete', null, { role: role.name }, req.user.id);
+  revalidateVoice(req.server.id);
   res.json({ ok: true });
 });
 
@@ -1135,6 +1144,7 @@ router.put('/:id/members/:userId/roles/:roleId', requireMember, requirePerm(PERM
   logAudit(req.server.id, req.user.id, 'member_role_add', 'user', Number(req.params.userId), { roleId: role.id, roleName: role.name });
   broadcastToServer(req.server.id, { type: 'member_role_update', userId: Number(req.params.userId), serverId: req.server.id });
   postServerEvent(req.server.id, 'member_role_add', Number(req.params.userId), { role: role.name }, req.user.id);
+  revalidateVoice(req.server.id);
   res.json({ ok: true });
 });
 
@@ -1149,6 +1159,7 @@ router.delete('/:id/members/:userId/roles/:roleId', requireMember, requirePerm(P
   logAudit(req.server.id, req.user.id, 'member_role_remove', 'user', Number(req.params.userId), { roleId: role.id, roleName: role.name });
   broadcastToServer(req.server.id, { type: 'member_role_update', userId: Number(req.params.userId), serverId: req.server.id });
   postServerEvent(req.server.id, 'member_role_remove', Number(req.params.userId), { role: role.name }, req.user.id);
+  revalidateVoice(req.server.id);
   res.json({ ok: true });
 });
 
@@ -1203,6 +1214,7 @@ router.post('/:id/members/:userId/kick', requireMember, requirePerm(PERMISSIONS.
   logAudit(req.server.id, req.user.id, 'member_kick', 'user', targetId, null);
   notifyUserIds(memberIds, { type: 'member_kick', userId: targetId, serverId: req.server.id });
   postServerEvent(req.server.id, 'member_kick', targetId, {}, req.user.id);
+  revalidateVoice(req.server.id);
   res.json({ ok: true });
 });
 
@@ -1220,6 +1232,7 @@ router.post('/:id/members/:userId/ban', requireMember, requirePerm(PERMISSIONS.B
   logAudit(req.server.id, req.user.id, 'member_ban', 'user', targetId, { reason });
   notifyUserIds(memberIds, { type: 'member_ban', userId: targetId, serverId: req.server.id });
   postServerEvent(req.server.id, 'member_ban', targetId, { reason }, req.user.id);
+  revalidateVoice(req.server.id);
   res.json({ ok: true });
 });
 

@@ -8,7 +8,7 @@ const path = require('node:path');
 
 const { version: APP_VERSION } = require('../package.json');
 const { db, DATA_DIR } = require('./db');
-const { load: loadConfig } = require('./lib/config');
+const { load: loadConfig, sweepTempFiles } = require('./lib/config');
 const { ensureCert } = require('./lib/certs');
 const { attachUser } = require('./middleware/auth');
 const { rateLimit } = require('./middleware/rateLimit');
@@ -35,6 +35,7 @@ require('./lib/serverDeletion').startWorker();
 process.on('uncaughtException', (err) => { logger.error('uncaughtException:', err); process.exit(1); });
 process.on('unhandledRejection', (reason) => { logger.error('unhandledRejection:', reason); });
 
+sweepTempFiles();
 const config = loadConfig();
 const turnManager = require('./lib/turn/manager');
 require('./lib/phpRuntime').init(config).catch((err) => logger.error('[php] init failed:', err));
@@ -277,6 +278,9 @@ const wss = socket.attach(server);
 logger.scoped('app').info(`MeshCrowd ${require('../package.json').version} starting: ${config.useHttps ? `https ${config.httpsPort}, http redirect ${config.port}` : `http ${config.port}`}, log level ${logger.getLevel()}, ssh ${config.ssh && config.ssh.enabled ? 'on' : 'off'}`);
 turnManager.start(logger);
 turnManager.startIpWatcher(logger);
+const sfuSocket = require('./socket/sfu');
+sfuSocket.start(logger);
+turnManager.onIpChange(() => sfuSocket.restartForAnnouncedChange());
 
 const closeServer = (s) => new Promise((resolve) => { s.close(() => resolve()); s.closeAllConnections?.(); });
 lifecycle.registerCloser('http', () => closeServer(server), { resume: () => server.listen(config.useHttps ? config.httpsPort : config.port) });
@@ -284,6 +288,7 @@ if (redirectServer) lifecycle.registerCloser('http-redirect', () => closeServer(
 // Upgraded sockets are detached from the HTTP server, so server.close() alone would wait on them forever.
 lifecycle.registerCloser('websockets', () => { for (const ws of wss.clients) ws.terminate(); });
 lifecycle.registerCloser('turn', () => { turnManager.stopIpWatcher(); return turnManager.stop(); }, { resume: () => { turnManager.startIpWatcher(logger); return turnManager.start(logger); } });
+lifecycle.registerCloser('sfu', () => sfuSocket.stop(), { resume: () => sfuSocket.start(logger) });
 lifecycle.registerCloser('sites', () => require('./lib/siteProcesses').stopAll());
 let stopBackupScheduler = require('./lib/backup').startScheduler();
 lifecycle.registerCloser('backup-scheduler', () => stopBackupScheduler(), { resume: () => { stopBackupScheduler = require('./lib/backup').startScheduler(); } });

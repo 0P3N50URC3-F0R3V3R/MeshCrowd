@@ -255,6 +255,7 @@ router.post('/:dmId/members', loadDm, (req, res) => {
 
 router.delete('/:dmId/members/me', loadDm, (req, res) => {
   db.prepare('DELETE FROM dm_members WHERE dm_channel_id = ? AND user_id = ?').run(req.dm.id, req.user.id);
+  require('../socket').dropFromDmCall(req.dm.id, [req.user.id]);
   // Nobody left to see it — wipe the conversation for good instead of leaving an orphaned,
   // unreachable row (and its messages/attachments, which have no cascade path of their own).
   const remaining = db.prepare('SELECT COUNT(*) AS n FROM dm_members WHERE dm_channel_id = ?').get(req.dm.id).n;
@@ -279,6 +280,7 @@ router.delete('/:dmId', loadDm, requireGroupCreator, (req, res) => {
   const memberIds = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(req.dm.id).map((r) => r.user_id);
   prune.wipeScope('dm', req.dm.id);
   db.prepare('DELETE FROM dm_channels WHERE id = ?').run(req.dm.id);
+  require('../socket').dropFromDmCall(req.dm.id, memberIds);
   notifyUserIds(memberIds, { type: 'dm_delete', dmId: req.dm.id });
   res.json({ ok: true });
 });

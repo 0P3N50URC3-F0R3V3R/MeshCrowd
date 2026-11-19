@@ -95,6 +95,14 @@ const DEFAULTS = {
     maxAllocationsPerUser: 20,
     maxKbps: 0, // per allocation, 0 = unlimited
   },
+  // Voice topology. 'mesh' = browsers connect to each other directly (no server sees the media).
+  // 'sfu' = media goes through the in-process mediasoup SFU, which scales to larger rooms but means
+  // the server terminates DTLS-SRTP, so it relays and can decrypt the streams. Worker i listens on port+i;
+  // workers 0 = min(cpu count, 4).
+  voice: {
+    mode: 'mesh',
+    sfu: { port: 40000, workers: 0, announcedHost: '', maxKbpsPerUser: 0, enableTcp: true },
+  },
   // Password the local console's `purge` command asks for before resetting the server to a factory
   // state. Empty = purge is disabled.
   purgePassword: '',
@@ -103,30 +111,149 @@ const DEFAULTS = {
   backup: { keep: 7, schedule: '', maxFileMb: 5, includeSecrets: false, preRestoreKeep: 3 },
 };
 
-function load() {
-  let cfg = { ...DEFAULTS };
-  if (fs.existsSync(CONFIG_PATH)) {
+let unreadableLogged = false;
+let writeFailLogged = false;
+let fallbackSecret = '';
+
+function readFile() {
+  try {
+    return { text: fs.readFileSync(CONFIG_PATH, 'utf8') };
+  } catch (err) {
+    if (err.code === 'ENOENT') return { text: null };
+    return { error: err };
+  }
+}
+
+// Keeps the operator's permissions (e.g. chmod 600: the file holds the TURN secret); a new file is 0600.
+function fileMode() {
+  try {
+    return fs.statSync(CONFIG_PATH).mode & 0o777;
+  } catch {
+    return 0o600;
+  }
+}
+
+// Write to a temp file in the same directory and rename it over the target, so a reader (the
+// Launcher, another load()) never sees a half-written config.json.
+function writeAtomic(text) {
+  const mode = fileMode();
+  const tmp = `${CONFIG_PATH}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    fs.writeFileSync(tmp, text, { mode });
+    fs.chmodSync(tmp, mode);
+    fs.renameSync(tmp, CONFIG_PATH);
+  } catch (err) {
+    fs.rmSync(tmp, { force: true });
+    // Windows refuses the rename while another process has the file open; a plain write still works.
+    if (!['EPERM', 'EACCES', 'EBUSY'].includes(err.code)) throw err;
+    fs.writeFileSync(CONFIG_PATH, text);
+  }
+}
+
+// A crash between the temp write and the rename leaves a temp file behind; called at server start.
+function sweepTempFiles(maxAgeMs = 60_000) {
+  const dir = path.dirname(CONFIG_PATH);
+  const prefix = `${path.basename(CONFIG_PATH)}.`;
+  let names;
+  try { names = fs.readdirSync(dir); } catch { return 0; }
+  let removed = 0;
+  for (const name of names) {
+    if (!name.startsWith(prefix) || !/^config\.json\.\d+\.\d+\.tmp$/.test(name)) continue;
+    const file = path.join(dir, name);
     try {
-      const file = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-      cfg = { ...cfg, ...file, turn: { ...DEFAULTS.turn, ...(file.turn || {}) }, downloads: { ...DEFAULTS.downloads, ...(file.downloads || {}) }, logging: { ...DEFAULTS.logging, ...(file.logging || {}) }, ssh: { ...DEFAULTS.ssh, ...(file.ssh || {}) }, backup: { ...DEFAULTS.backup, ...(file.backup || {}) } };
-    } catch (err) {
-      console.error('[config] failed to parse data/config.json, using defaults:', err.message);
+      if (Date.now() - fs.statSync(file).mtimeMs < maxAgeMs) continue;
+      fs.rmSync(file, { force: true });
+      removed++;
+    } catch { /* gone meanwhile */ }
+  }
+  return removed;
+}
+
+function parse(text) {
+  const file = JSON.parse(text);
+  return { ...DEFAULTS, ...file, turn: { ...DEFAULTS.turn, ...(file.turn || {}) }, voice: { ...DEFAULTS.voice, ...(file.voice || {}), sfu: { ...DEFAULTS.voice.sfu, ...((file.voice || {}).sfu || {}) } }, downloads: { ...DEFAULTS.downloads, ...(file.downloads || {}) }, logging: { ...DEFAULTS.logging, ...(file.logging || {}) }, ssh: { ...DEFAULTS.ssh, ...(file.ssh || {}) }, backup: { ...DEFAULTS.backup, ...(file.backup || {}) } };
+}
+
+function unreadable(why) {
+  if (!unreadableLogged) console.error(`[config] could not read data/config.json (${why}), using defaults and leaving the file untouched`);
+  unreadableLogged = true;
+  if (!fallbackSecret) fallbackSecret = require('node:crypto').randomBytes(32).toString('hex');
+  return { ...DEFAULTS, turn: { ...DEFAULTS.turn, secret: fallbackSecret } };
+}
+
+// Merges defaults into the file's content and writes it back only when that adds something
+// (defaults for new keys, a generated TURN secret). Throws when the text does not parse.
+function merged(text) {
+  const cfg = text === null ? { ...DEFAULTS } : parse(text);
+  if (!cfg.turn.secret) cfg.turn = { ...cfg.turn, secret: require('node:crypto').randomBytes(32).toString('hex') };
+  const out = JSON.stringify(cfg, null, 2);
+  if (out !== text) writeAtomic(out);
+  return cfg;
+}
+
+// A file that cannot be read or parsed is never overwritten: the operator may be mid-edit, and
+// replacing it with defaults would lose the TURN secret, ports and everything else. load() is on hot
+// paths, so that case returns defaults instead of throwing.
+function load() {
+  const { text, error } = readFile();
+  if (error) return unreadable(error.code || error.message);
+  let cfg;
+  try {
+    cfg = parse(text === null ? '{}' : text);
+  } catch (err) {
+    return unreadable(err.message);
+  }
+  try {
+    cfg = merged(text);
+  } catch (err) {
+    if (!writeFailLogged) console.error(`[config] could not update data/config.json (${err.code || err.message}), using it as it is`);
+    writeFailLogged = true;
+    if (!cfg.turn.secret) cfg.turn = { ...cfg.turn, secret: fallbackSecret || (fallbackSecret = require('node:crypto').randomBytes(32).toString('hex')) };
+  }
+  unreadableLogged = false;
+  return cfg;
+}
+
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function parses(text) {
+  try { JSON.parse(text); return true; } catch { return false; }
+}
+
+const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+
+function mergeDeep(base, patch) {
+  const out = { ...base };
+  for (const [k, v] of Object.entries(patch)) out[k] = isObj(v) && isObj(out[k]) ? mergeDeep(out[k], v) : v;
+  return out;
+}
+
+// Merges `patch` into data/config.json (nested objects recursively, so { turn: { port: 1 } } and
+// { voice: { sfu: { port: 1 } } } keep the sibling settings) and returns the stored result. Callers
+// re-read with load().
+// An unparseable file is moved aside to config.json.corrupt-<time> first instead of being lost. It is
+// read a second time after a short pause, so a file another writer is just finishing is not mistaken
+// for a corrupt one. A file that cannot be read at all makes save() throw rather than overwrite it.
+function save(patch) {
+  const first = readFile();
+  if (first.error) throw first.error;
+  if (first.text !== null && !parses(first.text)) {
+    sleepSync(100);
+    const again = readFile();
+    if (again.error) throw again.error;
+    if (again.text !== null && !parses(again.text)) {
+      const aside = `${CONFIG_PATH}.corrupt-${Date.now()}`;
+      fs.renameSync(CONFIG_PATH, aside);
+      console.error(`[config] data/config.json could not be parsed; moved it to ${path.basename(aside)} before saving`);
     }
   }
-  if (!cfg.turn.secret) cfg.turn.secret = require('node:crypto').randomBytes(32).toString('hex');
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2));
+  const { text, error } = readFile();
+  if (error) throw error;
+  const cfg = mergeDeep(merged(text), patch);
+  writeAtomic(JSON.stringify(cfg, null, 2));
   return cfg;
 }
 
-// Merges `patch` into data/config.json (nested objects one level deep, so { turn: { port: 1 } }
-// keeps the other turn settings) and returns the stored result. Callers re-read with load().
-function save(patch) {
-  const cfg = load();
-  for (const [k, v] of Object.entries(patch)) {
-    cfg[k] = v && typeof v === 'object' && !Array.isArray(v) && cfg[k] && typeof cfg[k] === 'object' ? { ...cfg[k], ...v } : v;
-  }
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2));
-  return cfg;
-}
-
-module.exports = { load, save, CONFIG_PATH, DEFAULTS };
+module.exports = { load, save, sweepTempFiles, CONFIG_PATH, DEFAULTS };

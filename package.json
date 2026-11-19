@@ -13,6 +13,8 @@
     "build:client": "node scripts/build-client.js",
     "fetch:php": "node scripts/fetch-php.js",
     "fetch:ffmpeg": "node scripts/fetch-ffmpeg.js",
+    "fetch:mediasoup": "node scripts/fetch-mediasoup.js",
+    "build:vendor": "node scripts/build-vendor.js",
     "test": "node --test \"server/test/*.test.js\" \"web/**/*.test.mjs\" \"electron/*.test.js\""
   },
   "engines": {
@@ -26,6 +28,7 @@
     "dompurify": "^3.4.17",
     "express": "^4.19.2",
     "libsodium-wrappers-sumo": "^0.8.4",
+    "mediasoup": "3.32",
     "multer": "^2.0.0",
     "qrcode": "^1.5.4",
     "selfsigned": "^5.5.0",
@@ -36,6 +39,8 @@
   },
   "devDependencies": {
     "electron": "^44.9.0",
+    "esbuild": "0.28.2",
+    "mediasoup-client": "3.26.0",
     "playwright": "^1.64.1",
     "rcedit": "^5.0.2"
   }

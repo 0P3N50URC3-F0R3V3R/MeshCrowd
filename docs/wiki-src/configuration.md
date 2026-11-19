@@ -27,6 +27,7 @@ order: 3
 | `iceServers` | `[]` | External STUN and TURN servers for WebRTC calls across networks. |
 | `lanNetworks` | `[]` | Optional LAN and VPN subnets (CIDR) for voice. See [LAN and VPN networks](#lan-and-vpn-networks). |
 | `turn` | see below | The built-in STUN/TURN server, off by default. See [STUN and TURN](#stun-and-turn). |
+| `voice` | see [SFU voice engine](#sfu-voice-engine) | Voice topology: `mode` (`mesh` or `sfu`) and the `sfu` settings. |
 | `sites` | `{"phpPath": "", "maxWorkers": 4}` | PHP runtime and worker count for [Sites](sites.html). |
 | `logging` | `{"level": "info", "keepDays": 30, "maxFileMb": 10}` | Log level (`debug`, `info`, `warn`, `error`), days to keep log files in `data/logs/`, and the size after which a new file is started. Changeable at runtime with `log level` and `config set`. |
 | `ssh` | `{"enabled": false, "port": 2222, "listenAddress": "127.0.0.1", "maxSessions": 3, "idleTimeoutMinutes": 15, "allowPublicKeys": false}` | SSH access to the admin console. Off by default, localhost only. `allowPublicKeys` is reserved and has no effect yet (password sign-in only). See [Administration](administration.html#ssh-access). |
@@ -136,3 +137,31 @@ Entries with a user name and password are only given to signed-in users.
 ::: warn Reverse proxies
 Behind a proxy that terminates TLS set `trustProxy` to the **hop count or subnet**, not `true`. `true` on a directly exposed server lets clients spoof `X-Forwarded-For`. See [TLS and reverse proxies](tls.html).
 :::
+
+## SFU voice engine
+
+By default calls are peer-to-peer (`mesh`). Setting `voice.mode` to `sfu` routes media through the media router built into the server (mediasoup), which fixes stutter in bigger or video-heavy calls. Switch it in **Admin Panel, Calls, Voice engine** (it saves immediately and applies to rooms created afterwards) or in `data/config.json`:
+
+```json
+"voice": {
+  "mode": "sfu",
+  "sfu": { "port": 40000, "workers": 0, "announcedHost": "", "maxKbpsPerUser": 0, "enableTcp": true }
+}
+```
+
+| Key | Default | Meaning |
+|---|---|---|
+| `voice.mode` | `"mesh"` | `mesh` (peer-to-peer) or `sfu`. If the SFU cannot run, rooms fall back to mesh automatically. |
+| `voice.sfu.port` | `40000` | First media port. Worker *i* listens on `port + i`, on **UDP and TCP**. |
+| `voice.sfu.workers` | `0` | Number of worker processes. `0` is automatic: the CPU count, at most 4. |
+| `voice.sfu.announcedHost` | `""` | Address clients are told to send media to. Empty is automatic: `turn.externalIp`, then `publicHost`, then the LAN address. Setting it by hand turns off the automatic restart below. |
+| `voice.sfu.maxKbpsPerUser` | `0` | Cap on a person's camera and screen share bitrate, `0` for none. Audio is always 64 kbps at most. |
+| `voice.sfu.enableTcp` | `true` | Also accept TCP media, for people behind firewalls that block UDP. Changing it needs a server restart. |
+
+**Firewall and router.** Open `port` to `port + workers - 1` on **UDP and TCP** (for example `40000-40003`), and forward them to the server if it sits behind a router. Do not overlap the HTTP, HTTPS, TURN or SSH ports; the admin panel refuses such a range. People on the same LAN need nothing more; people on the internet need the public address announced, so set `turn.externalIp` (or `announcedHost`) to your public IPv4, see [STUN and TURN](#stun-and-turn).
+
+**Public address changes.** When the announced address comes from `turn.externalIp` (for example kept up to date by **Detect the public IP automatically**), the SFU restarts by itself once when the address changes. Live calls reconnect on their own within a few seconds. At most one automatic restart runs per 30 seconds, and a failed one is retried a few times. A manually set `announcedHost` is never restarted automatically.
+
+**Where it runs.** The media worker is a small native program shipped inside `node_modules/mediasoup/worker/`. The portable bundle contains the Windows build. On Linux or macOS run `npm run fetch:mediasoup` once on the server to download the matching worker. If it is missing, **Admin Panel, Calls** says the SFU is unavailable and calls stay mesh.
+
+**Privacy.** The server terminates the encrypted call streams in this mode. Use it only on a server you trust.

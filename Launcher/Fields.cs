@@ -30,16 +30,17 @@ public static class Fields
     private static FieldDef FileF(string key, string group, string label, string shortText, string help, string? example = null) =>
         new() { Key = key, Group = group, Label = label, Type = FType.File, Default = N(""), Short = shortText, Help = help, Example = example, Restart = true };
 
-    public const string GNet = "Network & HTTPS", GAcc = "Accounts & limits", GVoice = "Voice & ICE", GTurn = "TURN relay", GTurnIp = "TURN dynamic IP",
+    public const string GNet = "Network & HTTPS", GAcc = "Accounts & limits", GVoice = "Voice & ICE", GSfu = "Voice SFU", GTurn = "TURN relay", GTurnIp = "TURN dynamic IP",
         GTurnLim = "TURN limits", GFed = "Federation", GSites = "Sites (PHP)", GLinks = "Push & links", GLog = "Logging", GSsh = "SSH console", GBackup = "Backups";
 
-    public static readonly string[] ServerGroups = [GNet, GAcc, GVoice, GTurn, GTurnIp, GTurnLim, GFed, GSites, GLinks, GLog, GSsh, GBackup];
+    public static readonly string[] ServerGroups = [GNet, GAcc, GVoice, GSfu, GTurn, GTurnIp, GTurnLim, GFed, GSites, GLinks, GLog, GSsh, GBackup];
 
     public static readonly Dictionary<string, string> GroupInfo = new()
     {
         [GNet] = "Ports, the public address and TLS certificates. These decide how users and other servers reach this instance.",
         [GAcc] = "Who may register, upload size and message size limits, and the factory-reset password.",
         [GVoice] = "How voice and video calls find a network path between users when no relay is used.",
+        [GSfu] = "Optional in-process media server (SFU) for voice. Off by default (mesh): calls stay peer-to-peer and no media passes through this server.",
         [GTurn] = "Built-in STUN/TURN relay so calls connect across routers and NAT without a third-party service. Off by default: LAN-only installs never open a UDP port.",
         [GTurnIp] = "For servers with a changing (dynamic) public IP: re-read the address periodically and restart the relay when it changes.",
         [GTurnLim] = "Resource limits so the relay cannot be abused or exhaust bandwidth.",
@@ -86,6 +87,19 @@ public static class Fields
         Json("lanNetworks", GVoice, "LAN/VPN subnets", "[]", "Subnets voice peers should prefer (CIDR). Empty = automatic.",
             "Optional list of LAN or VPN subnets (IPv4 CIDR). When set, private addresses outside these subnets (Docker, WSL, other adapters) are not tried, so calls settle on the right path faster. STUN/TURN stay available as fallback.", "lanNetworks",
             "[\"26.0.0.0/8\",\"192.168.3.0/24\"]"),
+
+        Enum("voice.mode", GSfu, "Voice mode", "mesh", ["mesh", "sfu"], "mesh = peer-to-peer calls, sfu = media relayed through this server.",
+            "mesh: browsers connect directly, the server never touches call media (best privacy, but every participant uploads to every other, so large rooms strain weak connections). sfu: every participant sends one stream to this server, which forwards it (scales to bigger rooms), but the server then handles all call media and could in principle record it. Choose sfu only if you trust whoever runs this server. Open the SFU ports below in the firewall before switching."),
+        Int("voice.sfu.port", GSfu, "SFU base port", 40000, 1, 65535, "First media port (UDP and TCP). Worker i uses port+i.",
+            "Open UDP and TCP from this port to port+workers-1 in the firewall and forward the same range on your router. The range is port..port+workers-1; with 0 workers (automatic) that is at most 4 ports.", example: "40000"),
+        Int("voice.sfu.workers", GSfu, "SFU workers", 0, 0, 16, "Media worker processes. 0 = automatic (CPU count, at most 4).",
+            "Each worker handles media on its own CPU core and listens on its own port (base port + worker number). 0 picks min(CPU count, 4).", example: "0"),
+        Text("voice.sfu.announcedHost", GSfu, "Announced host", "", "Public IP or name clients use to reach the SFU. Empty = automatic.",
+            "Set this to your public IPv4 address when the server sits behind a router doing NAT, otherwise clients outside the LAN cannot connect to the media ports. Empty = turn.advertisedHost, then turn.externalIp, then the public host, else the first LAN IPv4 address (then only people on your network can join SFU calls).", example: "203.0.113.10"),
+        Int("voice.sfu.maxKbpsPerUser", GSfu, "Bandwidth cap per user (kbps)", 0, 0, 10000000, "0 = defaults (audio 64, camera 1500, screen 3500 kbit/s).",
+            "Caps the bitrate of each participant's audio, camera and screen streams and their total upload. 0 uses the defaults: audio 64, camera 1500, screen 3500 kbit/s.", example: "2000"),
+        Bool("voice.sfu.enableTcp", GSfu, "Allow TCP", true, "Also accept media over TCP (helps behind strict firewalls).",
+            "UDP is preferred. TCP fallback lets clients in restrictive networks connect, at higher latency. Open the same port range for TCP in the firewall."),
 
         Bool("turn.enabled", GTurn, "Enable built-in TURN/STUN", false, "Run the relay inside the server.",
             "Starts a STUN/TURN server on the port below (UDP and TCP). Needed when callers sit behind different routers. Opens a UDP port, so also open it in the firewall (setup-turn.bat in the Tools tab does that)."),

@@ -26,6 +26,9 @@ const { uploadSound, createSound, deleteSound } = require('../lib/sounds');
 const prune = require('../lib/prune');
 const { logAudit } = require('../lib/auditLog');
 const turnManager = require('../lib/turn/manager');
+const sfu = require('../lib/sfu');
+const sfuSocket = require('../socket/sfu');
+const configSchema = require('../lib/configSchema');
 const registration = require('../lib/registration');
 const appConfig = require('../lib/config');
 const log = require('../lib/logger').scoped('admin');
@@ -146,10 +149,81 @@ router.patch('/registration', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATO
 // ---- Calls: built-in STUN/TURN server and external ICE servers ----
 const ICE_URL_RE = /^(stun|stuns|turn|turns):[^\s]+$/i;
 
-function callsPayload() {
+const SFU_RESTART_KEYS = ['port', 'workers', 'announcedHost', 'enableTcp'];
+const RECENT_FAILURE_MS = 30 * 60_000;
+
+async function callsPayload() {
   const cfg = appConfig.load();
   const { secret, ...turn } = cfg.turn;
-  return { turn: { ...turn, secretSet: !!secret }, iceServers: cfg.iceServers || [], lanNetworks: cfg.lanNetworks || [], publicHost: cfg.publicHost, status: turnManager.status() };
+  const { startedWith, running, workers, error, rooms, transports, producers, consumers, bytesIn, bytesOut, connectFailures, lastConnectFailureAt, lastAutoRestart } = await sfu.stats();
+  const avail = sfu.available();
+  const { port, workers: configured, announcedHost, enableTcp, maxKbpsPerUser } = cfg.voice.sfu;
+  const announced = sfu.announced(cfg);
+  return {
+    turn: { ...turn, secretSet: !!secret },
+    iceServers: cfg.iceServers || [],
+    lanNetworks: cfg.lanNetworks || [],
+    publicHost: cfg.publicHost,
+    status: turnManager.status(),
+    voice: {
+      mode: cfg.voice.mode,
+      effectiveMode: sfu.effectiveMode(),
+      available: avail.ok,
+      reason: avail.ok ? null : avail.reason,
+      announcedIsLan: startedWith ? startedWith.resolvedIsLan : announced.isLan,
+      restartRequired: !!startedWith && (SFU_RESTART_KEYS.some((k) => startedWith[k] !== cfg.voice.sfu[k]) || announced.host !== startedWith.resolvedHost),
+      sfu: { port, workers: configured, announcedHost, enableTcp, maxKbpsPerUser },
+      status: { running, workers, error, rooms, transports, producers, consumers, bytesIn, bytesOut, connectFailures, lastConnectFailureAt, recentConnectFailure: !!lastConnectFailureAt && Date.now() - lastConnectFailureAt < RECENT_FAILURE_MS, lastAutoRestart: lastAutoRestart || null },
+    },
+  };
+}
+
+function validateVoicePatch(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return { error: 'voice must be an object' };
+  const out = {};
+  const check = (key, raw, type) => {
+    if (typeof raw !== type) throw new Error(`voice.${key} must be a ${type}`);
+    return configSchema.coerce(`voice.${key}`, raw);
+  };
+  try {
+    if (v.mode !== undefined) out.mode = check('mode', v.mode, 'string');
+    if (v.sfu !== undefined) {
+      const s = v.sfu;
+      if (!s || typeof s !== 'object' || Array.isArray(s)) return { error: 'voice.sfu must be an object' };
+      out.sfu = {};
+      for (const k of ['port', 'workers', 'maxKbpsPerUser']) if (s[k] !== undefined) out.sfu[k] = check(`sfu.${k}`, s[k], 'number');
+      if (s.enableTcp !== undefined) out.sfu.enableTcp = check('sfu.enableTcp', s.enableTcp, 'boolean');
+      if (s.announcedHost !== undefined) {
+        if (typeof s.announcedHost !== 'string' || s.announcedHost.length > 253 || /[\s/?#]/.test(s.announcedHost)) return { error: 'announcedHost must be a host name or address' };
+        out.sfu.announcedHost = s.announcedHost.trim();
+      }
+    }
+  } catch (err) {
+    return { error: err.message };
+  }
+  return { value: out };
+}
+
+// The SFU binds port..port+workers-1 (UDP and TCP; workers 0 = automatic, at most 4).
+function sfuPortConflict(cfg, sfuPatch, turnPatch = {}) {
+  const port = sfuPatch.port ?? cfg.voice.sfu.port;
+  const workers = sfuPatch.workers ?? cfg.voice.sfu.workers;
+  const hi = port + (workers > 0 ? workers : 4) - 1;
+  const range = `${port}-${hi}`;
+  if (hi > 65535) return `the SFU port range ${range} ends above 65535; lower voice.sfu.port or the worker count`;
+  const turn = { ...cfg.turn, ...turnPatch };
+  const overlaps = (lo2, hi2) => port <= hi2 && lo2 <= hi;
+  const taken = [
+    ['the TURN port', turn.port, turn.port],
+    ['the TURN relay range', turn.relayPortMin, turn.relayPortMax],
+    ['the HTTP port', cfg.port, cfg.port],
+    ...(cfg.useHttps ? [['the HTTPS port', cfg.httpsPort, cfg.httpsPort]] : []),
+    ...(cfg.ssh.enabled ? [['the SSH console port', cfg.ssh.port, cfg.ssh.port]] : []),
+  ];
+  for (const [what, lo2, hi2] of taken) {
+    if (overlaps(lo2, hi2)) return `the SFU port range ${range} overlaps ${what} (${lo2 === hi2 ? lo2 : `${lo2}-${hi2}`})`;
+  }
+  return null;
 }
 
 const intIn = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
@@ -194,7 +268,7 @@ function validateLanNetworks(list) {
   return null;
 }
 
-router.get('/calls', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), (req, res) => res.json(callsPayload()));
+router.get('/calls', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), async (req, res) => res.json(await callsPayload()));
 
 router.patch('/calls', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), async (req, res) => {
   const body = req.body || {};
@@ -222,12 +296,36 @@ router.patch('/calls', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), asy
     if (err) return res.status(400).json({ error: err });
     patch.lanNetworks = body.lanNetworks.map((c) => c.trim());
   }
+  if (body.voice !== undefined) {
+    const { error, value } = validateVoicePatch(body.voice);
+    if (error) return res.status(400).json({ error });
+    patch.voice = value;
+  }
+  // Only a change is checked, so a conflict already stored (Launcher, console) cannot block other
+  // saves such as the rollback to mesh. A TURN port change is checked while the SFU is in use.
+  if (patch.voice || patch.turn) {
+    const cur = appConfig.load();
+    const sfuPatch = patch.voice?.sfu || {};
+    const sfuMoved = ['port', 'workers'].some((k) => sfuPatch[k] !== undefined && sfuPatch[k] !== cur.voice.sfu[k]);
+    const turnMoved = !!patch.turn && ['port', 'relayPortMin', 'relayPortMax'].some((k) => patch.turn[k] !== undefined && patch.turn[k] !== cur.turn[k]);
+    const mode = patch.voice?.mode ?? cur.voice.mode;
+    const enablingSfu = patch.voice?.mode === 'sfu' && cur.voice.mode !== 'sfu';
+    const portError = sfuMoved || enablingSfu || (turnMoved && mode === 'sfu') ? sfuPortConflict(cur, sfuPatch, patch.turn) : null;
+    if (portError) return res.status(400).json({ error: portError });
+  }
   if (Object.keys(patch).length) {
     appConfig.save(patch);
-    require('../lib/logger').log(`[calls] settings updated by user ${req.user.id}:`, patch.turn ? Object.keys(patch.turn).filter((k) => k !== 'secret').join(',') : '', patch.iceServers ? `iceServers=${patch.iceServers.length}` : '', patch.lanNetworks ? `lanNetworks=${patch.lanNetworks.length}` : '');
-    if (patch.turn) await turnManager.reload();
+    require('../lib/logger').log(`[calls] settings updated by user ${req.user.id}:`, patch.turn ? Object.keys(patch.turn).filter((k) => k !== 'secret').join(',') : '', patch.iceServers ? `iceServers=${patch.iceServers.length}` : '', patch.lanNetworks ? `lanNetworks=${patch.lanNetworks.length}` : '', patch.voice ? `voice=${Object.keys(patch.voice).join(',')}` : '');
+    if (patch.turn) {
+      await turnManager.reload();
+      await sfuSocket.restartForAnnouncedChange();
+    }
+    if (patch.voice) {
+      sfu.refreshMode();
+      if (patch.voice.mode === 'sfu' && !sfu.status().running) await sfuSocket.start(log);
+    }
   }
-  res.json(callsPayload());
+  res.json(await callsPayload());
 });
 
 router.post('/calls/test', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), async (req, res) => {
@@ -236,7 +334,7 @@ router.post('/calls/test', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR),
 
 router.post('/calls/check-ip', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), async (req, res) => {
   const result = await turnManager.checkWanIp();
-  res.json({ ...result, calls: callsPayload() });
+  res.json({ ...result, calls: await callsPayload() });
 });
 
 router.post('/calls/detect-ip', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR), async (req, res) => {

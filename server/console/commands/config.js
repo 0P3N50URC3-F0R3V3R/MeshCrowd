@@ -28,11 +28,19 @@ function applyLive(key, cfg) {
   else if (key === 'logging.maxFileMb') logger.configure({ maxFileMb: cfg.logging.maxFileMb });
 }
 
-function change(ctx, key, value, verb) {
+// Same path as the admin PATCH: switching to sfu brings the workers up when they are not running.
+async function applyVoice(key, cfg) {
+  const sfu = require('../../lib/sfu');
+  sfu.refreshMode();
+  if (key === 'voice.mode' && cfg.voice.mode === 'sfu' && !sfu.status().running) await require('../../socket/sfu').start();
+}
+
+async function change(ctx, key, value, verb) {
   const spec = schema.lookup(key);
   const before = show(key, getValue(config.load(), key));
   const cfg = config.save(patchFor(key, value));
   if (!spec.restart) applyLive(key, cfg);
+  if (key.startsWith('voice.')) await applyVoice(key, cfg);
   const after = show(key, value);
   log.warn(`${ctx.session.username} ${verb} ${key}: ${before} -> ${after}`);
   return `${key}: ${before} -> ${after} (${spec.restart ? 'restart required' : 'applied live'})`;

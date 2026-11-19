@@ -27,6 +27,7 @@ A `data/config.json` az első indításkor jön létre, és minden indításkor 
 | `iceServers` | `[]` | Külső STUN- és TURN-szerverek a hálózatok közötti WebRTC-hívásokhoz. |
 | `lanNetworks` | `[]` | Opcionális LAN és VPN alhálózatok (CIDR) a hanghoz. Lásd: [LAN és VPN hálózatok](#lan-s-vpn-h-l-zatok). |
 | `turn` | lásd lent | A beépített STUN/TURN szerver, alapból kikapcsolva. Lásd: [STUN és TURN](#stun-s-turn). |
+| `voice` | lásd: [SFU hangmotor](#sfu-hangmotor) | A hangtopológia: `mode` (`mesh` vagy `sfu`) és az `sfu` beállításai. |
 | `sites` | `{"phpPath": "", "maxWorkers": 4}` | PHP futtatókörnyezet és munkafolyamat-szám az [Oldalakhoz](sites.html). |
 | `logging` | `{"level": "info", "keepDays": 30, "maxFileMb": 10}` | Naplószint (`debug`, `info`, `warn`, `error`), hány napig maradnak meg a `data/logs/` fájljai, és mekkora méret után indul új fájl. Futás közben a `log level` és a `config set` is módosíthatja. |
 | `ssh` | `{"enabled": false, "port": 2222, "listenAddress": "127.0.0.1", "maxSessions": 3, "idleTimeoutMinutes": 15, "allowPublicKeys": false}` | SSH-hozzáférés az admin konzolhoz. Alapból kikapcsolt és csak localhoston figyel. Az `allowPublicKeys` fenntartott kulcs, egyelőre nincs hatása (csak jelszavas belépés). Lásd: [Adminisztráció](administration.html#ssh-hozz-f-r-s). |
@@ -136,3 +137,31 @@ A felhasználónévvel és jelszóval rendelkező bejegyzéseket csak bejelentke
 ::: warn Fordított proxyk
 TLS-t lezáró proxy mögött a `trustProxy` értékét az **ugrásszámra vagy az alhálózatra** állítsd, ne `true`-ra. A közvetlenül elérhető szerveren a `true` lehetővé teszi, hogy a kliensek meghamisítsák az `X-Forwarded-For` fejlécet. Lásd: [TLS és fordított proxyk](tls.html).
 :::
+
+## SFU hangmotor
+
+Alapból a hívások közvetlenek (`mesh`). Ha a `voice.mode` értéke `sfu`, a média a szerverbe épített médiaútválasztón (mediasoup) keresztül megy, ami megszünteti a szaggatást nagyobb vagy videós hívásokban. Váltani az **Adminpanel, Hívások, Hangmotor** alatt lehet (azonnal mentődik, és az ezután létrehozott szobákra vonatkozik), vagy a `data/config.json` fájlban:
+
+```json
+"voice": {
+  "mode": "sfu",
+  "sfu": { "port": 40000, "workers": 0, "announcedHost": "", "maxKbpsPerUser": 0, "enableTcp": true }
+}
+```
+
+| Kulcs | Alapérték | Jelentés |
+|---|---|---|
+| `voice.mode` | `"mesh"` | `mesh` (közvetlen) vagy `sfu`. Ha az SFU nem tud futni, a szobák automatikusan mesh módra esnek vissza. |
+| `voice.sfu.port` | `40000` | Az első médiaport. Az *i*. worker a `port + i` porton figyel, **UDP-n és TCP-n**. |
+| `voice.sfu.workers` | `0` | A workerfolyamatok száma. A `0` automatikus: a processzormagok száma, legfeljebb 4. |
+| `voice.sfu.announcedHost` | `""` | A cím, ahová a kliensek a médiát küldik. Üresen automatikus: `turn.externalIp`, majd `publicHost`, majd a LAN-cím. Kézi megadása kikapcsolja az alábbi automatikus újraindítást. |
+| `voice.sfu.maxKbpsPerUser` | `0` | Egy személy kamerájának és képernyőmegosztásának sávszélesség-korlátja, `0` a korlátlan. A hang legfeljebb 64 kbps. |
+| `voice.sfu.enableTcp` | `true` | TCP-s médiát is fogad, az UDP-t tiltó tűzfalak mögötti felhasználóknak. Módosításához szerver-újraindítás kell. |
+
+**Tűzfal és router.** Nyisd meg a `port` – `port + workers - 1` tartományt **UDP-n és TCP-n** (például `40000-40003`), és továbbítsd a szerverre, ha router mögött van. Ne fedje át a HTTP, HTTPS, TURN vagy SSH portokat; az adminpanel elutasít ilyen tartományt. Ugyanazon a LAN-on lévőknek nincs több teendő; az internetről érkezőknek a nyilvános címet kell hirdetni, ezért add meg a `turn.externalIp` (vagy az `announcedHost`) értékét a nyilvános IPv4-es címedre, lásd: [STUN és TURN](#stun-s-turn).
+
+**Változó nyilvános cím.** Ha a hirdetett cím a `turn.externalIp`-ből jön (például a **Nyilvános IP automatikus felderítése** frissíti), az SFU a cím változásakor egyszer magától újraindul. Az élő hívások néhány másodpercen belül maguktól újracsatlakoznak. 30 másodpercenként legfeljebb egy automatikus újraindítás fut, a sikertelent néhányszor újrapróbálja. A kézzel megadott `announcedHost` esetén nincs automatikus újraindítás.
+
+**Hol fut.** A médiaworker egy kis natív program a `node_modules/mediasoup/worker/` mappában. A hordozható csomag a Windows-verziót tartalmazza. Linuxon vagy macOS-en futtasd egyszer a szerveren az `npm run fetch:mediasoup` parancsot a megfelelő worker letöltéséhez. Ha hiányzik, az **Adminpanel, Hívások** jelzi, hogy az SFU nem érhető el, és a hívások mesh módúak maradnak.
+
+**Adatvédelem.** Ebben a módban a szerver lezárja a titkosított hívásfolyamokat. Csak megbízható szerveren használd.

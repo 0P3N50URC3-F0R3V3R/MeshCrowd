@@ -34,6 +34,56 @@ export function renderCallsTab(inner) {
       </div>`;
   }
 
+  function voiceBlock() {
+    const v = data.voice;
+    const st = v.status;
+    const sf = v.sfu;
+    const dot = (color) => `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:8px"></span>`;
+    const workers = st.running ? st.workers : (sf.workers || 4);
+    const lo = sf.port;
+    const hi = sf.port + Math.max(workers, 1) - 1;
+    const warn = (text) => `<div class="hint" style="color:var(--danger);margin-top:6px">${text}</div>`;
+    let line;
+    if (st.running) line = `${dot('var(--green)')}${t('admin.calls.voiceStatusOn', { workers: st.workers, rooms: st.rooms, transports: st.transports, in: fmtBytes(st.bytesIn), out: fmtBytes(st.bytesOut) })}`;
+    else if (st.error) line = `${dot('var(--danger)')}${t('admin.calls.voiceStatusFailed')}: ${escapeHtml(st.error)}`;
+    else line = `${dot('var(--text-muted)')}${t('admin.calls.voiceStatusOff')}`;
+    const warnings = [];
+    if (v.mode === 'sfu' && !v.available) warnings.push(warn(t('admin.calls.warn_sfuUnavailable', { reason: escapeHtml(v.reason || '') })));
+    if (st.recentConnectFailure) warnings.push(warn(t('admin.calls.warn_sfuConnectFailures', { count: st.connectFailures, lo, hi })));
+    if (v.mode === 'sfu' && v.announcedIsLan) warnings.push(warn(t('admin.calls.warn_sfuLan')));
+    const ar = st.lastAutoRestart;
+    const autoRestart = ar && (ar.ok || !st.running) ? `<div class="hint" style="margin-top:6px">${t(ar.ok ? 'admin.calls.voiceAutoRestart' : 'admin.calls.voiceAutoRestartFailed', { time: escapeHtml(new Date(ar.at).toLocaleString()), from: escapeHtml(ar.from), to: escapeHtml(ar.to) })}</div>` : '';
+    return `
+      <h3 style="margin:0 0 8px">${t('admin.calls.voiceTitle')}</h3>
+      <p class="hint" style="margin:0 0 12px">${t('admin.calls.voiceIntro')}</p>
+      <div class="admin-stat-card" style="max-width:none;text-align:left;margin-bottom:12px">
+        <div>${line}</div>
+        ${autoRestart}
+        ${warnings.join('')}
+      </div>
+      <div class="field"><label>${t('admin.calls.voiceMode')}</label>
+        <select class="select" id="vc-mode" style="max-width:320px">
+          <option value="mesh" ${v.mode === 'mesh' ? 'selected' : ''}>${t('admin.calls.voiceModeMesh')}</option>
+          <option value="sfu" ${v.mode === 'sfu' ? 'selected' : ''}>${t('admin.calls.voiceModeSfu')}</option>
+        </select>
+        <div class="hint" style="margin-top:6px">${t('admin.calls.voicePrivacy')}</div></div>
+      <div id="vc-sfu-opts">
+        <div class="field"><label>${t('admin.calls.voicePort')}</label><input class="input" id="vc-port" type="number" min="1" max="65535" value="${sf.port}" style="max-width:140px">
+          <div class="hint">${t('admin.calls.voiceFirewall', { lo, hi })}</div></div>
+        <div class="field"><label>${t('admin.calls.voiceWorkers')}</label><input class="input" id="vc-workers" type="number" min="0" max="16" value="${sf.workers}" style="max-width:120px">
+          <div class="hint">${t('admin.calls.voiceWorkersHint')}</div></div>
+        <div class="field"><label>${t('admin.calls.voiceAnnounced')}</label><input class="input" id="vc-host" value="${escapeHtml(sf.announcedHost)}" placeholder="${escapeHtml(data.publicHost || 'voice.example.com')}" style="max-width:320px">
+          <div class="hint">${t('admin.calls.voiceAnnouncedHint')}</div></div>
+        <label class="check-row" style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><input type="checkbox" id="vc-tcp" ${sf.enableTcp ? 'checked' : ''}> ${t('admin.calls.voiceTcp')}</label>
+        <div class="field"><label>${t('admin.calls.voiceMaxKbps')}</label><input class="input" id="vc-kbps" type="number" min="0" value="${sf.maxKbpsPerUser}" style="max-width:160px">
+          <div class="hint">${t('admin.calls.voiceMaxKbpsHint')}</div></div>
+        ${v.restartRequired ? `<div class="hint" style="color:var(--danger);margin-bottom:8px">${t('admin.calls.voiceRestart')}</div>` : ''}
+      </div>
+      <div class="error-text" id="vc-err"></div>
+      <button class="btn btn-primary" id="vc-save" type="button">${t('common.save')}</button>
+      <div class="divider"></div>`;
+  }
+
   function autoIpStatusLine() {
     const a = data.status?.autoIp;
     if (!a || !data.turn.autoIp) return '';
@@ -50,6 +100,7 @@ export function renderCallsTab(inner) {
     body.innerHTML = `
       <p class="hint" style="margin:0 0 12px">${t('admin.calls.intro')}</p>
       ${statusBlock()}
+      ${voiceBlock()}
       <h3 style="margin:0 0 8px">${t('admin.calls.builtInTitle')}</h3>
       <label class="check-row" style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><input type="checkbox" id="tn-enabled" ${tn.enabled ? 'checked' : ''}> ${t('admin.calls.enable')}</label>
       <div class="field"><label>${t('admin.calls.externalIp')}</label>
@@ -117,6 +168,25 @@ export function renderCallsTab(inner) {
         <b>${t('admin.calls.howTitle')}</b>
         <div class="hint" style="margin-top:6px;white-space:pre-line">${t('admin.calls.howBody')}</div>
       </div>`;
+
+    const syncVoiceRows = () => { body.querySelector('#vc-sfu-opts').style.display = body.querySelector('#vc-mode').value === 'sfu' ? '' : 'none'; };
+    body.querySelector('#vc-mode').addEventListener('change', syncVoiceRows);
+    syncVoiceRows();
+    body.querySelector('#vc-save').addEventListener('click', async () => {
+      const err = body.querySelector('#vc-err');
+      err.textContent = '';
+      const n = (id) => Number(body.querySelector(id).value);
+      try {
+        data = await api.adminUpdateCalls({
+          voice: {
+            mode: body.querySelector('#vc-mode').value,
+            sfu: { port: n('#vc-port'), workers: n('#vc-workers'), announcedHost: body.querySelector('#vc-host').value.trim(), enableTcp: body.querySelector('#vc-tcp').checked, maxKbpsPerUser: n('#vc-kbps') },
+          },
+        });
+        toast(t('admin.calls.saved'));
+        draw();
+      } catch (e2) { err.textContent = apiErrorMessage(e2, t('admin.couldNotSave')); }
+    });
 
     body.querySelector('#lan-save').addEventListener('click', async () => {
       const err = body.querySelector('#lan-err');

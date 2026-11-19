@@ -203,7 +203,16 @@ effectiveStatus(user, viewerIsSelf):
 So `invisible` is indistinguishable from truly offline to everyone but the user themselves — and a
 preference of "online" set before going offline doesn't come back stale on the next connect.
 
-## Voice & video: WebRTC mesh
+## Voice & video: WebRTC mesh and the optional SFU
+
+`voice.mode` (`mesh` default | `sfu`) selects the topology; a room keeps the mode it was created with
+(`voice.modeOf`). SFU mode: `server/lib/sfu/` (workerPool: mediasoup workers, one WebRtcServer per worker on
+`port+i`; rooms: a Router per room; peer: transports/producers/consumers per user; index: facade, auto-restart
+on announced-IP change, mesh fallback via `effectiveMode()`), signalled over the same WebSocket
+(`sfu_request`/`sfu_response`/`sfu_event`, `server/socket/sfu.js`). Client: `web/js/voiceMesh.js` and
+`voiceSfu.js` engines behind one interface, `callLifecycle.mjs` keeps the call alive while views change,
+`web/js/vendor/mediasoup-client.js` is a generated bundle (`npm run build:vendor`). Moderator mutes are
+enforced server-side (producer pause). The rest of this section describes the mesh engine.
 
 No media server. Every participant in a voice/stage/DM-call room opens a direct
 `RTCPeerConnection` to every other participant; the existing WebSocket connection carries all

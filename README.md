@@ -32,6 +32,7 @@ npm start
 
 - You need **Node.js 22.5 or newer** installed yourself (the server uses the built-in `node:sqlite`).
 - **Sites (PHP) need a PHP binary.** Chat, voice and everything else work without it. On Windows run `npm run fetch:php` once (downloads the portable PHP into `runtime/php/`); on Linux and macOS install PHP with your package manager, or point `sites.phpPath` in `data/config.json` at a binary. Without PHP the server logs `[php] unavailable` and only Site pages with PHP fail.
+- **Optional SFU voice engine** (`voice.mode: "sfu"`, Admin Panel > Calls): media goes through an in-process mediasoup router for stutter-free larger calls. Needs UDP+TCP `40000-40003` open and your public address set; on Linux/macOS run `npm run fetch:mediasoup` once. Off by default (peer-to-peer mesh). See the wiki's Configuration page.
 - Desktop client from source: `npm run electron`. Portable builds: `npm run build:client`, `npm run build:portable`. Tests: `npm test`.
 - Open `https://localhost:8443`, accept the self-signed certificate once, and register. The first account is the Owner.
 

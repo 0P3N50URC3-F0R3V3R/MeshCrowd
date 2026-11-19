@@ -11,8 +11,36 @@ const rooms = new Map();
 // itself empties out, so it can never carry over into an unrelated later session in that channel.
 const forceMuted = new Map();
 
-function join(channelId, userId) {
-  if (!rooms.has(channelId)) rooms.set(channelId, new Set());
+// Voice transport mode ('mesh' | 'sfu') per room, fixed when the room is created and cleared with it.
+const modes = new Map();
+
+// DM voice rooms share this registry with server voice channels, keyed by a string so a DM id can
+// never collide with a numeric channels.id.
+function dmRoomKey(dmChannelId) {
+  return `dm:${dmChannelId}`;
+}
+
+function setMode(roomKey, mode) {
+  modes.set(roomKey, mode);
+}
+
+function modeOf(roomKey) {
+  return modes.get(roomKey) ?? null;
+}
+
+// Force-mutes kept across an SFU reset eviction, until the deadline: roomKey -> expiry ms.
+const keptMutes = new Map();
+
+function join(channelId, userId, mode) {
+  if (!rooms.has(channelId)) {
+    const keptUntil = keptMutes.get(channelId);
+    if (keptUntil !== undefined) {
+      keptMutes.delete(channelId);
+      if (Date.now() >= keptUntil) forceMuted.delete(channelId);
+    }
+    rooms.set(channelId, new Set());
+    if (mode) modes.set(channelId, mode);
+  }
   rooms.get(channelId).add(userId);
 }
 
@@ -20,7 +48,18 @@ function leave(channelId, userId) {
   const room = rooms.get(channelId);
   if (!room) return;
   room.delete(userId);
-  if (room.size === 0) { rooms.delete(channelId); forceMuted.delete(channelId); }
+  if (room.size === 0) { rooms.delete(channelId); forceMuted.delete(channelId); modes.delete(channelId); }
+}
+
+// Empties a room whose SFU router died so the rejoin recreates it with the current mode. Unlike a
+// normal empty-out, force-mutes survive for keepMutesMs so the rejoining target stays muted; a room
+// first recreated after that deadline starts clean, as does any later normal empty-out.
+function evict(roomKey, keepMutesMs) {
+  const members = participants(roomKey);
+  rooms.delete(roomKey);
+  modes.delete(roomKey);
+  if (forceMuted.has(roomKey)) keptMutes.set(roomKey, Date.now() + keepMutesMs);
+  return members;
 }
 
 function forceMute(channelId, userId) {
@@ -43,6 +82,10 @@ function inOtherRoom(roomKey, userId) {
   return false;
 }
 
+function roomKeys() {
+  return [...rooms.keys()];
+}
+
 function participants(channelId) {
   return [...(rooms.get(channelId) || [])];
 }
@@ -59,7 +102,7 @@ function leaveAll(userId) {
   for (const [channelId, members] of rooms) {
     if (members.delete(userId)) {
       affected.push(channelId);
-      if (members.size === 0) { rooms.delete(channelId); forceMuted.delete(channelId); }
+      if (members.size === 0) { rooms.delete(channelId); forceMuted.delete(channelId); modes.delete(channelId); }
     }
   }
   return affected;
@@ -79,4 +122,4 @@ function activeChannelFor(userIds) {
   return result;
 }
 
-module.exports = { inOtherRoom, join, leave, participants, isParticipant, leaveAll, activeChannelFor, forceMute, forceUnmute, isForceMuted };
+module.exports = { inOtherRoom, join, leave, roomKeys, participants, isParticipant, leaveAll, activeChannelFor, forceMute, forceUnmute, isForceMuted, setMode, modeOf, dmRoomKey, evict };

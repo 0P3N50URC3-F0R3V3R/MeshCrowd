@@ -163,3 +163,31 @@ test('suggest ranks exact, then longest related key, then close edit distance', 
   assert.equal(schema.suggest('foo'), null);
   assert.equal(schema.suggest('maxUploadMB'), 'maxUploadMb');
 });
+
+test('voice.mode and voice.sfu.maxKbpsPerUser apply live and refresh the SFU facade; switching to sfu starts it', async () => {
+  const sfu = require('../lib/sfu');
+  const sfuSocket = require('../socket/sfu');
+  const orig = { refreshMode: sfu.refreshMode, status: sfu.status, start: sfuSocket.start };
+  let refreshes = 0;
+  let starts = 0;
+  sfu.refreshMode = () => { refreshes++; };
+  sfu.status = () => ({ running: false });
+  sfuSocket.start = async () => { starts++; };
+  try {
+    assert.match(await run('config set voice.mode sfu'), /applied live/);
+    assert.equal(stored().voice.mode, 'sfu');
+    assert.equal(refreshes, 1);
+    assert.equal(starts, 1);
+    assert.match(await run('config set voice.sfu.maxKbpsPerUser 800'), /applied live/);
+    assert.equal(refreshes, 2);
+    assert.match(await run('config set voice.sfu.port 41000'), /restart required/);
+    assert.equal(refreshes, 3);
+    assert.match(await run('config reset voice.mode'), /applied live/);
+    assert.equal(starts, 1);
+    assert.equal(refreshes, 4);
+  } finally {
+    Object.assign(sfu, { refreshMode: orig.refreshMode, status: orig.status });
+    sfuSocket.start = orig.start;
+    for (const k of ['voice.mode', 'voice.sfu.maxKbpsPerUser', 'voice.sfu.port']) await run(`config reset ${k}`);
+  }
+});

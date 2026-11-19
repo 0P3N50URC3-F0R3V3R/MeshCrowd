@@ -88,6 +88,10 @@ function hostFor(cfg, reqHost) {
   return t.advertisedHost || t.externalIp || publicHost || reqHost;
 }
 
+function announcedHostFor(cfg, reqHost) {
+  return cfg.voice?.sfu?.announcedHost || hostFor(cfg, reqHost);
+}
+
 // The list a signed-in user's browser feeds to RTCPeerConnection. Operator-defined external
 // servers come first, then this server's own STUN + TURN with a short-lived credential.
 function iceServersFor(user, reqHost) {
@@ -152,6 +156,18 @@ async function detectExternalIp() {
   return null;
 }
 
+const ipCheckCbs = [];
+
+// Called after every completed WAN check (changed or not), so listeners can compare what they
+// announce against the current address. Registered from server/index.js to avoid require cycles.
+function onIpChange(cb) { ipCheckCbs.push(cb); }
+
+async function notifyIpCheck(result) {
+  for (const cb of ipCheckCbs) {
+    try { await cb(result); } catch (err) { log?.error?.(`[turn] IP change listener failed: ${err.message}`); }
+  }
+}
+
 // Reads the current WAN address from the configured source and, when it differs from the stored
 // externalIp, stores it (keeping the old one as previousIp) and restarts the built-in server so it
 // advertises the new address. Never throws; the outcome lands in status().autoIp.
@@ -163,10 +179,14 @@ async function checkWanIp({ detect = wanIp.detectWanIp } = {}) {
     const ip = await detect(t);
     ipState.error = null;
     ipState.checkedAt = new Date().toISOString();
-    if (ip === t.externalIp) return { ip, changed: false };
+    if (ip === t.externalIp) {
+      await notifyIpCheck({ ip, changed: false });
+      return { ip, changed: false };
+    }
     save({ turn: { externalIp: ip, previousIp: t.externalIp || '', ipChangedAt: ipState.checkedAt } });
     log?.info?.(`[turn] WAN address changed ${t.externalIp || '(none)'} -> ${ip}${cfg.turn.enabled ? ', restarting' : ''}`);
     if (cfg.turn.enabled) await reload();
+    await notifyIpCheck({ ip, changed: true, previous: t.externalIp || '' });
     return { ip, changed: true, previous: t.externalIp || '' };
   } catch (err) {
     ipState.error = err.message;
@@ -193,4 +213,4 @@ function startIpWatcher(logger) {
 
 function stopIpWatcher() { clearTimeout(watcher); watcher = null; }
 
-module.exports = { checkWanIp, startIpWatcher, stopIpWatcher, start, stop, reload, status, iceServersFor, publicIceServers, selfTest, detectExternalIp, isIpv4 };
+module.exports = { checkWanIp, onIpChange, startIpWatcher, stopIpWatcher, start, stop, reload, status, iceServersFor, publicIceServers, selfTest, detectExternalIp, isIpv4, announcedHostFor };

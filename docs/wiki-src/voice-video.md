@@ -9,11 +9,20 @@ order: 4
 
 ## How calls work
 
-Voice and video are **peer-to-peer WebRTC**. Every participant connects directly to every other participant, and the server only relays the signaling over the same WebSocket used for chat. There is no media server to host.
+A server runs calls in one of two modes, chosen by the administrator (**Admin Panel, Calls, Voice engine**). It applies to every voice channel, stage and DM call, and is fixed for a room when the room is created, so a switch only affects rooms created afterwards.
+
+- **Mesh** (the default): voice and video are **peer-to-peer WebRTC**. Every participant connects directly to every other participant, and the server only relays the signaling over the same WebSocket used for chat. There is no media server to host.
+- **SFU** (selective forwarding): every participant sends their stream **once** to the server's built-in media router (mediasoup, running inside the server process), which forwards it to the others. Upload cost no longer grows with the size of the call, which fixes stutter in larger or video-heavy rooms and for people with weak uplinks.
 
 ::: note Plan for the size of the call
-Because it is a full mesh, each person uploads their stream once per other participant. A call of roughly eight or more people with video asks a lot of everybody's upload bandwidth. Audio-only rooms scale much further.
+In mesh mode each person uploads their stream once per other participant. A call of roughly eight or more people with video asks a lot of everybody's upload bandwidth. Audio-only rooms scale much further, and SFU mode removes the limit.
 :::
+
+::: note Privacy in SFU mode
+In mesh mode no server ever sees the media. In SFU mode the server terminates the encrypted call streams to forward them, so it technically can decrypt them. Choose it only for a server you trust. The admin panel shows a notice about this.
+:::
+
+You can use other channels, including text channels, while you are in a call; the call continues in a bar at the bottom. You can be in one voice room at a time: joining another one leaves the first. If you open the same call in a second tab or device, the call moves there and the first one ends with a notice.
 
 ## Joining
 
@@ -45,7 +54,7 @@ A stage is a voice room split into **speakers** and an **audience**. The audienc
 
 ## Moderator tools
 
-Members with **Moderate Members** can **mute for everyone** from another person's tile. The target's client stops sending audio and their own unmute button is disabled until a moderator lifts it; a badge shows on the tile. Without a media server this works by instructing the target's client, as in other chat apps.
+Members with **Moderate Members** can **mute for everyone** from another person's tile. The target's client stops sending audio and their own unmute button is disabled until a moderator lifts it; a badge shows on the tile. In mesh mode this works by instructing the target's client; in SFU mode the server also pauses the person's stream, so a modified client cannot be heard either.
 
 ## Private calls
 
@@ -81,4 +90,6 @@ Server owners can optionally list their LAN and VPN subnets, see [LAN and VPN ne
 | Connects on the LAN but not across networks | Turn on the built-in STUN/TURN server (`setup-turn.bat`, or Admin Panel, Calls) and forward the ports on the router, see [STUN and TURN](configuration.html#stun-and-turn) |
 | People on the same Radmin/ZeroTier/LAN network connect slowly or via a relay | Hover the quality dot to see the path. List the VPN subnet under **Admin Panel, Calls, LAN / VPN networks** so other adapters (Docker, WSL) are skipped, and check that the VPN allows UDP between members |
 | One person cannot be heard | Their browser blocked the microphone, or their input device is wrong in the device picker |
-| Choppy audio in a big call | Lower the preset, or ask people to turn cameras off |
+| Choppy audio in a big call | Switch the server to SFU mode (Admin Panel, Calls, Voice engine), or lower the preset and ask people to turn cameras off |
+| SFU mode: "a firewall may be blocking it" toast | Open the SFU port range on UDP and TCP in the server's firewall and router, and make sure the announced address is the public one, see [SFU voice engine](configuration.html#sfu-voice-engine) |
+| SFU mode is selected but calls are mesh | The SFU could not start (worker missing for this operating system, or its ports are taken). Check the status line under Admin Panel, Calls, Voice engine; the server logs `[sfu]` lines |
