@@ -17,7 +17,7 @@
 <section class="page-hero">
   <div class="container">
     <h1>Funkciók</h1>
-    <p>Egy teljes közösségi platform: chat, ami néhány baráttól egy forgalmas szerverig skálázódik, hívások médiaszerver nélkül, és az eszközök, amikkel rendben tarthatod az egészet.</p>
+    <p>Egy teljes közösségi platform: chat, ami néhány baráttól egy forgalmas szerverig skálázódik, hívások közvetlenül a résztvevők között vagy egy opcionális beépített SFU-n át, és az eszközök, amikkel rendben tarthatod az egészet.</p>
   </div>
 </section>
 
@@ -74,6 +74,9 @@
           <li><b>Minőség-előbeállítások</b> a csatorna létrehozásakor: Mobil, Alacsony, Közepes, Magas és HD Zene, 8 kHz-től egészen 48 kHz sztereóig.</li>
           <li><b>Opcionális RNNoise</b> zajszűrés, egy kis neurális hálózat, ami a te eszközödön fut.</li>
           <li><b>Bemeneti módok</b>: mindig bekapcsolva, hangaktivitás vagy nyomd és beszélj elengedési késleltetéssel és opcionális hangaktivitásos tartalékkal, valamint <b>visszhangcsökkentés</b>, ami beszéd közben 1–30 dB-lel halkítja a lejátszást. A visszhangszűrés és az automatikus erősítésszabályozás mindig be van kapcsolva.</li>
+          <li><b>Két hangmotor</b>: közvetlen, résztvevők közötti háló (végpontig titkosítva) vagy az opcionális mediasoup <b>SFU</b>, ahol mindenki egyetlen kapcsolatot tart a szerverrel. SFU-szobákban a moderátori némítást és a színpadi szabályokat a szerver érvényesíti, a hívások szerver-újraindítás vagy IP-változás után maguktól visszacsatlakoznak.</li>
+          <li>A hívások közvetlenül, beállítás nélkül létrejönnek LAN-on vagy privát VPN-en (Radmin, ZeroTier, Hamachi). A minőségjelző pont megmutatja, hogyan jut el a hang: közvetlenül, NAT-on át vagy átjátszón keresztül.</li>
+          <li>Közös <b>táblarajz</b> színpad- és hangcsatornákhoz, valamint hangpult, amit némíthatsz vagy halkíthatsz.</li>
           <li>Személyenkénti hangerő, beszédjelző gyűrűk, élő szintcsík, bemeneti eszköz választó és szerver-hangpult (az üzenetmezőből is).</li>
           <li><b>Színpadcsatornák</b> előadókkal és hallgatósággal, kézfelemelés és beszédre hívás.</li>
           <li><b>Mindenki némítása</b> a moderátoroknak, és teljes képernyő bármely videócsempéhez.</li>
@@ -124,8 +127,10 @@
         <ul class="checks">
           <li><b>AutoMod</b>: tiltott szavak, linkek (tiltás, engedélyezési vagy tiltólista), tömeges megemlítés, spam és túl sok nagybetű, opcionális időkizárással és kivételekkel.</li>
           <li><b>Ellenőrzési szintek</b>, amelyek visszatartják a vadonatúj fiókokat és a frissen csatlakozókat. Minden helyi; nincs e-mailes vagy telefonos ellenőrzés.</li>
+          <li><b>Captcha</b> regisztrációkor (alapból mindig) és bejelentkezéskor sikertelen kísérletek után, regisztrációs mód (nyitott, csak meghívóval vagy zárt) és feliratkozható IP-tiltólisták, például FireHOL, Spamhaus és Tor.</li>
           <li><b>Korhatáros csatornák</b> egyszeri megerősítés mögött. Semmit nem igazolunk, és semmi nem hagyja el a szerveredet.</li>
           <li>Kirúgás, tiltás, időkizárás, <b>naplózás</b> és egy felhasználói bejelentési sor jegyzetekkel, állapotokkal és személyenkénti csoportosítással.</li>
+          <li><b>Tagi korlátozások</b> szerverenként: egy tag névszínét, néveffektjeit, matricáit vagy bió-formázását letilthatod anélkül, hogy némítanád.</li>
           <li><b>Adattisztítás</b>: egy adott dátumnál régebbi előzmények törlése előnézettel és opcionális 24 órás előzetes értesítéssel.</li>
         </ul>
         <figure class="shot"><div class="window"><img src="../assets/img/age-gate.jpg" alt="Korhatáros csatorna, amely megerősítést kér, hogy a tag elmúlt 18 éves" loading="lazy"></div><figcaption>Egyszeri megerősítés, harmadik felek nélkül.</figcaption></figure>
@@ -175,7 +180,8 @@
       <ul class="checks">
         <li><b>Útlevél (Passport)</b>: a böngésződben létrejövő fiókkulcspár, titkosított <code>.mcpass</code> fájlként exportálható belépéshez és helyreállításhoz.</li>
         <li><b>Megerősített bejelentkezés</b>: a bejelentkezési kulcsot a böngésző származtatja; a szerver sosem látja egy webes fiók jelszavát.</li>
-        <li><b>Nyugalmi állapotban titkosított privát üzenetek</b>: a privát üzenetek szövege titkosítva (AES-256-GCM) tárolódik a szerver adatbázisában.</li>
+        <li><b>Nyugalmi állapotban titkosított privát üzenetek</b>: a privát üzenetek szövege és csatolmányai titkosítva (AES-256-GCM) tárolódnak a szerveren.</li>
+        <li><b>Eszközök</b> listája: látod az összes, a fiókodba bejelentkezett böngészőt és alkalmazást, és bármelyiket kijelentkeztetheted.</li>
         <li><b>Kétlépcsős azonosítás</b> TOTP-vel és helyreállító kódokkal, visszavonható szerveroldali munkamenetek és sebességkorlátozás.</li>
         <li><b>Alapból HTTPS</b> automatikus tanúsítvánnyal, vagy hozd a sajátodat.</li>
       </ul>
@@ -190,6 +196,7 @@
           <li><b>Felhasználónkénti témák</b>: előbeállítások vagy saját színek, betűtípusok és háttérátmenet, kivágatként megosztható.</li>
           <li><b>Profilok</b> avatárral, bannerrel, bemutatkozással, egyéni státusszal és jelenléttel, plusz státuszonkénti hangszabályok.</li>
           <li><b>Névszínek és animált néveffektek</b> (szivárvány, színátmenet, ragyogás, neon, pulzálás, csillogás, tűz, hullám) saját színekkel és sebességgel; a szerepkörök is kaphatnak effektet, és szerveren a szerepkör mindig erősebb a személyes megjelenésnél.</li>
+          <li><b>Értesítési rács</b>: minden állapothoz (Elérhető, Távol, Elfoglalt, Láthatatlan) és eseménytípushoz külön választhatsz hangot, asztali és telefonos értesítést. Az Automatikus távollét a megadott tétlenség után átállítja az állapotodat.</li>
           <li>Átméretezhető oldalsávok, szervermappák és <b>nyelvváltó</b> (angol és magyar).</li>
         </ul>
         <figure class="shot"><div class="window"><img src="../assets/img/theme-sunset.jpg" alt="A csevegés a Sunset témában" loading="lazy"></div><figcaption>A Sunset előbeállítás.</figcaption></figure>
@@ -201,8 +208,8 @@
       <p class="lead">Használd azt, ami éppen kézre áll. Mind ugyanahhoz a szerverhez beszél.</p>
       <div class="grid c3">
         <div class="card"><div class="ic"><i data-icon="globe"></i></div><h3>Web</h3><p>Nincs mit telepíteni, minden funkció elérhető bármely modern böngészőben.</p></div>
-        <div class="card"><div class="ic"><i data-icon="monitor"></i></div><h3>Asztali</h3><p>Tálcaikon-jelvény saját színekkel, kattintható legutóbbi értesítések listája a tálcamenüben, natív értesítések, tálcára zárás és tanúsítvány-rögzítés önaláírt szerverekhez.</p></div>
-        <div class="card"><div class="ic"><i data-icon="phone"></i></div><h3>Android</h3><p>Telefonra tervezett felület helyi háttérértesítésekkel és opcionális UnifiedPush-sal, Google-szolgáltatások nélkül.</p></div>
+        <div class="card"><div class="ic"><i data-icon="monitor"></i></div><h3>Asztali</h3><p>Tálcaikon-jelvény saját színekkel, kattintható legutóbbi értesítések listája a tálcamenüben, natív értesítések, letöltési folyamatjelző, tálcára zárás és tanúsítvány-rögzítés önaláírt szerverekhez. Electron-alkalmazásként és kisebb, egyetlen exe-s WebView2 kliensként is elérhető.</p></div>
+        <div class="card"><div class="ic"><i data-icon="phone"></i></div><h3>Android</h3><p>Telefonra tervezett felület helyi háttérértesítésekkel és opcionális UnifiedPush-sal, Google-szolgáltatások nélkül. A legutóbbi csevegések és szerverek offline is olvashatók.</p></div>
       </div>
     </section>
 
@@ -214,7 +221,9 @@
           <li><b>Adminpanel</b> statisztikákkal, felhasználókezeléssel, személyzeti rangokkal és az egész példányra kiterjedő szerverkezeléssel.</li>
           <li>Futásidőben állítható <b>feltöltési méretkorlát</b> és opcionális kiterjesztés-engedélyezőlista.</li>
           <li><b>Hordozható csomag</b> saját futtatókörnyezettel, és mentés, ami egyszerűen egy mappa másolata.</li>
-          <li>Sok automatizált teszt (a készlet jelenleg több mint 700-at tartalmaz).</li>
+          <li><b>Admin konzol</b> a szerverablakban vagy SSH-n át (jelszó és TOTP), fiók-, tiltás-, beállítás- és mentésparancsokkal, valamint ütemezett zip-mentések, visszaállítás és szintezett naplófájlok.</li>
+          <li>Opcionális <b>Launcher</b> vezérlőpult Windowsra: szerkeszti az összes beállítást, és elindítja, leállítja, újraindítja a szervert.</li>
+          <li>Sok automatizált teszt (a készlet jelenleg több mint 1300-at tartalmaz).</li>
         </ul>
         <figure class="shot"><div class="window"><img src="../assets/img/settings-overview.jpg" alt="Szerver áttekintő beállításai az ellenőrzési szinttel" loading="lazy"></div><figcaption>Szerverbeállítások, az ellenőrzési szinttel együtt.</figcaption></figure>
       </div>

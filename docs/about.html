@@ -41,8 +41,8 @@
         <tr><th>Layer</th><th>Technology</th></tr>
         <tr><td>Server</td><td>Node.js 22.5+, Express, <code>ws</code> for WebSockets, the built-in <code>node:sqlite</code> database</td></tr>
         <tr><td>Web client</td><td>Plain ES modules, no framework and no build step; DOMPurify, highlight.js, CodeMirror and TinyMCE are bundled locally</td></tr>
-        <tr><td>Voice and video</td><td>WebRTC mesh, Opus, optional RNNoise compiled to WebAssembly, built-in STUN/TURN relay (plain Node, no dependency)</td></tr>
-        <tr><td>Desktop</td><td>Electron, as a portable Windows app</td></tr>
+        <tr><td>Voice and video</td><td>WebRTC mesh or optional mediasoup SFU, Opus, optional RNNoise compiled to WebAssembly, built-in STUN/TURN relay (plain Node, no dependency)</td></tr>
+        <tr><td>Desktop</td><td>Electron, as a portable Windows app; also a single-exe C# WebView2 client</td></tr>
         <tr><td>Android</td><td>Kotlin WebView shell with WorkManager and optional UnifiedPush</td></tr>
       </table>
     </div>

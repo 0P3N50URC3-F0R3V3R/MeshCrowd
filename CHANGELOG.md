@@ -2,6 +2,10 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-20
+#### Changed
+- Website (EN and HU): the Features page voice section now describes both voice engines (peer-to-peer and the optional SFU), direct LAN/VPN calls, the whiteboard, and the Home and About pages mention the SFU and the C# client. Features also lists captcha, registration modes and IP blocklists, member restrictions, Devices, the notification grid and auto away, encrypted DM attachments, the admin console, backups, the Launcher and offline phone use.
+
 ### 2026-11-19
 #### Added
 - Voice settings: push-to-talk release delay (0-2000 ms), an option to also open the mic by voice activity while push-to-talk is on, and echo reduction that lowers everyone's playback by a chosen 1-30 dB (default 10) while you are speaking. Echo cancellation and automatic gain control were already always on. Needs the web deploy.
