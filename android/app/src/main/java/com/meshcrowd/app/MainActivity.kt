@@ -60,6 +60,8 @@ class MainActivity : AppCompatActivity() {
         val ok = grantableResources(req)
         if (ok.isEmpty()) req.deny() else req.grant(ok)
     }
+    private val askBluetooth = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    private var bluetoothAsked = false
     private var inCall = false
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
@@ -226,6 +228,14 @@ class MainActivity : AppCompatActivity() {
         p != null && ContextCompat.checkSelfPermission(this, p) == PackageManager.PERMISSION_GRANTED
     }.toTypedArray()
 
+    // Headset audio routing needs BLUETOOTH_CONNECT on Android 12+; calls work without it, so it is asked once and never required.
+    private fun bluetoothIfWanted(req: PermissionRequest): List<String> {
+        if (Build.VERSION.SDK_INT < 31 || bluetoothAsked || PermissionRequest.RESOURCE_AUDIO_CAPTURE !in req.resources) return emptyList()
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) return emptyList()
+        bluetoothAsked = true
+        return listOf(Manifest.permission.BLUETOOTH_CONNECT)
+    }
+
     private fun handleMediaRequest(req: PermissionRequest) {
         val origin = settings.origin
         if (origin == null || !req.origin.toString().trimEnd('/').equals(origin.trimEnd('/'), ignoreCase = true)) { req.deny(); return }
@@ -234,11 +244,12 @@ class MainActivity : AppCompatActivity() {
         if (missing.isEmpty()) {
             val ok = grantableResources(req)
             if (ok.isEmpty()) req.deny() else req.grant(ok)
+            bluetoothIfWanted(req).firstOrNull()?.let { askBluetooth.launch(it) }
             return
         }
         mediaRequest?.deny()
         mediaRequest = req
-        askMedia.launch(missing.toTypedArray())
+        askMedia.launch((missing + bluetoothIfWanted(req)).toTypedArray())
     }
 
     override fun onDestroy() {

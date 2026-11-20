@@ -9,7 +9,8 @@ import { PERMISSIONS, has, memberPermissionBits, channelPermissionBits, memberNa
 import { nav } from '../router.js';
 import { ensureServerDetail } from '../data.js';
 import { handleError } from '../lib/errors.js';
-import { openSheet } from '../components/bottomSheet.js';
+import { openSheet, promptSheet } from '../components/bottomSheet.js';
+import { createThreadAllowingLongText, MAX_TEXT_FILE_BYTES } from '../../js/longText.js';
 
 // Forum channel: a list of titled posts, each one a thread. Opening a post pushes the thread chat.
 export function mountForum(el, params) {
@@ -92,13 +93,21 @@ export function mountForum(el, params) {
           const content = body.querySelector('#fp-content').value.trim();
           const err = body.querySelector('#fp-error');
           if (!title || !content) { err.textContent = t('forum.titleAndMessageRequired'); return; }
-          e.currentTarget.disabled = true;
+          const btn = e.currentTarget;
+          btn.disabled = true;
           try {
-            const res = await api.createThread(serverId, channelId, { title, content });
+            const res = await createThreadAllowingLongText({
+              createThread: (b) => api.createThread(serverId, channelId, b),
+              sendThreadMessage: (id, b) => api.sendThreadMessage(serverId, channelId, id, b),
+              config: state.config, title, content, placeholder: t('forum.longPostBody'),
+              askName: () => promptSheet({ title: t('chat.longAsFileTitle'), placeholder: t('chat.longAsFilePlaceholder'), okLabel: t('chat.longAsFileConfirm'), allowEmpty: true }),
+              tooLargeError: t('chat.tooLargeForFile', { kb: Math.round(MAX_TEXT_FILE_BYTES / 1024) }),
+            });
+            if (!res) { btn.disabled = false; return; }
             close();
             upsert(res.thread);
             nav.push('chat', { kind: 'thread', serverId, channelId, threadId: res.thread.id });
-          } catch (error) { err.textContent = apiErrorMessage(error, t('forum.createError')); e.currentTarget.disabled = false; }
+          } catch (error) { err.textContent = apiErrorMessage(error, t('forum.createError')); btn.disabled = false; }
         });
         setTimeout(() => body.querySelector('#fp-title').focus(), 250);
       },

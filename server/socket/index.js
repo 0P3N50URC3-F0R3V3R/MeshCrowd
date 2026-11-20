@@ -16,6 +16,7 @@ const sfuSocket = require('./sfu');
 const whiteboard = require('../lib/whiteboard');
 const { isAllowedWsOrigin } = require('../lib/wsOrigin');
 const { isInvisible } = require('../lib/invisible');
+const { voiceChannelInfoFor } = require('../lib/friends');
 
 function getChannel(id) {
   return db.prepare('SELECT * FROM channels WHERE id = ?').get(id);
@@ -76,12 +77,8 @@ function broadcastStageState(channel) {
 // not everyone who can see the channel) and carries the server name too, since a friend viewing
 // their own activity feed isn't necessarily a member of that server.
 function broadcastFriendVoiceActivity(userId, channel) {
-  let channelInfo = null;
-  if (channel) {
-    const server = db.prepare('SELECT id, name FROM servers WHERE id = ?').get(channel.server_id);
-    channelInfo = { id: channel.id, name: channel.name, serverId: server?.id, serverName: server?.name };
-  }
-  hub.broadcastToFriends(userId, { type: 'friend_voice', userId, channel: channelInfo });
+  if (!channel) return hub.broadcastToFriends(userId, { type: 'friend_voice', userId, channel: null });
+  hub.broadcastToFriends(userId, (friendId) => ({ type: 'friend_voice', userId, channel: voiceChannelInfoFor(friendId, channel) }));
 }
 
 function whiteboardCtx(channel, userId) {

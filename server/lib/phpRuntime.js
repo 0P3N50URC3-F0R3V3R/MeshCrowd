@@ -70,8 +70,12 @@ function launchSpec({ port, docroot }) {
   const bin = activeBin;
   const root = realDir(docroot);
   const args = iniArgs(bin);
+  // PHP sessions need a writable path inside open_basedir; a dot directory is never listed, edited or served.
+  const sessions = path.join(root, '.sessions');
+  try { fs.mkdirSync(sessions, { recursive: true }); } catch { /* sessions then fail to start, the page still runs */ }
   args.push(
     '-d', `open_basedir=${iniPath(root)}`,
+    '-d', `session.save_path=${iniPath(sessions)}`,
     '-d', `disable_functions=${DISABLED_FUNCTIONS}`,
     '-d', 'allow_url_include=0', '-d', 'allow_url_fopen=0',
     '-d', 'display_errors=0', '-d', 'log_errors=1',

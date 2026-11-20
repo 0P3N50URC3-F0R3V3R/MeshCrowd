@@ -8,6 +8,7 @@ const { buildTrayIconPNG, buildBlinkFrames } = require('./trayIcon');
 const { pruneRecent, clearRecentOnFocus } = require('./trayState');
 const { findMcrLink, inviteTarget } = require('./inviteUrl');
 const { externalUrl } = require('./externalUrl');
+const { isPermissionAllowed, isServerOrigin, isLocalAppPage } = require('./permissions');
 
 // `-dev`/`--dev` is the one supported "show debugging stuff" switch: gates the DevTools shortcut
 // (see setupDevToolsGate below) and the start-client.bat console window — nothing else changes.
@@ -358,7 +359,7 @@ function createWindow() {
     let target;
     try { target = new URL(url); } catch { event.preventDefault(); return; }
     const isLocalFile = target.protocol === 'file:';
-    const isConfiguredServer = clientConfig.serverUrl && target.origin === new URL(clientConfig.serverUrl).origin;
+    const isConfiguredServer = isServerOrigin(url, clientConfig.serverUrl);
     if (!isLocalFile && !isConfiguredServer) {
       event.preventDefault();
       const ext = externalUrl(url);
@@ -371,8 +372,7 @@ function createWindow() {
     let target;
     try { target = new URL(event.url); } catch { return; }
     if (target.protocol === 'about:' || target.protocol === 'data:' || target.protocol === 'blob:') return;
-    const serverOrigin = clientConfig.serverUrl && new URL(clientConfig.serverUrl).origin;
-    if (target.origin !== serverOrigin) {
+    if (!isServerOrigin(target.href, clientConfig.serverUrl)) {
       event.preventDefault();
       const ext = externalUrl(target.href);
       if (ext) shell.openExternal(ext);
@@ -449,7 +449,14 @@ function loadTarget() {
   }
 }
 
-ipcMain.handle('dismesh:get-config', () => clientConfig);
+// Server-changing IPCs are for the bundled connect/connecting pages only; a page loaded from the
+// (remote) server must not be able to repoint the client.
+const RENDERER_DIR = path.join(__dirname, 'renderer');
+function fromLocalPage(event) {
+  return isLocalAppPage(event.senderFrame?.url || event.sender.getURL(), RENDERER_DIR);
+}
+
+ipcMain.handle('dismesh:get-config', (event) => (fromLocalPage(event) ? clientConfig : null));
 
 ipcMain.handle('dismesh:open-external', (event, rawUrl) => {
   const ext = externalUrl(rawUrl);
@@ -459,6 +466,7 @@ ipcMain.handle('dismesh:open-external', (event, rawUrl) => {
 });
 
 ipcMain.handle('dismesh:set-server', (event, rawUrl) => {
+  if (!fromLocalPage(event)) return { ok: false, error: 'Not allowed from this page.' };
   let url;
   try {
     url = new URL(rawUrl);
@@ -487,9 +495,14 @@ ipcMain.handle('dismesh:set-server', (event, rawUrl) => {
   return { ok: true };
 });
 
-ipcMain.handle('dismesh:retry-connect', () => { loadTarget(); return { ok: true }; });
+ipcMain.handle('dismesh:retry-connect', (event) => {
+  if (!fromLocalPage(event)) return { ok: false };
+  loadTarget();
+  return { ok: true };
+});
 
-ipcMain.handle('dismesh:forget-server', () => {
+ipcMain.handle('dismesh:forget-server', (event) => {
+  if (!fromLocalPage(event)) return { ok: false };
   clearTimeout(connectTimer);
   clientConfig.serverUrl = null;
   saveClientConfig(clientConfig);
@@ -684,6 +697,16 @@ ipcMain.on('dismesh:clear-notifications', (event, keys) => {
 // rather than presenting a custom in-app chooser (not built — the native picker covers the
 // common case, and this is the one part of the video/screen-share feature not live-verified in
 // this session, since headless dev environments can't meaningfully exercise OS screen capture).
+function setupPermissionHandlers() {
+  const ses = session.defaultSession;
+  ses.setPermissionRequestHandler((webContents, permission, callback, details) => {
+    callback(isPermissionAllowed(permission, details?.requestingUrl || webContents.getURL(), clientConfig.serverUrl));
+  });
+  ses.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => (
+    isPermissionAllowed(permission, details?.requestingUrl || requestingOrigin, clientConfig.serverUrl)
+  ));
+}
+
 function setupDisplayMediaHandler() {
   session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
     try {
@@ -713,6 +736,7 @@ app.on('second-instance', (event, argv) => {
 app.whenReady().then(() => {
   if (!gotSingleInstanceLock) return;
   setupCertHandling();
+  setupPermissionHandlers();
   setupDisplayMediaHandler();
   downloads.setupDownloads({ session: session.defaultSession, ipcMain, dialog, shell, app, getWindow: () => mainWindow, getConfig: () => clientConfig });
   createWindow();

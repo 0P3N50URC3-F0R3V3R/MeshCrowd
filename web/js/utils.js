@@ -59,10 +59,11 @@ const HTML_FORBID_ATTR = ['style', 'class', 'id', 'name'];
 // and line breaks preserved via CSS white-space (caller sets white-space: pre-wrap).
 // `channels`, when passed (server-channel scope only), resolves #name against real channels in
 // the current server so only actual channels become clickable refs — everything else (e.g. a
-// GitHub "#123") stays plain text. @mentions are styled on sight, unresolved — there's no
-// autocomplete to guarantee the name is real, so treat it the same way Discord's own renderer
-// does for a raw, non-autocompleted "@word".
-const URL_RE = /(https?:\/\/[^\s<]+)/g;
+// GitHub "#123") stays plain text. @mentions are styled only when `mentionNames` (a Set of the
+// lowercase usernames, role names, "everyone" and "here" known for this scope) contains the name;
+// without that set they stay plain text.
+// \x01 is the stash delimiter (see STASH_MARK) and never part of a URL.
+const URL_RE = /(https?:\/\/[^\s<\x01]+)/g;
 // Sentence punctuation and an unbalanced closing paren after a URL belong to the prose, not the link.
 function splitUrlTail(url) {
   let end = url.length;
@@ -78,8 +79,11 @@ function splitUrlTail(url) {
 
 const MENTION_RE = /@([a-zA-Z0-9_.]{2,32})/g;
 
-function linkifyMentionsAndChannels(text, channels, styleMentions = true) {
-  let out = styleMentions ? text.replace(MENTION_RE, (m, name) => `<span class="mention">@${name}</span>`) : text;
+function linkifyMentionsAndChannels(text, channels, mentionNames) {
+  let out = mentionNames ? text.replace(MENTION_RE, (m, name) => {
+    const bare = name.replace(/\.+$/, '');
+    return bare.length >= 2 && mentionNames.has(bare.toLowerCase()) ? `<span class="mention">@${bare}</span>${name.slice(bare.length)}` : m;
+  }) : text;
   return linkChannelRefs(out, channels, (name) => t('chat.channelRefLabel', { name }));
 }
 
@@ -166,33 +170,51 @@ function extractCode(text, stashCode, rawHtmlEnabled) {
     }
     return stashCode(`<pre class="md-codeblock"><code>${code}</code></pre>`);
   });
+  // Double backticks let a span contain single ones; one space of padding inside is dropped.
+  text = text.replace(/(?<!`)``(?!`)([^\n]+?)(?<!`)``(?!`)/g, (m, code) => stashCode(`<code class="md-code">${code.replace(/^ (.*\S.*) $/, '$1')}</code>`));
+  text = text.replace(/\\`/g, () => stashCode('`'));
   return text.replace(/`([^`\n]+)`/g, (m, code) => stashCode(`<code class="md-code">${code}</code>`));
 }
 
-function applyMarkdown(text) {
+// [text](url) for http, https and mailto only. Runs on already-escaped text, so quotes in the URL
+// are entities and cannot leave the attribute; the label keeps inline markdown but no autolinks or
+// mentions (the whole anchor is stashed).
+const MD_LINK_RE = /\[([^\]\n]+)\]\(((?:https?:\/\/|mailto:)(?:[^\s()<>\x01]|\([^\s()<>\x01]*\))+)\)/g;
+function extractLinks(text, stashCode) {
+  return text.replace(MD_LINK_RE, (m, label, url) => stashCode(`<a href="${url}" target="_blank" rel="noopener noreferrer">${inlineMarkdown(label)}</a>`));
+}
+
+function inlineMarkdown(text) {
   text = text.replace(/~~(.+?)~~/g, '<del>$1</del>');
   text = text.replace(/__(.+?)__/g, '<u>$1</u>');
   text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
   text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   text = text.replace(/(?<![*\w])\*(?!\s)(.+?)(?<!\s)\*(?!\*)/g, '<em>$1</em>');
   text = text.replace(/(?<![_\w])_(?!\s)(.+?)(?<!\s)_(?!\w)/g, '<em>$1</em>');
-  text = text.replace(/\|\|(.+?)\|\|/g, '<span class="md-spoiler" data-action="spoiler">$1</span>');
+  return text.replace(/\|\|(.+?)\|\|/g, '<span class="md-spoiler" data-action="spoiler">$1</span>');
+}
 
-  return applyLineMarkers(text);
+function applyMarkdown(text) {
+  return applyLineMarkers(inlineMarkdown(text));
 }
 
 // `remote` content comes from another instance: its @names do not refer to anyone on this one, so
 // they are not styled as mentions, and it never gets raw HTML, channel refs or this server's emoji.
-export function renderMessageContent(content, { channels, customEmoji, rawHtmlEnabled, remote = false } = {}) {
+export function renderMessageContent(content, { channels, customEmoji, rawHtmlEnabled, remote = false, mentionNames } = {}) {
   const stash = [];
   const stashCode = (html) => { stash.push(html); return `${STASH_MARK}${stash.length - 1}${STASH_MARK}`; };
-  const unstashCode = (t) => t.replace(new RegExp(`${STASH_MARK}(\\d+)${STASH_MARK}`, 'g'), (m, i) => stash[Number(i)]);
+  // Stashed entries can hold markers themselves (a code span inside a link label): unstash until none are left.
+  const unstashCode = (t) => {
+    const re = new RegExp(`${STASH_MARK}(\\d+)${STASH_MARK}`, 'g');
+    for (let pass = 0; pass < 4 && t.includes(STASH_MARK); pass++) t = t.replace(re, (m, i) => stash[Number(i)]);
+    return t;
+  };
 
   // Code extraction runs once, on the whole message, before URL-splitting — see extractCode's
   // own comment for why that order matters.
   // A backslash before a markdown character makes it literal (`\_` shows `_`); stashed like code so
   // the markdown passes never see it. A lone backslash, paths and `\\` are left untouched.
-  const withCodeStashed = extractCode(escapeHtml(content), stashCode, remote ? false : rawHtmlEnabled)
+  const withCodeStashed = extractLinks(extractCode(escapeHtml(content), stashCode, remote ? false : rawHtmlEnabled), stashCode)
     .replace(/\\([*_~|])/g, (m, ch) => stashCode(ch));
 
   // Split keeps URL_RE's capture group in the result, alternating [text, url, text, url, ...] —
@@ -200,7 +222,7 @@ export function renderMessageContent(content, { channels, customEmoji, rawHtmlEn
   // stray markdown-looking punctuation never gets touched.
   const linked = withCodeStashed.split(URL_RE).map((part, i) => (i % 2 === 1
     ? (([url, tail]) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${tail}`)(splitUrlTail(part))
-    : applyMarkdown(replaceCustomEmoji(linkifyMentionsAndChannels(part, remote ? null : channels, !remote), remote ? null : customEmoji)))).join('');
+    : applyMarkdown(replaceCustomEmoji(linkifyMentionsAndChannels(part, remote ? null : channels, remote ? null : mentionNames), remote ? null : customEmoji)))).join('');
 
   return unstashCode(linked);
 }

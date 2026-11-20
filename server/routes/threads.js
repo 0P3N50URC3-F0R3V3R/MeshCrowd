@@ -24,7 +24,7 @@ const { verificationBlock } = require('../lib/verification');
 const { logAudit } = require('../lib/auditLog');
 const { maybeFetchAndAttachEmbed } = require('../lib/linkPreview');
 const { wipeScope } = require('../lib/prune');
-const { maxMessageChars } = require('../lib/messageLimits');
+const { readContent } = require('../lib/messageLimits');
 const { afterResponse } = require('../lib/deferred');
 
 const router = express.Router({ mergeParams: true });
@@ -114,7 +114,9 @@ function blockIfTimedOut(req, res, next) {
 
 router.post('/', requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfTimedOut, (req, res) => {
   const title = String(req.body?.title || '').trim().slice(0, 100);
-  const content = String(req.body?.content || '').trim().slice(0, maxMessageChars());
+  const read = readContent(req.body?.content, { trim: true });
+  if (read.status) return res.status(read.status).json(read.body);
+  const { content } = read;
   if (!title) return res.status(400).json({ error: 'title required' });
   if (!content) return res.status(400).json({ error: 'the first message cannot be empty' });
 
@@ -172,7 +174,9 @@ router.patch('/:threadId', loadThread, (req, res) => {
     if (!title) return res.status(400).json({ error: 'title required' });
   }
   if (req.body?.content !== undefined) {
-    content = String(req.body.content).trim().slice(0, maxMessageChars());
+    const read = readContent(req.body.content, { trim: true });
+    if (read.status) return res.status(read.status).json(read.body);
+    content = read.content;
     if (!content) return res.status(400).json({ error: 'the first message cannot be empty' });
   }
 
@@ -262,7 +266,9 @@ const upload = liveUpload({ storage });
 router.post('/:threadId/messages', loadThread, requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfTimedOut, upload.array('files', 5), (req, res) => {
   if (req.files?.length && rejectOversizedFiles(req, res)) return;
   if (req.thread.archived) return res.status(403).json({ error: 'this thread is archived' });
-  const content = String(req.body?.content || '').slice(0, maxMessageChars());
+  const read = readContent(req.body?.content);
+  if (read.status) { voiceMessages.discardFiles(req.files); return res.status(read.status).json(read.body); }
+  const { content } = read;
   let stickerId = null;
   if (req.body?.stickerId) {
     if (isRestricted(req.channel.server_id, req.user.id, 'stickers')) return res.status(403).json({ error: 'stickers are restricted for you on this server' });

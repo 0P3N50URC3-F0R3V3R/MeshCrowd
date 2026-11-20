@@ -1045,7 +1045,7 @@ router.post('/:id/roles', requireMember, requirePerm(PERMISSIONS.MANAGE_ROLES), 
   if (typeof name !== 'string') return res.status(400).json({ error: 'role name required' });
   const cleanName = singleLine(name, 50);
   if (!cleanName) return res.status(400).json({ error: 'role name required' });
-  if (color !== undefined && !HEX_COLOR_RE.test(String(color))) {
+  if (color !== undefined && !(typeof color === 'string' && HEX_COLOR_RE.test(color))) {
     return res.status(400).json({ error: 'color must be #rrggbb' });
   }
   const maxPos = db.prepare('SELECT MAX(position) AS m FROM roles WHERE server_id = ?').get(req.server.id).m || 0;
@@ -1074,7 +1074,7 @@ router.patch('/:id/roles/:roleId', requireMember, requirePerm(PERMISSIONS.MANAGE
   if (permissions !== undefined && !assertCanGrant(req, Number(permissions) || 0)) {
     return res.status(403).json({ error: 'cannot grant permissions you do not hold' });
   }
-  if (color !== undefined && !HEX_COLOR_RE.test(String(color))) {
+  if (color !== undefined && !(typeof color === 'string' && HEX_COLOR_RE.test(color))) {
     return res.status(400).json({ error: 'color must be #rrggbb' });
   }
   const updates = []; const params = [];
@@ -1202,7 +1202,7 @@ router.patch('/:id/members/:userId/color', requireMember, requirePerm(PERMISSION
   if (!target) return res.status(404).json({ error: 'member not found' });
 
   const { color } = req.body || {};
-  if (color !== null && !HEX_COLOR_RE.test(color || '')) {
+  if (color !== null && !(typeof color === 'string' && HEX_COLOR_RE.test(color))) {
     return res.status(400).json({ error: 'color must be a 6-digit hex code (e.g. #f04747) or null' });
   }
   db.prepare('UPDATE server_members SET name_color = ? WHERE server_id = ? AND user_id = ?').run(color, req.server.id, targetId);

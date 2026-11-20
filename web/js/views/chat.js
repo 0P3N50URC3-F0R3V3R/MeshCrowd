@@ -14,7 +14,8 @@ import { EMOJI_SHORTCODES } from '../emojiShortcodes.js';
 import { openStickerPicker } from './stickerPicker.js';
 import { stickerRef, previewText } from '../stickers.mjs';
 import { confirmModal, promptModal, openModal } from './modal.js';
-import { MAX_TEXT_FILE_BYTES, textByteLength, textToFile } from '../longText.js';
+import { mentionNamesFor } from '../mentionNames.mjs';
+import { MAX_TEXT_FILE_BYTES, textByteLength, textToFile, isMessageTooLong, adoptServerLimit } from '../longText.js';
 import { openInviteModal } from './sidebar.js';
 import { memberNameColor, memberNameFx, memberPermissionBits, channelPermissionBits, has, PERMISSIONS } from '../permissions.js';
 import { checklistHtml, toggleChecklistItem, openChecklistForm } from '../checklist.js';
@@ -73,6 +74,9 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
 
   const scopeType = scope.kind === 'dm' ? 'dm' : scope.kind === 'thread' ? 'thread' : 'channel';
   const scopeId = scope.kind === 'dm' ? scope.dmId : scope.kind === 'thread' ? scope.threadId : scope.channelId;
+  const scopeMentionNames = () => mentionNamesFor(scope.kind === 'dm'
+    ? { dmMembers: [...(state.dms.find((d) => d.id === scope.dmId)?.members || []), state.me] }
+    : { detail: getServerDetail(scope.serverId) });
 
   // Snapshot of the read pointer at open time: the "new messages" line stays put while this pane is
   // open and is gone on the next open, once markRead has advanced the pointer.
@@ -563,7 +567,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     }
     if (m.content && !m.checklist) {
       const emojiOnly = isEmojiOnly(m.content, scope.customEmoji) && !m.poll;
-      parts.push(`<div class="msg-line ${emojiOnly ? 'msg-emoji-only' : ''}">${renderMessageContent(m.content, { channels: scope.channels, customEmoji: scope.customEmoji, rawHtmlEnabled: scope.rawHtmlEnabled })}${m.editedAt ? `<span class="edited-tag">${t('chat.editedTag')}</span>` : ''}</div>`);
+      parts.push(`<div class="msg-line ${emojiOnly ? 'msg-emoji-only' : ''}">${renderMessageContent(m.content, { channels: scope.channels, customEmoji: scope.customEmoji, rawHtmlEnabled: scope.rawHtmlEnabled, mentionNames: scopeMentionNames() })}${m.editedAt ? `<span class="edited-tag">${t('chat.editedTag')}</span>` : ''}</div>`);
     }
     if (m.sticker) parts.push(`<img class="sticker-message anim-limit" src="${escapeHtml(m.sticker.imagePath)}" alt="${escapeHtml(m.sticker.name)}" title="${escapeHtml(m.sticker.name)}">`);
     if (m.sound) parts.push(`<div class="sound-message"><button type="button" class="btn sound-play" data-sound-src="${escapeHtml(m.sound.audioPath)}" title="${escapeHtml(m.sound.name)}">${icons.music(18)} ${m.sound.emoji ? `${escapeHtml(m.sound.emoji)} ` : ''}${escapeHtml(m.sound.name)}</button></div>`);
@@ -1541,7 +1545,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
             <span class="author-name">${escapeHtml(e.bot.displayName)}</span><span class="bot-badge">${t('bots.badge')}</span>
             <span class="timestamp">${formatTimestamp(e.createdAt)}</span>
           </div>
-          <div class="msg-line">${renderMessageContent(e.content, { channels: scope.channels, customEmoji: scope.customEmoji })}</div>
+          <div class="msg-line">${renderMessageContent(e.content, { channels: scope.channels, customEmoji: scope.customEmoji, mentionNames: scopeMentionNames() })}</div>
           <div class="ephemeral-note">${escapeHtml(t('slash.onlyYou'))} - <a href="#" data-ephemeral-dismiss="${escapeHtml(e.id)}">${escapeHtml(t('slash.dismiss'))}</a></div>
         </div>
       </div>`;
@@ -1940,6 +1944,11 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       return;
     }
     if (err) {
+      if (idx !== -1 && isMessageTooLong(err) && item._retry?.content && item._retry.content.length > adoptServerLimit(state.config, err)) {
+        // The draft goes back into the composer and submit() offers the send-as-file path again.
+        retrySend(messages[idx]);
+        return;
+      }
       if (idx !== -1) { messages[idx].pending = false; messages[idx].errored = true; }
       renderAll();
       toast(apiErrorMessage(err, t('chat.messageFailedToSendError')), { type: 'error' });
@@ -1957,6 +1966,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     uploads.remove(msg.key);
     const idx = messages.findIndex((m) => m.id === msg.id);
     if (idx !== -1) messages.splice(idx, 1);
+    renderAll();
     const input = composerWrap.querySelector('#composer-input');
     if (input) {
       input.value = msg._retry?.content || msg.content || '';

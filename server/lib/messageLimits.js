@@ -17,4 +17,15 @@ function maxMessageChars() {
   return cached;
 }
 
-module.exports = { maxMessageChars, DEFAULT_CHARS };
+// Absent content counts as empty; anything but a string is refused, and an over-long text is
+// rejected (never truncated) so the client can offer to send it as a file instead.
+function readContent(raw, { trim = false } = {}) {
+  if (raw === undefined || raw === null) return { content: '' };
+  if (typeof raw !== 'string') return { status: 400, body: { error: 'content must be a string', code: 'invalid_content' } };
+  const content = trim ? raw.trim() : raw;
+  const maxChars = maxMessageChars();
+  if (content.length > maxChars) return { status: 413, body: { error: 'message too long', code: 'message_too_long', maxChars } };
+  return { content };
+}
+
+module.exports = { maxMessageChars, readContent, DEFAULT_CHARS };

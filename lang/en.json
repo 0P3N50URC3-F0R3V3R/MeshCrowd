@@ -1179,7 +1179,8 @@
     "postActions": "Post actions",
     "deleteConfirm": "Delete \"{title}\" and all of its replies? This cannot be undone.",
     "editError": "Could not save the post.",
-    "deleteError": "Could not delete the post."
+    "deleteError": "Could not delete the post.",
+    "longPostBody": "(The full text is attached as a file.)"
   },
   "search": {
     "heading": "Search",
@@ -1443,7 +1444,8 @@
     "searchFailed": "Search failed.",
     "noServerSelected": "Open a server first — search looks through the current server only.",
     "typeToSearchHint": "Type to search every channel and thread in this server.",
-    "noMessagesFound": "No messages found."
+    "noMessagesFound": "No messages found.",
+    "inVoiceCall": "In a voice call"
   },
   "friends": {
     "tabOnline": "Online",
@@ -2390,10 +2392,15 @@
       "originsLabel": "Allowed external origins",
       "originsHint": "One https:// origin per line, for example https://cdn.jsdelivr.net. Scripts loaded from these origins run with full access to the page.",
       "originsWarnTitle": "Allow external origins?",
-      "originsWarn": "Scripts loaded from another origin run inside MeshCrowd with the viewer's session and can read or change anything the page can. Only add hosts you fully trust, as specific hosts, never wildcards.",
+      "originsWarn": "Scripts loaded from another origin run with everything the site page can do (in trusted sites mode that includes the viewer's session). Only add hosts you fully trust, as specific hosts, never wildcards.",
       "originsConfirm": "I understand, allow",
       "originsInvalid": "Invalid origin: {value}. Use https://host[:port] only.",
-      "saveFailed": "Could not save the settings."
+      "saveFailed": "Could not save the settings.",
+      "trustedLabel": "Trusted sites mode",
+      "trustedWarn": "Off (recommended): the site runs isolated; it has its own private localStorage, cookies and IndexedDB and cannot touch your MeshCrowd session. On: the site runs inside the MeshCrowd page with the viewer's full access: its scripts can read the session, the Passport seed and call any API as the viewer. Turn this on only if you fully trust everyone who can edit this site.",
+      "trustedConfirmTitle": "Turn on trusted sites mode?",
+      "trustedConfirm": "Everyone who can edit this site will be able to run code with the full access of every member who opens it (read their messages, act as them). Only continue if you trust all site editors completely.",
+      "trustedConfirmButton": "I understand, turn it on"
     }
   },
   "bots": {
@@ -3296,7 +3303,8 @@
     "no passport file chosen": "no passport file chosen",
     "unsupported passport file": "unsupported passport file",
     "passphrase too short": "passphrase too short",
-    "recording is not supported here": "recording is not supported here"
+    "recording is not supported here": "recording is not supported here",
+    "message too long": "That message is too long."
   },
   "bioEditor": {
     "bold": "Bold",

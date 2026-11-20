@@ -1,7 +1,7 @@
 #!/bin/bash
-# Fresh throwaway server on :8099 + seeded demo world. Data lives in $TMPDIR/tourdata, never the repo.
+# Fresh throwaway server on :8099 + seeded demo world. Only the process listening on :8099 (and a running world.mjs) is stopped; other servers are left alone. Data lives in $TMPDIR/tourdata, never the repo.
 cd "$(dirname "$0")/../.."
-powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { \$_.CommandLine -like '*server*index.js*' -or \$_.CommandLine -like '*world.mjs*' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force }"
+powershell -NoProfile -Command "Get-NetTCPConnection -State Listen -LocalPort 8099 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id \$_.OwningProcess -Force }; Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { \$_.CommandLine -like '*world.mjs*' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force }"
 sleep 2
 DATA="${TMPDIR:-/tmp}/tourdata"
 rm -rf "$DATA" && mkdir -p "$DATA"

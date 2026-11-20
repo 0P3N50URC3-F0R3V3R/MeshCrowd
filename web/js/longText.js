@@ -20,3 +20,37 @@ export function textToFile(text, name) {
   const type = fileName.toLowerCase().endsWith('.md') ? 'text/markdown' : 'text/plain';
   return new File([text], fileName, { type });
 }
+
+// The server answers an over-length message with { error, code: 'message_too_long', maxChars } (400 or 413).
+export function isMessageTooLong(err) {
+  return err?.body?.code === 'message_too_long' || (err?.status === 413 && /too long/i.test(err?.body?.error || ''));
+}
+
+// Lowers the client's idea of the limit to what the server just reported; returns the limit to use.
+export function adoptServerLimit(config, err) {
+  const n = Math.floor(Number(err?.body?.maxChars));
+  if (Number.isFinite(n) && n > 0) config.maxMessageChars = n;
+  return config.maxMessageChars || 15000;
+}
+
+// Forum post whose opening text is over the limit: the post is created with `placeholder` as its
+// opening message and the real text follows as a .txt attachment. Resolves null when the user
+// declines the file name prompt (the draft stays in the form). Over-length is detected up front
+// from config.maxMessageChars and, if the server's limit is lower, from its message_too_long reply.
+export async function createThreadAllowingLongText({ createThread, sendThreadMessage, config, title, content, placeholder, askName, tooLargeError }) {
+  for (;;) {
+    const limit = config.maxMessageChars || 15000;
+    if (content.length <= limit) {
+      try { return await createThread({ title, content }); } catch (err) {
+        if (isMessageTooLong(err) && content.length > adoptServerLimit(config, err)) continue;
+        throw err;
+      }
+    }
+    if (textByteLength(content) > MAX_TEXT_FILE_BYTES) throw new Error(tooLargeError);
+    const name = await askName();
+    if (name === null) return null;
+    const res = await createThread({ title, content: placeholder });
+    await sendThreadMessage(res.thread.id, { content: '', files: [textToFile(content, name)] });
+    return res;
+  }
+}

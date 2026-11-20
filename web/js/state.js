@@ -463,7 +463,7 @@ export function setFriendVoice(userId, channel) {
 }
 
 export function setFriendVoiceBulk(entries) {
-  state.friendVoice = new Map(entries.map((e) => [e.userId, e.channel]));
+  state.friendVoice = new Map(entries.map((e) => [e.userId, e.channel ?? {}]));
   bus.emit('state:friendVoice');
 }
 

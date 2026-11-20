@@ -3,7 +3,7 @@
 const express = require('express');
 const { db } = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { pairKey, getFriendship } = require('../lib/friends');
+const { pairKey, getFriendship, voiceChannelInfoFor } = require('../lib/friends');
 const { toPublicUser } = require('../lib/publicUser');
 const { notifyUser } = require('../socket/hub');
 const { syncUser } = require('../lib/userSync');
@@ -154,8 +154,7 @@ router.get('/activity/voice', requireAuth, (req, res) => {
   const activity = [...activeMap.entries()].map(([userId, channelId]) => {
     const channel = db.prepare('SELECT id, name, server_id FROM channels WHERE id = ?').get(channelId);
     if (!channel) return null;
-    const server = db.prepare('SELECT id, name FROM servers WHERE id = ?').get(channel.server_id);
-    return { userId, channel: { id: channel.id, name: channel.name, serverId: server?.id, serverName: server?.name } };
+    return { userId, channel: voiceChannelInfoFor(req.user.id, channel) };
   }).filter(Boolean);
 
   res.json({ activity });

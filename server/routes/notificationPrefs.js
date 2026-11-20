@@ -6,6 +6,8 @@ const { requireAuth } = require('../middleware/auth');
 const { getPref, setPref, VALID_PREFS } = require('../lib/notifications');
 const { muteExpiry } = require('../lib/userMeta');
 const { syncUser, syncAfter } = require('../lib/userSync');
+const { canAccessChannel } = require('../lib/channelAccess');
+const { PERMISSIONS } = require('../lib/permissions');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -22,9 +24,8 @@ router.put('/:scopeType/:scopeId', syncAfter('notification_prefs'), (req, res) =
 
   if (scopeType === 'channel') {
     const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(scopeId);
-    if (!channel) return res.status(404).json({ error: 'channel not found' });
-    const isMember = db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(channel.server_id, req.user.id);
-    if (!isMember) return res.status(403).json({ error: 'not a member of this server' });
+    // A channel the caller cannot view answers exactly like one that does not exist.
+    if (!channel || !canAccessChannel(channel, req.user.id, PERMISSIONS.VIEW_CHANNEL)) return res.status(404).json({ error: 'channel not found' });
   } else if (scopeType === 'dm') {
     const isMember = db.prepare('SELECT 1 FROM dm_members WHERE dm_channel_id = ? AND user_id = ?').get(scopeId, req.user.id);
     if (!isMember) return res.status(403).json({ error: 'not a member of this conversation' });

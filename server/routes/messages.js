@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { sealFor } = require('../lib/atRest');
+const { sealFor, open } = require('../lib/atRest');
 const path = require('node:path');
 const fs = require('node:fs');
 const { db, DATA_DIR } = require('../db');
@@ -16,7 +16,7 @@ const { canSendToScope, resolveScope } = require('../lib/scopeAccess');
 const automod = require('../lib/automod');
 const { enqueueEvent } = require('../lib/federationOutbox');
 const { serializeRemoteMessage, relayRemoteChannelEvent } = require('../lib/remoteChannelEvents');
-const { maxMessageChars } = require('../lib/messageLimits');
+const { readContent } = require('../lib/messageLimits');
 const { notifyPin } = require('../lib/notifications');
 
 const router = express.Router();
@@ -155,7 +155,9 @@ router.patch('/:id', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'no access to this channel' });
   }
 
-  const content = String(req.body?.content || '').slice(0, maxMessageChars());
+  const read = readContent(req.body?.content);
+  if (read.status) return res.status(read.status).json(read.body);
+  const { content } = read;
   if (!content.trim() && !message.sticker_id) return res.status(400).json({ error: 'content cannot be empty' });
   if (message.scope_type === 'channel' || message.scope_type === 'thread') {
     const ctx = resolveScope(message.scope_type, message.scope_id);
@@ -203,7 +205,8 @@ router.post('/:id/forward', requireAuth, (req, res) => {
   if (!Number.isInteger(scopeIdNum)) return res.status(400).json({ error: 'invalid target' });
 
   const content = comment ? String(comment).slice(0, 1000) : '';
-  const access = canSendToScope(scopeType, scopeIdNum, req.user.id, { content });
+  // AutoMod must see the forwarded original too, or a blocked word could be laundered through a forward.
+  const access = canSendToScope(scopeType, scopeIdNum, req.user.id, { content: [content, open(original.content)].filter(Boolean).join('\n') });
   if (!access.ok) return res.status(access.status).json({ error: access.error });
   const info = db.prepare(
     'INSERT INTO messages (scope_type, scope_id, author_id, content, forwarded_from_message_id) VALUES (?, ?, ?, ?, ?)'

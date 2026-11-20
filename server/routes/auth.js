@@ -13,6 +13,7 @@ const { checkSecondFactorLimited } = require('../lib/secondFactor');
 const splitAuth = require('../lib/splitAuth');
 const { isValidBackupFor } = require('../lib/passportCrypto');
 const challenges = require('../lib/passportChallenges');
+const loginLockout = require('../lib/loginLockout');
 const { authAudit } = require('../lib/authAudit');
 const hub = require('../socket/hub');
 const registration = require('../lib/registration');
@@ -70,11 +71,17 @@ router.post('/login', (req, res) => {
     return res.status(400).json({ error: 'username and password required' });
   }
   const user = splitAuth.findLoginUser(username);
+  if (loginLockout.isBlocked(user, username, req.ip)) {
+    log.warn(`login refused for ${safeName(username)} from ${req.ip}: too many failed attempts`);
+    return res.status(429).json({ error: 'too many attempts, try again later' });
+  }
   const outcome = splitAuth.checkLogin(user, { password, authKey });
   if (outcome !== 'ok') {
+    loginLockout.recordFailure(user, username, req.ip);
     log.warn(`login failed for ${safeName(username)} from ${req.ip}: ${outcome === 'plain_refused' ? 'plain password refused' : 'invalid credentials'}`);
     return res.status(401).json({ error: outcome === 'plain_refused' ? splitAuth.PLAIN_REFUSED : 'invalid credentials' });
   }
+  loginLockout.recordSuccess(user, username, req.ip);
   if (user.is_disabled) {
     log.warn(`login refused for ${safeName(user.username)} from ${req.ip}: account disabled`);
     return res.status(403).json({ error: 'account disabled' });

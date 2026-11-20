@@ -69,11 +69,15 @@ function broadcastPresence(userId) {
 // Push an arbitrary payload to just a user's accepted friends — narrower than broadcastPresence
 // (friends only, not shared-server members), for things that are meaningfully "this is a friend
 // of mine doing something" rather than general presence (e.g. joining/leaving voice).
+// payload may be a function of the friend's id for per-recipient content.
 function broadcastToFriends(userId, payload) {
   const friendRows = db.prepare(
     `SELECT user_a, user_b FROM friendships WHERE (user_a = ? OR user_b = ?) AND status = 'accepted'`
   ).all(userId, userId);
-  for (const f of friendRows) notifyUser(f.user_a === userId ? f.user_b : f.user_a, payload);
+  for (const f of friendRows) {
+    const friendId = f.user_a === userId ? f.user_b : f.user_a;
+    notifyUser(friendId, typeof payload === 'function' ? payload(friendId) : payload);
+  }
 }
 
 function broadcastAll(payload) {

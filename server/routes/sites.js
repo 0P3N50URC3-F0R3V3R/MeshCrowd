@@ -15,6 +15,7 @@ const siteFiles = require('../lib/siteFiles');
 const siteProcesses = require('../lib/siteProcesses');
 const phpRuntime = require('../lib/phpRuntime');
 const { normalizeOrigins } = require('../lib/siteCsp');
+const siteViewToken = require('../lib/siteViewToken');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -58,6 +59,10 @@ function guard(fn) {
 router.get('/runtime', (req, res) => {
   if (!isStaff(req)) return res.status(403).json({ error: 'site admin required' });
   res.json(phpRuntime.getStatus());
+});
+
+router.post('/:id/view-token', loadSite, (req, res) => {
+  res.json({ path: `/site/${req.site.id}/~${siteViewToken.mint(req.site.id, req.user.id, req.sessionToken)}/`, trusted: !!req.site.site_trusted });
 });
 
 router.post('/', (req, res) => {
@@ -117,7 +122,8 @@ router.delete('/:id/icon', loadSite, requireEditor, (req, res) => {
 });
 
 router.patch('/:id', loadSite, requireEditor, (req, res) => {
-  const { name, description, origins, iconBackground, iconBgColor } = req.body || {};
+  const { name, description, origins, iconBackground, iconBgColor, trusted } = req.body || {};
+  if (trusted !== undefined && typeof trusted !== 'boolean') return res.status(400).json({ error: 'trusted must be a boolean' });
   if (iconBgColor !== undefined && iconBgColor !== '' && !/^#[0-9a-fA-F]{6}$/.test(String(iconBgColor))) return res.status(400).json({ error: 'iconBgColor must be #rrggbb or empty' });
   if (iconBackground !== undefined) db.prepare('UPDATE servers SET icon_bg = ? WHERE id = ?').run(iconBackground ? 1 : 0, req.site.id);
   if (iconBgColor !== undefined) db.prepare('UPDATE servers SET icon_bg_color = ? WHERE id = ?').run(String(iconBgColor), req.site.id);
@@ -132,6 +138,10 @@ router.patch('/:id', loadSite, requireEditor, (req, res) => {
     if (!r.ok) return res.status(400).json({ error: r.error });
     db.prepare('UPDATE servers SET site_csp_origins = ? WHERE id = ?').run(JSON.stringify(r.origins), req.site.id);
     logAudit(req.site.id, req.user.id, 'site_origins_change', 'server', req.site.id, { origins: r.origins });
+  }
+  if (trusted !== undefined && trusted !== !!req.site.site_trusted) {
+    db.prepare('UPDATE servers SET site_trusted = ? WHERE id = ?').run(trusted ? 1 : 0, req.site.id);
+    logAudit(req.site.id, req.user.id, 'site_trusted_change', 'server', req.site.id, { trusted });
   }
   const server = getRow(req.site.id);
   hub.notifyUserIds(memberIds(req.site.id), { type: 'server_update', server });

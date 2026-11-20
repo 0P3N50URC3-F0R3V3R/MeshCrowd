@@ -9,7 +9,7 @@ const { singleLine } = require('../lib/textSanitize');
 const { load: loadConfig } = require('../lib/config');
 const { sanitizeFilename, liveUpload, fixUtf8Filename, effectiveMaxUploadMb } = require('../lib/uploads');
 const { sanitizeRemoteMessage, remoteImageType, REMOTE_ATTACHMENT_MAX_BYTES } = require('../lib/remoteChannelEvents');
-const { maxMessageChars } = require('../lib/messageLimits');
+const { readContent } = require('../lib/messageLimits');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -201,7 +201,9 @@ router.get(messages, async (req, res) => {
 router.post(messages, upload.array('files', 5), async (req, res) => {
   const channelId = intParam(req.params.channelId);
   if (channelId === null) return res.status(404).json({ error: 'channel not found' });
-  const content = String(req.body?.content || '').slice(0, maxMessageChars());
+  const read = readContent(req.body?.content);
+  if (read.status) return res.status(read.status).json(read.body);
+  const { content } = read;
   const files = req.files || [];
   if (!content.trim() && files.length === 0) return res.status(400).json({ error: 'content required' });
   const maxBytes = Math.min(effectiveMaxUploadMb() * 1024 * 1024, REMOTE_ATTACHMENT_MAX_BYTES);
@@ -219,7 +221,9 @@ router.patch(`${messages}/:messageId`, async (req, res) => {
   const channelId = intParam(req.params.channelId);
   const messageId = intParam(req.params.messageId);
   if (channelId === null || messageId === null) return res.status(404).json({ error: 'message not found' });
-  const content = String(req.body?.content || '').slice(0, maxMessageChars());
+  const read = readContent(req.body?.content);
+  if (read.status) return res.status(read.status).json(read.body);
+  const { content } = read;
   if (!content.trim()) return res.status(400).json({ error: 'content required' });
   const result = await rpc(req, res, 'channel_message_edit', { channelId, messageId, content });
   if (!result) return;

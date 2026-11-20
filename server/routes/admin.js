@@ -712,7 +712,7 @@ router.post('/site-roles', requireSitePerm(SITE_PERMISSIONS.MANAGE_SITE_ROLES), 
   if (typeof name !== 'string') return res.status(400).json({ error: 'name required' });
   const cleanName = singleLine(name, 50);
   if (!cleanName) return res.status(400).json({ error: 'name required' });
-  if (color !== undefined && !HEX_COLOR_RE.test(String(color))) {
+  if (color !== undefined && !(typeof color === 'string' && HEX_COLOR_RE.test(color))) {
     return res.status(400).json({ error: 'color must be #rrggbb' });
   }
   const maxPos = db.prepare('SELECT MAX(position) AS m FROM site_roles').get().m || 0;
@@ -736,7 +736,7 @@ router.patch('/site-roles/:id', requireSitePerm(SITE_PERMISSIONS.MANAGE_SITE_ROL
       return res.status(403).json({ error: 'cannot grant site permissions you do not hold' });
     }
   }
-  if (color !== undefined && !HEX_COLOR_RE.test(String(color))) {
+  if (color !== undefined && !(typeof color === 'string' && HEX_COLOR_RE.test(color))) {
     return res.status(400).json({ error: 'color must be #rrggbb' });
   }
 

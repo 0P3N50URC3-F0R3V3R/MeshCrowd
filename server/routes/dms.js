@@ -24,7 +24,7 @@ const { maybeFetchAndAttachEmbed } = require('../lib/linkPreview');
 const prune = require('../lib/prune');
 const { enqueueEvent } = require('../lib/federationOutbox');
 const { ownDomain } = require('../lib/federationOutboxWorker');
-const { maxMessageChars } = require('../lib/messageLimits');
+const { readContent } = require('../lib/messageLimits');
 const { stickersForUser, userCanUseSticker } = require('../lib/stickers');
 const { afterResponse } = require('../lib/deferred');
 
@@ -319,7 +319,9 @@ router.post('/:dmId/messages', loadDm, upload.array('files', 5), (req, res) => {
       return res.status(403).json({ error: 'you cannot message this user' });
     }
   }
-  const content = String(req.body?.content || '').slice(0, maxMessageChars());
+  const read = readContent(req.body?.content);
+  if (read.status) { voiceMessages.discardFiles(req.files); return res.status(read.status).json(read.body); }
+  const { content } = read;
   let stickerId = null;
   if (req.body?.stickerId) {
     if (!userCanUseSticker(req.user.id, req.body.stickerId)) return res.status(400).json({ error: 'sticker not available' });

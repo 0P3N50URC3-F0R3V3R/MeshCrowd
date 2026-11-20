@@ -50,7 +50,7 @@ export function renderAuth(root) {
             </div>
             ${mode !== 'totp' && languages.length > 1 ? `
             <select class="input" id="auth-lang" style="align-self:flex-end;width:auto;margin-bottom:8px">
-              ${languages.map((l) => `<option value="${l.code}" ${l.code === currentLanguage() ? 'selected' : ''}>${l.name}</option>`).join('')}
+              ${languages.map((l) => `<option value="${escapeHtml(l.code)}" ${l.code === currentLanguage() ? 'selected' : ''}>${escapeHtml(l.name)}</option>`).join('')}
             </select>` : ''}
             ${mode === 'totp' ? renderTotpForm() : mode === 'passportLogin' ? renderPassportLoginForm() : mode === 'recover' ? renderRecoverForm() : renderCredentialsForm()}
             ${website && (mode === 'login' || mode === 'register') ? `<div class="auth-switch"><a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${t('serverRail.projectWebsiteLink')}</a></div>` : ''}

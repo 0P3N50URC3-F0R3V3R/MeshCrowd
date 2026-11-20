@@ -28,7 +28,8 @@ import { playSoundboardAudio } from '../../js/soundboardPrefs.js';
 import { openImageViewer, openSheet, promptSheet, actionSheet, confirmSheet } from '../components/bottomSheet.js';
 import { editPostSheet } from '../components/postSheets.js';
 import { canEditPost, canDeletePost } from '../../js/threadPerms.mjs';
-import { MAX_TEXT_FILE_BYTES, textByteLength, textToFile } from '../../js/longText.js';
+import { mentionNamesFor } from '../../js/mentionNames.mjs';
+import { MAX_TEXT_FILE_BYTES, textByteLength, textToFile, isMessageTooLong, adoptServerLimit } from '../../js/longText.js';
 import { openProfileSheet } from './profileSheet.js';
 import { pickSendTime } from '../components/scheduleSheet.js';
 import { wireVoicePlayers } from '../../js/voiceMessage.js';
@@ -138,7 +139,7 @@ export function mountChat(el, params) {
   }
 
   // ---------- rendering ----------
-  const ctxFor = (prev) => ({ prev, meId: state.me.id, detail });
+  const ctxFor = (prev) => ({ prev, meId: state.me.id, detail, mentionNames: mentionNamesFor(kind === 'dm' ? { dmMembers: [...(dm()?.members || []), state.me] } : { detail }) });
   function paint({ keepScroll = false, anchor = false } = {}) {
     const before = msgsEl.scrollHeight;
     const top = msgsEl.scrollTop;
@@ -332,8 +333,11 @@ export function mountChat(el, params) {
     if (!current) return;
     const [next] = applyUpdate([current], message);
     const keep = msgsEl.scrollTop;
+    const atBottom = isLatest && (stickToBottom || msgsEl.scrollHeight - keep - msgsEl.clientHeight < 80);
     messages = messages.map((m) => (m.id === next.id ? next : m));
-    paint(); msgsEl.scrollTop = keep;
+    paint();
+    // An edit adds the "(edited)" tag and can rewrap the text; at the bottom, stay at the bottom.
+    if (atBottom) scrollBottom(); else msgsEl.scrollTop = keep;
   })));
   offs.push(bus.on('ws:ephemeral_message', ({ message: e }) => {
     if (destroyed || kind !== 'channel' || e.scopeType !== 'channel' || e.scopeId !== scopeId) return;
@@ -411,6 +415,12 @@ export function mountChat(el, params) {
     if (ev.cancelled) { pending = pending.filter((x) => x.key !== p.key); paint(); return; }
     if (err) {
       if (err.status === 401) { bus.emit('m:unauthorized'); return; }
+      if (isMessageTooLong(err) && p.text.length > adoptServerLimit(state.config, err) && composer?.restore && !composer.getText().trim()) {
+        // Back into the composer, which then offers the send-as-file path again.
+        pending = pending.filter((x) => x.key !== p.key); paint();
+        composer.restore({ text: p.text, files: p.files });
+        return;
+      }
       p.failed = true;
       p.error = (err.status === 400 && err.message) || null;
       paint(); scrollBottom();

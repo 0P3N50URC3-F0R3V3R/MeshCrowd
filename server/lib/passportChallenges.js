@@ -36,7 +36,7 @@ function isStale(f, now) {
   return f.lockedUntil > now ? false : now - f.last > FAILURE_WINDOW_MS;
 }
 
-function recordFailure(key) {
+function recordFailure(key, max = MAX_FAILURES, lockoutMs = LOCKOUT_MS) {
   const now = Date.now();
   const cur = failures.get(key);
   // Failures while already locked must not extend the lock, or an attacker could pin a victim's id locked forever.
@@ -44,7 +44,7 @@ function recordFailure(key) {
   const count = (cur && !isStale(cur, now) && !cur.lockedUntil ? cur.count : 0) + 1;
   failures.delete(key);
   if (failures.size >= MAX_FAILURE_KEYS) failures.delete(failures.keys().next().value);
-  failures.set(key, { count, lockedUntil: count >= MAX_FAILURES ? now + LOCKOUT_MS : 0, last: now });
+  failures.set(key, { count, lockedUntil: count >= max ? now + lockoutMs : 0, last: now });
 }
 
 function isLocked(key) {

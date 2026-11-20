@@ -183,12 +183,66 @@ function buildWordRegex(word, wholeWord) {
   return new RegExp(`(?<![${WORD_CLASS}])${lead}${body}${trail}(?![${WORD_CLASS}])`, 'iu');
 }
 
+// Same matches as buildWordRegex, for words with a "*" between two literals. The regex rescans the rest of the word from
+// every start (quadratic on one very long word); here the last gap scan per literal is reused, so the work stays linear.
+function buildWordMatcher(word, wholeWord) {
+  const parts = word.split('*');
+  const lits = parts.filter(Boolean);
+  if (lits.length < 2) return buildWordRegex(word, wholeWord);
+  const last = lits.length - 1;
+  const tail = wholeWord && parts[parts.length - 1] !== '' ? `(?![${WORD_CLASS}])` : '';
+  const pieces = lits.map((l, i) => new RegExp(escapeRe(l) + (i === last ? tail : ''), 'iuy'));
+  const first = new RegExp(escapeRe(lits[0]), 'iug');
+  const wordChar = new RegExp(`[${WORD_CLASS}]`, 'uy');
+  const needsBoundary = wholeWord && parts[0] !== '';
+  const lenAt = (re, text, p) => { re.lastIndex = p; const m = re.exec(text); return m ? m[0].length : -1; };
+  const prevIsWord = (text, t) => {
+    let p = t - 1;
+    if (p > 0 && (text.charCodeAt(p) & 0xfc00) === 0xdc00 && (text.charCodeAt(p - 1) & 0xfc00) === 0xd800) p--;
+    return lenAt(wordChar, text, p) >= 0;
+  };
+  return {
+    test(text) {
+      const scans = [];
+      const memo = lits.map(() => new Map());
+      const chain = (i, p) => {
+        let sc = scans[i];
+        if (!sc || p < sc.from || p > sc.end) {
+          let q = p; let hit = -1; let len = 0;
+          for (;;) {
+            const l = lenAt(pieces[i], text, q);
+            if (l >= 0) { hit = q; len = l; break; }
+            const w = lenAt(wordChar, text, q);
+            if (w < 0) break;
+            q += w;
+          }
+          sc = scans[i] = { from: p, end: q, hit, len };
+        }
+        if (sc.hit < 0) return false;
+        if (i === last) return true;
+        let r = memo[i].get(sc.hit);
+        if (r === undefined) { r = chain(i + 1, sc.hit + sc.len); memo[i].set(sc.hit, r); }
+        return r;
+      };
+      first.lastIndex = 0;
+      for (;;) {
+        const m = first.exec(text);
+        if (!m) return false;
+        const t = m.index;
+        const next = t + (text.codePointAt(t) > 0xffff ? 2 : 1);
+        if (!(needsBoundary && t > 0 && prevIsWord(text, t)) && chain(1, t + m[0].length)) return true;
+        first.lastIndex = next;
+      }
+    },
+  };
+}
+
 const wordCache = new Map();
 function wordRegex(word, wholeWord) {
   const key = `${wholeWord ? 'w' : 's'}:${word}`;
   let re = wordCache.get(key);
   if (!re) {
-    re = buildWordRegex(word, wholeWord);
+    re = buildWordMatcher(word, wholeWord);
     if (wordCache.size > 5000) wordCache.clear();
     wordCache.set(key, re);
   }
@@ -316,5 +370,5 @@ function evaluate({ channel, user, content, track = true }) {
 function _reset() { recent.clear(); wordCache.clear(); }
 
 module.exports = {
-  AutomodError, KINDS, MAX_RULES, parseConfig, listRules, createRule, updateRule, deleteRule, listLog, evaluate, shape, _reset,
+  AutomodError, KINDS, MAX_RULES, parseConfig, listRules, createRule, updateRule, deleteRule, listLog, evaluate, shape, _reset, buildWordRegex, buildWordMatcher,
 };

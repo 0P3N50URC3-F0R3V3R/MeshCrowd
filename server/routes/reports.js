@@ -3,6 +3,7 @@
 const express = require('express');
 const { db } = require('../db');
 const { requireAuth } = require('../middleware/auth');
+const { canViewScope } = require('../lib/scopeAccess');
 
 const router = express.Router();
 
@@ -26,7 +27,9 @@ router.post('/', requireAuth, (req, res) => {
 
   let validMessageId = null;
   if (messageId !== null) {
-    const message = db.prepare('SELECT id FROM messages WHERE id = ? AND author_id = ?').get(messageId, reportedUserId);
+    const message = db.prepare('SELECT id, scope_type, scope_id FROM messages WHERE id = ? AND author_id = ?').get(messageId, reportedUserId);
+    // Admins read the attached message, so the reporter may only attach what they can see right now.
+    if (message && !canViewScope(message.scope_type, message.scope_id, req.user.id).ok) return res.status(400).json({ error: 'cannot attach that message' });
     if (message) validMessageId = message.id; // silently drop a stale/mismatched message reference rather than error
   }
 

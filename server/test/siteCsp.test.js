@@ -21,6 +21,8 @@ test('buildSiteCsp always frames only itself and lists external origins per dire
   const none = buildSiteCsp([]);
   assert.match(none, /frame-ancestors 'self'/);
   assert.match(none, /frame-src 'none'/);
+  assert.match(none, /^sandbox allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox; /);
+  assert.doesNotMatch(none, /allow-same-origin/);
   assert.match(none, /script-src 'self' 'unsafe-inline'(;|$)/);
   const some = buildSiteCsp(['https://cdn.example.com']);
   assert.match(some, /script-src 'self' 'unsafe-inline' https:\/\/cdn\.example\.com/);

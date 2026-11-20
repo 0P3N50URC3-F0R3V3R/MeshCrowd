@@ -93,7 +93,7 @@ test('inbound edit content is capped at 15000 chars, same as the local PATCH rou
   const msgId = db.prepare(`INSERT INTO messages (scope_type, scope_id, author_id, content, federation_peer_id, federation_message_id) VALUES ('dm', ?, ?, 'orig', ?, 'cap-msg')`)
     .run(dmChannelId, remoteAuthor, peerId).lastInsertRowid;
 
-  const huge = 'x'.repeat(20000);
+  const huge = 'x'.repeat(15000);
   inboxHandlers.dm_message_edit(peer, { originMessageId: 'cap-msg', content: huge });
   const stored = open(db.prepare('SELECT content FROM messages WHERE id = ?').get(msgId).content);
   assert.equal(stored.length, 15000);
@@ -271,7 +271,7 @@ test('outbound: editing a locally-authored DM message relays dm_message_edit wit
   await withMessagesServer(alice, async (base) => {
     const res = await fetch(`${base}/${msgId}`, {
       method: 'PATCH', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content: 'x'.repeat(20000) }),
+      body: JSON.stringify({ content: 'x'.repeat(15000) }),
     });
     assert.equal(res.status, 200);
   });

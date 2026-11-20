@@ -5,7 +5,7 @@
 // Importers must set NODE_TLS_REJECT_UNAUTHORIZED=0 before spawning anything (self-signed certs).
 
 const assert = require('node:assert/strict');
-const { spawn } = require('node:child_process');
+const { spawn, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
@@ -36,7 +36,30 @@ function writeInstanceConfig(dataDir, { port, httpsPort }) {
   seed.close();
 }
 
+// A test run that was killed leaves its server children behind, still holding the fixed test ports,
+// and the next run then fails with "instance never came up". Before binding, stop any leftover
+// `node server/index.js` that owns one of this instance's ports. Only processes running the server
+// entry point are touched, so an unrelated program on the port is left alone (and the run fails loudly).
+function reapStaleInstances({ port, httpsPort }) {
+  const ports = [port, httpsPort].filter(Number.isInteger);
+  try {
+    if (process.platform === 'win32') {
+      const script = `Get-NetTCPConnection -State Listen -LocalPort ${ports.join(',')} -ErrorAction SilentlyContinue | ForEach-Object { $p = Get-CimInstance Win32_Process -Filter ('ProcessId=' + $_.OwningProcess); if ($p -and $p.CommandLine -match 'server[\\/]index\.js') { Stop-Process -Id $p.ProcessId -Force } }`;
+      execFileSync('powershell', ['-NoProfile', '-Command', script], { stdio: 'ignore', timeout: 20_000 });
+    } else {
+      for (const p of ports) {
+        const pids = execFileSync('sh', ['-c', `lsof -t -iTCP:${p} -sTCP:LISTEN 2>/dev/null || true`]).toString().split(/\s+/).filter(Boolean);
+        for (const pid of pids) {
+          const cmd = execFileSync('sh', ['-c', `ps -o args= -p ${pid} 2>/dev/null || true`]).toString();
+          if (/server\/index\.js/.test(cmd)) { try { process.kill(Number(pid), 'SIGKILL'); } catch { /* already gone */ } }
+        }
+      }
+    }
+  } catch { /* best effort: if reaping fails, waitForPort reports the real problem */ }
+}
+
 function startInstance(dataDir, ports) {
+  reapStaleInstances(ports);
   writeInstanceConfig(dataDir, ports); // idempotent — also used to restart an instance against its existing data dir
   const child = spawn(process.execPath, [path.join(__dirname, '..', '..', 'index.js')], {
     env: {

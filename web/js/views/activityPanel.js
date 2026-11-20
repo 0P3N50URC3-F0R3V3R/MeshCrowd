@@ -5,6 +5,7 @@ import { icons } from '../icons.js';
 import { avatarHtml, escapeHtml, formatShortTime, formatTimestamp, renderMessageContent, renderCompactSticker, debounce, apiErrorMessage } from '../utils.js';
 import { t } from '../i18n.js';
 import { entryTarget } from '../notifyEvent.mjs';
+import { friendVoiceView } from '../friendVoice.mjs';
 
 const KIND_ICON = { mention: icons.reply, dm: icons.messageSquare, channel: icons.hash, pin: icons.pin, thread: icons.messageSquare };
 
@@ -70,7 +71,7 @@ export function mountActivityPanel(container) {
     }
     container.querySelector('#ap-search-clear')?.addEventListener('click', () => { query = ''; searchResults = null; render(); });
 
-    container.querySelectorAll('.activity-voice-item').forEach((node) => {
+    container.querySelectorAll('.activity-voice-item[data-channel]').forEach((node) => {
       node.addEventListener('click', () => {
         bus.emit('ui:navigate', { type: 'server', serverId: Number(node.dataset.server), channelId: Number(node.dataset.channel) });
       });
@@ -99,12 +100,13 @@ export function mountActivityPanel(container) {
         <div class="activity-voice-list">
           ${voiceEntries.map(([userId, ch]) => {
             const u = friendUser(userId);
+            const v = friendVoiceView(ch);
             return `
-            <div class="activity-voice-item" data-server="${ch.serverId}" data-channel="${ch.id}">
+            <div class="activity-voice-item"${v.generic ? '' : ` data-server="${v.serverId}" data-channel="${v.channelId}"`}>
               ${avatarHtml(u, 32)}
               <div class="avi-body">
                 <div class="avi-name">${escapeHtml(u.displayName)}</div>
-                <div class="avi-where">${icons.headphones(12)} ${escapeHtml(ch.name)} · ${escapeHtml(ch.serverName || '')}</div>
+                <div class="avi-where">${icons.headphones(12)} ${v.generic ? escapeHtml(t('activityPanel.inVoiceCall')) : `${escapeHtml(v.name)}${v.serverName ? ` · ${escapeHtml(v.serverName)}` : ''}`}</div>
               </div>
             </div>`;
           }).join('')}

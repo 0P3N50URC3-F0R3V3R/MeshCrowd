@@ -25,9 +25,14 @@ function normalizeOrigins(list) {
   return { ok: true, origins: out };
 }
 
-function buildSiteCsp(origins) {
+// No allow-same-origin: site script runs in an opaque origin even when /site/... is opened as a
+// top-level page, so it cannot touch the app's cookies, storage or API as the viewer.
+const SANDBOX = 'sandbox allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox';
+
+function buildSiteCsp(origins, { trusted = false } = {}) {
   const o = origins.length ? ` ${origins.join(' ')}` : '';
   return [
+    ...(trusted ? [] : [SANDBOX]),
     "default-src 'self'",
     `script-src 'self' 'unsafe-inline'${o}`,
     `style-src 'self' 'unsafe-inline'${o}`,
@@ -42,4 +47,4 @@ function buildSiteCsp(origins) {
   ].join('; ');
 }
 
-module.exports = { normalizeOrigins, buildSiteCsp, MAX_ORIGINS };
+module.exports = { normalizeOrigins, buildSiteCsp, SANDBOX, MAX_ORIGINS };

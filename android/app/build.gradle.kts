@@ -21,8 +21,8 @@ android {
         applicationId = "com.meshcrowd.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 26
-        versionName = "3.23"
+        versionCode = 27
+        versionName = "3.24"
         // Pure Kotlin + WebView: no native libraries, so no ABI filters, one universal APK.
     }
 

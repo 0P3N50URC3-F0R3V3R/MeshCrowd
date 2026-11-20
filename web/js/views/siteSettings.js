@@ -41,9 +41,15 @@ export function openSiteSettings(server) {
           <textarea class="input textarea" id="ss-origins" rows="5" spellcheck="false">${escapeHtml(before.join('\n'))}</textarea>
           <p class="hint">${t('sites.settings.originsHint')}</p>
         </div>
+        <div class="field">
+          <label class="checkbox-row"><input type="checkbox" id="ss-trusted"><span>${t('sites.settings.trustedLabel')}</span></label>
+          <p class="hint" style="color:var(--danger, #f04747)">${t('sites.settings.trustedWarn')}</p>
+        </div>
         <div class="error-text" id="ss-err"></div>
         <button class="btn btn-primary btn-block" id="ss-save">${t('common.save')}</button>`;
       const err = body.querySelector('#ss-err');
+      const trustedBox = body.querySelector('#ss-trusted');
+      trustedBox.checked = !!server.site_trusted;
       const bgBox = body.querySelector('#ss-icon-bg');
       const colorInput = body.querySelector('#ss-icon-color');
       const removeBtn = body.querySelector('#ss-icon-remove');
@@ -82,7 +88,7 @@ export function openSiteSettings(server) {
         try {
           if (pendingFile) await api.siteUploadIcon(server.id, pendingFile);
           else if (removeIcon && server.icon_path) await api.siteRemoveIcon(server.id);
-          const res = await api.siteUpdate(server.id, { name, origins, iconBackground: bgOn, iconBgColor: bgColor });
+          const res = await api.siteUpdate(server.id, { name, origins, iconBackground: bgOn, iconBgColor: bgColor, trusted: trustedBox.checked });
           upsertServer(res.server);
           close();
         } catch (e) {
@@ -92,6 +98,15 @@ export function openSiteSettings(server) {
       body.querySelector('#ss-save').addEventListener('click', () => {
         const origins = body.querySelector('#ss-origins').value.split('\n').map((l) => l.trim()).filter(Boolean);
         const added = origins.some((o) => !before.includes(o));
+        if (trustedBox.checked && !server.site_trusted) {
+          confirmModal({
+            title: t('sites.settings.trustedConfirmTitle'),
+            message: escapeHtml(t('sites.settings.trustedConfirm')),
+            confirmLabel: t('sites.settings.trustedConfirmButton'),
+            onConfirm: save,
+          });
+          return;
+        }
         if (!added) { save(); return; }
         confirmModal({
           title: t('sites.settings.originsWarnTitle'),

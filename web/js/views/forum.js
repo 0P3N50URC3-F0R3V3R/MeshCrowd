@@ -2,7 +2,8 @@ import { api } from '../api.js';
 import { bus } from '../bus.js';
 import { icons } from '../icons.js';
 import { escapeHtml, apiErrorMessage, toast } from '../utils.js';
-import { openModal } from './modal.js';
+import { openModal, promptModal } from './modal.js';
+import { createThreadAllowingLongText, MAX_TEXT_FILE_BYTES } from '../longText.js';
 import { mountChat } from './chat.js';
 import { forumCardHtml, matchesPost, sortPosts } from '../forumCard.js';
 import { t } from '../i18n.js';
@@ -219,7 +220,14 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
           const content = body.querySelector('#fp-content').value.trim();
           if (!title || !content) { body.querySelector('#fp-error').textContent = t('forum.titleAndMessageRequired'); return; }
           try {
-            const res = await api.createThread(serverId, channelId, { title, content });
+            const res = await createThreadAllowingLongText({
+              createThread: (b) => api.createThread(serverId, channelId, b),
+              sendThreadMessage: (id, b) => api.sendThreadMessage(serverId, channelId, id, b),
+              config: state.config, title, content, placeholder: t('forum.longPostBody'),
+              askName: () => promptModal({ title: t('chat.longAsFileTitle'), label: t('chat.longAsFileLabel'), placeholder: t('chat.longAsFilePlaceholder'), confirmLabel: t('chat.longAsFileConfirm'), allowEmpty: true }),
+              tooLargeError: t('chat.tooLargeForFile', { kb: Math.round(MAX_TEXT_FILE_BYTES / 1024) }),
+            });
+            if (!res) return;
             m.close();
             upsert(res.thread);
             if (container.clientWidth >= 820) openPost(res.thread);

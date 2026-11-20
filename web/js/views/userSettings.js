@@ -811,7 +811,7 @@ export function openUserSettings(initialTab = 'account') {
         <div class="field">
           <label>${t('userSettings.languageLabel')}</label>
           <select class="input" id="f-language" style="max-width:280px">
-            ${languageOptions.map((l) => `<option value="${l.code}" ${l.code === currentLanguageCode ? 'selected' : ''}>${l.name}</option>`).join('')}
+            ${languageOptions.map((l) => `<option value="${escapeHtml(l.code)}" ${l.code === currentLanguageCode ? 'selected' : ''}>${escapeHtml(l.name)}</option>`).join('')}
           </select>
         </div>
         <div class="field">

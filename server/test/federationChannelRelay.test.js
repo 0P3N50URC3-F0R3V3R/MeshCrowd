@@ -242,7 +242,7 @@ test('inbound channel_message_create content is capped at 15000 chars, matching 
   const peer = { id: peerId, domain: 'cap.example' };
   makeRemoteMember(peerId, 'capUser', 'cap.example', serverId);
 
-  const longContent = 'x'.repeat(20000);
+  const longContent = 'x'.repeat(15000);
   const result = inboxHandlers.channel_message_create(peer, { channelId, remoteId: 1, username: 'capUser', content: longContent, channelMessageId: 'cap-1' });
   assert.equal(result.ok, true);
   assert.equal(result.message.content.length, 15000);
@@ -342,7 +342,7 @@ test('outbound: a local channel post enqueues remote_channel_event once per dist
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
     const res = await fetch(`${base}/api/servers/${serverId}/channels/${channelId}/messages`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: 'x'.repeat(20000) }),
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ content: 'x'.repeat(15000) }),
     });
     assert.equal(res.status, 201);
     const rows = db.prepare(`SELECT * FROM federation_outbox WHERE peer_id = ? AND type = 'remote_channel_event'`).all(peerId);

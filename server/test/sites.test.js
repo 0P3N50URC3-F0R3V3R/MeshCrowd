@@ -116,6 +116,22 @@ test('PATCH validates and normalises origins, requires an editor, and notifies m
   assert.equal(sent.at(-1).payload.type, 'server_update');
 });
 
+test('trusted sites mode: off by default, only an editor can flip it, boolean only, audited', async () => {
+  const staff = makeUser('st_t1'); const plain = makeUser('st_t2');
+  const s = await makeSite(staff);
+  const trusted = () => db.prepare('SELECT site_trusted FROM servers WHERE id = ?').get(s.id).site_trusted;
+  assert.equal(trusted(), 0);
+  assert.equal((await call('PATCH', `/api/sites/${s.id}`, { uid: plain, json: { trusted: true } })).status, 403);
+  assert.equal(trusted(), 0);
+  assert.equal((await call('PATCH', `/api/sites/${s.id}`, { uid: staff, perms: STAFF, json: { trusted: 'yes' } })).status, 400);
+  const on = await call('PATCH', `/api/sites/${s.id}`, { uid: staff, perms: STAFF, json: { trusted: true } });
+  assert.equal(on.status, 200);
+  assert.equal(on.data.server.site_trusted, 1);
+  assert.ok(db.prepare("SELECT 1 FROM audit_log WHERE server_id = ? AND action = 'site_trusted_change'").get(s.id));
+  assert.equal((await call('PATCH', `/api/sites/${s.id}`, { uid: staff, perms: STAFF, json: { name: 'Same' } })).data.server.site_trusted, 1);
+  assert.equal((await call('PATCH', `/api/sites/${s.id}`, { uid: staff, perms: STAFF, json: { trusted: false } })).data.server.site_trusted, 0);
+});
+
 test('DELETE removes the row and folder for the owner or staff only', async () => {
   const staff = makeUser('st_d1'); const plain = makeUser('st_d2');
   const s = await makeSite(staff);

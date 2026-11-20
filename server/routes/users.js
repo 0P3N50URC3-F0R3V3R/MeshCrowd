@@ -72,7 +72,7 @@ router.patch('/me', requireAuth, (req, res) => {
   const params = [];
 
   if (bannerColor !== undefined) {
-    if (bannerColor !== '' && !HEX_COLOR_RE.test(String(bannerColor))) return res.status(400).json({ error: 'bannerColor must be #rrggbb or empty' });
+    if (bannerColor !== '' && !(typeof bannerColor === 'string' && HEX_COLOR_RE.test(bannerColor))) return res.status(400).json({ error: 'bannerColor must be #rrggbb or empty' });
     updates.push('banner_color = ?'); params.push(String(bannerColor));
   }
   if (avatarBackground !== undefined) {
@@ -80,11 +80,11 @@ router.patch('/me', requireAuth, (req, res) => {
     updates.push('avatar_bg = ?'); params.push(avatarBackground ? 1 : 0);
   }
   if (avatarBgColor !== undefined) {
-    if (avatarBgColor !== '' && !HEX_COLOR_RE.test(String(avatarBgColor))) return res.status(400).json({ error: 'avatarBgColor must be #rrggbb or empty' });
+    if (avatarBgColor !== '' && !(typeof avatarBgColor === 'string' && HEX_COLOR_RE.test(avatarBgColor))) return res.status(400).json({ error: 'avatarBgColor must be #rrggbb or empty' });
     updates.push('avatar_bg_color = ?'); params.push(String(avatarBgColor));
   }
   if (cardColor !== undefined) {
-    if (cardColor !== '' && !HEX_COLOR_RE.test(String(cardColor))) return res.status(400).json({ error: 'cardColor must be #rrggbb or empty' });
+    if (cardColor !== '' && !(typeof cardColor === 'string' && HEX_COLOR_RE.test(cardColor))) return res.status(400).json({ error: 'cardColor must be #rrggbb or empty' });
     updates.push('card_color = ?'); params.push(String(cardColor));
   }
   if (displayName !== undefined) {
@@ -93,7 +93,7 @@ router.patch('/me', requireAuth, (req, res) => {
     updates.push('display_name = ?'); params.push(v);
   }
   if (nameColor !== undefined) {
-    if (nameColor !== null && nameColor !== '' && !HEX_COLOR_RE.test(String(nameColor))) return res.status(400).json({ error: 'nameColor must be #rrggbb or empty' });
+    if (nameColor !== null && nameColor !== '' && !(typeof nameColor === 'string' && HEX_COLOR_RE.test(nameColor))) return res.status(400).json({ error: 'nameColor must be #rrggbb or empty' });
     updates.push('name_color = ?'); params.push(nameColor ? String(nameColor).toLowerCase() : null);
   }
   if (nameEffect !== undefined) {

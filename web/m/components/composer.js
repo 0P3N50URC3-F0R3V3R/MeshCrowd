@@ -144,6 +144,7 @@ export function mountComposer(host, opts) {
     getReply: () => reply,
     setEdit(msg) { reply = null; editing = msg; input.value = msg ? msg.content : ''; refresh(); if (msg) input.focus(); },
     clearAfterSend,
+    restore({ text, files: back }) { if (editing) return; input.value = text; files = back.slice(); refresh(); submit(); },
     focus: () => input.focus(),
     insertText,
     getText: () => input.value,

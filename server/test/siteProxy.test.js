@@ -16,6 +16,8 @@ const { db } = require('../db');
 const sp = require('../lib/siteProcesses');
 const sf = require('../lib/siteFiles');
 const { createRouter } = require('../routes/siteProxy');
+const { createSession } = require('../lib/session');
+const siteViewToken = require('../lib/siteViewToken');
 
 const FAKE = path.join(__dirname, 'fixtures', 'fakePhp.js');
 const makeUser = (n) => db.prepare('INSERT INTO users (username, email, password_hash, display_name) VALUES (?, ?, ?, ?)')
@@ -39,14 +41,9 @@ test.before(async () => {
   sf.makeDir(siteId, 'docs');
   sf.writeFile(siteId, 'docs/index.html', Buffer.from('<p>docs</p>'));
 
-  const attachUser = (req, res, next) => {
-    const uid = Number(req.headers['x-uid']);
-    if (uid) req.user = db.prepare('SELECT * FROM users WHERE id = ?').get(uid);
-    next();
-  };
   const app = express();
   app.use((req, res, next) => { res.setHeader('X-Frame-Options', 'DENY'); res.setHeader('Content-Security-Policy', "default-src 'self'; frame-ancestors 'none'"); next(); });
-  app.use('/site', createRouter({ attachUser }));
+  app.use('/site', createRouter());
   await new Promise((r) => { server = http.createServer(app).listen(0, '127.0.0.1', r); });
   base = `http://127.0.0.1:${server.address().port}`;
 });
@@ -56,28 +53,70 @@ test.after(async () => {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-const get = (p, { uid = member, headers = {}, method = 'GET', body, redirect = 'manual' } = {}) =>
-  fetch(base + p, { method, redirect, body, headers: { ...(uid ? { 'x-uid': String(uid) } : {}), ...headers } });
+const sessions = new Map();
+const tokenFor = (sid, uid) => {
+  if (!sessions.has(uid)) sessions.set(uid, createSession(uid, 'test', '127.0.0.1').token);
+  return siteViewToken.mint(sid, uid, sessions.get(uid));
+};
+const tokens = new Map();
+const pre = (sid, uid = member) => {
+  const k = `${sid}:${uid}`;
+  if (!tokens.has(k)) tokens.set(k, tokenFor(sid, uid));
+  return `/site/${sid}/~${tokens.get(k)}`;
+};
+// Paths are written as /site/<id>/...; the viewer's per-site token segment is inserted after the id.
+const get = (p, { uid = member, headers = {}, method = 'GET', body, redirect = 'manual', raw = false } = {}) => {
+  const m = /^\/site\/(\d+)(.*)$/s.exec(p);
+  const url = uid && m && !raw ? `${pre(Number(m[1]), uid)}${m[2]}` : p;
+  return fetch(base + url, { method, redirect, body, headers });
+};
 
-test('signed-out and non-member requests get plain 401/403, never the app shell or a redirect', async () => {
+test('requests without a valid site token and non-members get plain 401/403, never the app shell or a redirect', async () => {
   const a = await get(`/site/${siteId}/`, { uid: 0 });
   assert.equal(a.status, 401);
   assert.equal(a.headers.get('x-frame-options'), 'SAMEORIGIN'); // frameable, so the iframe shows the text
   assert.match(a.headers.get('content-security-policy'), /frame-ancestors 'self'/);
-  assert.match(await a.text(), /Sign in/);
+  assert.match(a.headers.get('content-security-policy'), /^sandbox allow-scripts /);
+  assert.match(await a.text(), /Open this site from inside/);
   const b = await get(`/site/${siteId}/`, { uid: outsider });
   assert.equal(b.status, 403);
   assert.equal(b.headers.get('x-frame-options'), 'SAMEORIGIN');
   assert.equal((await get('/site/99999/')).status, 404);
 });
 
+test('the app session cookie grants nothing: only the per-site token does', async () => {
+  const { token } = createSession(member, 'test', '127.0.0.1');
+  const r = await get(`/site/${siteId}/page.html`, { uid: 0, headers: { cookie: `dismesh_session=${token}`, 'x-uid': String(member) } });
+  assert.equal(r.status, 401);
+  const wrongSite = tokenFor(siteId, member);
+  const other = db.prepare("INSERT INTO servers (name, owner_id, invite_code, visibility, auto_join, kind) VALUES ('Other', ?, 'px-other', 'public', 1, 'site')").run(member).lastInsertRowid;
+  db.prepare('INSERT INTO server_members (server_id, user_id) VALUES (?, ?)').run(other, member);
+  assert.equal((await get(`/site/${other}/~${wrongSite}/`, { uid: 0 })).status, 401);
+  assert.equal((await get(`/site/${siteId}/~bogus/`, { uid: 0 })).status, 401);
+});
+
+test('a token dies with its session and with membership', async () => {
+  const u = makeUser('px_temp');
+  db.prepare('INSERT INTO server_members (server_id, user_id) VALUES (?, ?)').run(siteId, u);
+  const sess = createSession(u, 'test', '127.0.0.1').token;
+  const tok = siteViewToken.mint(siteId, u, sess);
+  assert.equal((await get(`/site/${siteId}/~${tok}/page.html`, { uid: 0 })).status, 200);
+  db.prepare('DELETE FROM server_members WHERE server_id = ? AND user_id = ?').run(siteId, u);
+  assert.equal((await get(`/site/${siteId}/~${tok}/page.html`, { uid: 0 })).status, 403);
+  db.prepare('INSERT INTO server_members (server_id, user_id) VALUES (?, ?)').run(siteId, u);
+  db.prepare('DELETE FROM sessions WHERE token = ?').run(sess);
+  assert.equal((await get(`/site/${siteId}/~${tok}/page.html`, { uid: 0 })).status, 401);
+});
+
 test('missing trailing slash redirects, for the site root and for directories', async () => {
-  const r = await get(`/site/${siteId}?a=1`);
+  const r = await get(`/site/${siteId}?a=1`, { raw: true });
   assert.equal(r.status, 302);
   assert.equal(r.headers.get('location'), `/site/${siteId}/?a=1`);
+  const t = await get(`${pre(siteId)}?a=1`, { raw: true });
+  assert.equal(t.headers.get('location'), `${pre(siteId)}/?a=1`);
   const d = await get(`/site/${siteId}/docs`);
   assert.equal(d.status, 302);
-  assert.equal(d.headers.get('location'), `/site/${siteId}/docs/`);
+  assert.equal(d.headers.get('location'), `${pre(siteId)}/docs/`);
   assert.equal((await get(`/site/${siteId}/docs/`)).status, 200);
 });
 
@@ -87,14 +126,19 @@ test('responses override the global frame headers and carry the Site CSP', async
   const csp = r.headers.get('content-security-policy');
   assert.match(csp, /frame-ancestors 'self'/);
   assert.match(csp, /https:\/\/cdn\.example\.com/);
+  assert.match(csp, /^sandbox allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox;/);
+  assert.doesNotMatch(csp, /allow-same-origin|allow-top-navigation/);
+  assert.equal(r.headers.get('access-control-allow-origin'), '*');
+  assert.equal(r.headers.get('access-control-allow-credentials'), null);
+  assert.equal(r.headers.get('set-cookie'), null);
   assert.equal(r.headers.get('referrer-policy'), 'no-referrer');
 });
 
 test('static html is rewritten and gets the loader; css urls are rewritten; the loader script is served', async () => {
   const html = await (await get(`/site/${siteId}/page.html`)).text();
-  assert.match(html, new RegExp(`href="/site/${siteId}/x\\.html"`));
-  assert.match(html, new RegExp(`<script src="/site/${siteId}/__site\\.js"></script>`));
-  assert.match(await (await get(`/site/${siteId}/style.css`)).text(), new RegExp(`url\\(/site/${siteId}/i\\.png\\)`));
+  assert.match(html, new RegExp(`href="${pre(siteId)}/x\\.html"`));
+  assert.match(html, new RegExp(`<script src="${pre(siteId)}/__site\\.js"></script>`));
+  assert.match(await (await get(`/site/${siteId}/style.css`)).text(), new RegExp(`url\\(${pre(siteId)}/i\\.png\\)`));
   const js = await get(`/site/${siteId}/__site.js`);
   assert.equal(js.status, 200);
   assert.match(js.headers.get('content-type'), /javascript/);
@@ -114,7 +158,7 @@ test('php pages are proxied: rewritten, cookies stripped both ways, body forward
   assert.equal(r.headers.get('x-saw-cookie'), 'no');
   const html = await r.text();
   assert.match(html, /GET \/index\.php\?q=1/);
-  assert.match(html, new RegExp(`href="/site/${siteId}/next\\.php"`));
+  assert.match(html, new RegExp(`href="${pre(siteId)}/next\\.php"`));
   const p = await get(`/site/${siteId}/index.php`, { method: 'POST', body: 'a=1', headers: { 'content-type': 'application/x-www-form-urlencoded' } });
   assert.match(await p.text(), /POST \/index\.php \[a=1\]/);
 });
@@ -123,7 +167,7 @@ test('redirects from php stay inside the site; protocol-relative targets are not
   fs.writeFileSync(path.join(sf.siteDir(siteId), 'redirect.php'), '<?php');
   fs.writeFileSync(path.join(sf.siteDir(siteId), 'evil.php'), '<?php');
   const a = await get(`/site/${siteId}/redirect.php`);
-  assert.equal(a.headers.get('location'), `/site/${siteId}/login.php`);
+  assert.equal(a.headers.get('location'), `${pre(siteId)}/login.php`);
   const b = await get(`/site/${siteId}/evil.php`);
   assert.equal(b.headers.get('location'), '//evil.com/x');
 });
@@ -155,7 +199,7 @@ test('slow php requests run in parallel through the pool instead of queueing beh
 
 test('a client that disconnects mid-request frees its worker', async () => {
   const ac = new AbortController();
-  const pending = fetch(`${base}/site/${siteId}/slow.php`, { headers: { 'x-uid': String(member) }, signal: ac.signal }).catch(() => {});
+  const pending = fetch(`${base}${pre(siteId)}/slow.php`, { signal: ac.signal }).catch(() => {});
   await new Promise((r) => setTimeout(r, 50));
   ac.abort();
   await pending;

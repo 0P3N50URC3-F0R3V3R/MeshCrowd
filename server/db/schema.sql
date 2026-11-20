@@ -949,3 +949,26 @@ CREATE TABLE IF NOT EXISTS security_events (
 );
 CREATE INDEX IF NOT EXISTS idx_security_events_ts ON security_events(ts);
 CREATE INDEX IF NOT EXISTS idx_security_events_type ON security_events(type, ts);
+
+-- Per-viewer storage for Site pages (localStorage and cookies, which cannot live in the page's opaque origin).
+CREATE TABLE IF NOT EXISTS site_storage (
+  site_id   INTEGER NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+  user_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind      TEXT NOT NULL,              -- 'local' | 'cookie'
+  key       TEXT NOT NULL,
+  path      TEXT NOT NULL DEFAULT '',   -- cookies only: site-relative path
+  value     TEXT NOT NULL,
+  expires   INTEGER,                    -- cookies only: epoch ms, NULL = until cleared
+  http_only INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (site_id, user_id, kind, key, path)
+);
+
+-- One serialized IndexedDB snapshot per viewer and Site.
+CREATE TABLE IF NOT EXISTS site_idb (
+  site_id    INTEGER NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  data       BLOB NOT NULL,             -- gzip of the JSON snapshot
+  bytes      INTEGER NOT NULL,          -- uncompressed size
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  PRIMARY KEY (site_id, user_id)
+);

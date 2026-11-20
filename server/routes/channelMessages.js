@@ -23,7 +23,7 @@ const { sanitizeFilename, liveUpload, fixUtf8Filename, rejectOversizedFiles } = 
 const { getMemberTimeout, slowmodeRetryAfter } = require('../lib/moderation');
 const { maybeFetchAndAttachEmbed } = require('../lib/linkPreview');
 const { serializeRemoteMessage, relayRemoteChannelEvent } = require('../lib/remoteChannelEvents');
-const { maxMessageChars } = require('../lib/messageLimits');
+const { readContent } = require('../lib/messageLimits');
 const { afterResponse } = require('../lib/deferred');
 
 const router = express.Router({ mergeParams: true });
@@ -99,7 +99,9 @@ router.post('/wipe', (req, res) => {
 
 router.post('/', requireChannelPerm(PERMISSIONS.SEND_MESSAGES), blockIfRestricted, upload.array('files', 5), (req, res) => {
   if (req.files?.length && rejectOversizedFiles(req, res)) return;
-  const content = String(req.body?.content || '').slice(0, maxMessageChars());
+  const read = readContent(req.body?.content);
+  if (read.status) { voiceMessages.discardFiles(req.files); return res.status(read.status).json(read.body); }
+  const { content } = read;
   let stickerId = null;
   if (req.body?.stickerId) {
     if (isRestricted(req.channel.server_id, req.user.id, 'stickers')) return res.status(403).json({ error: 'stickers are restricted for you on this server' });

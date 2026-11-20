@@ -8,8 +8,10 @@ const express = require('express');
 const { execFileSync } = require('child_process');
 const { posterMiddleware } = require('../lib/videoPoster');
 
+const BUNDLED = path.join(__dirname, '..', '..', 'runtime', 'ffmpeg', process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
+const FFMPEG = fs.existsSync(BUNDLED) ? BUNDLED : 'ffmpeg';
 let hasFfmpeg = true;
-try { execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); } catch { hasFfmpeg = false; }
+try { execFileSync(FFMPEG, ['-version'], { stdio: 'ignore' }); } catch { hasFfmpeg = false; }
 
 function get(port, p) {
   return new Promise((resolve, reject) => {
@@ -28,7 +30,7 @@ test('poster middleware', async (t) => {
   fs.writeFileSync(path.join(root, 'channel-1', 'x.txt'), 'hi');
   fs.writeFileSync(path.join(root, 'dm-1', 'v.mp4'), 'x');
   if (hasFfmpeg) {
-    execFileSync('ffmpeg', ['-y', '-v', 'error', '-f', 'lavfi', '-i', 'testsrc=size=160x120:rate=5:duration=1', '-pix_fmt', 'yuv420p', path.join(root, 'channel-1', 'v.mp4')]);
+    execFileSync(FFMPEG, ['-y', '-v', 'error', '-f', 'lavfi', '-i', 'testsrc=size=160x120:rate=5:duration=1', '-pix_fmt', 'yuv420p', path.join(root, 'channel-1', 'v.mp4')]);
   }
   const app = express();
   app.use('/uploads/attachments', posterMiddleware(root));
@@ -47,4 +49,33 @@ test('poster middleware', async (t) => {
     assert.strictEqual(r.body[0], 0xff);
   }
   assert.strictEqual((await get(port, '/uploads/attachments/channel-1/gone.mp4.poster.jpg')).status, 404);
+});
+
+test('a playlist or concat script disguised as an mp4 is not followed, a real mp4 still gets its poster', async (t) => {
+  if (!hasFfmpeg) return t.skip('ffmpeg not available');
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'poster-evil-'));
+  fs.mkdirSync(path.join(root, 'channel-1'));
+  const dir = path.join(root, 'channel-1');
+  execFileSync(FFMPEG, ['-y', '-v', 'error', '-f', 'lavfi', '-i', 'testsrc=size=160x120:rate=5:duration=1', '-pix_fmt', 'yuv420p', path.join(dir, 'real.mp4')]);
+  let fetched = 0;
+  const bait = http.createServer((req, res) => { fetched++; res.end(); }).listen(0);
+  const baitPort = bait.address().port;
+  fs.writeFileSync(path.join(dir, 'concat.mp4'), `ffconcat version 1.0\nfile '${path.join(dir, 'real.mp4').replace(/\\/g, '/')}'\n`);
+  fs.writeFileSync(path.join(dir, 'hls.mp4'), `#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\nhttp://127.0.0.1:${baitPort}/seg.ts\n#EXT-X-ENDLIST\n`);
+  fs.writeFileSync(path.join(dir, 'sdp.mp4'), `v=0\nm=video ${baitPort} RTP/AVP 96\nc=IN IP4 127.0.0.1\n`);
+  const app = express();
+  app.use('/uploads/attachments', posterMiddleware(root));
+  app.use((req, res) => res.sendStatus(418));
+  const srv = app.listen(0);
+  t.after(() => { srv.close(); bait.close(); fs.rmSync(root, { recursive: true, force: true }); });
+  const port = srv.address().port;
+
+  for (const name of ['concat', 'hls', 'sdp']) {
+    assert.strictEqual((await get(port, `/uploads/attachments/channel-1/${name}.mp4.poster.jpg`)).status, 404, name);
+    assert.ok(!fs.existsSync(path.join(dir, `${name}.mp4.poster.jpg`)), name);
+  }
+  assert.strictEqual(fetched, 0, 'ffmpeg must not fetch anything named in an uploaded file');
+  const ok = await get(port, '/uploads/attachments/channel-1/real.mp4.poster.jpg');
+  assert.strictEqual(ok.status, 200);
+  assert.strictEqual(ok.body[0], 0xff);
 });

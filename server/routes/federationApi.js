@@ -156,7 +156,8 @@ inboxHandlers.dm_message_create = (peer, payload) => {
   const content = String(payload.content || '').slice(0, maxMessageChars());
   const maxBytes = effectiveMaxUploadMb() * 1024 * 1024;
   const validAttachments = (payload.attachments || []).slice(0, 5).filter((att) => {
-    if (!att?.fileName || !isAllowedUpload(att.fileName)) return false;
+    if (typeof att?.fileName !== 'string' || !att.fileName || att.fileName.length > 255 || !isAllowedUpload(att.fileName)) return false;
+    if (att.dataBase64 !== undefined && typeof att.dataBase64 !== 'string') return false;
     const size = Buffer.byteLength(att.dataBase64 || '', 'base64');
     return size > 0 && size <= maxBytes;
   });
@@ -177,7 +178,7 @@ inboxHandlers.dm_message_create = (peer, payload) => {
       // (backslashes on Windows) with no `/uploads/` prefix, breaking every attachment link.
       const relUrl = `/uploads/attachments/dm-${dmChannelId}/${storedName}`;
       db.prepare('INSERT INTO attachments (message_id, file_path, file_name, mime_type, size_bytes) VALUES (?, ?, ?, ?, ?)')
-        .run(info.lastInsertRowid, relUrl, seal(sanitizeFilename(att.fileName)), att.mimeType || 'application/octet-stream', Buffer.byteLength(att.dataBase64, 'base64'));
+        .run(info.lastInsertRowid, relUrl, seal(sanitizeFilename(att.fileName)), safeMime(att.mimeType), Buffer.byteLength(att.dataBase64, 'base64'));
     }
   }
 
@@ -186,6 +187,9 @@ inboxHandlers.dm_message_create = (peer, payload) => {
   // broadcast does — broadcasting the raw row (author_id, scope_type) would silently render blank.
   broadcastToDm(dmChannelId, { type: 'message_create', dmChannelId, message: serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(info.lastInsertRowid)) });
 };
+
+const MIME_RE = /^[a-z0-9.+-]+\/[a-z0-9.+-]+$/i;
+const safeMime = (m) => (typeof m === 'string' && m.length <= 100 && MIME_RE.test(m) ? m : 'application/octet-stream');
 
 function findFederatedMessage(peer, originMessageId) {
   return db.prepare('SELECT * FROM messages WHERE federation_peer_id = ? AND federation_message_id = ?').get(peer.id, originMessageId);

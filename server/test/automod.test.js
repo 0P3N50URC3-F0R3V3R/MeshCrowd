@@ -249,3 +249,29 @@ test('posting through the real route is blocked, logged and never stored', async
   assert.equal((await post(w.member, 'a fine message')).status, 201);
   assert.equal((await post(w.owner, 'forbidden but I own this place')).status, 201);
 });
+
+test('keyword matcher gives the same answers as the regex it replaces and stays linear on one long word', () => {
+  let seed = 12345;
+  const rnd = (m) => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed % m; };
+  const alphabet = ['a', 'b', 'A', '-', ' ', '_', '1', 'é', '𝐀', 'K', 'k', '.'];
+  const lits = ['a', 'b', 'ab', '-', '.', 'A', '𝐀', 'k', 'é1'];
+  for (let i = 0; i < 4000; i++) {
+    const pieces = Array.from({ length: 1 + rnd(4) }, () => lits[rnd(lits.length)]);
+    let word = rnd(3) === 0 ? '*' : '';
+    pieces.forEach((p, j) => { word += p; if (j < pieces.length - 1 && rnd(5) > 0) word += '*'; });
+    if (rnd(3) === 0) word += '*';
+    const text = Array.from({ length: rnd(14) }, () => alphabet[rnd(alphabet.length)]).join('');
+    for (const whole of [false, true]) {
+      assert.equal(automod.buildWordMatcher(word, whole).test(text), automod.buildWordRegex(word, whole).test(text), JSON.stringify({ word, whole, text }));
+    }
+  }
+  const long = 'a'.repeat(15000);
+  const started = Date.now();
+  for (const word of ['a*b', '*a*b*', 'a*a*b']) {
+    for (const whole of [false, true]) {
+      assert.equal(automod.buildWordMatcher(word, whole).test(long), false);
+      assert.equal(automod.buildWordMatcher(word, whole).test(long + 'b'), true);
+    }
+  }
+  assert.ok(Date.now() - started < 400, 'long single word must not be quadratic');
+});

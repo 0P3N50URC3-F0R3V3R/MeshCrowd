@@ -53,12 +53,24 @@ export function mountSite(container, { server }) {
   let editor = null;
   let destroyed = false;
 
-  function showFrame() {
+  async function showFrame() {
     editor?.destroy?.();
     editor = null;
+    body.innerHTML = '';
+    frame = null;
+    let path; let trusted = false;
+    try {
+      ({ path, trusted } = await api.siteViewToken(server.id));
+    } catch (err) {
+      if (!destroyed) body.textContent = apiErrorMessage(err, t('sites.couldNotDelete'));
+      return;
+    }
+    if (destroyed || editor) return;
+    // Without allow-same-origin the site runs in an opaque origin and cannot reach the app's session, storage or API.
+    // Only "Trusted sites mode" (owner or site admin opt-in) adds it back.
     body.innerHTML = `<iframe class="site-frame" referrerpolicy="no-referrer"
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-      src="/site/${server.id}/"></iframe>`;
+      sandbox="allow-scripts ${trusted ? 'allow-same-origin ' : ''}allow-forms allow-popups allow-popups-to-escape-sandbox"
+      src="${path}"></iframe>`;
     frame = body.querySelector('iframe');
   }
 
@@ -71,7 +83,7 @@ export function mountSite(container, { server }) {
   }
 
   function onMessage(e) {
-    if (!frame || e.source !== frame.contentWindow || e.origin !== location.origin) return;
+    if (!frame || e.source !== frame.contentWindow) return;
     const d = e.data;
     if (d && d.type === 'site-open-external' && typeof d.url === 'string') openExternal(d.url);
   }
@@ -79,8 +91,8 @@ export function mountSite(container, { server }) {
 
   container.querySelector('.site-toolbar').addEventListener('click', (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
-    if (act === 'back') { try { frame?.contentWindow.history.back(); } catch { /* cross-origin guard */ } }
-    else if (act === 'reload') { if (frame) { try { frame.contentWindow.location.reload(); } catch { frame.src = frame.src; } } }
+    if (act === 'back') frame?.contentWindow.postMessage({ type: 'site-nav-back' }, '*');
+    else if (act === 'reload') frame?.contentWindow.postMessage({ type: 'site-nav-reload' }, '*');
     else if (act === 'edit') showEditor();
     else if (act === 'settings') openSiteSettings(server);
   });

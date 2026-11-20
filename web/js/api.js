@@ -138,6 +138,7 @@ export const api = {
   siteRemoveIcon: (id) => del(`/api/sites/${id}/icon`),
   siteDelete: (id) => del(`/api/sites/${id}`),
   siteRuntime: () => get('/api/sites/runtime'),
+  siteViewToken: (id) => post(`/api/sites/${id}/view-token`, {}),
   siteFiles: (id) => get(`/api/sites/${id}/files`),
   siteReadFile: (id, path) => get(`/api/sites/${id}/files/content`, { path }),
   siteWriteFile: async (id, path, data, { mtimeMs, force } = {}) => {
