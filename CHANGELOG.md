@@ -4,6 +4,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 
 ### 2026-11-20
 #### Changed
+- Download pages (EN and HU): added the light C# WebView2 desktop client next to the Electron one.
 - Wiki (EN and HU): documented the voice whiteboard (Voice, video and stages), the C# desktop client (Clients) and the Launcher (Administration). Download pages show Android 3.23.
 - Website (EN and HU): the Features page voice section now describes both voice engines (peer-to-peer and the optional SFU), direct LAN/VPN calls, the whiteboard, and the Home and About pages mention the SFU and the C# client. Features also lists captcha, registration modes and IP blocklists, member restrictions, Devices, the notification grid and auto away, encrypted DM attachments, the admin console, backups, the Launcher and offline phone use.
 

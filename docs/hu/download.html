@@ -24,7 +24,7 @@
 <section class="section" style="padding-top:48px">
   <div class="container">
 
-    <div class="grid c3" style="margin-top:26px">
+    <div class="grid c2" style="margin-top:26px">
       <article class="card dl-card reveal" id="server" data-os="windows unix">
         <div class="head"><div class="ic"><i data-icon="server"></i></div><div><h3>Szerver</h3><div class="ver">0.9-es verzió &middot; Windows, Linux, macOS</div></div></div>
         <p>A MeshCrowd szerver beépített webes klienssel. Egy Node.js folyamat és egy SQLite adatbázis.</p>
@@ -41,6 +41,15 @@
         <ul><li>Nincs telepítő: csomagold ki és futtasd a <code>MeshCrowd.exe</code>-t</li><li>A beállítások a saját <code>data</code> mappájában maradnak</li><li>Kicsomagolva nagyjából 340 MB</li></ul>
         <div class="btns">
           <a class="btn btn-primary" href="https://github.com/0P3N50URC3-F0R3V3R/MeshCrowd/releases"><i data-icon="download"></i> Asztali kliens letöltése</a>
+        </div>
+      </article>
+
+      <article class="card dl-card reveal" id="desktop-light" data-os="windows">
+        <div class="head"><div class="ic"><i data-icon="monitor"></i></div><div><h3>Asztali kliens, könnyű</h3><div class="ver">Windows, egyetlen exe &middot; C# és WebView2</div></div></div>
+        <p>Ugyanaz a felület és ugyanazok a funkciók, mint az Electron kliensben, egyetlen kisebb fájlban, a rendszer WebView2 motorjára építve. Ez sem hoz magával szervert.</p>
+        <ul><li>Nincs telepítő: futtasd a <code>MeshCrowd.exe</code>-t</li><li>A beállítások mellette, a <code>data</code> mappában maradnak</li><li>Kell hozzá a WebView2 (a friss Windowsban benne van), vagy a beágyazott változat, nagyjából 250 MB</li></ul>
+        <div class="btns">
+          <a class="btn btn-primary" href="https://github.com/0P3N50URC3-F0R3V3R/MeshCrowd/releases"><i data-icon="download"></i> Könnyű kliens letöltése</a>
         </div>
       </article>
 
@@ -112,6 +121,7 @@ npm start</code></pre>
           <tr><td>Böngésző</td><td>Aktuális Chromium-, Firefox- vagy Safari-alapú böngésző</td></tr>
           <tr><td>Hang és videó</td><td>HTTPS (vagy localhost), mikrofon és kamera. Hálózatok között: a beépített STUN/TURN szerver, a <code>setup-turn.bat</code> vagy a <code>setup-turn.sh</code> segítségével beállítva</td></tr>
           <tr><td>Asztali kliens</td><td>Windows 10 vagy újabb</td></tr>
+          <tr><td>Asztali kliens (könnyű)</td><td>Windows 10 vagy újabb a WebView2 futtatókörnyezettel, vagy a beágyazott változat</td></tr>
           <tr><td>Android</td><td>Android 8.0 vagy újabb</td></tr>
         </table>
       </div>

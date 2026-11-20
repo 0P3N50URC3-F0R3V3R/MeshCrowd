@@ -24,7 +24,7 @@
 <section class="section" style="padding-top:48px">
   <div class="container">
 
-    <div class="grid c3" style="margin-top:26px">
+    <div class="grid c2" style="margin-top:26px">
       <article class="card dl-card reveal" id="server" data-os="windows unix">
         <div class="head"><div class="ic"><i data-icon="server"></i></div><div><h3>Server</h3><div class="ver">Version 0.9 &middot; Windows, Linux, macOS</div></div></div>
         <p>The MeshCrowd server with the web client built in. One Node.js process and one SQLite database.</p>
@@ -41,6 +41,15 @@
         <ul><li>No installer: unzip and run <code>MeshCrowd.exe</code></li><li>Settings stay in its own <code>data</code> folder</li><li>About 340 MB unpacked</li></ul>
         <div class="btns">
           <a class="btn btn-primary" href="https://github.com/0P3N50URC3-F0R3V3R/MeshCrowd/releases"><i data-icon="download"></i> Download desktop client</a>
+        </div>
+      </article>
+
+      <article class="card dl-card reveal" id="desktop-light" data-os="windows">
+        <div class="head"><div class="ic"><i data-icon="monitor"></i></div><div><h3>Desktop client, light</h3><div class="ver">Windows, single exe &middot; C# and WebView2</div></div></div>
+        <p>The same interface and features as the Electron client in one smaller file, built on the system's WebView2 engine. It also carries no server.</p>
+        <ul><li>No installer: run <code>MeshCrowd.exe</code></li><li>Settings stay in a <code>data</code> folder beside it</li><li>Needs WebView2 (included in current Windows) or the build that embeds it, about 250 MB</li></ul>
+        <div class="btns">
+          <a class="btn btn-primary" href="https://github.com/0P3N50URC3-F0R3V3R/MeshCrowd/releases"><i data-icon="download"></i> Download light client</a>
         </div>
       </article>
 
@@ -112,6 +121,7 @@ npm start</code></pre>
           <tr><td>Browser</td><td>A current Chromium, Firefox or Safari based browser</td></tr>
           <tr><td>Voice and video</td><td>HTTPS (or localhost), a microphone and camera. Across networks: the built-in STUN/TURN server, set up with <code>setup-turn.bat</code> or <code>setup-turn.sh</code></td></tr>
           <tr><td>Desktop client</td><td>Windows 10 or newer</td></tr>
+          <tr><td>Desktop client (light)</td><td>Windows 10 or newer with the WebView2 runtime, or the build that embeds it</td></tr>
           <tr><td>Android</td><td>Android 8.0 or newer</td></tr>
         </table>
       </div>
