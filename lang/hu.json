@@ -343,7 +343,8 @@
     "nameFxAddColor": "Szín hozzáadása",
     "nameFxRemoveColor": "Szín eltávolítása",
     "nameFxDefaultColors": "Alapszínek",
-    "nameFxSpeed": "Sebesség (másodperc ciklusonként)"
+    "nameFxSpeed": "Sebesség (másodperc ciklusonként)",
+    "totpPasswordLabel": "Jelenlegi jelszavad"
   },
   "federation": {
     "heading": "Föderáció",
@@ -2900,6 +2901,10 @@
       "createChecklists": {
         "name": "Ellenőrzőlisták létrehozása",
         "desc": "Ellenőrzőlisták küldése nyilvános csatornákban. Privát csatornákban és üzenetekben nem szükséges."
+      },
+      "mentionEveryone": {
+        "name": "@everyone, @here és szerepkörök említése",
+        "desc": "Minden tag, minden online tag vagy egy teljes szerepkör értesítése. Nélküle ezek az említések sima szövegek."
       }
     },
     "site": {

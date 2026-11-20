@@ -6,9 +6,10 @@ const { createSession, destroyAllSessionsForUser, sessionCookie } = require('../
 const { toPublicUser } = require('../lib/publicUser');
 const { requireAuth } = require('../middleware/auth');
 const registration = require('../lib/registration');
+const { InviteError } = require('../lib/serverInvites');
 const accounts = require('../lib/accounts');
 const pendingLogin = require('../lib/pendingLogin');
-const { checkSecondFactor } = require('../lib/secondFactor');
+const { checkSecondFactorLimited } = require('../lib/secondFactor');
 const hub = require('../socket/hub');
 const {
   passportIdFromPublicKey, ID_RE, decodePublicKey, verifyChallenge, isValidBackupFor,
@@ -51,7 +52,7 @@ router.post('/challenge', (req, res) => {
 
 router.post('/register', (req, res) => {
   const b = req.body || {};
-  const blocked = registration.check(b.inviteCode);
+  const { blocked, invite } = registration.admit(b.inviteCode);
   if (blocked) return res.status(blocked.status).json({ error: blocked.error });
   // Web sign-ups are always split: this server must never receive the password itself.
   if (b.password !== undefined || b.authKey === undefined) return res.status(400).json({ error: 'invalid sign-in key' });
@@ -80,8 +81,13 @@ router.post('/register', (req, res) => {
     created = accounts.createAccount({
       username: b.username, email: b.email, authKey: b.authKey, authSalt: b.authSalt, displayName: b.displayName,
       passport: { id: passportId, publicKey: b.passportPublicKey, e2eePublicKey: b.e2eePublicKey, backup: b.backup },
+      invite,
     });
   } catch (err) {
+    if (err instanceof InviteError) {
+      audit(null, passportId, 'register', false, req);
+      return res.status(err.status).json({ error: err.message });
+    }
     if (!accounts.isUniqueViolation(err)) throw err;
     audit(null, passportId, 'register', false, req);
     return res.status(409).json({ error: 'username, email or passport already taken' });
@@ -150,10 +156,13 @@ router.post('/recover', (req, res) => {
     audit(user.id, user.passport_id, 'recover', false, req);
     return res.status(403).json({ error: 'account disabled' });
   }
-  if (user.totp_enabled && !checkSecondFactor(user, b.code)) {
-    challenges.recordFailure(lockKey);
-    audit(user.id, user.passport_id, 'recover', false, req);
-    return res.status(401).json({ error: 'authenticator code required', requiresTotp: true });
+  if (user.totp_enabled) {
+    const second = checkSecondFactorLimited(user, b.code, req.ip);
+    if (second !== 'ok') {
+      audit(user.id, user.passport_id, 'recover', false, req);
+      if (second === 'locked') return res.status(429).json({ error: 'too many attempts, try again later' });
+      return res.status(401).json({ error: 'authenticator code required', requiresTotp: true });
+    }
   }
   accounts.inTransaction(() => {
     // Recovery always leaves the account split (a legacy account is converted): the new password was
@@ -194,7 +203,7 @@ router.post('/attach', requireAuth, (req, res) => {
   const proved = proofOk(req, 'attach', publicKey, b);
   const credentialOk = splitAuth.verifyCurrentCredential(req.user, b);
   // Only after proof and credential checked out, so a bad request never burns a recovery code.
-  const secondFactorOk = proved && credentialOk && (!req.user.totp_enabled || checkSecondFactor(req.user, b.code));
+  const secondFactorOk = proved && credentialOk && (!req.user.totp_enabled || checkSecondFactorLimited(req.user, b.code, req.ip) === 'ok');
   if (!secondFactorOk) {
     challenges.recordFailure(lockKey);
     audit(req.user.id, passportId, 'attach', false, req);

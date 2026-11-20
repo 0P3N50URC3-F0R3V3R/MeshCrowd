@@ -56,7 +56,7 @@ function checkContent(content) {
 function checkTarget(user, scopeType, scopeId, replyToMessageId) {
   if (!['channel', 'thread', 'dm'].includes(scopeType)) throw new ScheduleError(400, 'scopeType must be channel, thread or dm');
   if (!Number.isInteger(scopeId)) throw new ScheduleError(400, 'scopeId must be a whole number');
-  const access = canSendToScope(scopeType, scopeId, user.id);
+  const access = canSendToScope(scopeType, scopeId, user.id, { skipSlowmode: true });
   if (!access.ok) throw new ScheduleError(access.status, access.error);
   const { ctx } = access;
   if (ctx.channel && (ctx.channel.type === 'notes' || (scopeType === 'channel' && ctx.channel.type === 'forum'))) throw new ScheduleError(400, 'messages cannot be scheduled here');

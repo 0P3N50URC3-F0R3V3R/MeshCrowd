@@ -10,6 +10,7 @@ const { requireAuth } = require('../middleware/auth');
 const { PERMISSIONS, DEFAULT_EVERYONE_PERMISSIONS, has } = require('../lib/permissions');
 const { getMemberPermissionBits, getChannelPermissionBits, removeMember, isPendingMember } = require('../lib/channelAccess');
 const { toPublicUser } = require('../lib/publicUser');
+const { isBlocked } = require('../lib/friends');
 const restrictions = require('../lib/restrictions');
 const { broadcastToServer, broadcastToChannel, notifyUserIds } = require('../socket/hub');
 const { postServerEvent, SERVER_EVENT_TYPES } = require('../lib/systemMessages');
@@ -195,6 +196,8 @@ router.post('/:id/invite-direct', requireMember, requirePerm(PERMISSIONS.CREATE_
   if (!target || target.is_bot) return res.status(404).json({ error: 'user not found' });
   if (target.id === req.user.id) return res.status(400).json({ error: 'cannot invite yourself' });
 
+  if (isBlocked(req.user.id, target.id)) return res.status(404).json({ error: 'user not found' });
+
   const banned = db.prepare('SELECT 1 FROM server_bans WHERE server_id = ? AND user_id = ?').get(req.server.id, target.id);
   if (banned) return res.status(403).json({ error: 'this user is banned from the server' });
 
@@ -219,14 +222,19 @@ router.post('/channel-invites/:code/join', (req, res) => {
   const invite = db.prepare('SELECT * FROM channel_invites WHERE code = ?').get(req.params.code);
   if (!invite) return res.status(404).json({ error: 'invalid invite code' });
   if (invite.expires_at && new Date(invite.expires_at) < new Date()) return res.status(410).json({ error: 'this invite has expired' });
-  if (invite.max_uses !== null && invite.uses >= invite.max_uses) return res.status(410).json({ error: 'this invite has reached its use limit' });
-
   const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(invite.channel_id);
   if (!channel) return res.status(404).json({ error: 'channel no longer exists' });
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(channel.server_id);
+  const granted = db.prepare('SELECT allow FROM channel_user_overrides WHERE channel_id = ? AND user_id = ?').get(channel.id, req.user.id);
+  const holdsAccess = !!granted && has(granted.allow, PERMISSIONS.VIEW_CHANNEL)
+    && !!db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(server.id, req.user.id);
+  if (holdsAccess) return res.json({ server, channelId: channel.id });
+  if (invite.max_uses !== null && invite.uses >= invite.max_uses) return res.status(410).json({ error: 'this invite has reached its use limit' });
 
   const banned = db.prepare('SELECT 1 FROM server_bans WHERE server_id = ? AND user_id = ?').get(server.id, req.user.id);
   if (banned) return res.status(403).json({ error: 'banned from this server' });
+
+  if (!serverInvites.consumeChannelInvite(invite.id)) return res.status(410).json({ error: 'this invite has reached its use limit' });
 
   const alreadyMember = db.prepare('SELECT 1 FROM server_members WHERE server_id = ? AND user_id = ?').get(server.id, req.user.id);
   if (!alreadyMember) {
@@ -239,7 +247,6 @@ router.post('/channel-invites/:code/join', (req, res) => {
     `INSERT INTO channel_user_overrides (channel_id, user_id, allow, deny) VALUES (?, ?, ?, 0)
      ON CONFLICT(channel_id, user_id) DO UPDATE SET allow = allow | excluded.allow`
   ).run(channel.id, req.user.id, PERMISSIONS.VIEW_CHANNEL);
-  db.prepare('UPDATE channel_invites SET uses = uses + 1 WHERE id = ?').run(invite.id);
 
   res.json({ server, channelId: channel.id });
 });
@@ -1172,6 +1179,9 @@ router.patch('/:id/members/:userId/nickname', requireMember, (req, res) => {
   const isSelf = targetId === req.user.id;
   const allowed = isSelf ? has(bits, PERMISSIONS.CHANGE_NICKNAME) : has(bits, PERMISSIONS.MANAGE_NICKNAMES);
   if (!allowed) return res.status(403).json({ error: 'missing permission' });
+  if (!isSelf && !assertCanGrant(req, getMemberPermissionBits(req.server.id, targetId))) {
+    return res.status(403).json({ error: 'cannot rename a member with permissions you do not hold' });
+  }
 
   const nickname = req.body?.nickname === null || req.body?.nickname === undefined
     ? null
@@ -1253,8 +1263,9 @@ router.put('/:id/members/:userId/timeout', requireMember, requirePerm(PERMISSION
   if (!assertCanGrant(req, getMemberPermissionBits(req.server.id, targetId))) {
     return res.status(403).json({ error: 'cannot time out a member with permissions you do not hold' });
   }
-  const minutes = Math.max(1, Math.min(MAX_TIMEOUT_MINUTES, Number(req.body?.minutes) || 0));
-  if (!minutes) return res.status(400).json({ error: 'minutes required' });
+  const requested = Number(req.body?.minutes);
+  if (!(requested > 0)) return res.status(400).json({ error: 'minutes required' });
+  const minutes = Math.max(1, Math.min(MAX_TIMEOUT_MINUTES, Math.floor(requested)));
   const until = new Date(Date.now() + minutes * 60_000).toISOString();
   db.prepare('UPDATE server_members SET timeout_until = ? WHERE server_id = ? AND user_id = ?').run(until, req.server.id, targetId);
   logAudit(req.server.id, req.user.id, 'member_timeout', 'user', targetId, { until, minutes });
@@ -1265,6 +1276,10 @@ router.put('/:id/members/:userId/timeout', requireMember, requirePerm(PERMISSION
 
 router.delete('/:id/members/:userId/timeout', requireMember, requirePerm(PERMISSIONS.MODERATE_MEMBERS), (req, res) => {
   const targetId = Number(req.params.userId);
+  if (targetId === req.user.id && req.server.owner_id !== req.user.id) return res.status(403).json({ error: 'you cannot lift your own timeout' });
+  if (!assertCanGrant(req, getMemberPermissionBits(req.server.id, targetId))) {
+    return res.status(403).json({ error: 'cannot change the timeout of a member with permissions you do not hold' });
+  }
   db.prepare('UPDATE server_members SET timeout_until = NULL WHERE server_id = ? AND user_id = ?').run(req.server.id, targetId);
   logAudit(req.server.id, req.user.id, 'member_timeout_clear', 'user', targetId, null);
   postServerEvent(req.server.id, 'member_timeout_clear', targetId, {}, req.user.id);

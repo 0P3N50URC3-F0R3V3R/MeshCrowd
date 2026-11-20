@@ -66,4 +66,12 @@ router.get('/dm-:dmId/:file', (req, res) => {
   stream.pipe(res);
 });
 
+// Anything else under dm-* (an encoded slash or ./ in the path slips past the route above) must never
+// fall through to the static handler, which would serve the sealed file without any membership check.
+router.use((req, res, next) => {
+  let p;
+  try { p = path.posix.normalize(decodeURIComponent(req.path).replace(/\\/g, '/')).replace(/^\/+/, ''); } catch { return res.status(404).end(); }
+  return /^dm-/i.test(p) ? res.status(404).end() : next();
+});
+
 module.exports = router;

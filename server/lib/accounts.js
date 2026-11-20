@@ -1,13 +1,14 @@
 'use strict';
 
 const { db } = require('../db');
-const { OWNER_SITE_PERMISSIONS } = require('./permissions');
+const { OWNER_SITE_PERMISSIONS, PERMISSIONS } = require('./permissions');
 const { postServerEvent } = require('./systemMessages');
 const { broadcastToServer } = require('../socket/hub');
 const { toPublicUser } = require('./publicUser');
 const { displayName: cleanDisplayName } = require('./textSanitize');
 const { credentialProblem, credentialColumns } = require('./splitAuth');
 const { isValidBackupFor } = require('./passportCrypto');
+const serverInvites = require('./serverInvites');
 
 const USERNAME_RE = /^[a-zA-Z0-9_.]{3,32}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -66,7 +67,7 @@ function createAccount(input) {
   return result;
 }
 
-function createAccountRows({ username, email, password, authKey, authSalt, displayName, passport }) {
+function createAccountRows({ username, email, password, authKey, authSalt, displayName, passport, invite }) {
   // Excludes the reserved webhook-messages placeholder account (db/index.js WEBHOOK_SYSTEM_USER_ID,
   // bootstrapped at startup before anyone ever registers) - otherwise it always occupies "user #1"
   // and no real registrant on a fresh instance would ever qualify as the first user/site owner.
@@ -97,6 +98,18 @@ function createAccountRows({ username, email, password, authKey, authSalt, displ
   const autoJoinServers = db.prepare("SELECT id FROM servers WHERE visibility = 'public' AND auto_join = 1").all();
   for (const s of autoJoinServers) {
     db.prepare('INSERT INTO server_members (server_id, user_id) VALUES (?, ?)').run(s.id, userId);
+  }
+  if (invite) {
+    const used = invite.kind === 'channel' ? serverInvites.consumeChannelInvite(invite.row.id) : serverInvites.consumeInvite(invite.row.id);
+    if (!used) throw new serverInvites.InviteError(410, 'this invite has reached its use limit');
+    const info = db.prepare('INSERT OR IGNORE INTO server_members (server_id, user_id) VALUES (?, ?)').run(invite.server.id, userId);
+    if (Number(info.changes) === 1) autoJoinServers.push({ id: invite.server.id });
+    if (invite.kind === 'channel') {
+      db.prepare(
+        `INSERT INTO channel_user_overrides (channel_id, user_id, allow, deny) VALUES (?, ?, ?, 0)
+         ON CONFLICT(channel_id, user_id) DO UPDATE SET allow = allow | excluded.allow`,
+      ).run(invite.channel.id, userId, PERMISSIONS.VIEW_CHANNEL);
+    }
   }
   return { userId, autoJoinServers };
 }

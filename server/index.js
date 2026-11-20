@@ -97,6 +97,8 @@ app.use('/vendor/tinymce', express.static(path.join(__dirname, '..', 'node_modul
 // keep working — <img>/<video> embedding isn't affected by Content-Disposition, only direct
 // navigation/Save-As is, and raster formats can't carry script the way SVG/HTML can.
 const INLINE_SAFE_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico']);
+// Attachment URLs are capability links only for signed-in users: no session, no file.
+app.use('/uploads/attachments', require('./middleware/auth').requireAuth);
 app.use('/uploads/attachments', require('./routes/dmFiles'));
 app.use('/uploads/attachments', require('./lib/videoPoster').posterMiddleware(path.join(DATA_DIR, 'attachments')));
 app.use('/uploads/attachments', express.static(path.join(DATA_DIR, 'attachments'), {

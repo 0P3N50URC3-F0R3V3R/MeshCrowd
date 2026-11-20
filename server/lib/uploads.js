@@ -10,7 +10,7 @@ const BLOCKED_EXTENSIONS = new Set([
   '.exe', '.bat', '.cmd', '.com', '.msi', '.ps1', '.psm1', '.sh', '.bash',
   '.vbs', '.vbe', '.js', '.jse', '.wsf', '.wsh', '.scr', '.jar', '.dll', '.cpl',
   '.hta', '.msc', '.reg', '.lnk', '.pif', '.scf', '.url', '.jnlp', '.msix', '.appx',
-  '.html', '.htm', '.xhtml', '.svg', '.shtml',
+  '.html', '.htm', '.xhtml', '.svg', '.shtml', '.xht', '.mht', '.mhtml', '.mjs', '.cjs',
 ]);
 
 // Multer/busboy decode the multipart filename header as latin1 regardless of what the browser

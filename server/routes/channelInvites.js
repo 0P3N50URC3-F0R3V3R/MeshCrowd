@@ -42,7 +42,7 @@ router.post('/', (req, res) => {
   const maxUses = req.body?.maxUses === undefined || req.body.maxUses === null ? null : Number(req.body.maxUses);
   const expiresInHours = req.body?.expiresInHours === undefined || req.body.expiresInHours === null ? null : Number(req.body.expiresInHours);
   if (maxUses !== null && (!Number.isInteger(maxUses) || maxUses < 1)) return res.status(400).json({ error: 'invalid maxUses' });
-  if (expiresInHours !== null && (!Number.isFinite(expiresInHours) || expiresInHours <= 0)) return res.status(400).json({ error: 'invalid expiresInHours' });
+  if (expiresInHours !== null && (!Number.isFinite(expiresInHours) || expiresInHours <= 0 || expiresInHours > 24 * 365 * 10)) return res.status(400).json({ error: 'invalid expiresInHours' });
 
   const code = crypto.randomBytes(6).toString('hex');
   const expiresAt = expiresInHours !== null ? new Date(Date.now() + expiresInHours * 3600_000).toISOString() : null;

@@ -86,6 +86,22 @@ test('keywords: substring mode and wildcards', () => {
   assert.equal(check(w, 'spa mme'), null);
 });
 
+test('keywords: several wildcards keep their meaning and cannot stall the server on a long message', () => {
+  const w = world();
+  rule(w, { name: 'Stars', kind: 'keywords', config: { words: ['a*a*a*a*a*a*b', 'f*ck*', '*ass*'], wholeWord: false } });
+  const long = 'a'.repeat(3000);
+  const start = Date.now();
+  assert.equal(check(w, long), null);
+  assert.ok(Date.now() - start < 1500);
+  assert.ok(check(w, 'xx aqaqaqaqaqaqb yy'));
+  assert.ok(check(w, 'what the fxxck'));
+  assert.ok(check(w, 'classy'));
+  const whole = world();
+  rule(whole, { name: 'Whole', kind: 'keywords', config: { words: ['a*b'], wholeWord: true } });
+  assert.ok(check(whole, 'axbb'));
+  assert.equal(check(whole, 'axbbc'), null);
+});
+
 test('keywords: special characters in a word are matched literally (no regex injection)', () => {
   const w = world();
   rule(w, { name: 'Lit', kind: 'keywords', config: { words: ['a.c', '(x+)+'], wholeWord: false } });

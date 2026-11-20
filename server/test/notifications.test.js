@@ -350,3 +350,24 @@ test('pin notifications skip mentions-only and muted members and the pinner', ()
   assert.ok(!ids.includes(f.muted), 'muted member is not');
   assert.ok(!ids.includes(f.pinner), 'pinner is not');
 });
+
+test('@everyone, @here and role pings need the Mention Everyone permission', () => {
+  const ownerId = makeUser('mention_owner');
+  const authorId = makeUser('mention_author');
+  const memberId = makeUser('mention_member');
+  const serverId = db.prepare('INSERT INTO servers (name, owner_id, invite_code) VALUES (?, ?, ?)').run('SM', ownerId, 'invm').lastInsertRowid;
+  const everyoneRole = db.prepare('INSERT INTO roles (server_id, name, permissions, position, is_default) VALUES (?, ?, ?, 0, 1)')
+    .run(serverId, '@everyone', DEFAULT_EVERYONE_PERMISSIONS).lastInsertRowid;
+  const channelId = db.prepare('INSERT INTO channels (server_id, name, type) VALUES (?, ?, ?)').run(serverId, 'general', 'public').lastInsertRowid;
+  db.prepare('INSERT INTO server_members (server_id, user_id) VALUES (?, ?), (?, ?), (?, ?)').run(serverId, ownerId, serverId, authorId, serverId, memberId);
+  setPref(memberId, 'channel', channelId, 'mentions');
+  const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(channelId);
+  const ping = { userIds: [], roleIds: [], everyone: true, here: false };
+
+  notifyChannelMessage(channel, { author: { id: authorId }, content: '@everyone hi' }, ping);
+  assert.equal(sent.filter((x) => x.userId === memberId).length, 0, 'a plain member cannot ping everyone');
+
+  db.prepare('UPDATE roles SET permissions = ? WHERE id = ?').run(DEFAULT_EVERYONE_PERMISSIONS | PERMISSIONS.MENTION_EVERYONE, everyoneRole);
+  notifyChannelMessage(channel, { author: { id: authorId }, content: '@everyone hi' }, ping);
+  assert.equal(sent.filter((x) => x.userId === memberId).length, 1, 'with the permission the ping lands');
+});

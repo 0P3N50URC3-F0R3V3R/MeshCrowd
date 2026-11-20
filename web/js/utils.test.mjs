@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { renderMessageContent, renderCompactSticker, avatarHtml, colorForId } from './utils.js';
+import { renderMessageContent, renderCompactSticker, avatarHtml, colorForId, initials } from './utils.js';
 import { SHRUG } from './builtinSlash.js';
 
 test('shrug renders with its underscores intact', () => {
@@ -38,4 +38,19 @@ test('avatar without a picture keeps the colored initial circle regardless of av
     assert.match(html, new RegExp(`background:${colorForId(3)}`));
     assert.match(html, />AB</);
   }
+});
+
+test('trailing punctuation and an unbalanced paren stay out of the link', () => {
+  const a = (u) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`;
+  assert.equal(renderMessageContent('(see https://x.com/q).'), `(see ${a('https://x.com/q')}).`);
+  assert.equal(renderMessageContent('go to https://x.com, now'), `go to ${a('https://x.com')}, now`);
+  assert.equal(renderMessageContent('https://x.com/a_(b)_c ok'), `${a('https://x.com/a_(b)_c')} ok`);
+  assert.equal(renderMessageContent('https://x.com/?a=1&b=2'), a('https://x.com/?a=1&amp;b=2'));
+});
+
+test('initials never split an emoji surrogate pair', () => {
+  assert.equal(initials('\u{1F600}'), '\u{1F600}');
+  assert.equal(initials('\u{1F600}x'), '\u{1F600}X');
+  assert.equal(initials('\u{1F600} Bob'), '\u{1F600}B');
+  assert.equal(initials('ada lovelace'), 'AL');
 });

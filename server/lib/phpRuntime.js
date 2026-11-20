@@ -13,6 +13,7 @@ const VCREDIST_OK_CODES = new Set([0, 1638, 3010]); // success, newer version pr
 const DISABLED_FUNCTIONS = [
   'exec', 'shell_exec', 'system', 'passthru', 'popen', 'proc_open', 'proc_get_status', 'proc_terminate', 'proc_close',
   'pcntl_exec', 'dl', 'mail', 'putenv', 'fsockopen', 'pfsockopen', 'stream_socket_client', 'stream_socket_server', 'symlink', 'link',
+  'curl_init', 'curl_exec', 'curl_multi_init', 'curl_multi_exec', 'socket_create', 'socket_create_listen', 'socket_create_pair', 'socket_connect', 'stream_socket_pair', 'ftp_connect', 'ftp_ssl_connect',
 ].join(',');
 
 let activeBin = 'php';

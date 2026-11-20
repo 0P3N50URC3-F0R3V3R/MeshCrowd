@@ -6,6 +6,7 @@ const { requireAuth } = require('../middleware/auth');
 const { PERMISSIONS, has } = require('../lib/permissions');
 const { getChannelPermissionBits } = require('../lib/channelAccess');
 const { searchMessages } = require('../lib/search');
+const { nsfwBlock } = require('../lib/ageGate');
 
 const router = express.Router();
 

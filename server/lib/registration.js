@@ -19,15 +19,22 @@ function hasUsers() {
 
 // null = may register; otherwise { status, error } for the response. In 'invite' mode the body must
 // carry a live invite code of this instance (server invite, vanity code or channel invite).
-function check(inviteCode) {
+// A limited invite (an extra server invite or a channel invite) is not just checked: it comes back
+// as `invite` so account creation can consume one use and join the new account in the same
+// transaction. The server's permanent code and vanity name have no use counter.
+function admit(inviteCode) {
   const mode = getMode();
-  if (mode === 'open' || !hasUsers()) return null;
-  if (mode === 'closed') return { status: 403, error: 'registration is closed' };
+  if (mode === 'open' || !hasUsers()) return { blocked: null, invite: null };
+  if (mode === 'closed') return { blocked: { status: 403, error: 'registration is closed' } };
   const code = typeof inviteCode === 'string' ? inviteCode.trim() : '';
-  if (!code || code.includes('@')) return { status: 403, error: 'registration requires an invite link' };
+  if (!code || code.includes('@')) return { blocked: { status: 403, error: 'registration requires an invite link' } };
   const peek = invites.peekCode(code);
-  if (!peek || peek.dead) return { status: 403, error: 'invalid or expired invite code' };
-  return null;
+  if (!peek || peek.dead) return { blocked: { status: 403, error: 'invalid or expired invite code' } };
+  return { blocked: null, invite: peek.invite ? { kind: peek.kind, row: peek.invite, server: peek.server, channel: peek.channel || null } : null };
 }
 
-module.exports = { MODES, getMode, check };
+function check(inviteCode) {
+  return admit(inviteCode).blocked;
+}
+
+module.exports = { MODES, getMode, check, admit };

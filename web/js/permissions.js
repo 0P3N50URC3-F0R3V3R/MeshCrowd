@@ -20,6 +20,7 @@ export const PERMISSIONS = {
   PRUNE_CONTENT: 1 << 15,
   MANAGE_BOTS: 1 << 16,
   CREATE_CHECKLISTS: 1 << 17,
+  MENTION_EVERYONE: 1 << 18,
 };
 
 export const PERMISSION_INFO = [
@@ -41,6 +42,7 @@ export const PERMISSION_INFO = [
   { flag: PERMISSIONS.PRUNE_CONTENT, key: 'pruneData', name: 'Prune Data', desc: "Bulk-delete this server's own channel history before a cutoff date, to free up space." },
   { flag: PERMISSIONS.MANAGE_BOTS, key: 'manageBots', name: 'Manage Bots', desc: "Create, edit and delete this server's AI bots." },
   { flag: PERMISSIONS.CREATE_CHECKLISTS, key: 'createChecklists', name: 'Create Checklists', desc: 'Post checklists in public channels. Not needed in private channels or DMs.' },
+  { flag: PERMISSIONS.MENTION_EVERYONE, key: 'mentionEveryone', name: 'Mention @everyone, @here and roles', desc: 'Ping every member, everyone online or a whole role. Without it those mentions are plain text.' },
 ];
 
 export const SITE_PERMISSIONS = {

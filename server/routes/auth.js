@@ -9,13 +9,14 @@ const { requireAuth } = require('../middleware/auth');
 const totp = require('../lib/totp');
 const pendingLogin = require('../lib/pendingLogin');
 const accounts = require('../lib/accounts');
-const { checkSecondFactor } = require('../lib/secondFactor');
+const { checkSecondFactorLimited } = require('../lib/secondFactor');
 const splitAuth = require('../lib/splitAuth');
 const { isValidBackupFor } = require('../lib/passportCrypto');
 const challenges = require('../lib/passportChallenges');
 const { authAudit } = require('../lib/authAudit');
 const hub = require('../socket/hub');
 const registration = require('../lib/registration');
+const { InviteError } = require('../lib/serverInvites');
 const log = require('../lib/logger').scoped('auth');
 
 const safeName = (v) => String(v).replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, 64);
@@ -26,7 +27,7 @@ const router = express.Router();
 // (split; derived in the browser - docs/superpowers/specs/2026-10-01-split-password-design.md).
 router.post('/register', (req, res) => {
   const { username, password, authKey, authSalt, email, displayName, inviteCode } = req.body || {};
-  const blocked = registration.check(inviteCode);
+  const { blocked, invite } = registration.admit(inviteCode);
   if (blocked) return res.status(blocked.status).json({ error: blocked.error });
   const problem = accounts.validateNewAccount({ username, email, password, authKey, authSalt });
   if (problem) return res.status(400).json({ error: problem });
@@ -35,8 +36,9 @@ router.post('/register', (req, res) => {
   }
   let created;
   try {
-    created = accounts.createAccount({ username, email, password, authKey, authSalt, displayName });
+    created = accounts.createAccount({ username, email, password, authKey, authSalt, displayName, invite });
   } catch (err) {
+    if (err instanceof InviteError) return res.status(err.status).json({ error: err.message });
     if (accounts.isUniqueViolation(err)) return res.status(409).json({ error: 'username or email already taken' });
     throw err;
   }
@@ -97,7 +99,9 @@ router.post('/login/2fa', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
   if (!user || !user.totp_enabled) return res.status(401).json({ error: 'login expired, please sign in again' });
 
-  if (!checkSecondFactor(user, code)) {
+  const second = checkSecondFactorLimited(user, code, req.ip);
+  if (second === 'locked') return res.status(429).json({ error: 'too many attempts, try again later' });
+  if (second !== 'ok') {
     log.warn(`2FA failed for ${safeName(user.username)} from ${req.ip}`);
     return res.status(401).json({ error: 'invalid code' });
   }
@@ -126,6 +130,14 @@ router.post('/2fa/setup', requireAuth, async (req, res) => {
 router.post('/2fa/enable', requireAuth, (req, res) => {
   if (req.user.totp_enabled) return res.status(400).json({ error: '2FA is already enabled' });
   if (!req.user.totp_secret) return res.status(400).json({ error: 'call /2fa/setup first' });
+  // A stolen session must not be able to bind the account to the thief's authenticator.
+  const lockKey = `2fa-enable:${req.user.id}`;
+  if (challenges.isLocked(lockKey)) return res.status(429).json({ error: 'too many attempts, try again later' });
+  if (!splitAuth.verifyCurrentCredential(req.user, req.body || {})) {
+    challenges.recordFailure(lockKey);
+    return res.status(401).json({ error: 'current password is incorrect' });
+  }
+  challenges.clearFailures(lockKey);
   if (!totp.verifyToken(req.user.totp_secret, req.body?.code)) {
     return res.status(400).json({ error: 'invalid code' });
   }
@@ -137,7 +149,9 @@ router.post('/2fa/enable', requireAuth, (req, res) => {
 
 router.post('/2fa/disable', requireAuth, (req, res) => {
   if (!req.user.totp_enabled) return res.status(400).json({ error: '2FA is not enabled' });
-  if (!checkSecondFactor(req.user, req.body?.code)) return res.status(400).json({ error: 'invalid code' });
+  const second = checkSecondFactorLimited(req.user, req.body?.code, req.ip);
+  if (second === 'locked') return res.status(429).json({ error: 'too many attempts, try again later' });
+  if (second !== 'ok') return res.status(400).json({ error: 'invalid code' });
   db.prepare('UPDATE users SET totp_enabled = 0, totp_secret = NULL, totp_recovery_codes = NULL WHERE id = ?').run(req.user.id);
   res.json({ ok: true });
 });
@@ -226,7 +240,7 @@ router.post('/upgrade-credentials', requireAuth, (req, res) => {
   if (!backupOk) return fail(400, { error: 're-wrapped passport backup required' });
   const passwordOk = splitAuth.verifyCurrentCredential(user, { currentPassword: b.currentPassword });
   // Only after the password checked out, so a wrong password never burns a recovery code.
-  const secondFactorOk = passwordOk && (!user.totp_enabled || checkSecondFactor(user, b.code));
+  const secondFactorOk = passwordOk && (!user.totp_enabled || checkSecondFactorLimited(user, b.code, req.ip) === 'ok');
   if (passwordOk && user.totp_enabled && !b.code) return fail(401, { error: 'invalid credentials', requiresTotp: true });
   if (!secondFactorOk) {
     return fail(401, { error: 'invalid credentials', ...(user.totp_enabled ? { requiresTotp: true } : {}) }, true);
@@ -279,6 +293,7 @@ router.delete('/sessions/:id', requireAuth, (req, res) => {
 
 router.post('/logout', requireAuth, (req, res) => {
   destroySession(req.sessionToken);
+  hub.disconnectSession(req.user.id, req.sessionToken);
   res.setHeader('Set-Cookie', 'dismesh_session=; Path=/; HttpOnly; Max-Age=0');
   res.json({ ok: true });
 });

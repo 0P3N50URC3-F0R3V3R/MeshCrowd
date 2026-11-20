@@ -109,14 +109,14 @@ function peekCode(code) {
   const raw = String(code || '').trim();
   if (!raw || raw.length > 128) return null;
   const resolved = resolveJoinCode(raw);
-  if (resolved) return resolved.error ? { dead: resolved.error } : { kind: 'server', server: resolved.server };
+  if (resolved) return resolved.error ? { dead: resolved.error } : { kind: 'server', server: resolved.server, invite: resolved.invite || null };
   const ci = db.prepare('SELECT * FROM channel_invites WHERE code = ?').get(raw);
   if (!ci) return null;
   if (isExpired(ci)) return { dead: { status: 410, message: 'this invite has expired' } };
   if (isExhausted(ci)) return { dead: { status: 410, message: 'this invite has reached its use limit' } };
   const channel = db.prepare('SELECT * FROM channels WHERE id = ?').get(ci.channel_id);
   const server = channel && db.prepare('SELECT * FROM servers WHERE id = ?').get(channel.server_id);
-  return server ? { kind: 'channel', server, channel } : null;
+  return server ? { kind: 'channel', server, channel, invite: ci } : null;
 }
 
 // What the public page may say about an invite. Member count only for public servers.
@@ -135,6 +135,12 @@ function publicInfo(peek) {
 // Counted only when somebody actually joins. The guard in the WHERE makes it safe under races.
 function consumeInvite(inviteId) {
   const info = db.prepare('UPDATE server_invites SET uses = uses + 1 WHERE id = ? AND (max_uses IS NULL OR uses < max_uses) AND (expires_at IS NULL OR expires_at > ?)')
+    .run(inviteId, new Date().toISOString());
+  return Number(info.changes) === 1;
+}
+
+function consumeChannelInvite(inviteId) {
+  const info = db.prepare('UPDATE channel_invites SET uses = uses + 1 WHERE id = ? AND (max_uses IS NULL OR uses < max_uses) AND (expires_at IS NULL OR expires_at > ?)')
     .run(inviteId, new Date().toISOString());
   return Number(info.changes) === 1;
 }
@@ -166,6 +172,6 @@ function sweepExpired() {
 setInterval(() => { try { sweepExpired(); } catch { /* db closed during shutdown */ } }, 3600_000).unref();
 
 module.exports = {
-  InviteError, createInvite, listInvites, revokeInvite, resolveJoinCode, peekCode, publicInfo, consumeInvite, setVanity, normalizeVanity, sweepExpired, shape,
+  InviteError, createInvite, listInvites, revokeInvite, resolveJoinCode, peekCode, publicInfo, consumeInvite, consumeChannelInvite, setVanity, normalizeVanity, sweepExpired, shape,
   MAX_ACTIVE_PER_SERVER, MAX_ACTIVE_PER_USER,
 };

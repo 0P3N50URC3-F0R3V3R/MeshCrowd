@@ -52,6 +52,8 @@ let purify = null;
   try { purify = (await import('/vendor/dompurify/purify.es.mjs')).default; } catch { /* raw HTML stays disabled, renders as plain code */ }
 })();
 const HTML_FORBID_TAGS = ['iframe', 'object', 'embed', 'script', 'style', 'link', 'meta', 'base', 'form', 'input', 'svg'];
+// class, id and data-* would let a message borrow the app's own styling and click handlers (full-screen overlays, data-action buttons).
+const HTML_FORBID_ATTR = ['style', 'class', 'id', 'name'];
 
 // Turns escaped text content into HTML with clickable links, @mentions, #channel references,
 // and line breaks preserved via CSS white-space (caller sets white-space: pre-wrap).
@@ -61,6 +63,19 @@ const HTML_FORBID_TAGS = ['iframe', 'object', 'embed', 'script', 'style', 'link'
 // autocomplete to guarantee the name is real, so treat it the same way Discord's own renderer
 // does for a raw, non-autocompleted "@word".
 const URL_RE = /(https?:\/\/[^\s<]+)/g;
+// Sentence punctuation and an unbalanced closing paren after a URL belong to the prose, not the link.
+function splitUrlTail(url) {
+  let end = url.length;
+  while (end > 0) {
+    const head = url.slice(0, end);
+    const c = head[end - 1];
+    const trailing = c === ')' ? head.split(')').length > head.split('(').length : /[.,:;!?]/.test(c) && !/&#?\w+;$/.test(head);
+    if (!trailing) break;
+    end -= 1;
+  }
+  return [url.slice(0, end), url.slice(end)];
+}
+
 const MENTION_RE = /@([a-zA-Z0-9_.]{2,32})/g;
 
 function linkifyMentionsAndChannels(text, channels, styleMentions = true) {
@@ -133,7 +148,7 @@ function extractCode(text, stashCode, rawHtmlEnabled) {
   text = text.replace(/```([a-zA-Z0-9_-]*)\n?([\s\S]*?)```/g, (m, lang, code) => {
     const language = lang.toLowerCase();
     if (language === 'html' && rawHtmlEnabled && purify) {
-      const clean = purify.sanitize(unescapeHtml(code), { FORBID_TAGS: HTML_FORBID_TAGS, FORBID_ATTR: ['style'] });
+      const clean = purify.sanitize(unescapeHtml(code), { FORBID_TAGS: HTML_FORBID_TAGS, FORBID_ATTR: HTML_FORBID_ATTR, ALLOW_DATA_ATTR: false });
       return stashCode(`<div class="md-raw-html">${clean}</div>`);
     }
     if (language === 'diff') {
@@ -184,7 +199,7 @@ export function renderMessageContent(content, { channels, customEmoji, rawHtmlEn
   // process markdown/@/#/emoji only in the text segments so a URL's own '#fragment', '@', or
   // stray markdown-looking punctuation never gets touched.
   const linked = withCodeStashed.split(URL_RE).map((part, i) => (i % 2 === 1
-    ? `<a href="${part}" target="_blank" rel="noopener noreferrer">${part}</a>`
+    ? (([url, tail]) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${tail}`)(splitUrlTail(part))
     : applyMarkdown(replaceCustomEmoji(linkifyMentionsAndChannels(part, remote ? null : channels, !remote), remote ? null : customEmoji)))).join('');
 
   return unstashCode(linked);
@@ -212,8 +227,8 @@ export function initials(name) {
   const s = (name || '').trim();
   if (!s) return '?';
   const parts = s.split(/\s+/);
-  if (parts.length === 1) return s.slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
+  if (parts.length === 1) return Array.from(s).slice(0, 2).join('').toUpperCase();
+  return (Array.from(parts[0])[0] + Array.from(parts[1])[0]).toUpperCase();
 }
 
 const AVATAR_PALETTE = ['#0d9488', '#57f287', '#fee75c', '#eb459e', '#ed4245', '#f0b232', '#00a8fc', '#0891b2'];

@@ -43,7 +43,7 @@ function loadChannel(req, res, next) {
 function requireChannelPerm(flag) {
   return (req, res, next) => {
     const bits = getChannelPermissionBits(req.channel, req.user.id);
-    if (!has(bits, flag)) return res.status(403).json({ error: 'missing permission' });
+    if (!has(bits, flag) || !has(bits, PERMISSIONS.VIEW_CHANNEL)) return res.status(403).json({ error: 'missing permission' });
     next();
   };
 }

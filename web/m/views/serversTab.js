@@ -52,7 +52,7 @@ export function mountServersTab(host) {
       </button>`).join('')
       + state.remoteServers.map((r) => `
       <button class="m-rail-item m-rail-remote${r.reachable === false ? ' offline' : ''}" data-remote="${r.peerId}:${r.serverId}" aria-label="${escapeHtml(r.name)}">
-        <span class="m-remote-badge">${escapeHtml((r.name || '?').slice(0, 1).toUpperCase())}${icons.globe(12)}</span></button>`).join('')
+        <span class="m-remote-badge">${escapeHtml(Array.from(r.name || '?')[0].toUpperCase())}${icons.globe(12)}</span></button>`).join('')
       + `<button class="m-rail-item m-rail-add" id="m-add" aria-label="${t('m.addServer')}">${icons.plus(22)}</button>`;
   }
 

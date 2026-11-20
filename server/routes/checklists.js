@@ -36,7 +36,7 @@ function insertItems(listId, scopeType, labels, startPos = 0) {
 }
 
 function validHelpers(editors, ctx, scopeType, scopeId, creatorId) {
-  if (!Array.isArray(editors)) return null;
+  if (!Array.isArray(editors) || editors.length > MAX_ITEMS) return null;
   const out = new Map();
   for (const e of editors) {
     const userId = Number(e && e.userId);
@@ -66,7 +66,7 @@ router.post('/', (req, res) => {
   const labels = cleanItems(items);
   if (labels.length < 1 || labels.length > MAX_ITEMS) return res.status(400).json({ error: `a checklist needs 1-${MAX_ITEMS} items` });
 
-  const access = canSendToScope(scopeType, scopeIdNum, req.user.id);
+  const access = canSendToScope(scopeType, scopeIdNum, req.user.id, { content: [cleanTitle, ...labels].join('\n') });
   if (!access.ok) return res.status(access.status).json({ error: access.error });
   if (!canCreateIn(scopeType, access.ctx, req.user.id)) return res.status(403).json({ error: 'missing permission' });
 

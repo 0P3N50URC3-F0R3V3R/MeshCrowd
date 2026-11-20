@@ -159,13 +159,36 @@ function listLog(serverId, { before, limit = 50 } = {}) {
 // ---------------------------------------------------------------- matching
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const WORD_CLASS = '\\p{L}\\p{N}_';
+
+// A "*" matches any run of letters/digits/underscore. Joining the pieces with a plain `[class]*` backtracks
+// polynomially in the number of stars on a long message, so each gap stops at the first place its next piece
+// matches instead; the first match is always the best one, so the result is the same.
+function buildWordRegex(word, wholeWord) {
+  const parts = word.split('*');
+  const lits = parts.filter(Boolean).map(escapeRe);
+  if (!lits.length) {
+    const body = parts.map(escapeRe).join(`[${WORD_CLASS}]*`);
+    return wholeWord ? new RegExp(`(?<![${WORD_CLASS}])${body}(?![${WORD_CLASS}])`, 'iu') : new RegExp(body, 'iu');
+  }
+  const tail = wholeWord && parts[parts.length - 1] !== '' ? `(?![${WORD_CLASS}])` : '';
+  let body = lits.length === 1 ? lits[0] + tail : lits[0];
+  for (let i = 1; i < lits.length; i++) {
+    const end = i === lits.length - 1 ? tail : '';
+    body += `(?:(?!${lits[i]}${end})[${WORD_CLASS}])*${lits[i]}${end}`;
+  }
+  if (!wholeWord) return new RegExp(body, 'iu');
+  const lead = parts[0] === '' ? `[${WORD_CLASS}]*` : '';
+  const trail = parts[parts.length - 1] === '' ? `[${WORD_CLASS}]*` : '';
+  return new RegExp(`(?<![${WORD_CLASS}])${lead}${body}${trail}(?![${WORD_CLASS}])`, 'iu');
+}
+
 const wordCache = new Map();
 function wordRegex(word, wholeWord) {
   const key = `${wholeWord ? 'w' : 's'}:${word}`;
   let re = wordCache.get(key);
   if (!re) {
-    const body = word.split('*').map(escapeRe).join('[\\p{L}\\p{N}_]*');
-    re = wholeWord ? new RegExp(`(?<![\\p{L}\\p{N}_])${body}(?![\\p{L}\\p{N}_])`, 'iu') : new RegExp(body, 'iu');
+    re = buildWordRegex(word, wholeWord);
     if (wordCache.size > 5000) wordCache.clear();
     wordCache.set(key, re);
   }

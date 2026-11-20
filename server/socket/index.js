@@ -246,7 +246,7 @@ function attach(httpServer) {
     // event would be an uncaught exception that takes the server down.
     ws.on('error', (err) => wsLog.debug(`socket error for user ${user.id}: ${err.message}`));
 
-    ws.on('message', (raw) => {
+    const handleClientMessage = (raw) => {
       let msg;
       try { msg = JSON.parse(raw.toString()); } catch { return; }
       if (!msg || typeof msg.type !== 'string') return;
@@ -476,6 +476,11 @@ function attach(httpServer) {
           type: 'voice_signal', channelId: msg.channelId, dmChannelId: msg.dmChannelId, fromUserId: user.id, signal: msg.signal,
         });
       }
+    };
+
+    // A client-supplied id of the wrong type makes the DB driver throw; that must never reach the process-level exit handler.
+    ws.on('message', (raw) => {
+      try { handleClientMessage(raw); } catch (err) { wsLog.debug(`dropped malformed message from user ${user.id}: ${err.message}`); }
     });
 
     ws.on('close', () => {

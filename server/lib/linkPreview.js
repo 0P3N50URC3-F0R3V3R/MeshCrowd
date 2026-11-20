@@ -117,20 +117,27 @@ function decodeEntities(s) {
     .replace(/&quot;/g, '"').replace(/&#0?39;/g, "'");
 }
 
+// Tags are cut out with bounded patterns: the page is hostile and a pattern like <meta[^>]+x[^>]+y would
+// backtrack quadratically on a long unterminated tag, blocking the event loop.
+const MAX_TAG_CHARS = 2000;
+
+function attr(tag, name) {
+  const m = new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, 'i').exec(tag);
+  return m ? (m[1] ?? m[2]) : null;
+}
+
 function extractMeta(html, prop) {
-  const patterns = [
-    new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']*)["']`, 'i'),
-    new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${prop}["']`, 'i'),
-  ];
-  for (const re of patterns) {
-    const m = html.match(re);
-    if (m) return decodeEntities(m[1]);
+  for (const tag of html.match(new RegExp(`<meta\\s[^>]{0,${MAX_TAG_CHARS}}>`, 'gi')) || []) {
+    const key = attr(tag, 'property') ?? attr(tag, 'name');
+    if (key === null || key.toLowerCase() !== prop) continue;
+    const content = attr(tag, 'content');
+    if (content !== null) return decodeEntities(content);
   }
   return null;
 }
 
 function extractTitleTag(html) {
-  const m = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+  const m = html.match(/<title[^>]{0,200}>([^<]*)<\/title>/i);
   return m ? decodeEntities(m[1].trim()) : null;
 }
 
@@ -177,4 +184,4 @@ async function maybeFetchAndAttachEmbed(message, broadcast) {
   broadcast({ type: 'message_update', message: updated });
 }
 
-module.exports = { maybeFetchAndAttachEmbed, extractFirstUrl, fetchEmbed, fetchImage, isPrivateIp };
+module.exports = { maybeFetchAndAttachEmbed, extractFirstUrl, fetchEmbed, fetchImage, isPrivateIp, extractMeta, extractTitleTag };

@@ -20,3 +20,7 @@ test('dmTitle: group name, else joined member names; 1:1 uses the other member',
   assert.equal(dmTitle({ isGroup: true, name: '', members: [{ displayName: 'A' }, { displayName: 'B' }] }, nameFor), 'A, B');
   assert.equal(dmTitle({ isGroup: false, members: [{ displayName: 'Zed' }] }, nameFor), 'Zed');
 });
+
+test('forwarded messages preview the forwarded text', () => {
+  assert.equal(dmPreview({ lastMessage: { id: 1, content: '', forwardedFrom: { content: 'orig' }, attachments: [] } }, labels), 'orig');
+});

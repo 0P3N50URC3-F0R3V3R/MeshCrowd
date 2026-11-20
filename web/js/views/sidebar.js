@@ -598,7 +598,7 @@ export function mountHomeSidebar(container) {
     const pref = dmPrefFor(dm.id);
     const avatarUser = dm.isGroup ? null : presenceFor(other);
     const preview = dm.lastMessage
-      ? previewText({ text: dm.lastMessage.content, sticker: dm.lastMessage.sticker, hasAttachments: !!dm.lastMessage.attachments?.length }, { sticker: t('sidebar.sentASticker'), attachment: t('sidebar.sentAnAttachment') })
+      ? previewText({ text: dm.lastMessage.content || dm.lastMessage.forwardedFrom?.content, sticker: dm.lastMessage.sticker, hasAttachments: !!dm.lastMessage.attachments?.length }, { sticker: t('sidebar.sentASticker'), attachment: t('sidebar.sentAnAttachment') })
       : t('sidebar.noMessagesYetPreview');
     const status = avatarUser?.status === 'invisible' ? 'offline' : (avatarUser?.status || 'offline');
     const unread = !active && isUnread('dm', dm.id, dm.lastMessage?.id);

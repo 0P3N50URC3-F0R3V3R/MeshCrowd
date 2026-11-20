@@ -30,7 +30,7 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: `a poll needs ${MIN_OPTIONS}-${MAX_OPTIONS} options` });
   }
 
-  const access = canSendToScope(scopeType, scopeIdNum, req.user.id);
+  const access = canSendToScope(scopeType, scopeIdNum, req.user.id, { content: [cleanQuestion, ...cleanOptions].join('\n') });
   if (!access.ok) return res.status(access.status).json({ error: access.error });
 
   const info = db.prepare('INSERT INTO messages (scope_type, scope_id, author_id, content) VALUES (?, ?, ?, ?)')

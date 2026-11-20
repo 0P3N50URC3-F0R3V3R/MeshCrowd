@@ -59,7 +59,7 @@ async function send(w, name) {
 
 test('executable attachments are rejected loudly, not silently dropped', async () => {
   const w = world();
-  for (const name of ['setup.exe', 'run.bat', 'x.com', 'y.cmd']) {
+  for (const name of ['setup.exe', 'run.bat', 'x.com', 'y.cmd', 'mod.mjs', 'mod.cjs', 'page.mhtml']) {
     const r = await send(w, name);
     assert.equal(r.status, 400, name);
     assert.match(r.data.error, /not allowed/);

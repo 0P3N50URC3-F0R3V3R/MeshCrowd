@@ -28,6 +28,10 @@ test('script-src contains the sha256 of the exact importmap inner text', () => {
   assert.ok(directive(buildCsp(html(IMPORTMAP)), 'script-src').includes(sha(IMPORTMAP)));
 });
 
+test('forms can only submit to this origin', () => {
+  assert.deepEqual(directive(buildCsp(html(IMPORTMAP)), 'form-action'), ["'self'"]);
+});
+
 test('script-src never allows unsafe-inline or unsafe-eval', () => {
   const tokens = directive(buildCsp(html(IMPORTMAP)), 'script-src');
   assert.ok(!tokens.includes("'unsafe-inline'"));

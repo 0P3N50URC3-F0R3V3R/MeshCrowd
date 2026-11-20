@@ -21,6 +21,8 @@ const { notifyPin } = require('../lib/notifications');
 
 const router = express.Router();
 
+const MAX_REACTION_EMOJI = 20;
+
 function getChannel(id) {
   return db.prepare('SELECT * FROM channels WHERE id = ?').get(id);
 }
@@ -200,10 +202,9 @@ router.post('/:id/forward', requireAuth, (req, res) => {
   const scopeIdNum = Number(scopeId);
   if (!Number.isInteger(scopeIdNum)) return res.status(400).json({ error: 'invalid target' });
 
-  const access = canSendToScope(scopeType, scopeIdNum, req.user.id);
-  if (!access.ok) return res.status(access.status).json({ error: access.error });
-
   const content = comment ? String(comment).slice(0, 1000) : '';
+  const access = canSendToScope(scopeType, scopeIdNum, req.user.id, { content });
+  if (!access.ok) return res.status(access.status).json({ error: access.error });
   const info = db.prepare(
     'INSERT INTO messages (scope_type, scope_id, author_id, content, forwarded_from_message_id) VALUES (?, ?, ?, ?, ?)'
   ).run(scopeType, scopeIdNum, req.user.id, sealFor(scopeType, content), original.id);
@@ -226,6 +227,10 @@ router.put('/:id/reactions/:emoji', requireAuth, (req, res) => {
   // 34 fits a full custom-emoji shortcode (":" + up to 32-char name + ":"), not just a raw unicode glyph.
   const emoji = String(req.params.emoji || '').slice(0, 34);
   if (!emoji) return res.status(400).json({ error: 'emoji required' });
+  if (!db.prepare('SELECT 1 FROM message_reactions WHERE message_id = ? AND emoji = ?').get(message.id, emoji)
+    && db.prepare('SELECT COUNT(DISTINCT emoji) AS n FROM message_reactions WHERE message_id = ?').get(message.id).n >= MAX_REACTION_EMOJI) {
+    return res.status(400).json({ error: `a message can have at most ${MAX_REACTION_EMOJI} different reactions` });
+  }
   // A member who has not accepted the server rules yet can look but not react.
   if (serverId && isPendingMember(serverId, req.user.id)) return res.status(403).json({ error: 'accept the server rules first' });
 

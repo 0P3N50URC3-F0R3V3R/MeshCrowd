@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const dns = require('node:dns');
-const { extractFirstUrl, isPrivateIp, fetchEmbed } = require('../lib/linkPreview');
+const { extractFirstUrl, isPrivateIp, fetchEmbed, extractMeta, extractTitleTag } = require('../lib/linkPreview');
 
 test('extractFirstUrl finds the first http(s) url and trims trailing sentence punctuation', () => {
   assert.equal(extractFirstUrl('check https://example.com/path out!'), 'https://example.com/path');
@@ -137,4 +137,21 @@ test('fetchImage returns raster images, refuses SVG, oversized bodies and loopba
   assert.equal(await fetchImage(`${base}/big.png`), null);
   dns.promises.lookup = async () => ({ address: '127.0.0.1', family: 4 });
   assert.equal(await fetchImage(`${base}/a.png`), null);
+});
+
+test('meta and title extraction handle both attribute orders and quote styles', () => {
+  const html = `<title> Plain &amp; title </title><meta content='Desc' name="description"><meta property="og:title" content="OG &quot;T&quot;">`;
+  assert.equal(extractMeta(html, 'og:title'), 'OG "T"');
+  assert.equal(extractMeta(html, 'description'), 'Desc');
+  assert.equal(extractMeta(html, 'og:image'), null);
+  assert.equal(extractTitleTag(html), 'Plain & title');
+});
+
+test('extraction stays fast on a hostile page full of unterminated tags', () => {
+  const hostile = '<meta '.concat('property="og:title" '.repeat(25000), '<title '.repeat(70000));
+  const start = Date.now();
+  assert.equal(extractMeta(hostile, 'og:title'), null);
+  assert.equal(extractMeta(hostile, 'description'), null);
+  assert.equal(extractTitleTag(hostile), null);
+  assert.ok(Date.now() - start < 2000);
 });

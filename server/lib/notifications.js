@@ -144,6 +144,10 @@ function notifyChannelMessage(...args) { return inTransaction(() => notifyChanne
 function notifyChannelMessageImpl(channel, message, mentions) {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(channel.server_id);
   if (!server) return;
+  if ((mentions.everyone || mentions.here || mentions.roleIds.length)
+    && !has(getChannelPermissionBits(channel, message.author.id), PERMISSIONS.MENTION_EVERYONE)) {
+    mentions = { ...mentions, everyone: false, here: false, roleIds: [] };
+  }
   const members = db.prepare('SELECT user_id FROM server_members WHERE server_id = ?').all(channel.server_id);
   // Only queried when a role was actually mentioned — avoids a member_roles scan on every
   // ordinary message that doesn't @-mention a role.

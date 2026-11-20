@@ -320,8 +320,8 @@ test('recover: malformed bodies do not burn the challenge; wrong 2FA codes count
     const r = await call('POST', '/api/passport/recover', { passportId: idn.id, newAuthKey: NEW_AUTH_KEY, newAuthSalt: NEW_AUTH_SALT, backup: splitBackup, code: '000000', ...(await proof(idn, 'recover')) });
     assert.equal(r.status, 401);
   }
-  const locked = await call('POST', '/api/passport/recover', { passportId: idn.id, newAuthKey: NEW_AUTH_KEY, newAuthSalt: NEW_AUTH_SALT, backup: splitBackup, code: 'rec3-code', ...(await proof(idn, 'recover')) });
-  assert.equal(locked.status, 429);
+  const locked = await call('POST', '/api/passport/recover', { passportId: idn.id, newAuthKey: NEW_AUTH_KEY, newAuthSalt: NEW_AUTH_SALT, backup: splitBackup, code: '000000', ...(await proof(idn, 'recover')) });
+  assert.equal(locked.status, 429); // recovery codes are exempt from the TOTP guess cap
 
   const idn2 = newIdentity();
   await register(idn2, 'pr_rec4');

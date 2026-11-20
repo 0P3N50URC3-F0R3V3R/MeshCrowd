@@ -3,7 +3,10 @@ const path = require('path');
 const { execFile } = require('child_process');
 
 const SUFFIX = '.poster.jpg';
-const VIDEO_EXT = new Set(['.mp4', '.webm', '.mov', '.m4v', '.ogv']);
+// The demuxer is forced from the extension: left to probe the content, ffmpeg would follow a playlist or concat
+// script hidden in an uploaded "video" to local files and other hosts.
+const DEMUXER = { '.mp4': 'mov', '.m4v': 'mov', '.mov': 'mov', '.webm': 'matroska', '.ogv': 'ogg' };
+const VIDEO_EXT = new Set(Object.keys(DEMUXER));
 const pending = new Map();
 const BUNDLED = path.join(__dirname, '..', '..', 'runtime', 'ffmpeg', process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
 let ffmpegMissing = false;
@@ -16,7 +19,7 @@ function extract(src, dest) {
   if (pending.has(dest)) return pending.get(dest);
   const tmp = `${dest}.${process.pid}.tmp.jpg`;
   const p = new Promise((resolve) => {
-    execFile(ffmpegBin(), ['-y', '-v', 'error', '-ss', '0.1', '-i', src, '-frames:v', '1', '-vf', 'scale=640:-2', '-q:v', '5', tmp],
+    execFile(ffmpegBin(), ['-y', '-v', 'error', '-protocol_whitelist', 'file', '-f', DEMUXER[path.extname(src).toLowerCase()], '-ss', '0.1', '-i', src, '-frames:v', '1', '-vf', 'scale=640:-2', '-q:v', '5', tmp],
       { timeout: 15000, windowsHide: true }, (err) => {
         if (err) {
           if (err.code === 'ENOENT') ffmpegMissing = true;

@@ -1,7 +1,7 @@
 export function dmPreview(dm, { attachmentLabel, stickerLabel }) {
   const m = dm.lastMessage;
   if (!m) return '';
-  return m.content || (m.sticker ? stickerLabel : '') || (m.attachments?.length ? attachmentLabel : '');
+  return m.content || m.forwardedFrom?.content || (m.sticker ? stickerLabel : '') || (m.attachments?.length ? attachmentLabel : '');
 }
 
 export function dmTitle(dm, nameFor) {

@@ -127,3 +127,21 @@ test('startup migration seals legacy DM files, names and poll options', () => {
   assert.equal(r.label, 'enc1:');
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test('the static attachments handler never serves a DM file around the membership check', async () => {
+  const dir = path.join(tmpDir, 'attachments', 'dm-424');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'abc.bin'), 'sealed');
+  const app = express();
+  app.use('/uploads/attachments', require('../routes/dmFiles'));
+  app.use('/uploads/attachments', express.static(path.join(tmpDir, 'attachments')));
+  const srv = await new Promise((r) => { const s = http.createServer(app).listen(0, '127.0.0.1', () => r(s)); });
+  const get = (p) => new Promise((resolve) => {
+    http.get({ host: '127.0.0.1', port: srv.address().port, path: p }, (res) => { res.resume(); res.on('end', () => resolve(res.statusCode)); });
+  });
+  try {
+    for (const p of ['/dm-424%2fabc.bin', '/./dm-424/abc.bin', '/x/../dm-424/abc.bin', '/DM-424%2Fabc.bin', '/dm-424%5cabc.bin']) {
+      assert.equal(await get(`/uploads/attachments${p}`), 404, p);
+    }
+  } finally { srv.close(); }
+});

@@ -20,6 +20,7 @@ const PERMISSIONS = {
   PRUNE_CONTENT:      1 << 15,  // bulk-delete this server's own channel history before a cutoff date
   MANAGE_BOTS:        1 << 16,  // create/edit/delete this server's AI bots
   CREATE_CHECKLISTS:  1 << 17,  // post checklists in non-private channels
+  MENTION_EVERYONE:   1 << 18,  // @everyone, @here and role mentions that notify people
 };
 
 const DEFAULT_EVERYONE_PERMISSIONS =

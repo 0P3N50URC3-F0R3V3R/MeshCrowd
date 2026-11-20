@@ -52,14 +52,19 @@ function totpAt(secretBase32, timeMs) {
 
 // Accepts a code from the current step or one step on either side, so a slightly slow typer or a
 // small clock drift between the authenticator app and this server doesn't cause a false reject.
-function verifyToken(secretBase32, token, { window = 1 } = {}) {
+function matchStep(secretBase32, token, { window = 1 } = {}) {
   const clean = String(token || '').replace(/\s/g, '');
-  if (!/^\d{6}$/.test(clean)) return false;
+  if (!/^\d{6}$/.test(clean)) return null;
   const now = Date.now();
   for (let w = -window; w <= window; w++) {
-    if (totpAt(secretBase32, now + w * STEP_SECONDS * 1000) === clean) return true;
+    const t = now + w * STEP_SECONDS * 1000;
+    if (totpAt(secretBase32, t) === clean) return Math.floor(t / 1000 / STEP_SECONDS);
   }
-  return false;
+  return null;
+}
+
+function verifyToken(secretBase32, token, opts) {
+  return matchStep(secretBase32, token, opts) !== null;
 }
 
 function otpauthUrl(secretBase32, { label, issuer = 'MeshCrowd' }) {
@@ -71,4 +76,4 @@ function generateRecoveryCodes(count = 8) {
   return Array.from({ length: count }, () => crypto.randomBytes(5).toString('hex'));
 }
 
-module.exports = { generateSecret, verifyToken, otpauthUrl, generateRecoveryCodes };
+module.exports = { generateSecret, totpAt, matchStep, verifyToken, otpauthUrl, generateRecoveryCodes };

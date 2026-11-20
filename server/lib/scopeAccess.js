@@ -8,7 +8,11 @@ const { db } = require('../db');
 const { PERMISSIONS, has } = require('./permissions');
 const { getChannelPermissionBits } = require('./channelAccess');
 const { broadcastToChannel, broadcastToDm } = require('../socket/hub');
-const { getMemberTimeout } = require('./moderation');
+const { getMemberTimeout, slowmodeRetryAfter } = require('./moderation');
+const { isBlocked } = require('./friends');
+const { nsfwBlock } = require('./ageGate');
+const { verificationBlock } = require('./verification');
+const automod = require('./automod');
 
 function resolveScope(scopeType, scopeId) {
   if (scopeType === 'channel') {
@@ -42,10 +46,17 @@ function canViewScope(scopeType, scopeId, userId) {
   return { ok: true, ctx };
 }
 
-function canSendToScope(scopeType, scopeId, userId) {
+// `content` is the user-typed text that will accompany the post (a forward comment, a poll
+// question), so AutoMod sees it the same as it would on the plain message route.
+function canSendToScope(scopeType, scopeId, userId, { content, skipSlowmode } = {}) {
   const result = canViewScope(scopeType, scopeId, userId);
   if (!result.ok) return result;
   const { ctx } = result;
+  if (ctx.dm && !ctx.dm.is_group) {
+    const other = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ? AND user_id != ?').get(ctx.dm.id, userId);
+    if (!other) return { ok: false, status: 409, error: 'the other participant closed this conversation' };
+    if (isBlocked(userId, other.user_id)) return { ok: false, status: 403, error: 'you cannot message this user' };
+  }
   if (scopeType === 'thread' && ctx.thread.archived) {
     return { ok: false, status: 403, error: 'this thread is archived' };
   }
@@ -55,6 +66,16 @@ function canSendToScope(scopeType, scopeId, userId) {
   if (ctx.channel) {
     const timeoutUntil = getMemberTimeout(ctx.channel.server_id, userId);
     if (timeoutUntil) return { ok: false, status: 403, error: 'you are timed out in this server', timeoutUntil };
+    const gate = nsfwBlock(ctx.channel, userId) || verificationBlock(ctx.channel.server_id, userId);
+    if (gate) return { ok: false, status: gate.status, error: gate.body.error };
+    const sender = db.prepare('SELECT is_bot FROM users WHERE id = ?').get(userId);
+    if (scopeType === 'channel' && !sender?.is_bot && !skipSlowmode) {
+      const retryAfter = slowmodeRetryAfter(ctx.channel, userId);
+      if (retryAfter > 0) return { ok: false, status: 429, error: 'slowmode is active', retryAfter };
+    }
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+    const blocked = automod.evaluate({ channel: ctx.channel, user, content });
+    if (blocked) return { ok: false, status: 403, error: blocked.message };
   }
   return { ok: true, ctx };
 }

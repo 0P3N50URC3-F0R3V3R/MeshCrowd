@@ -1348,6 +1348,10 @@ export function openUserSettings(initialTab = 'account') {
           <label for="totp-code">${t('userSettings.sixDigitCodeLabel')}</label>
           <input class="input" id="totp-code" type="text" inputmode="numeric" maxlength="6" style="max-width:160px">
         </div>
+        <div class="field">
+          <label for="totp-password">${t('userSettings.totpPasswordLabel')}</label>
+          <input class="input" id="totp-password" type="password" autocomplete="current-password" style="max-width:260px">
+        </div>
         <div class="error-text" id="totp-error"></div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-primary" id="totp-confirm">${t('userSettings.confirmEnableButton')}</button>
@@ -1356,8 +1360,11 @@ export function openUserSettings(initialTab = 'account') {
       host.querySelector('#totp-cancel').addEventListener('click', () => { totpStep = 'idle'; totpSetupData = null; render(); });
       host.querySelector('#totp-confirm').addEventListener('click', async () => {
         const code = host.querySelector('#totp-code').value.trim();
+        const password = host.querySelector('#totp-password').value;
+        if (!password) { host.querySelector('#totp-error').textContent = t('userSettings.totpPasswordLabel'); return; }
         try {
-          const res = await api.enable2fa(code);
+          const cred = await currentCredential(state.me, password);
+          const res = await api.enable2fa(code, currentCredentialField(cred));
           totpStep = 'recovery';
           totpRecoveryCodes = res.recoveryCodes;
           state.me.totpEnabled = true;

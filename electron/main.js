@@ -7,6 +7,7 @@ const crypto = require('node:crypto');
 const { buildTrayIconPNG, buildBlinkFrames } = require('./trayIcon');
 const { pruneRecent, clearRecentOnFocus } = require('./trayState');
 const { findMcrLink, inviteTarget } = require('./inviteUrl');
+const { externalUrl } = require('./externalUrl');
 
 // `-dev`/`--dev` is the one supported "show debugging stuff" switch: gates the DevTools shortcut
 // (see setupDevToolsGate below) and the start-client.bat console window — nothing else changes.
@@ -21,14 +22,20 @@ if (path.basename(process.execPath).toLowerCase() !== 'electron.exe') {
 
 const CONFIG_PATH = path.join(app.getPath('userData'), 'dismesh-client-config.json');
 
+const DEFAULT_CLIENT_CONFIG = {
+  serverUrl: null, trustedFingerprints: {}, closeToTray: false, startMinimized: false, startWithWindows: false,
+  trayIconColor: null, trayBadgeColors: {}, windowBounds: null, handleInviteLinks: true,
+};
+
+// A hand-edited or older config file may lack keys the code dereferences unguarded (trustedFingerprints
+// in the certificate-error handler threw there), so every load is laid over the defaults.
 function loadClientConfig() {
   try {
-    return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    const cfg = { ...DEFAULT_CLIENT_CONFIG, ...JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) };
+    if (!cfg.trustedFingerprints || typeof cfg.trustedFingerprints !== 'object') cfg.trustedFingerprints = {};
+    return cfg;
   } catch {
-    return {
-      serverUrl: null, trustedFingerprints: {}, closeToTray: false, startMinimized: false, startWithWindows: false,
-      trayIconColor: null, trayBadgeColors: {}, windowBounds: null, handleInviteLinks: true,
-    };
+    return { ...DEFAULT_CLIENT_CONFIG, trustedFingerprints: {}, trayBadgeColors: {} };
   }
 }
 
@@ -343,16 +350,19 @@ function createWindow() {
   // those in the system browser instead of a second Electron window, and refuse any attempt to
   // navigate the main window itself away from the configured server.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    const ext = externalUrl(url);
+    if (ext) shell.openExternal(ext);
     return { action: 'deny' };
   });
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    const target = new URL(url);
+    let target;
+    try { target = new URL(url); } catch { event.preventDefault(); return; }
     const isLocalFile = target.protocol === 'file:';
     const isConfiguredServer = clientConfig.serverUrl && target.origin === new URL(clientConfig.serverUrl).origin;
     if (!isLocalFile && !isConfiguredServer) {
       event.preventDefault();
-      shell.openExternal(url);
+      const ext = externalUrl(url);
+      if (ext) shell.openExternal(ext);
     }
   });
   // Site pages live in an iframe: keep them on the configured server, send anything else to the OS browser.
@@ -364,7 +374,8 @@ function createWindow() {
     const serverOrigin = clientConfig.serverUrl && new URL(clientConfig.serverUrl).origin;
     if (target.origin !== serverOrigin) {
       event.preventDefault();
-      if (['http:', 'https:', 'mailto:'].includes(target.protocol)) shell.openExternal(target.href);
+      const ext = externalUrl(target.href);
+      if (ext) shell.openExternal(ext);
     }
   });
 
@@ -441,12 +452,10 @@ function loadTarget() {
 ipcMain.handle('dismesh:get-config', () => clientConfig);
 
 ipcMain.handle('dismesh:open-external', (event, rawUrl) => {
-  try {
-    const u = new URL(String(rawUrl));
-    if (!['http:', 'https:', 'mailto:'].includes(u.protocol)) return false;
-    shell.openExternal(u.href);
-    return true;
-  } catch { return false; }
+  const ext = externalUrl(rawUrl);
+  if (!ext) return false;
+  shell.openExternal(ext);
+  return true;
 });
 
 ipcMain.handle('dismesh:set-server', (event, rawUrl) => {
