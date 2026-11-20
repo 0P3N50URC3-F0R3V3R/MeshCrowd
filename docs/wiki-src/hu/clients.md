@@ -11,6 +11,7 @@ Minden kliens ugyanahhoz a szerverhez beszél, és ugyanazokat az adatokat mutat
 |---|---|---|
 | Web | Mindenre, nincs mit telepíteni | Minden funkció, bármely modern böngészőben |
 | Asztali (Windows) | Mindennapi használat az asztalnál | Tálcajelvény, natív értesítések, tanúsítvány-rögzítés |
+| Asztali, könnyű (Windows) | Kisebb letöltés | Egyetlen exe WebView2-n, ugyanazok a funkciók |
 | Android | Útközben | Telefonos felület, helyi értesítések, opcionális UnifiedPush |
 
 ## Web
@@ -36,6 +37,12 @@ Hordozható alkalmazás: csomagold ki és futtasd a `MeshCrowd.exe` fájlt. Az e
 Az alkalmazás a beállításait a futtatható fájl melletti `data` mappában tárolja, így az egész mappa élhet egy pendrive-on. Nincs benne szerver és webes fájl: a szerver frissítése a felületet is frissíti.
 
 Fejlesztéshez forrásból: `npm install`, majd `npm run electron`.
+
+## C# asztali kliens (Windows)
+
+Az Electron-alkalmazás alternatívája: egyetlen `MeshCrowd.exe`, amely a bundlelt Chromium helyett a rendszer WebView2 böngészőmotorjára épül, ezért sokkal kisebb. Ugyanazt a felületet tölti be és ugyanazt a `dismesh-client-config.json` fájlt olvassa, és tudja a tálcát olvasatlan-villogással és legutóbbi listával, a natív értesítéseket, a letöltéseket tálcás folyamatjelzővel, az `mcr://` meghívólinkeket, az egyetlen futó példányt, a tanúsítvány-rögzítést és a tálcára zárást. A beállítások az exe melletti `data` mappában vannak. A fő asztali kliens továbbra is az Electron; ezt akkor válaszd, ha könnyebb alkalmazást szeretnél.
+
+Ahol már megvan a WebView2 futtatókörnyezet (bármely friss Windows 10 vagy 11), ott azt használja. A futtatókörnyezetet beágyazó változat nagyjából 250 MB, és ott, ahol nincs, egyszer kicsomagolja a `data/webview2-runtime` mappába.
 
 ## Telefonos felület
 

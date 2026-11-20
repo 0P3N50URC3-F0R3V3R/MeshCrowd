@@ -68,6 +68,17 @@ If clips from other people annoy you, open **Settings, Voice & Video** and tick 
 
 ![The soundboard popup in a voice room](../assets/img/voice-soundboard.jpg)
 
+## Whiteboard
+
+Stage channels and server voice channels have a shared whiteboard (web, desktop and Android). Open it from the call controls.
+
+- **Stage**: speakers and members with **Manage Channels** draw, the audience watches, and the board is open by default.
+- **Voice channel**: every participant can draw, and a board opens by itself when someone draws.
+- Pen colors (black, white, red, orange, yellow, green, blue, purple), three line widths, an eraser and clear-all. Mouse, touch and stylus all work, and the board scales to any screen.
+- Everyone in the call sees strokes live, and late joiners get the current board. The button in the call controls hides or shows it just for you. Clear-all is for **Manage Channels** holders and stage speakers.
+
+The server only keeps the strokes in memory (at most 400) and drops them when the last person leaves the call.
+
 ## Noise suppression
 
 **Settings, Voice, Advanced noise suppression (RNNoise)** runs your microphone through a small neural network compiled to WebAssembly, which removes keyboard, fan and background noise. It works on your own device, adds about ten milliseconds of delay and is off by default. The module (about 5 MB) is only downloaded the first time a call starts with it on. If it cannot start, the call simply continues without it.

@@ -105,6 +105,14 @@ A `backup restore <név>` csak a szerver ablakában működik, SSH-n soha. Ellen
 
 A naplók a `data/logs/dismesh-ÉÉÉÉ-HH-NN.log` fájlokba kerülnek, naponta egy, és új sorszámozott fájl indul, ha az egyik túlnő a `logging.maxFileMb` méreten; a `logging.keepDays` napnál régebbi fájlok törlődnek. A szintek: `debug`, `info`, `warn`, `error`; a `log level warn` azonnal átállítja és el is menti. Naplózódik a bejelentkezés és a sikertelen bejelentkezés (IP-címmel), a fiók- és rangmódosítás, a tiltás, a konzolparancsok és a szerver életciklusa. Jelszó, token, kulcs és üzenettartalom soha.
 
+## A Launcher
+
+A `Launcher.exe` egy opcionális Windows-vezérlőpult, amely az indítószkriptek mellett él. A szervernek soha nincs rá szüksége. Létrehozza az adatmappákat és hiányzó esetén egy alapértelmezett `config.json` fájlt, és kínál:
+
+- **Beállításszerkesztőt** minden `config.json` beállításhoz, leírással, tartománnyal, alapértékkel és újraindítás-jelzéssel, mentés előtti különbségnézettel és automatikus konfigurációs mentésekkel. Az újraindítást igénylő beállítások ezt jelzik.
+- A szerver felügyelt **indítását, leállítását és újraindítását**, élő **konzolt**, **naplókat** és összeomlás-jelentéseket.
+- Ugyanazokat a konzolparancsokat, mint az [admin konzol](#az-admin-konzol), és egy ellenőrzést gyakori hibákra.
+
 ## Frissítés
 
 Készíts mentést, állítsd le a szervert, cseréld le a programfájlokat (a `data/` megtartásával) és indítsd újra. Az adatbázis-módosítások automatikusan lefutnak. Lásd: [Telepítés](installation.html).

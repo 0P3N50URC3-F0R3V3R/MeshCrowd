@@ -105,6 +105,14 @@ The newest `backup.keep` backups are kept (default 7), older ones are deleted af
 
 Logs go to `data/logs/dismesh-YYYY-MM-DD.log`, one file per day, a new numbered file when one grows past `logging.maxFileMb`, and files older than `logging.keepDays` are deleted. Levels are `debug`, `info`, `warn` and `error`; `log level warn` changes it immediately and saves it. Logins and failed logins (with the IP), account and role changes, bans, console commands and the server lifecycle are logged. Passwords, tokens, keys and message content never are.
 
+## The Launcher
+
+`Launcher.exe` is an optional Windows control panel that sits next to the start scripts. The server never needs it. It creates the data folders and a default `config.json` when missing, and offers:
+
+- A **config editor** for every `config.json` setting, with a description, range, default and a restart-needed hint, a diff before saving and automatic config backups. Settings that need a restart say so.
+- **Start, stop and restart** of the server with supervision, a live **console**, **logs** and crash reports.
+- The same console commands as the [admin console](#the-admin-console), and a doctor check for common problems.
+
 ## Updating
 
 Take a backup, stop the server, replace the program files (keeping `data/`) and start again. Database changes are applied automatically. See [Installation](installation.html).

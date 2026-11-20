@@ -68,6 +68,17 @@ Ha zavarnak mások hangklipjei, a **Beállítások, Hang és videó** alatt pip�
 
 ![A hangeffekt-panel egy hangszobában](../assets/img/voice-soundboard.jpg)
 
+## Táblarajz
+
+A színpadcsatornáknak és a szerver hangcsatornáinak közös táblarajza van (web, asztali és Android). A hívásvezérlőkből nyitható meg.
+
+- **Színpad**: az előadók és a **Csatornák kezelése** joggal rendelkezők rajzolnak, a hallgatóság nézi, és a tábla alapból nyitva van.
+- **Hangcsatorna**: minden résztvevő rajzolhat, és a tábla magától kinyílik, ha valaki rajzol.
+- Tollszínek (fekete, fehér, piros, narancs, sárga, zöld, kék, lila), három vonalvastagság, radír és mindent töröl. Egér, érintés és tollas bevitel is működik, a tábla bármilyen képernyőre méreteződik.
+- A hívásban mindenki élőben látja a vonásokat, a későn csatlakozók megkapják az aktuális táblát. A hívásvezérlők gombja csak neked rejti el vagy mutatja meg. A mindent törlés a **Csatornák kezelése** joggal rendelkezőknek és a színpad előadóinak való.
+
+A szerver a vonásokat csak a memóriájában tartja (legfeljebb 400-at), és eldobja, amikor az utolsó ember is elhagyja a hívást.
+
 ## Zajszűrés
 
 A **Beállítások, Hang és videó, Fejlett zajszűrés (RNNoise)** a mikrofonodat egy WebAssemblyre fordított kis neurális hálózaton engedi át, ami eltávolítja a billentyűzet-, ventilátor- és háttérzajt. A saját eszközödön működik, nagyjából tíz milliszekundum késleltetést ad, és alapból ki van kapcsolva. A modul (kb. 5 MB) csak akkor töltődik le, amikor először indul hívás bekapcsolt állapotban. Ha nem tud elindulni, a hívás egyszerűen nélküle folytatódik.

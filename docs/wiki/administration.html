@@ -58,6 +58,9 @@
 <p><code>backup restore &lt;name&gt;</code> only works in the server window, never over SSH. It verifies the archive, saves the current database as a pre-restore backup, replaces the database, media and configuration and restarts the server. Live secrets and certificates are kept.</p>
 <h3 id="logs">Logs</h3>
 <p>Logs go to <code>data/logs/dismesh-YYYY-MM-DD.log</code>, one file per day, a new numbered file when one grows past <code>logging.maxFileMb</code>, and files older than <code>logging.keepDays</code> are deleted. Levels are <code>debug</code>, <code>info</code>, <code>warn</code> and <code>error</code>; <code>log level warn</code> changes it immediately and saves it. Logins and failed logins (with the IP), account and role changes, bans, console commands and the server lifecycle are logged. Passwords, tokens, keys and message content never are.</p>
+<h2 id="the-launcher">The Launcher</h2>
+<p><code>Launcher.exe</code> is an optional Windows control panel that sits next to the start scripts. The server never needs it. It creates the data folders and a default <code>config.json</code> when missing, and offers:</p>
+<ul><li>A <strong>config editor</strong> for every <code>config.json</code> setting, with a description, range, default and a restart-needed hint, a diff before saving and automatic config backups. Settings that need a restart say so.</li><li><strong>Start, stop and restart</strong> of the server with supervision, a live <strong>console</strong>, <strong>logs</strong> and crash reports.</li><li>The same console commands as the <a href="#the-admin-console">admin console</a>, and a doctor check for common problems.</li></ul>
 <h2 id="updating">Updating</h2>
 <p>Take a backup, stop the server, replace the program files (keeping <code>data/</code>) and start again. Database changes are applied automatically. See <a href="installation.html">Installation</a>.</p>
 <h2 id="monitoring">Monitoring</h2>

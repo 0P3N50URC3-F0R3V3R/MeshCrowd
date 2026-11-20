@@ -11,6 +11,7 @@ All clients talk to the same server and show the same data. Pick whichever suits
 |---|---|---|
 | Web | Everything, nothing to install | Every feature, in any modern browser |
 | Desktop (Windows) | Daily use at a desk | Tray badge, native notifications, certificate pinning |
+| Desktop, light (Windows) | A smaller download | Single exe on WebView2, same features |
 | Android | On the go | Phone interface, local notifications, optional UnifiedPush |
 
 ## Web
@@ -36,6 +37,12 @@ A portable app: unzip it and run `MeshCrowd.exe`. On the first launch it asks fo
 The app stores its settings in a `data` folder next to the executable, so the whole folder can live on a USB stick. It carries no server and no web files of its own: updating the server updates the interface.
 
 To run it from source for development: `npm install` then `npm run electron`.
+
+## C# desktop client (Windows)
+
+An alternative to the Electron app: a single `MeshCrowd.exe` built on the system's WebView2 browser engine instead of a bundled Chromium, so it is much smaller. It loads the same interface and reads the same `dismesh-client-config.json`, and offers the tray with unread blink and recent list, native notifications, downloads with taskbar progress, `mcr://` invite links, a single running instance, certificate pinning and close to tray. Settings live in a `data` folder next to the exe. Electron stays the main desktop client; use this one if you prefer a lighter app.
+
+Machines that already have the WebView2 runtime (any current Windows 10 or 11) use it. A build that embeds the runtime is about 250 MB and unpacks it once into `data/webview2-runtime` on machines without it.
 
 ## Phone interface
 
