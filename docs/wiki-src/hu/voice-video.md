@@ -26,7 +26,7 @@ Hívás közben használhatsz más csatornákat, így szöveges csatornákat is;
 
 ## Csatlakozás
 
-Kattints egy hangcsatornára és nyomd meg a **Csatlakozás a hangcsatornához** gombot. Engedélyezd a mikrofonhozzáférést, amikor a böngésző kéri. A vezérlőkkel némíthatsz, süketíthetsz, bekapcsolhatod a kamerát, megoszthatod a képernyődet, megnyithatod a hangpultot vagy kiléphetsz. A hívásokhoz **HTTPS vagy localhost** kell, a különböző hálózatokon lévőknek pedig STUN- vagy TURN-szerver (lásd: [Konfiguráció](configuration.html)).
+Kattints egy hangcsatornára és nyomd meg a **Csatlakozás a hangcsatornához** gombot. Engedélyezd a mikrofonhozzáférést, amikor a böngésző kéri. A vezérlőkkel némíthatsz, süketíthetsz, bekapcsolhatod a kamerát, megoszthatod a képernyődet, megnyithatod a hangpultot vagy kiléphetsz. A hívásokhoz **HTTPS vagy localhost** kell, a különböző hálózatokon lévőknek pedig közvetlen módban STUN- vagy TURN-szerver (lásd: [Konfiguráció](configuration.html)). SFU módban mindenki a szerver média-portjaihoz csatlakozik.
 
 Minden résztvevő csempéjén van beszédjelző gyűrű és élő szintcsík. Mindenkinek saját hangerőcsúszkája van a csempéjén.
 
@@ -101,6 +101,8 @@ Mindez azon az eszközön marad meg, amelyen beállítod.
 
 ## Hogyan választ útvonalat a kapcsolat
 
+Ez a szakasz a közvetlen (mesh) szobákról szól. SFU-szobában mindenkinek egyetlen kapcsolata van a szerver média-portjaihoz (UDP, tartaléknak TCP), így nincs mit választani az emberek között, és TURN sem vesz részt.
+
 Nincs mit beállítani: mindenki alkalmazása egyszerre kipróbál minden címet, amivel rendelkezik (LAN, VPN például Radmin, ZeroTier, SoftEther vagy Hamachi, és nyilvános), és a leggyorsabb működőt használja, így az azonos LAN-on vagy privát VPN-en lévők STUN vagy TURN szerver nélkül, közvetlenül kapcsolódnak. A STUN és a TURN automatikus tartalékként marad a különböző hálózatokon lévőknek.
 
 Ha egy csempén a színes minőségjelző pont fölé viszed az egeret, látod az útvonalat: **közvetlen (LAN/VPN)**, **NAT-on át (STUN)** vagy **továbbítva (TURN)**. Az asztali alkalmazás itt a gép hálózati adaptereit is felsorolja. A megszakadt hívást (VPN újracsatlakozás, Wi-Fi váltás) az alkalmazás automatikusan újrapróbálja, mielőtt lezárná.
@@ -112,7 +114,7 @@ A szerver tulajdonosa opcionálisan megadhatja a LAN és VPN alhálózatokat, l�
 | Tünet | Mit ellenőrizz |
 |---|---|
 | Nincs mikrofonkérés | Az oldal nem HTTPS-en vagy localhoston van |
-| LAN-on csatlakozik, hálózatok között nem | Kapcsold be a beépített STUN/TURN szervert (`setup-turn.bat`, vagy Adminpanel, Hívások), és irányítsd át a portokat a routeren, lásd: [STUN és TURN](configuration.html#stun-s-turn) |
+| LAN-on csatlakozik, hálózatok között nem (közvetlen módban) | Kapcsold be a beépített STUN/TURN szervert (`setup-turn.bat`, vagy Adminpanel, Hívások), és irányítsd át a portokat a routeren, lásd: [STUN és TURN](configuration.html#stun-s-turn) |
 | Az azonos Radmin/ZeroTier/LAN hálózaton lévők lassan vagy továbbításon át kapcsolódnak | A minőségjelző pont fölé víve látszik az útvonal. Add meg a VPN alhálózatot az **Adminpanel, Hívások, LAN / VPN hálózatok** alatt, hogy a többi adapter (Docker, WSL) ki legyen hagyva, és ellenőrizd, hogy a VPN átengedi az UDP-t a tagok között |
 | Valakit nem hallani | A böngészője letiltotta a mikrofont, vagy rossz a bemeneti eszköze az eszközválasztóban |
 | Szaggatott hang nagy hívásban | Állítsd a szervert SFU módra (Adminpanel, Hívások, Hangmotor), vagy csökkentsd az előbeállítást, és kérd meg az embereket, hogy kapcsolják ki a kamerát |

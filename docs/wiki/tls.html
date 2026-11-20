@@ -52,7 +52,7 @@
 }</code></pre>
 <div class="callout warn"><strong>Why the hop count matters</strong><p>Without <code>trustProxy</code> the server sees every visitor as the proxy, and session cookies are issued without the <code>Secure</code> flag. With <code>trustProxy: true</code> on a directly exposed server, clients can fake their address and defeat rate limits and audit logs. Use a hop count or subnet.</p></div>
 <h2 id="calls-across-networks">Calls across networks</h2>
-<p>Voice and video use WebRTC directly between people. Turn on the built-in STUN/TURN server or add your own to <code>iceServers</code> (see <a href="configuration.html#stun-and-turn">STUN and TURN</a>). The proxy does not carry media.</p>
+<p>By default voice and video use WebRTC directly between people. Turn on the built-in STUN/TURN server or add your own to <code>iceServers</code> (see <a href="configuration.html#stun-and-turn">STUN and TURN</a>). The proxy does not carry media. With the optional SFU voice engine, media goes straight to the SFU ports (UDP and TCP 40000-40003 by default) and also bypasses the proxy, so those ports must be reachable on the server itself.</p>
     </article>
     <div class="pager" id="wiki-pager"></div>
   </div>

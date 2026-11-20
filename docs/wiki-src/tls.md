@@ -66,4 +66,4 @@ Without `trustProxy` the server sees every visitor as the proxy, and session coo
 
 ## Calls across networks
 
-Voice and video use WebRTC directly between people. Turn on the built-in STUN/TURN server or add your own to `iceServers` (see [STUN and TURN](configuration.html#stun-and-turn)). The proxy does not carry media.
+By default voice and video use WebRTC directly between people. Turn on the built-in STUN/TURN server or add your own to `iceServers` (see [STUN and TURN](configuration.html#stun-and-turn)). The proxy does not carry media. With the optional SFU voice engine, media goes straight to the SFU ports (UDP and TCP 40000-40003 by default) and also bypasses the proxy, so those ports must be reachable on the server itself.

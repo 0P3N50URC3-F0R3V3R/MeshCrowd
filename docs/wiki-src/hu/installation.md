@@ -12,7 +12,7 @@ order: 2
 | Szerver | **Node.js 22.5 vagy újabb** (a beépített `node:sqlite` modult használja). Windowson megfelelő `node.exe` mellékelve van. |
 | Memória és lemez | Egy kis közösséghez néhány száz MB RAM, és elég lemez a feltöltéseknek. |
 | Böngésző | Aktuális Chromium-, Firefox- vagy Safari-alapú böngésző. |
-| Hang és videó | HTTPS (vagy `localhost`), plusz a beépített STUN/TURN szerver (vagy egy külső) a különböző hálózaton lévőknek. Lásd: [STUN és TURN](configuration.html#stun-s-turn). |
+| Hang és videó | HTTPS (vagy `localhost`), plusz a beépített STUN/TURN szerver (vagy egy külső) a különböző hálózaton lévőknek. Lásd: [STUN és TURN](configuration.html#stun-s-turn). Az opcionális SFU hangmotorral helyette a 40000-40003 UDP és TCP port kell, lásd: [SFU hangmotor](configuration.html#sfu-hangmotor). |
 
 ## Windows: a hordozható csomag
 

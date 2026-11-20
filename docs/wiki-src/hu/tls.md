@@ -66,4 +66,4 @@ location / {
 
 ## Hívások hálózatok között
 
-A hang és videó WebRTC-vel, közvetlenül az emberek között megy. Kapcsold be a beépített STUN/TURN szervert, vagy vegyél fel sajátot az `iceServers` közé (lásd: [STUN és TURN](configuration.html#stun-s-turn)). A proxy nem viszi a médiát.
+A hang és videó alapból WebRTC-vel, közvetlenül az emberek között megy. Kapcsold be a beépített STUN/TURN szervert, vagy vegyél fel sajátot az `iceServers` közé (lásd: [STUN és TURN](configuration.html#stun-s-turn)). A proxy nem viszi a médiát. Az opcionális SFU hangmotorral a média közvetlenül az SFU portjaira megy (alapból 40000-40003 UDP és TCP), és ez is megkerüli a proxyt, ezért ezeknek a portoknak magán a szerveren kell elérhetőnek lenniük.

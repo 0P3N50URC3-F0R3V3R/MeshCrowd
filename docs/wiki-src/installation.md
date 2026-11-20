@@ -12,7 +12,7 @@ order: 2
 | Server | **Node.js 22.5 or newer** (it uses the built-in `node:sqlite` module). A suitable `node.exe` is bundled on Windows. |
 | Memory and disk | A few hundred MB of RAM for a small community, and enough disk for uploads. |
 | Browser | A current Chromium, Firefox or Safari based browser. |
-| Voice and video | HTTPS (or `localhost`), plus the built-in STUN/TURN server (or an external one) for people on different networks. See [STUN and TURN](configuration.html#stun-and-turn). |
+| Voice and video | HTTPS (or `localhost`), plus the built-in STUN/TURN server (or an external one) for people on different networks. See [STUN and TURN](configuration.html#stun-and-turn). With the optional SFU voice engine, UDP and TCP 40000-40003 instead, see [SFU voice engine](configuration.html#sfu-voice-engine). |
 
 ## Windows: the portable bundle
 

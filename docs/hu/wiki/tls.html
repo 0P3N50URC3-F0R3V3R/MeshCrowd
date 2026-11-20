@@ -52,7 +52,7 @@
 }</code></pre>
 <div class="callout warn"><strong>Miért számít az ugrásszám</strong><p><code>trustProxy</code> nélkül a szerver minden látogatót a proxyként lát, és a munkamenet-sütik <code>Secure</code> jelző nélkül készülnek. Közvetlenül elérhető szerveren a <code>trustProxy: true</code> lehetővé teszi, hogy a kliensek meghamisítsák a címüket, és kijátsszák a sebességkorlátokat és a naplókat. Használj ugrásszámot vagy alhálózatot.</p></div>
 <h2 id="h-v-sok-h-l-zatok-k-z-tt">Hívások hálózatok között</h2>
-<p>A hang és videó WebRTC-vel, közvetlenül az emberek között megy. Kapcsold be a beépített STUN/TURN szervert, vagy vegyél fel sajátot az <code>iceServers</code> közé (lásd: <a href="configuration.html#stun-s-turn">STUN és TURN</a>). A proxy nem viszi a médiát.</p>
+<p>A hang és videó alapból WebRTC-vel, közvetlenül az emberek között megy. Kapcsold be a beépített STUN/TURN szervert, vagy vegyél fel sajátot az <code>iceServers</code> közé (lásd: <a href="configuration.html#stun-s-turn">STUN és TURN</a>). A proxy nem viszi a médiát. Az opcionális SFU hangmotorral a média közvetlenül az SFU portjaira megy (alapból 40000-40003 UDP és TCP), és ez is megkerüli a proxyt, ezért ezeknek a portoknak magán a szerveren kell elérhetőnek lenniük.</p>
     </article>
     <div class="pager" id="wiki-pager"></div>
   </div>

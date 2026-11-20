@@ -102,7 +102,7 @@ npm start</code></pre>
   "serverKey": "/etc/letsencrypt/live/chat.example.com/privkey.pem",
   "turn": { "enabled": true, "externalIp": "203.0.113.10" }
 }</code></pre>
-          <p>Calls across routers and NAT use the built-in STUN/TURN server. Run <code>setup-turn.bat</code> (Windows) or <code>setup-turn.sh</code> (Linux): it saves the settings, opens the firewall and tells you which ports to forward (UDP and TCP 3478, UDP 49152-49999). See <a href="wiki/configuration.html#stun-and-turn">STUN and TURN</a>.</p>
+          <p>Calls across routers and NAT use the built-in STUN/TURN server. Run <code>setup-turn.bat</code> (Windows) or <code>setup-turn.sh</code> (Linux): it saves the settings, opens the firewall and tells you which ports to forward (UDP and TCP 3478, UDP 49152-49999). With the optional SFU voice engine, open UDP and TCP 40000-40003 instead (see <a href="wiki/configuration.html#sfu-voice-engine">SFU voice engine</a>). See <a href="wiki/configuration.html#stun-and-turn">STUN and TURN</a>.</p>
           <p>Behind a reverse proxy that terminates TLS, set <code>"trustProxy"</code> to the hop count and forward <code>Host</code> and <code>X-Forwarded-Proto</code>. See <a href="wiki/tls.html">TLS and reverse proxies</a>.</p>
         </div>
       </div>
@@ -119,7 +119,7 @@ npm start</code></pre>
           <tr><th>Part</th><th>Needs</th></tr>
           <tr><td>Server</td><td>Node.js 22.5 or newer (bundled on Windows), a few hundred MB of RAM for a small community, any disk that holds your files</td></tr>
           <tr><td>Browser</td><td>A current Chromium, Firefox or Safari based browser</td></tr>
-          <tr><td>Voice and video</td><td>HTTPS (or localhost), a microphone and camera. Across networks: the built-in STUN/TURN server, set up with <code>setup-turn.bat</code> or <code>setup-turn.sh</code></td></tr>
+          <tr><td>Voice and video</td><td>HTTPS (or localhost), a microphone and camera. Across networks: the built-in STUN/TURN server, set up with <code>setup-turn.bat</code> or <code>setup-turn.sh</code>, or the optional SFU engine with UDP and TCP 40000-40003 open</td></tr>
           <tr><td>Desktop client</td><td>Windows 10 or newer</td></tr>
           <tr><td>Desktop client (light)</td><td>Windows 10 or newer with the WebView2 runtime, or the build that embeds it</td></tr>
           <tr><td>Android</td><td>Android 8.0 or newer</td></tr>

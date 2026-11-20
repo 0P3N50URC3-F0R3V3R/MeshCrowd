@@ -14,7 +14,8 @@ order: 3
 | A szerver `[certs]` üzenettel kilép | A `serverCrt` vagy `serverKey` hiányzik, érvénytelen, nem illeszkedik, túl gyenge, vagy csak az egyik van megadva. Az üzenet megnevezi a fájlt és az okot. |
 | `Cannot find module 'node:sqlite'` | A Node.js régebbi, mint 22.5. Használd a mellékelt futtatókörnyezetet vagy az indítószkripteket. |
 | A port már használatban van | Módosítsd a `port` vagy `httpsPort` értékét a `data/config.json` fájlban. |
-| A hang LAN-on működik, hálózatok között nem | Futtasd a `setup-turn.bat`-ot vagy a `setup-turn.sh`-t, vagy kapcsold be az **Adminpanel, Hívások** oldalt, majd a routeren irányítsd át a 3478 UDP és TCP, valamint a 49152-49999 UDP portokat. Nyomd meg a **Próba** gombot a Hívásoknál, és próbáld mobiladatos telefonnal. Lásd: [STUN és TURN](configuration.html#stun-s-turn). |
+| A hang LAN-on működik, hálózatok között nem | Futtasd a `setup-turn.bat`-ot vagy a `setup-turn.sh`-t, vagy kapcsold be az **Adminpanel, Hívások** oldalt, majd a routeren irányítsd át a 3478 UDP és TCP, valamint a 49152-49999 UDP portokat. Nyomd meg a **Próba** gombot a Hívásoknál, és próbáld mobiladatos telefonnal. Lásd: [STUN és TURN](configuration.html#stun-s-turn). SFU-szobákra nem vonatkozik. |
+| A hang nem csatlakozik az SFU-t használó szerveren | Nyisd meg a 40000-40003 (`voice.sfu.port` től `port + workers - 1`-ig) UDP és TCP portokat a szerveren, a routeren és a tűzfalon, és nézd meg az **Adminpanel, Hívások, Hangmotor** részt figyelmeztetésekért, például meghirdetett LAN-címért. Lásd: [SFU hangmotor](configuration.html#sfu-hangmotor). |
 | Piros „Megszakadt a kapcsolat. Újracsatlakozás…” sáv, amely nem tűnik el | Az élő frissítések WebSocketet használnak. A régebbi szerverek csak akkor fogadták el, ha az oldalt a `publicHost`, `localhost` vagy `127.0.0.1` címen nyitották meg, így más cím (LAN IP, második név, az Android-emulátor `10.0.2.2` címe) HTTP 403-at kapott. Frissítsd a szervert; régebbin állítsd a `publicHost` értékét arra a címre, amelyet az emberek használnak. Fordított proxy mögött továbbítsd a `Host` fejlécet és állítsd be a `trustProxy` értéket. |
 | Nincs mikrofon- vagy kamerakérés | Az oldal nem HTTPS-en vagy localhoston van. |
 | „Ismeretlen szervercím” Útlevéllel való bejelentkezéskor | Állítsd a `publicHost` értékét arra a címre, amit az emberek begépelnek, vagy vedd fel a pontos eredetet a `passportOrigins` közé. |
@@ -35,7 +36,7 @@ Igen. Szabad szoftver a GNU General Public License alatt, és nincsenek fizetős
 LAN-hoz nem. A hálózatodon kívüli embereknek érdemes egyet beszerezni, plusz valódi tanúsítványt.
 
 **Hány embert bír el?**
-A hardvertől függ. A szöveges csevegés könnyű. A hang közvetlen, így a hívások korlátja az egyes emberek feltöltési sávszélessége, nem a szerver. Nagyjából nyolc vagy több ember videóval egy szobában a legtöbb otthoni kapcsolatot megterheli.
+A hardvertől függ. A szöveges csevegés könnyű. Az alapértelmezett közvetlen módban a hívások korlátja az egyes emberek feltöltési sávszélessége, nem a szerver, és nagyjából nyolc vagy több ember videóval egy szobában a legtöbb otthoni kapcsolatot megterheli. Az opcionális SFU hangmotorral mindenki egyszer tölt fel, így a nagyobb szobák is működnek, de ilyenkor a szerver viszi a teljes hívásmédiát, és kell hozzá processzor és feltöltés.
 
 **Importálhatok másik chatszolgáltatásból?**
 Egyelőre nem.
@@ -54,7 +55,7 @@ Másold át a `data/` mappát. Lásd: [Adminisztráció](administration.html).
 
 ## Ismert korlátok
 
-- A hívások teljes közvetlen hálót használnak médiaszerver nélkül, így a nagy, videós hívások nehezek minden résztvevőnek.
+- A hívások alapból teljes közvetlen hálót használnak médiaszerver nélkül, így a nagy, videós hívások nehezek minden résztvevőnek. Az opcionális SFU motor ezt megszünteti, de a szerver ilyenkor technikailag hallhatja a hívások hangját.
 - A föderáció a távoli szervereken csak szöveges csatornákat támogat.
 - A Jegyzetek mellékleteit fájlonként titkosítja, de a titkosításuk nincs a fájlazonosítóhoz kötve.
 - A botok perjeles parancsai csak szervercsatornákban működnek.

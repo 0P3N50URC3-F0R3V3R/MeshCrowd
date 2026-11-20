@@ -14,7 +14,8 @@ order: 3
 | The server exits with `[certs]` | Your `serverCrt` or `serverKey` is missing, invalid, mismatched, too weak, or only one of them is set. The message names the file and the reason. |
 | `Cannot find module 'node:sqlite'` | Node.js is older than 22.5. Use the bundled runtime or the start scripts. |
 | Port already in use | Change `port` or `httpsPort` in `data/config.json`. |
-| Voice works on the LAN but not across networks | Run `setup-turn.bat` or `setup-turn.sh`, or turn on **Admin Panel, Calls**, then forward UDP and TCP 3478 and UDP 49152-49999 on the router. Press **Test** in Calls, and try a phone on mobile data. See [STUN and TURN](configuration.html#stun-and-turn). |
+| Voice works on the LAN but not across networks | Run `setup-turn.bat` or `setup-turn.sh`, or turn on **Admin Panel, Calls**, then forward UDP and TCP 3478 and UDP 49152-49999 on the router. Press **Test** in Calls, and try a phone on mobile data. See [STUN and TURN](configuration.html#stun-and-turn). Does not apply to SFU rooms. |
+| Voice does not connect on a server using the SFU | Open UDP and TCP `voice.sfu.port` to `port + workers - 1` (default 40000-40003) on the server, router and firewall, and check **Admin Panel, Calls, Voice engine** for warnings such as an announced LAN address. See [SFU voice engine](configuration.html#sfu-voice-engine). |
 | A red "Connection lost. Reconnecting..." banner that never goes away | Live updates use a WebSocket. Older servers only accepted it when the page was opened through `publicHost`, `localhost` or `127.0.0.1`, so another address (a LAN IP, a second name, the Android emulator's `10.0.2.2`) was refused with HTTP 403. Update the server; on older ones set `publicHost` to the address people use. Behind a reverse proxy also forward `Host` and set `trustProxy`. |
 | No microphone or camera prompt | The page is not on HTTPS or localhost. |
 | "Unrecognised server address" when signing in with a Passport | Set `publicHost` to the address people type, or add the exact origin to `passportOrigins`. |
@@ -35,7 +36,7 @@ Yes. It is free software under the GNU General Public License and has no paid ti
 Not for a LAN. For people outside your network you want one, plus a real certificate.
 
 **How many people can it host?**
-It depends on your hardware. Text chat is light. Voice is peer to peer, so the limit for calls is each person's upload bandwidth, not the server. Roughly eight or more people with video in one room strains most home connections.
+It depends on your hardware. Text chat is light. In the default peer-to-peer mode the limit for calls is each person's upload bandwidth, not the server, and roughly eight or more people with video in one room strains most home connections. With the optional SFU voice engine everyone uploads once, so larger rooms work, but the server then carries all call media and needs the CPU and upload for it.
 
 **Can I import from another chat service?**
 Not at the moment.
@@ -54,7 +55,7 @@ Copy the `data/` folder. See [Administration](administration.html).
 
 ## Known limitations
 
-- Calls are a full peer-to-peer mesh with no media server, so large calls with video are heavy for each participant.
+- By default calls are a full peer-to-peer mesh with no media server, so large calls with video are heavy for each participant. The optional SFU engine removes that, but the server can then technically hear call audio.
 - Federation supports text channels only on remote servers.
 - Notes attachments are encrypted per file, but their encryption is not bound to the file id.
 - Bot slash commands work in server channels only.

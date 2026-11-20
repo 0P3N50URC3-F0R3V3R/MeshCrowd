@@ -102,7 +102,7 @@ npm start</code></pre>
   "serverKey": "/etc/letsencrypt/live/chat.example.com/privkey.pem",
   "turn": { "enabled": true, "externalIp": "203.0.113.10" }
 }</code></pre>
-          <p>A routereken és NAT-on átmenő hívások a beépített STUN/TURN szervert használják. Futtasd a <code>setup-turn.bat</code>-ot (Windows) vagy a <code>setup-turn.sh</code>-t (Linux): elmenti a beállításokat, megnyitja a tűzfalat, és megmondja, mely portokat kell átirányítani (3478 UDP és TCP, 49152-49999 UDP). Lásd: <a href="wiki/configuration.html#stun-s-turn">STUN és TURN</a>.</p>
+          <p>A routereken és NAT-on átmenő hívások a beépített STUN/TURN szervert használják. Futtasd a <code>setup-turn.bat</code>-ot (Windows) vagy a <code>setup-turn.sh</code>-t (Linux): elmenti a beállításokat, megnyitja a tűzfalat, és megmondja, mely portokat kell átirányítani (3478 UDP és TCP, 49152-49999 UDP). Az opcionális SFU hangmotorral helyette a 40000-40003 UDP és TCP portot nyisd meg (lásd: <a href="wiki/configuration.html#sfu-hangmotor">SFU hangmotor</a>). Lásd: <a href="wiki/configuration.html#stun-s-turn">STUN és TURN</a>.</p>
           <p>TLS-t lezáró fordított proxy mögött állítsd a <code>"trustProxy"</code> értékét a proxyk számára, és továbbítsd a <code>Host</code> és <code>X-Forwarded-Proto</code> fejléceket. Lásd: <a href="wiki/tls.html">TLS és fordított proxyk</a>.</p>
         </div>
       </div>
@@ -119,7 +119,7 @@ npm start</code></pre>
           <tr><th>Rész</th><th>Szükséges</th></tr>
           <tr><td>Szerver</td><td>Node.js 22.5 vagy újabb (Windowson mellékelve), egy kis közösséghez néhány száz MB memória, és annyi lemez, amennyi a fájlokat elbírja</td></tr>
           <tr><td>Böngésző</td><td>Aktuális Chromium-, Firefox- vagy Safari-alapú böngésző</td></tr>
-          <tr><td>Hang és videó</td><td>HTTPS (vagy localhost), mikrofon és kamera. Hálózatok között: a beépített STUN/TURN szerver, a <code>setup-turn.bat</code> vagy a <code>setup-turn.sh</code> segítségével beállítva</td></tr>
+          <tr><td>Hang és videó</td><td>HTTPS (vagy localhost), mikrofon és kamera. Hálózatok között: a beépített STUN/TURN szerver, a <code>setup-turn.bat</code> vagy a <code>setup-turn.sh</code> segítségével beállítva, vagy az opcionális SFU motor nyitott 40000-40003 UDP és TCP porttal</td></tr>
           <tr><td>Asztali kliens</td><td>Windows 10 vagy újabb</td></tr>
           <tr><td>Asztali kliens (könnyű)</td><td>Windows 10 vagy újabb a WebView2 futtatókörnyezettel, vagy a beágyazott változat</td></tr>
           <tr><td>Android</td><td>Android 8.0 vagy újabb</td></tr>

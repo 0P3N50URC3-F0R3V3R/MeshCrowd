@@ -26,7 +26,7 @@ You can use other channels, including text channels, while you are in a call; th
 
 ## Joining
 
-Click a voice channel and press **Join voice**. Allow microphone access when the browser asks. Use the controls to mute, deafen, turn the camera on, share your screen, open the soundboard or leave. Calls need **HTTPS or localhost**, and people on different networks need a STUN or TURN server (see [Configuration](configuration.html)).
+Click a voice channel and press **Join voice**. Allow microphone access when the browser asks. Use the controls to mute, deafen, turn the camera on, share your screen, open the soundboard or leave. Calls need **HTTPS or localhost**, and in peer-to-peer mode people on different networks need a STUN or TURN server (see [Configuration](configuration.html)). In SFU mode everyone connects to the server's media ports instead.
 
 On each participant's tile you get a speaking ring and a live level strip. Each person's tile has its own volume slider.
 
@@ -101,6 +101,8 @@ All of these are saved on the device you set them on.
 
 ## How the connection path is chosen
 
+This section is about peer-to-peer (mesh) rooms. In an SFU room each person has a single connection to the server's media ports (UDP, or TCP as a fallback), so there is no path to choose between people and no TURN is involved.
+
 Nothing to configure: each person's app tries every address it has at once (LAN, VPN such as Radmin, ZeroTier, SoftEther or Hamachi, and public) and uses the fastest one that works, so people on the same LAN or private VPN connect directly without any STUN or TURN server. STUN and TURN stay available as the automatic fallback for people on different networks.
 
 Hover the colored quality dot on someone's tile to see the path: **direct (LAN/VPN)**, **via NAT (STUN)** or **relayed (TURN)**. The desktop app also lists this computer's network adapters there. A call that drops (VPN reconnect, Wi-Fi change) is retried automatically before it is closed.
@@ -112,7 +114,7 @@ Server owners can optionally list their LAN and VPN subnets, see [LAN and VPN ne
 | Symptom | What to check |
 |---|---|
 | No microphone prompt | The page is not on HTTPS or localhost |
-| Connects on the LAN but not across networks | Turn on the built-in STUN/TURN server (`setup-turn.bat`, or Admin Panel, Calls) and forward the ports on the router, see [STUN and TURN](configuration.html#stun-and-turn) |
+| Connects on the LAN but not across networks (peer-to-peer mode) | Turn on the built-in STUN/TURN server (`setup-turn.bat`, or Admin Panel, Calls) and forward the ports on the router, see [STUN and TURN](configuration.html#stun-and-turn) |
 | People on the same Radmin/ZeroTier/LAN network connect slowly or via a relay | Hover the quality dot to see the path. List the VPN subnet under **Admin Panel, Calls, LAN / VPN networks** so other adapters (Docker, WSL) are skipped, and check that the VPN allows UDP between members |
 | One person cannot be heard | Their browser blocked the microphone, or their input device is wrong in the device picker |
 | Choppy audio in a big call | Switch the server to SFU mode (Admin Panel, Calls, Voice engine), or lower the preset and ask people to turn cameras off |
