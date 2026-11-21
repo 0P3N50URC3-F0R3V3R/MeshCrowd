@@ -1,11 +1,11 @@
 ---
 title: Föderáció
-desc: Két szerver összepárosítása, hogy az emberek elérjék egymást, mit osztanak meg, és milyen biztonsági szabályok állnak mögötte.
+desc: Szerverek összepárosítása, hogy az emberek elérjék egymást, mit osztanak meg, és milyen biztonsági szabályok állnak mögötte.
 group: Bővítés
 order: 4
 ---
 
-A **föderáció** lehetővé teszi, hogy két MeshCrowd szerver megbízzon egymásban, így az embereik kapcsolatba léphetnek. **Alapból kikapcsolt**: egy önálló szerver nem nyit föderációs útvonalat és nem futtat föderációs munkafolyamatot. Az Útlevéllel való bejelentkezés enélkül is működik.
+A **föderáció** lehetővé teszi, hogy MeshCrowd szerverek megbízzanak egymásban, így az embereik kapcsolatba léphetnek. Annyi szerverrel párosíthatsz, amennyivel csak szeretnél: minden párosítást külön kell létrehozni és elfogadni, és a bizalom sosem adódik tovább egy harmadik szerveren keresztül. **Alapból kikapcsolt**: egy önálló szerver nem nyit föderációs útvonalat és nem futtat föderációs munkafolyamatot. Az Útlevéllel való bejelentkezés enélkül is működik.
 
 ## Bekapcsolás
 
@@ -14,14 +14,14 @@ A **föderáció** lehetővé teszi, hogy két MeshCrowd szerver megbízzon egym
 ## Párosítás
 
 1. Egy oldaladminisztrátor beállítja a föderációs admin jelszót az első alkalommal (bejelentkezve, vagy a szervergépről). Egy névtelen látogató nem foglalhatja le.
-2. Hozz létre egy **meghívólinket** az egyik szerveren, és **váltsd be** a másikon.
+2. Hozz létre egy **meghívólinket** az egyik szerveren, és **váltsd be** a másikon. Ismételd meg minden további szerverrel, amelyhez csatlakozni szeretnél.
 3. Mindkét oldalnak kifejezetten **el kell fogadnia** a másikat az **Admin, Föderáció** oldalon. A függőben lévő partner semmit nem tehet, csak befejezheti vagy megszakíthatja a saját párosítását.
-4. **Vond vissza** bármikor. A visszavonás mindkét oldalon megszünteti a bizalmat.
+4. **Vond vissza** bármikor. A visszavonás az adott párosítás mindkét oldalán megszünteti a bizalmat, a többi párosításodat nem érinti.
 
 ## Mit oszt meg a föderáció
 
 - **Barátkérések és privát üzenetek** a párosított szerverek emberei között.
-- **Felfedezés**: egymás nyilvános szerverei megjelennek a könyvtárban.
+- **Felfedezés**: minden párosított példány nyilvános szerverei megjelennek a könyvtárban.
 - **Csatlakozás**: egy másik példányon lévő szerverhez `kód@domain` meghívóval csatlakozhatsz. A távoli szerverek megjelennek a szerversávodban, és egyszerűsített nézetben nyílnak meg szöveges csatornákkal, előzményekkel, írással, szerkesztéssel, törléssel és reakciókkal.
 
 A távoli szerverek **élőben, proxyn át** jelennek meg a tulajdonos példányról: semmi nem másolódik. Elhalványulnak, amíg az a példány offline.

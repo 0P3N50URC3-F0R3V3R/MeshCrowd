@@ -1,11 +1,11 @@
 ---
 title: Federation
-desc: Pairing two servers so people can reach each other, what is shared, and the safety rules behind it.
+desc: Pairing servers so people can reach each other, what is shared, and the safety rules behind it.
 group: Extending
 order: 4
 ---
 
-**Federation** lets two MeshCrowd servers trust each other so that their people can interact. It is **off by default**: a stand-alone server opens no federation route and runs no federation worker. Passport sign-in works either way.
+**Federation** lets MeshCrowd servers trust each other so that their people can interact. You can pair with as many servers as you like: every pairing is set up and accepted separately, and trust is never passed on through a third server. It is **off by default**: a stand-alone server opens no federation route and runs no federation worker. Passport sign-in works either way.
 
 ## Turning it on
 
@@ -14,14 +14,14 @@ Set `"federation": { "enabled": true }` in `data/config.json` and restart. A **F
 ## Pairing
 
 1. A site administrator sets the federation admin password the first time (signed in, or from the server machine). An anonymous visitor cannot claim it.
-2. Create an **invite link** on one server and **redeem** it on the other.
+2. Create an **invite link** on one server and **redeem** it on the other. Repeat for every further server you want to connect to.
 3. Each side must explicitly **accept** the other in **Admin, Federation**. A pending peer can do nothing except finish or cancel its own pairing.
-4. **Revoke** at any time. Revoking drops trust on both sides.
+4. **Revoke** at any time. Revoking drops trust on both sides of that pairing and leaves your other pairings untouched.
 
 ## What federation shares
 
 - **Friend requests and DMs** between people on paired servers.
-- **Discovery**: each other's public servers appear in the directory.
+- **Discovery**: the public servers of every paired instance appear in the directory.
 - **Joining**: you can join a server on another instance with a `code@domain` invite. Remote servers appear in your server rail and open in a simplified view with text channels, history, posting, editing, deleting and reactions.
 
 Remote servers are **proxied live** from the owning instance: nothing is copied. They grey out while that instance is offline.

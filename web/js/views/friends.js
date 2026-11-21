@@ -21,8 +21,25 @@ function tabs() {
   ];
 }
 
-export function mountFriends(container, initialTab = 'online') {
-  let tab = initialTab;
+const REMEMBERED_TABS = ['online', 'all', 'pending', 'blocked'];
+
+export function defaultFriendsTab() {
+  const p = state.uiPrefs || {};
+  const mode = p.friendsTabDefault || 'lastVisited';
+  if (mode !== 'lastVisited') return mode;
+  return REMEMBERED_TABS.includes(p.friendsLastTab) ? p.friendsLastTab : 'online';
+}
+
+const saveLastTab = debounce((id) => {
+  api.setUiPrefs({ friendsLastTab: id }).then((res) => Object.assign(state.uiPrefs, res.uiPrefs)).catch(() => {});
+}, 500);
+
+export function mountFriends(container, initialTab) {
+  let tab = initialTab || defaultFriendsTab();
+  if (REMEMBERED_TABS.includes(tab) && state.uiPrefs?.friendsLastTab !== tab) {
+    state.uiPrefs = { ...state.uiPrefs, friendsLastTab: tab };
+    saveLastTab(tab);
+  }
 
   render();
   const off = bus.on('state:friends', render);
@@ -49,7 +66,14 @@ export function mountFriends(container, initialTab = 'online') {
       <div class="friends-body" id="friends-body"></div>`;
 
     container.querySelectorAll('[data-tab]').forEach((btn) => {
-      btn.addEventListener('click', () => { tab = btn.dataset.tab; render(); });
+      btn.addEventListener('click', () => {
+        tab = btn.dataset.tab;
+        if (REMEMBERED_TABS.includes(tab) && state.uiPrefs?.friendsLastTab !== tab) {
+          state.uiPrefs = { ...state.uiPrefs, friendsLastTab: tab };
+          saveLastTab(tab);
+        }
+        render();
+      });
     });
 
     const body = container.querySelector('#friends-body');

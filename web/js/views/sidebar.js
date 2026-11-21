@@ -484,7 +484,7 @@ export function mountHomeSidebar(container) {
       </div>`;
 
     container.querySelector('#nav-friends').addEventListener('click', () => {
-      bus.emit('ui:navigate', { type: 'friends', tab: 'online' });
+      bus.emit('ui:navigate', { type: 'friends' });
     });
     container.querySelector('#hs-add-dm').addEventListener('click', openNewDmModal);
 
@@ -576,7 +576,7 @@ export function mountHomeSidebar(container) {
         try {
           await api.leaveDm(dm.id);
           removeDm(dm.id);
-          if (state.view.type === 'dm' && state.view.dmId === dm.id) bus.emit('ui:navigate', { type: 'friends', tab: 'online' });
+          if (state.view.type === 'dm' && state.view.dmId === dm.id) bus.emit('ui:navigate', { type: 'friends' });
         } catch (err) { toast(apiErrorMessage(err, t('sidebar.couldNotLeaveConversation')), { type: 'error' }); }
       },
     });

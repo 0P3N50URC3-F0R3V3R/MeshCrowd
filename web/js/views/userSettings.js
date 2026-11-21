@@ -801,6 +801,7 @@ export function openUserSettings(initialTab = 'account') {
     let landingView = 'home';
     try { landingView = (await api.getUiPrefs()).uiPrefs.landingView || 'home'; } catch { /* leave default */ }
     const unreadPrefs = unreadPrefsOf(state.uiPrefs);
+    let friendsTabDefault = state.uiPrefs?.friendsTabDefault || 'lastVisited';
 
     function paint() {
       inner.innerHTML = `
@@ -819,6 +820,13 @@ export function openUserSettings(initialTab = 'account') {
           <select class="input" id="f-landing-view" style="max-width:280px">
             <option value="home" ${landingView === 'home' ? 'selected' : ''}>${t('userSettings.landingViewHome')}</option>
             <option value="lastLocation" ${landingView === 'lastLocation' ? 'selected' : ''}>${t('userSettings.landingViewLastLocation')}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>${t('userSettings.friendsTabLabel')}</label>
+          <select class="input" id="f-friends-tab" style="max-width:280px">
+            <option value="lastVisited" ${friendsTabDefault === 'lastVisited' ? 'selected' : ''}>${t('userSettings.friendsTabLast')}</option>
+            ${['online', 'all', 'pending', 'blocked'].map((id) => `<option value="${id}" ${friendsTabDefault === id ? 'selected' : ''}>${t('friends.tab' + id[0].toUpperCase() + id.slice(1))}</option>`).join('')}
           </select>
         </div>
         <div class="field">
@@ -967,6 +975,13 @@ export function openUserSettings(initialTab = 'account') {
         landingView = value;
         try { await api.setUiPrefs({ landingView: value }); }
         catch (err) { landingView = prev; e.target.value = prev; toast(apiErrorMessage(err), { type: 'error' }); }
+      });
+      inner.querySelector('#f-friends-tab')?.addEventListener('change', async (e) => {
+        const value = e.target.value;
+        const prev = friendsTabDefault;
+        friendsTabDefault = value;
+        try { Object.assign(state.uiPrefs, (await api.setUiPrefs({ friendsTabDefault: value })).uiPrefs); }
+        catch (err) { friendsTabDefault = prev; e.target.value = prev; toast(apiErrorMessage(err), { type: 'error' }); }
       });
       for (const [id, key, num] of [['#f-unread-line', 'unreadLine'], ['#f-unread-always', 'unreadAlways'], ['#f-unread-jump', 'unreadJump'], ['#f-unread-context', 'unreadContext', true], ['#f-initial-messages', 'initialMessages', true]]) {
         inner.querySelector(id)?.addEventListener('change', async (e) => {

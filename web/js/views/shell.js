@@ -348,7 +348,7 @@ export async function mountShell(root) {
     try {
       await api.leaveDm(dm.id);
       removeDm(dm.id);
-      if (state.view.type === 'dm' && state.view.dmId === dm.id) navigate({ type: 'friends', tab: 'online' });
+      if (state.view.type === 'dm' && state.view.dmId === dm.id) navigate({ type: 'friends' });
     } catch (err) { toast(apiErrorMessage(err, t('sidebar.couldNotLeaveConversation')), { type: 'error' }); }
   }
 
@@ -501,7 +501,7 @@ export async function mountShell(root) {
 
   async function navigate(view) {
     // The empty "no conversation selected" page is never shown: Home means the Friends tab.
-    if (view.type === 'home') view = { type: 'friends', tab: 'online' };
+    if (view.type === 'home') view = { type: 'friends' };
     setView(view);
     saveLastLocation(view);
     if (view.type === 'server') {
@@ -791,7 +791,7 @@ export async function mountShell(root) {
       membersEl.innerHTML = '';
       currentMembers = mountActivityPanel(membersEl);
       mainEl.innerHTML = '';
-      currentChat = mountFriends(mainEl, view.tab || 'online');
+      currentChat = mountFriends(mainEl, view.tab);
       return;
     }
 

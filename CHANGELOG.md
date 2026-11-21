@@ -2,6 +2,13 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-21
+#### Added
+- Friends tab memory: the Friends page reopens on the tab you last used (Online, All, Pending, Blocked). Settings, Appearance has a "Default Friends tab" dropdown (Where I left off, Online, All, Pending, Blocked). Stored server side in `ui-prefs` (`friendsTabDefault`, `friendsLastTab`), so it follows you across devices. Notification links still open their own tab.
+
+#### Changed
+- Website and wiki (EN and HU): federation is described as pairing with any number of servers (each pairing accepted and revocable separately), not just two.
+
 ### 2026-11-20
 #### Changed
 - Website and wiki (EN and HU): the "Good to know" call notes and the troubleshooting, installation, TLS, voice and download texts now describe both voice engines (peer-to-peer and SFU), with the ports each needs and the SFU privacy trade-off, instead of only the peer-to-peer mesh.

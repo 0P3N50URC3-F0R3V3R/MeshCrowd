@@ -2,6 +2,13 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-21
+#### Hozzáadva
+- Barátok fül megjegyzése: a Barátok oldal azon a fülön nyílik újra, amelyet utoljára használtál (Elérhető, Összes, Függőben, Letiltva). A Beállítások, Megjelenés oldalon új "Alapértelmezett Barátok fül" legördülő van (Ahol abbahagytam, Elérhető, Összes, Függőben, Letiltva). Szerveroldalon, az `ui-prefs`-ben tárolódik (`friendsTabDefault`, `friendsLastTab`), így eszközök között is követ. Az értesítési linkek továbbra is a saját fülüket nyitják.
+
+#### Módosítva
+- Weboldal és wiki (EN és HU): a föderáció leírása mostantól tetszőleges számú szerverrel való párosításról szól (minden párosítást külön kell elfogadni és vissza lehet vonni), nem csak kettőről.
+
 ### 2026-11-20
 #### Módosítva
 - Weboldal és wiki (EN és HU): a "Good to know" hívásmegjegyzések, valamint a hibaelhárítás, telepítés, TLS, hang és letöltés szövegei mostantól mindkét hangmotort (peer-to-peer és SFU) leírják, a szükséges portokkal és az SFU adatvédelmi kompromisszumával, nem csak a peer-to-peer hálót.

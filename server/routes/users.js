@@ -197,7 +197,11 @@ router.put('/me/theme', requireAuth, syncAfter('theme'), (req, res) => {
 // the way in" treatment rather than a bespoke table for two numbers.
 const UI_PREF_BOUNDS = { sidebarWidth: [180, 400], membersWidth: [180, 400], unreadContext: [0, 50], initialMessages: [20, 100], autoAwaySeconds: [0, 86400] };
 const LANDING_VIEWS = new Set(['home', 'lastLocation']);
-const UI_PREF_ENUMS = { unreadLine: new Set(['on', 'off']), unreadAlways: new Set(['on', 'off']), unreadJump: new Set(['firstUnread', 'bottom']) };
+const FRIENDS_TABS = ['online', 'all', 'pending', 'blocked'];
+const UI_PREF_ENUMS = {
+  unreadLine: new Set(['on', 'off']), unreadAlways: new Set(['on', 'off']), unreadJump: new Set(['firstUnread', 'bottom']),
+  friendsTabDefault: new Set(['lastVisited', ...FRIENDS_TABS]), friendsLastTab: new Set(FRIENDS_TABS),
+};
 function sanitizeUiPrefs(raw) {
   const cleaned = {};
   for (const [key, [min, max]] of Object.entries(UI_PREF_BOUNDS)) {

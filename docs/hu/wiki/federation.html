@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Föderáció - MeshCrowd Wiki</title>
-<meta name="description" content="Két szerver összepárosítása, hogy az emberek elérjék egymást, mit osztanak meg, és milyen biztonsági szabályok állnak mögötte.">
+<meta name="description" content="Szerverek összepárosítása, hogy az emberek elérjék egymást, mit osztanak meg, és milyen biztonsági szabályok állnak mögötte.">
 <meta name="theme-color" content="#1e1f22">
 <link rel="icon" href="../../assets/img/logo.png">
 <link rel="stylesheet" href="../../assets/css/site.css">
@@ -23,14 +23,14 @@
     <article>
       <div class="crumbs"><a href="../index.html">Kezdőlap</a> / <a href="index.html">Wiki</a> / Bővítés</div>
       <h1>Föderáció</h1>
-      <p class="summary">Két szerver összepárosítása, hogy az emberek elérjék egymást, mit osztanak meg, és milyen biztonsági szabályok állnak mögötte.</p>
-<p>A <strong>föderáció</strong> lehetővé teszi, hogy két MeshCrowd szerver megbízzon egymásban, így az embereik kapcsolatba léphetnek. <strong>Alapból kikapcsolt</strong>: egy önálló szerver nem nyit föderációs útvonalat és nem futtat föderációs munkafolyamatot. Az Útlevéllel való bejelentkezés enélkül is működik.</p>
+      <p class="summary">Szerverek összepárosítása, hogy az emberek elérjék egymást, mit osztanak meg, és milyen biztonsági szabályok állnak mögötte.</p>
+<p>A <strong>föderáció</strong> lehetővé teszi, hogy MeshCrowd szerverek megbízzanak egymásban, így az embereik kapcsolatba léphetnek. Annyi szerverrel párosíthatsz, amennyivel csak szeretnél: minden párosítást külön kell létrehozni és elfogadni, és a bizalom sosem adódik tovább egy harmadik szerveren keresztül. <strong>Alapból kikapcsolt</strong>: egy önálló szerver nem nyit föderációs útvonalat és nem futtat föderációs munkafolyamatot. Az Útlevéllel való bejelentkezés enélkül is működik.</p>
 <h2 id="bekapcsol-s">Bekapcsolás</h2>
 <p>Állítsd a <code>&quot;federation&quot;: { &quot;enabled&quot;: true }</code> értéket a <code>data/config.json</code> fájlban és indítsd újra. Megjelenik egy <strong>Föderáció</strong> oldal az adminpanelen.</p>
 <h2 id="p-ros-t-s">Párosítás</h2>
-<ol><li>Egy oldaladminisztrátor beállítja a föderációs admin jelszót az első alkalommal (bejelentkezve, vagy a szervergépről). Egy névtelen látogató nem foglalhatja le.</li><li>Hozz létre egy <strong>meghívólinket</strong> az egyik szerveren, és <strong>váltsd be</strong> a másikon.</li><li>Mindkét oldalnak kifejezetten <strong>el kell fogadnia</strong> a másikat az <strong>Admin, Föderáció</strong> oldalon. A függőben lévő partner semmit nem tehet, csak befejezheti vagy megszakíthatja a saját párosítását.</li><li><strong>Vond vissza</strong> bármikor. A visszavonás mindkét oldalon megszünteti a bizalmat.</li></ol>
+<ol><li>Egy oldaladminisztrátor beállítja a föderációs admin jelszót az első alkalommal (bejelentkezve, vagy a szervergépről). Egy névtelen látogató nem foglalhatja le.</li><li>Hozz létre egy <strong>meghívólinket</strong> az egyik szerveren, és <strong>váltsd be</strong> a másikon. Ismételd meg minden további szerverrel, amelyhez csatlakozni szeretnél.</li><li>Mindkét oldalnak kifejezetten <strong>el kell fogadnia</strong> a másikat az <strong>Admin, Föderáció</strong> oldalon. A függőben lévő partner semmit nem tehet, csak befejezheti vagy megszakíthatja a saját párosítását.</li><li><strong>Vond vissza</strong> bármikor. A visszavonás az adott párosítás mindkét oldalán megszünteti a bizalmat, a többi párosításodat nem érinti.</li></ol>
 <h2 id="mit-oszt-meg-a-f-der-ci">Mit oszt meg a föderáció</h2>
-<ul><li><strong>Barátkérések és privát üzenetek</strong> a párosított szerverek emberei között.</li><li><strong>Felfedezés</strong>: egymás nyilvános szerverei megjelennek a könyvtárban.</li><li><strong>Csatlakozás</strong>: egy másik példányon lévő szerverhez <code>kód@domain</code> meghívóval csatlakozhatsz. A távoli szerverek megjelennek a szerversávodban, és egyszerűsített nézetben nyílnak meg szöveges csatornákkal, előzményekkel, írással, szerkesztéssel, törléssel és reakciókkal.</li></ul>
+<ul><li><strong>Barátkérések és privát üzenetek</strong> a párosított szerverek emberei között.</li><li><strong>Felfedezés</strong>: minden párosított példány nyilvános szerverei megjelennek a könyvtárban.</li><li><strong>Csatlakozás</strong>: egy másik példányon lévő szerverhez <code>kód@domain</code> meghívóval csatlakozhatsz. A távoli szerverek megjelennek a szerversávodban, és egyszerűsített nézetben nyílnak meg szöveges csatornákkal, előzményekkel, írással, szerkesztéssel, törléssel és reakciókkal.</li></ul>
 <p>A távoli szerverek <strong>élőben, proxyn át</strong> jelennek meg a tulajdonos példányról: semmi nem másolódik. Elhalványulnak, amíg az a példány offline.</p>
 <h2 id="amit-m-g-nem-tud">Amit még nem tud</h2>
 <ul><li>A távoli szervereknek csak szöveges csatornáik vannak: nincs melléklet, szál, hang vagy taglista.</li><li>A föderált privát üzenetek a TLS-en túl nem titkosítottak, a partnerszerver pedig a saját példányát úgy tárolja, ahogy jónak látja.</li></ul>

@@ -106,6 +106,8 @@
     "landingViewLabel": "When you open MeshCrowd",
     "landingViewHome": "Go to Home",
     "landingViewLastLocation": "Resume where I left off",
+    "friendsTabLabel": "Default Friends tab",
+    "friendsTabLast": "Where I left off",
     "unreadHeading": "Unread messages",
     "unreadLineLabel": "Show the \"new messages\" line",
     "unreadLineOn": "Show",
