@@ -21,6 +21,7 @@ export const PERMISSIONS = {
   MANAGE_BOTS: 1 << 16,
   CREATE_CHECKLISTS: 1 << 17,
   MENTION_EVERYONE: 1 << 18,
+  EDIT_MESSAGES: 1 << 19,
 };
 
 export const PERMISSION_INFO = [
@@ -43,6 +44,7 @@ export const PERMISSION_INFO = [
   { flag: PERMISSIONS.MANAGE_BOTS, key: 'manageBots', name: 'Manage Bots', desc: "Create, edit and delete this server's AI bots." },
   { flag: PERMISSIONS.CREATE_CHECKLISTS, key: 'createChecklists', name: 'Create Checklists', desc: 'Post checklists in public channels. Not needed in private channels or DMs.' },
   { flag: PERMISSIONS.MENTION_EVERYONE, key: 'mentionEveryone', name: 'Mention @everyone, @here and roles', desc: 'Ping every member, everyone online or a whole role. Without it those mentions are plain text.' },
+  { flag: PERMISSIONS.EDIT_MESSAGES, key: 'editMessages', name: 'Edit Messages', desc: "Edit other members' messages. Edited messages are tagged with who edited them." },
 ];
 
 export const SITE_PERMISSIONS = {
@@ -56,6 +58,7 @@ export const SITE_PERMISSIONS = {
   PRUNE_DATA: 1 << 7,
   MANAGE_AI: 1 << 8,
   MANAGE_CONSOLE: 1 << 9,
+  EDIT_ANY_MESSAGE: 1 << 10,
 };
 
 export const SITE_PERMISSION_INFO = [
@@ -63,6 +66,7 @@ export const SITE_PERMISSION_INFO = [
   { flag: SITE_PERMISSIONS.MANAGE_USERS, key: 'manageUsers', name: 'Manage Users', desc: 'Disable/enable accounts and view all users.' },
   { flag: SITE_PERMISSIONS.MANAGE_SITE_ROLES, key: 'manageSiteRoles', name: 'Manage Site Roles', desc: 'Create, edit and assign staff ranks.' },
   { flag: SITE_PERMISSIONS.DELETE_ANY_MESSAGE, key: 'deleteAnyMessage', name: 'Delete Any Message', desc: 'Delete any message on the instance.' },
+  { flag: SITE_PERMISSIONS.EDIT_ANY_MESSAGE, key: 'editAnyMessage', name: 'Edit Any Message', desc: 'Edit any channel or forum message on the instance. Never direct messages.' },
   { flag: SITE_PERMISSIONS.MANAGE_ANY_SERVER, key: 'manageAnyServer', name: 'Manage Any Server', desc: 'Delete or transfer any server on the instance.' },
   { flag: SITE_PERMISSIONS.SITE_ADMINISTRATOR, key: 'siteAdministrator', name: 'Site Administrator', desc: 'Bypasses every site permission check.' },
   { flag: SITE_PERMISSIONS.MANAGE_REPORTS, key: 'manageReports', name: 'Manage Reports', desc: 'View and resolve the user-report moderation queue.' },

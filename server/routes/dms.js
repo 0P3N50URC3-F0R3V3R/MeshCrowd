@@ -253,7 +253,53 @@ router.post('/:dmId/members', loadDm, (req, res) => {
   res.json({ dmId: req.dm.id, created: false });
 });
 
+function destroyDm(dm) {
+  const memberIds = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(dm.id).map((r) => r.user_id);
+  prune.wipeScope('dm', dm.id);
+  db.prepare('DELETE FROM dm_channels WHERE id = ?').run(dm.id);
+  require('../socket').dropFromDmCall(dm.id, memberIds);
+  notifyUserIds(memberIds, { type: 'dm_delete', dmId: dm.id });
+}
+
+// A group that shrinks to two people is an ordinary 1:1 again: no creator, no moderation, the
+// usual leave/close flow. Only member list and shape are pushed, never lastMessage/readStates.
+function revertToOneToOne(dm) {
+  db.prepare('UPDATE dm_channels SET is_group = 0, name = NULL WHERE id = ?').run(dm.id);
+  const fresh = db.prepare('SELECT * FROM dm_channels WHERE id = ?').get(dm.id);
+  for (const m of db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(dm.id)) {
+    const { lastMessage, readStates, ...payload } = dmPayloadFor(fresh, m.user_id);
+    notifyUser(m.user_id, { type: 'dm_update', dm: payload });
+  }
+}
+
+// Creator only, groups only. The last remaining pair becomes a 1:1, so nobody can be kicked once
+// only two people are left; ending the conversation is then the normal 1:1 delete.
+router.delete('/:dmId/members/:userId(\\d+)', loadDm, requireGroupCreator, (req, res) => {
+  const targetId = Number(req.params.userId);
+  if (targetId === req.user.id) return res.status(400).json({ error: 'use delete conversation instead of removing yourself' });
+  if (!db.prepare('SELECT 1 FROM dm_members WHERE dm_channel_id = ? AND user_id = ?').get(req.dm.id, targetId)) {
+    return res.status(404).json({ error: 'not a member of this conversation' });
+  }
+  db.prepare('DELETE FROM dm_members WHERE dm_channel_id = ? AND user_id = ?').run(req.dm.id, targetId);
+  require('../socket').dropFromDmCall(req.dm.id, [targetId]);
+  notifyUser(targetId, { type: 'dm_kicked', dmId: req.dm.id });
+  const left = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(req.dm.id).map((r) => r.user_id);
+  if (left.length <= 2) revertToOneToOne(req.dm);
+  else {
+    for (const id of left) {
+      const { lastMessage, readStates, ...payload } = dmPayloadFor(req.dm, id);
+      notifyUser(id, { type: 'dm_update', dm: payload });
+    }
+  }
+  res.json({ ok: true, reverted: left.length <= 2 });
+});
+
 router.delete('/:dmId/members/me', loadDm, (req, res) => {
+  // The creator leaving ends a group for everyone (the client asks them first).
+  if (req.dm.is_group && req.dm.created_by === req.user.id) {
+    destroyDm(req.dm);
+    return res.json({ ok: true, deleted: true });
+  }
   db.prepare('DELETE FROM dm_members WHERE dm_channel_id = ? AND user_id = ?').run(req.dm.id, req.user.id);
   require('../socket').dropFromDmCall(req.dm.id, [req.user.id]);
   // Nobody left to see it — wipe the conversation for good instead of leaving an orphaned,
@@ -262,7 +308,15 @@ router.delete('/:dmId/members/me', loadDm, (req, res) => {
   if (remaining === 0) {
     prune.wipeScope('dm', req.dm.id);
     db.prepare('DELETE FROM dm_channels WHERE id = ?').run(req.dm.id);
-  } else if (!req.dm.is_group) {
+  } else if (req.dm.is_group) {
+    if (remaining <= 2) revertToOneToOne(req.dm);
+    else {
+      for (const m of db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(req.dm.id)) {
+        const { lastMessage, readStates, ...payload } = dmPayloadFor(req.dm, m.user_id);
+        notifyUser(m.user_id, { type: 'dm_update', dm: payload });
+      }
+    }
+  } else {
     // The other side keeps the history until they choose to keep or delete it; they are asked.
     db.prepare('UPDATE dm_channels SET closed_by = ? WHERE id = ?').run(req.user.id, req.dm.id);
     const closedBy = toPublicUser(req.user, {});
@@ -277,11 +331,7 @@ router.delete('/:dmId/members/me', loadDm, (req, res) => {
 // Never available on a 1:1 DM: neither side is more "the creator" than the other there, so the
 // existing leave-for-yourself route above is the only lever a 1:1 participant gets.
 router.delete('/:dmId', loadDm, requireGroupCreator, (req, res) => {
-  const memberIds = db.prepare('SELECT user_id FROM dm_members WHERE dm_channel_id = ?').all(req.dm.id).map((r) => r.user_id);
-  prune.wipeScope('dm', req.dm.id);
-  db.prepare('DELETE FROM dm_channels WHERE id = ?').run(req.dm.id);
-  require('../socket').dropFromDmCall(req.dm.id, memberIds);
-  notifyUserIds(memberIds, { type: 'dm_delete', dmId: req.dm.id });
+  destroyDm(req.dm);
   res.json({ ok: true });
 });
 

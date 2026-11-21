@@ -21,8 +21,12 @@ function canManageSites(userId) {
   return hasSite(getSitePermissionBits(userId), SITE_PERMISSIONS.MANAGE_ANY_SERVER);
 }
 
+function canEditAnyMessage(userId) {
+  return hasSite(getSitePermissionBits(userId), SITE_PERMISSIONS.EDIT_ANY_MESSAGE);
+}
+
 function canUseConsole(userId) {
   return hasSiteStrict(getSitePermissionBits(userId), SITE_PERMISSIONS.MANAGE_CONSOLE);
 }
 
-module.exports = { getSitePermissionBits, isSiteAdmin, canManageSites, canUseConsole };
+module.exports = { getSitePermissionBits, isSiteAdmin, canManageSites, canEditAnyMessage, canUseConsole };

@@ -9,7 +9,9 @@ order: 3
 
 ## Az alapok
 
-Írj az alul lévő mezőbe és nyomj **Entert**. Új sorhoz használd a **Shift+Entert**. Egy üzenet fölé víve megjelennek a műveletei: válasz, reakció, szál, szerkesztés, kitűzés, továbbítás és még több. Üres mezőben a **Fel** billentyű az utolsó üzenetedet szerkeszti.
+Írj az alul lévő mezőbe és nyomj **Entert**. Új sorhoz használd a **Shift+Entert**. Egy üzenet fölé víve megjelennek a műveletei: válasz, reakció, szál, szerkesztés, kitűzés, továbbítás és még több. Üres mezőben a **Fel** billentyű az utolsó üzenetedet szerkeszti. Az **Üzenetek szerkesztése** szerverjoggal (vagy az oldal **Bármely üzenet szerkesztése** jogával) mások üzeneteit is szerkesztheted csatornákban és fórumbejegyzéseknél; ezek "(szerkesztette: Név)" jelzést kapnak.
+
+A **csoportos privát üzeneteknek** (három vagy több ember) van moderátora, a létrehozó. A létrehozó bármely üzenetet szerkeszthet és törölhet a csoportban, és a fejléc **Csoport tagjai** gombjával (telefonon a fogaskerék gombbal) eltávolíthat tagokat. Ha már csak ketten maradtok, a csoport normál kettesbeszélgetés lesz moderáció nélkül, ugyanez történik, ha egy tag kilépésével ketten maradnak. Ha a létrehozó kilép, a csoport mindenkinél törlődik, megerősítés után. Kettesben csak a szerző szerkesztheti vagy törölheti az üzenetét.
 
 ### Formázás
 

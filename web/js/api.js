@@ -556,6 +556,7 @@ export const api = {
   dmPruneExecute: (dmId, payload) => post(`/api/dms/${dmId}/prune/execute`, payload),
   leaveDm: (dmId) => del(`/api/dms/${dmId}/members/me`),
   deleteDm: (dmId) => del(`/api/dms/${dmId}`),
+  kickDmMember: (dmId, userId) => del(`/api/dms/${dmId}/members/${userId}`),
 
   // reports
   fileReport: (payload) => post('/api/reports', payload),

@@ -236,6 +236,11 @@ export async function mountShell(root) {
     if (!dm) return;
     Object.assign(dm, patch);
     bus.emit('state:dms');
+    if (patch.isGroup === false && state.view.type === 'dm' && state.view.dmId === dm.id) navigate({ type: 'dm', dmId: dm.id });
+  });
+  bus.on('ws:dm_kicked', ({ dmId }) => {
+    removeDm(dmId);
+    if (state.view.type === 'dm' && state.view.dmId === dmId) { toast(t('dmMembers.kickedToast')); navigate({ type: 'home' }); }
   });
   bus.on('ws:dm_delete', ({ dmId }) => {
     removeDm(dmId);
@@ -536,6 +541,42 @@ export async function mountShell(root) {
     navigate(first ? { type: 'server', serverId, channelId: first.id } : { type: 'home' });
   }
 
+  // Group creator only (enforced server-side too). Kicking down to two people turns the group
+  // back into a plain 1:1, after which this button disappears with the group header.
+  function openDmMembersModal(dm) {
+    openModal({
+      title: t('dmMembers.title'),
+      render(body, close) {
+        const draw = () => {
+          body.innerHTML = `<p style="color:var(--text-secondary);font-size:14px;margin:0 0 12px">${t('dmMembers.note')}</p>
+            ${dm.members.map((u) => `
+              <div class="dm-member-row" style="display:flex;align-items:center;gap:10px;padding:6px 0">
+                ${avatarHtml(u, 32)}
+                <span style="flex:1">${escapeHtml(u.displayName)}</span>
+                <button class="btn btn-danger btn-sm" data-kick="${u.id}">${t('dmMembers.removeButton')}</button>
+              </div>`).join('')}`;
+          body.querySelectorAll('[data-kick]').forEach((btn) => btn.addEventListener('click', () => {
+            const target = dm.members.find((u) => String(u.id) === btn.dataset.kick);
+            if (!target) return;
+            confirmModal({
+              title: t('dmMembers.removeTitle'),
+              message: t('dmMembers.removeConfirm', { name: escapeHtml(target.displayName) }),
+              confirmLabel: t('dmMembers.removeButton'),
+              onConfirm: async () => {
+                try {
+                  const res = await api.kickDmMember(dm.id, target.id);
+                  if (res.reverted) { close(); navigate({ type: 'dm', dmId: dm.id }); return; }
+                  draw();
+                } catch (err) { toast(apiErrorMessage(err, t('dmMembers.removeError')), { type: 'error' }); }
+              },
+            });
+          }));
+        };
+        draw();
+      },
+    });
+  }
+
   // Group creator only (enforced server-side too) — always immediate, no grace-period option,
   // this is a small self-service cleanup action, not the heavier instance-wide admin tooling.
   function openDmPruneModal(dm) {
@@ -810,6 +851,7 @@ export async function mountShell(root) {
             <button class="btn-icon" id="pins-btn" title="${t('shell.pinnedMessagesTitle')}">${icons.pin(18)}</button>
             <button class="btn-icon" id="search-btn" title="${t('shell.searchTitle')}">${icons.search(18)}</button>
             <button class="btn-icon" id="notif-bell" title="${t('shell.notificationSettingsTitle')}">${icons.bell(18)}</button>
+            ${dm?.isGroup && dm.createdBy === state.me.id ? `<button class="btn-icon" id="dm-members-btn" title="${t('dmMembers.title')}">${icons.users(18)}</button>` : ''}
             ${dm?.isGroup && dm.createdBy === state.me.id ? `<button class="btn-icon" id="dm-prune-btn" title="${t('shell.pruneGroupHistoryTitle')}">${icons.trash(18)}</button>` : ''}
           </div>
         </div>
@@ -837,6 +879,7 @@ export async function mountShell(root) {
         titleEl.addEventListener('click', () => openFullProfile(dm.members[0].id));
       }
       mainEl.querySelector('#dm-prune-btn')?.addEventListener('click', () => openDmPruneModal(dm));
+      mainEl.querySelector('#dm-members-btn')?.addEventListener('click', () => openDmMembersModal(dm));
       wirePanelToggles(membersEl, 'dm', view.dmId, [
         {
           btn: mainEl.querySelector('#pins-btn'), mode: 'pinned',
@@ -880,7 +923,8 @@ export async function mountShell(root) {
       callBtn.addEventListener('click', () => setCallPanelOpen(voicePanelEl.hidden));
       if (view.autoOpenCall) setCallPanelOpen(true);
 
-      currentChat = mountChat(document.getElementById('chat-body'), { kind: 'dm', dmId: view.dmId, canSend: true, canManage: false, jumpToMessageId: view.jumpToMessageId }, {
+      const isGroupCreator = !!dm?.isGroup && dm.createdBy === state.me.id;
+      currentChat = mountChat(document.getElementById('chat-body'), { kind: 'dm', dmId: view.dmId, canSend: true, canManage: isGroupCreator, canEditOthers: isGroupCreator, jumpToMessageId: view.jumpToMessageId }, {
         emptyTitle: name ? t('shell.dmHistoryBeginning', { name }) : t('shell.sayHello'),
         emptyBody: t('shell.noMessagesYet'),
       });
@@ -914,13 +958,14 @@ export async function mountShell(root) {
       const chBits = channelPermissionBits(channel, detail.roles, myMember, memberBits, isOwner);
       const canSend = has(chBits, PERMISSIONS.SEND_MESSAGES);
       const canManage = has(chBits, PERMISSIONS.MANAGE_MESSAGES);
+      const canEditOthers = has(chBits, PERMISSIONS.EDIT_MESSAGES);
       const canManageChannel = has(chBits, PERMISSIONS.MANAGE_CHANNELS);
       const canChecklist = channel.type === 'private' || canManage || has(chBits, PERMISSIONS.CREATE_CHECKLISTS);
       const canModerateVoice = has(chBits, PERMISSIONS.MODERATE_MEMBERS);
       const showInviteBtn = channel.type === 'private' && canManageChannel;
 
       if (view.threadId) {
-        renderThreadInline(detail, channel, view, { canSend, canManage, canManageChannel, canChecklist });
+        renderThreadInline(detail, channel, view, { canSend, canManage, canEditOthers, canManageChannel, canChecklist });
         return;
       }
 
@@ -985,7 +1030,7 @@ export async function mountShell(root) {
         // would duplicate them, and pins live inside each post.
         mainEl.querySelectorAll('#threads-btn, #pins-btn').forEach((b) => { b.style.display = 'none'; });
         currentChat = mountForum(document.getElementById('chat-body'), {
-          serverId: view.serverId, channelId: view.channelId, channelName: channel.name, canSend, canManage, canChecklist,
+          serverId: view.serverId, channelId: view.channelId, channelName: channel.name, canSend, canManage, canEditOthers, canChecklist,
           channels: detail.channels, customEmoji: detail.customEmoji, stickers: detail.stickers, rawHtmlEnabled: !!detail.server.raw_html_enabled,
           roles: detail.roles, members: detail.members,
         });
@@ -1008,7 +1053,7 @@ export async function mountShell(root) {
           serverId: view.serverId, channelId: view.channelId, channelName: channel.name, sounds: detail.sounds, canManageChannel, canModerateVoice, voiceQuality: channel.voice_quality,
         });
         currentChat = mountChat(document.getElementById('voice-chat-body'), {
-          kind: 'channel', serverId: view.serverId, channelId: view.channelId, canSend, canManage, canChecklist, channelType: channel.type, channelName: channel.name, channels: detail.channels, customEmoji: detail.customEmoji, stickers: detail.stickers, rawHtmlEnabled: !!detail.server.raw_html_enabled,
+          kind: 'channel', serverId: view.serverId, channelId: view.channelId, canSend, canManage, canEditOthers, canChecklist, channelType: channel.type, channelName: channel.name, channels: detail.channels, customEmoji: detail.customEmoji, stickers: detail.stickers, rawHtmlEnabled: !!detail.server.raw_html_enabled,
         }, {
           emptyTitle: t('shell.welcomeToChannel', { channel: channel.name }),
           emptyBody: channel.topic || t('shell.startOfChannel'),
@@ -1022,7 +1067,7 @@ export async function mountShell(root) {
         });
       } else {
         currentChat = mountChat(document.getElementById('chat-body'), {
-          kind: 'channel', serverId: view.serverId, channelId: view.channelId, canSend, canManage, canChecklist, channelType: channel.type, channelName: channel.name, channels: detail.channels, customEmoji: detail.customEmoji, stickers: detail.stickers, jumpToMessageId: view.jumpToMessageId, rawHtmlEnabled: !!detail.server.raw_html_enabled,
+          kind: 'channel', serverId: view.serverId, channelId: view.channelId, canSend, canManage, canEditOthers, canChecklist, channelType: channel.type, channelName: channel.name, channels: detail.channels, customEmoji: detail.customEmoji, stickers: detail.stickers, jumpToMessageId: view.jumpToMessageId, rawHtmlEnabled: !!detail.server.raw_html_enabled,
         }, {
           emptyTitle: t('shell.welcomeToChannelHash', { channel: channel.name }),
           emptyBody: channel.topic || t('shell.startOfChannel'),
@@ -1081,7 +1126,7 @@ export async function mountShell(root) {
   // returns to the parent channel (the forum's post list, or the regular channel it branched
   // from); the thread's own opening message renders highlighted at the top of the message list
   // (see chat.js's `thread-op` class) so it reads like a pinned "main post", not just message #1.
-  function renderThreadInline(detail, channel, view, { canSend, canManage, canManageChannel, canChecklist }) {
+  function renderThreadInline(detail, channel, view, { canSend, canManage, canEditOthers, canManageChannel, canChecklist }) {
     const mainEl = document.getElementById('s-main');
     const membersEl = document.getElementById('s-members');
     mainEl.innerHTML = `
@@ -1182,7 +1227,7 @@ export async function mountShell(root) {
         }));
       }
       const postEditBtn = document.getElementById('thread-edit-btn');
-      if (canEditPost(res.thread, state.me) && postEditBtn) {
+      if (canEditPost(res.thread, state.me, { canEditOthers }) && postEditBtn) {
         postEditBtn.style.display = '';
         postEditBtn.addEventListener('click', () => editPost(view.serverId, view.channelId, view.threadId));
       }
@@ -1207,7 +1252,7 @@ export async function mountShell(root) {
 
     currentChat = mountChat(document.getElementById('chat-body'), {
       kind: 'thread', serverId: view.serverId, channelId: view.channelId, threadId: view.threadId,
-      canSend, canManage, canChecklist, channels: detail.channels, customEmoji: detail.customEmoji, stickers: detail.stickers, jumpToMessageId: view.jumpToMessageId, rawHtmlEnabled: !!detail.server.raw_html_enabled,
+      canSend, canManage, canEditOthers, canChecklist, channels: detail.channels, customEmoji: detail.customEmoji, stickers: detail.stickers, jumpToMessageId: view.jumpToMessageId, rawHtmlEnabled: !!detail.server.raw_html_enabled,
     }, {
       emptyTitle: t('shell.startOfThread'),
       emptyBody: '',

@@ -6,6 +6,10 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 #### Added
 - Friends tab memory: the Friends page reopens on the tab you last used (Online, All, Pending, Blocked). Settings, Appearance has a "Default Friends tab" dropdown (Where I left off, Online, All, Pending, Blocked). Stored server side in `ui-prefs` (`friendsTabDefault`, `friendsLastTab`), so it follows you across devices. Notification links still open their own tab.
 
+- Editing other members' messages in channels, threads and forum posts (web, desktop and phone UI). New server permission "Edit Messages" (`EDIT_MESSAGES`, server administrators and the owner always have it) and new site permission "Edit Any Message" (`EDIT_ANY_MESSAGE`, implied by Site Administrator). Messages edited by someone other than the author show "(edited by Name)" instead of "(edited)"; the author editing again clears it. `editedBy` is part of the message object (new `messages.edited_by` column). DMs stay author-only, system messages stay uneditable, and Manage Messages alone does not allow editing.
+
+- Group DM moderation (3 or more people): the creator can edit and delete any message in the group (edits are tagged "edited by Name") and remove members (Group members button on the web/desktop header, gear button on the phone UI; `DELETE /api/dms/:id/members/:userId`, removed members get a `dm_kicked` event). When only two people are left the group reverts to a normal 1:1 (no creator, no moderation, usual leave/close flow); a member leaving down to two does the same. The creator leaving a group ends it for everyone, after the existing confirmation (now spelled out). 1:1 DMs stay author-only.
+
 #### Changed
 - Website and wiki (EN and HU): federation is described as pairing with any number of servers (each pairing accepted and revocable separately), not just two.
 

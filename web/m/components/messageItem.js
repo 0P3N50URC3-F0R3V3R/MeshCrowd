@@ -79,7 +79,7 @@ export function messageHtml(msg, ctx) {
         <time title="${escapeHtml(formatTimestamp(msg.createdAt))}">${formatShortTime(msg.createdAt)}</time>${msg.pinnedAt ? `<span class="m-pin" title="${t('m.pinnedBadge')}">${icons.pin(12)}</span>` : ''}</div>`}
       ${msg.forwardedFrom ? `<div class="m-forwarded">${icons.forward(12)} ${t('m.forwardedFrom')}</div>` : ''}
       ${replyHtml(msg.replyTo)}
-      ${text}${msg.editedAt ? `<span class="m-edited">${t('m.edited')}</span>` : ''}
+      ${text}${msg.editedAt ? `<span class="m-edited">${msg.editedBy ? t('m.editedBy', { name: escapeHtml(msg.editedBy.displayName) }) : t('m.edited')}</span>` : ''}
       ${msg.sound ? soundHtml(msg.sound) : ''}
       ${msg.sticker ? `<img class="m-sticker anim-limit" src="${escapeHtml(msg.sticker.imagePath)}" alt="${escapeHtml(msg.sticker.name)}">` : ''}
       ${attachmentsHtml(msg)}${msg.poll ? pollHtml(msg.poll, ctx.meId, msg.id) : ''}${msg.checklist ? checklistHtml(msg.checklist, ctx.meId, undefined, msg.content) : ''}${embedHtml(msg.embed)}${reactionsHtml(msg, ctx.meId, ctx.detail?.customEmoji)}

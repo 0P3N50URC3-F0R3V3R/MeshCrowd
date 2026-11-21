@@ -520,7 +520,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       return `<div class="msg-ignored" data-reveal-ignored="${m.id}">${escapeHtml(t('msgMenu.ignoredMessage'))}</div>`;
     }
 
-    const canEdit = isSelf(m.author.id);
+    const canEdit = canEditMessage(m);
     const canDelete = isSelf(m.author.id) || scope.canManage;
     const canPinHere = scope.kind === 'dm' || scope.canManage;
 
@@ -567,7 +567,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     }
     if (m.content && !m.checklist) {
       const emojiOnly = isEmojiOnly(m.content, scope.customEmoji) && !m.poll;
-      parts.push(`<div class="msg-line ${emojiOnly ? 'msg-emoji-only' : ''}">${renderMessageContent(m.content, { channels: scope.channels, customEmoji: scope.customEmoji, rawHtmlEnabled: scope.rawHtmlEnabled, mentionNames: scopeMentionNames() })}${m.editedAt ? `<span class="edited-tag">${t('chat.editedTag')}</span>` : ''}</div>`);
+      parts.push(`<div class="msg-line ${emojiOnly ? 'msg-emoji-only' : ''}">${renderMessageContent(m.content, { channels: scope.channels, customEmoji: scope.customEmoji, rawHtmlEnabled: scope.rawHtmlEnabled, mentionNames: scopeMentionNames() })}${m.editedAt ? `<span class="edited-tag">${m.editedBy ? t('chat.editedByTag', { name: escapeHtml(m.editedBy.displayName) }) : t('chat.editedTag')}</span>` : ''}</div>`);
     }
     if (m.sticker) parts.push(`<img class="sticker-message anim-limit" src="${escapeHtml(m.sticker.imagePath)}" alt="${escapeHtml(m.sticker.name)}" title="${escapeHtml(m.sticker.name)}">`);
     if (m.sound) parts.push(`<div class="sound-message"><button type="button" class="btn sound-play" data-sound-src="${escapeHtml(m.sound.audioPath)}" title="${escapeHtml(m.sound.name)}">${icons.music(18)} ${m.sound.emoji ? `${escapeHtml(m.sound.emoji)} ` : ''}${escapeHtml(m.sound.name)}</button></div>`);
@@ -858,7 +858,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       { label: t('msgMenu.copyLink'), onClick: () => copyToClipboard(messageLink(msg), 'msgMenu.linkCopiedToast') },
       ...(text ? [{ label: t('msgMenu.readAloud'), onClick: () => readAloud(text) }] : []),
       ...((scope.kind === 'dm' || scope.canManage) ? [{ label: msg.pinnedAt ? t('chat.unpinMessageTitle') : t('chat.pinMessageTitle'), onClick: () => togglePin(msg) }] : []),
-      ...(mine ? [{ label: t('events.editTitle'), onClick: () => startEdit(msg, groupEl) }] : []),
+      ...(canEditMessage(msg) ? [{ label: t('events.editTitle'), onClick: () => startEdit(msg, groupEl) }] : []),
       ...(mine || scope.canManage ? [{ label: t('admin.deleteButton'), danger: true, onClick: () => doDelete(msg) }] : []),
       ...(!mine ? ['sep', { label: t('msgMenu.report'), danger: true, onClick: () => openMessageReportModal(msg) }] : []),
     ];
@@ -1112,6 +1112,13 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       if (e.target === box || e.target.closest('.lb-close')) close();
     });
     document.addEventListener('keydown', onKey);
+  }
+
+  function canEditMessage(m) {
+    if (isSelf(m.author.id)) return true;
+    if (m.eventType || m.isWebhook) return false;
+    if (scope.kind === 'dm') return !!scope.canEditOthers;
+    return !!(scope.canEditOthers || state.me?.canEditAnyMessage);
   }
 
   function startEdit(msg, groupEl) {

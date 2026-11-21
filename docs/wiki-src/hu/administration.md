@@ -15,6 +15,7 @@ Az adminpanel csak az **oldalszemélyzeti ranggal** rendelkező fiókoknak láts
 | Felhasználók kezelése | Fiókok letiltása és engedélyezése, bármely profil szerkesztése |
 | Oldalrangok kezelése | Személyzeti rangok létrehozása és kiosztása |
 | Bármely üzenet törlése | Tartalom eltávolítása bárhol |
+| Bármely üzenet szerkesztése | A példány bármely csatorna- vagy fórumüzenetének szerkesztése (privát üzeneteké soha) |
 | Bármely szerver kezelése | Bármely szerver törlése vagy átruházása, Oldalak létrehozása |
 | Bejelentések kezelése | A felhasználói bejelentési sor feldolgozása |
 | Adatok ritkítása | Előzmények tömeges törlése dátum szerint |

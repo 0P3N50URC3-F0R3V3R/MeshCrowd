@@ -129,6 +129,7 @@ const COLUMN_MIGRATIONS = [
   { table: 'roles', column: 'icon_path', ddl: 'ALTER TABLE roles ADD COLUMN icon_path TEXT' },
   { table: 'messages', column: 'interaction_command', ddl: 'ALTER TABLE messages ADD COLUMN interaction_command TEXT' },
   { table: 'messages', column: 'interaction_user_id', ddl: 'ALTER TABLE messages ADD COLUMN interaction_user_id INTEGER' },
+  { table: 'messages', column: 'edited_by', ddl: 'ALTER TABLE messages ADD COLUMN edited_by INTEGER REFERENCES users(id) ON DELETE SET NULL' },
   { table: 'reports', column: 'admin_notes', ddl: "ALTER TABLE reports ADD COLUMN admin_notes TEXT NOT NULL DEFAULT ''" },
   { table: 'reports', column: 'updated_at', ddl: 'ALTER TABLE reports ADD COLUMN updated_at TEXT' },
   { table: 'reports', column: 'updated_by', ddl: 'ALTER TABLE reports ADD COLUMN updated_by INTEGER' },

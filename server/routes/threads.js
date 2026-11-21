@@ -9,7 +9,7 @@ const { db, DATA_DIR } = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { PERMISSIONS, SITE_PERMISSIONS, has, hasSite } = require('../lib/permissions');
 const { getChannelPermissionBits } = require('../lib/channelAccess');
-const { listMessages, serializeMessage } = require('../lib/messages');
+const { listMessages, serializeMessage, canEditOthersMessage } = require('../lib/messages');
 const { toPublicUser } = require('../lib/publicUser');
 const { broadcastToChannel } = require('../socket/hub');
 const { parseMentions, notifyChannelMessage, notifyThreadStarted } = require('../lib/notifications');
@@ -163,7 +163,8 @@ router.patch('/:threadId', loadThread, (req, res) => {
   if (wantsPin && !has(getChannelPermissionBits(req.channel, req.user.id), PERMISSIONS.MANAGE_MESSAGES)) {
     return res.status(403).json({ error: 'missing permission' });
   }
-  if (wantsRewrite && req.thread.created_by !== req.user.id) {
+  const isCreator = req.thread.created_by === req.user.id;
+  if (wantsRewrite && !isCreator && !canEditOthersMessage('thread', req.channel, req.user.id, req.sitePermissions)) {
     return res.status(403).json({ error: 'only the author can edit this post' });
   }
   if (wantsArchive && !canManageThread(req)) return res.status(403).json({ error: 'missing permission' });
@@ -192,7 +193,7 @@ router.patch('/:threadId', loadThread, (req, res) => {
   if (content !== null) {
     const first = db.prepare('SELECT id FROM messages WHERE scope_type = ? AND scope_id = ? ORDER BY id ASC LIMIT 1').get('thread', req.thread.id);
     if (first) {
-      db.prepare("UPDATE messages SET content = ?, edited_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?").run(content, first.id);
+      db.prepare("UPDATE messages SET content = ?, edited_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), edited_by = ? WHERE id = ?").run(content, isCreator ? null : req.user.id, first.id);
       edited = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(first.id));
     }
   }

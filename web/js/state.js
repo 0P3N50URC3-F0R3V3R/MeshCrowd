@@ -176,6 +176,8 @@ export function updateDm(dm) {
   if (!cur) return upsertDm(dm);
   cur.members = dm.members;
   cur.name = dm.name;
+  if (dm.isGroup !== undefined) cur.isGroup = dm.isGroup;
+  if (dm.createdBy !== undefined) cur.createdBy = dm.createdBy;
   bus.emit('state:dms');
 }
 

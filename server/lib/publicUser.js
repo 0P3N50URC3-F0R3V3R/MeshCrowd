@@ -1,6 +1,6 @@
 'use strict';
 
-const { isSiteAdmin, canManageSites } = require('./siteAuth');
+const { isSiteAdmin, canManageSites, canEditAnyMessage } = require('./siteAuth');
 const { isOnline } = require('./presence');
 const notifyGrid = require('./notifyGrid');
 
@@ -34,6 +34,7 @@ function toPublicUser(user, { viewerIsSelf = false, areFriends = false } = {}) {
     customStatusEmoji: hideStatus ? '' : (user.custom_status_emoji || ''),
     isSiteAdmin: isSiteAdmin(user.id),
     canManageSites: canManageSites(user.id),
+    canEditAnyMessage: canEditAnyMessage(user.id),
     e2eePublicKey: user.e2ee_public_key || null,
     passportId: user.passport_id || null,
     isBot: !!user.is_bot,

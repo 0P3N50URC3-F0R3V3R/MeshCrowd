@@ -1257,6 +1257,8 @@
     "levelMute": "Némítás",
     "leaveServer": "Szerver elhagyása",
     "leaveConfirm": "Elhagyod ezt a szervert?",
+    "deleteGroupConfirm": "Törlöd ezt a csoportot mindenkinél? Létrehozóként a kilépés mindenki számára megszünteti. Ez végleges.",
+    "removeMemberConfirm": "Eltávolítod {name} felhasználót a csoportból?",
     "markRead": "Megjelölés olvasottként",
     "channels": "Csatornák",
     "muteChannel": "Csatorna némítása",
@@ -1282,6 +1284,7 @@
     "typingMany": "Többen írnak…",
     "chatStart": "Ez a beszélgetés kezdete.",
     "edited": "(szerkesztve)",
+    "editedBy": "(szerkesztette: {name})",
     "pinnedBadge": "Kitűzve",
     "forwardedFrom": "Továbbítva",
     "fileTooBig": "A fájl túl nagy (max. {mb} MB)",
@@ -1616,7 +1619,7 @@
     "leaveConversationMenuItem": "Kilépés a beszélgetésből",
     "unknownUserFallback": "Ismeretlen",
     "thisConversationFallback": "ez a beszélgetés",
-    "deleteGroupConfirmMessage": "Törlöd ezt mindenkinél: <strong>{name}</strong>? Ez végleges.",
+    "deleteGroupConfirmMessage": "Törlöd ezt mindenkinél: <strong>{name}</strong>? Létrehozóként a kilépés a csoportot mindenki számára megszünteti. Ez végleges.",
     "leaveConversationConfirmMessage": "Kilépsz innen: <strong>{name}</strong>?",
     "leaveButton": "Kilépés",
     "couldNotLeaveConversation": "Nem sikerült kilépni a beszélgetésből.",
@@ -2005,6 +2008,7 @@
     "forwardActionTitle": "Továbbítás",
     "forwardedMessageTag": "Továbbított üzenet",
     "editedTag": "(szerkesztve)",
+    "editedByTag": "(szerkesztette: {name})",
     "channelRefLabel": "A(z) #{name} csatorna megnyitása",
     "uploadingProgress": "Feltöltés… {pct}%",
     "failedToSend": "Nem sikerült elküldeni. ",
@@ -2288,6 +2292,15 @@
     "noMutualServers": "Nem vagytok közös szerveren.",
     "noActivityTitle": "{name} nem rendelkezik itt megosztható tevékenységekkel",
     "noActivityBody": "A profilja igazán egyszerű - kérdezd meg, mit csinál."
+  },
+  "dmMembers": {
+    "title": "Csoport tagjai",
+    "note": "Létrehozóként eltávolíthatsz embereket a csoportból. Ha már csak ketten maradtok, normál kétszemélyes beszélgetés lesz belőle.",
+    "removeButton": "Eltávolítás",
+    "removeTitle": "Eltávolítás a csoportból",
+    "removeConfirm": "Eltávolítod <strong>{name}</strong> felhasználót a csoportból?",
+    "removeError": "A tag eltávolítása nem sikerült.",
+    "kickedToast": "Eltávolítottak a csoportból."
   },
   "dmMenu": {
     "pin": "Beszélgetés kitűzése",
@@ -2914,9 +2927,17 @@
       "mentionEveryone": {
         "name": "@everyone, @here és szerepkörök említése",
         "desc": "Minden tag, minden online tag vagy egy teljes szerepkör értesítése. Nélküle ezek az említések sima szövegek."
+      },
+      "editMessages": {
+        "name": "Üzenetek szerkesztése",
+        "desc": "Mások üzeneteinek szerkesztése. A szerkesztett üzeneten látszik, ki szerkesztette."
       }
     },
     "site": {
+      "editAnyMessage": {
+        "name": "Bármely üzenet szerkesztése",
+        "desc": "A példány bármely csatorna- vagy fórumüzenetének szerkesztése. Privát üzenetekét soha."
+      },
       "viewAdminPanel": {
         "name": "Admin panel megtekintése",
         "desc": "Hozzáférés az oldal admin paneljéhez."

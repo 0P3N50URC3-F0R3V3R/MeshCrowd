@@ -53,6 +53,7 @@ A szerepkörök jogosultsági jelzők halmazai. Mindenki megkapja a beépített 
 |---|---|
 | Csatorna megtekintése, Üzenetküldés, Fájlcsatolás | Alapvető olvasás, írás és feltöltés |
 | Üzenetek kezelése | Más üzeneteinek törlése és kitűzése |
+| Üzenetek szerkesztése | Más üzeneteinek szerkesztése; az üzenet ezután "(szerkesztette: Név)" jelzést kap. Nem része az Üzenetek kezelése jognak, külön kell adni. A szerver adminisztrátorai és a tulajdonos mindig megkapják |
 | Csatornák kezelése | Csatornák, kategóriák és csatornawebhookok létrehozása, szerkesztése és törlése |
 | Szerepkörök kezelése | Szerepkörök létrehozása és kiosztása |
 | Szerver kezelése | A szerver átnevezése, meghívók, fogadás, AutoMod, sablonok, statisztika |

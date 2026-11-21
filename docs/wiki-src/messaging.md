@@ -9,7 +9,9 @@ order: 3
 
 ## The basics
 
-Type in the box at the bottom and press **Enter**. Use **Shift+Enter** for a new line. Hover a message for its actions: reply, react, thread, edit, pin, forward and more. Press **Up** in an empty box to edit your last message.
+Type in the box at the bottom and press **Enter**. Use **Shift+Enter** for a new line. Hover a message for its actions: reply, react, thread, edit, pin, forward and more. Press **Up** in an empty box to edit your last message. People with the **Edit Messages** server permission (or the site's **Edit Any Message**) can also edit other members' messages in channels and forum posts; those show "(edited by Name)".
+
+**Group DMs** (three or more people) have a moderator, the creator. The creator can edit and delete any message in the group and remove members with the **Group members** button in the header (gear button on the phone). When only two people are left the group becomes an ordinary 1:1 with no moderation, and a member leaving down to two does the same. If the creator leaves, the group is deleted for everyone, after a confirmation. In 1:1 conversations only the author can edit or delete a message.
 
 ### Formatting
 

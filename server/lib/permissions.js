@@ -21,6 +21,7 @@ const PERMISSIONS = {
   MANAGE_BOTS:        1 << 16,  // create/edit/delete this server's AI bots
   CREATE_CHECKLISTS:  1 << 17,  // post checklists in non-private channels
   MENTION_EVERYONE:   1 << 18,  // @everyone, @here and role mentions that notify people
+  EDIT_MESSAGES:      1 << 19,  // edit other members' messages in this server's channels
 };
 
 const DEFAULT_EVERYONE_PERMISSIONS =
@@ -49,6 +50,7 @@ const SITE_PERMISSIONS = {
   PRUNE_DATA:           1 << 7,  // bulk-delete any server's channel history, or any DM/group by date (never message content)
   MANAGE_AI:            1 << 8,  // configure AI providers, manage AI bots on any server
   MANAGE_CONSOLE:       1 << 9,  // use the admin SSH console; deliberately NOT implied by SITE_ADMINISTRATOR (see hasSiteStrict)
+  EDIT_ANY_MESSAGE:     1 << 10, // edit any channel/forum message on the instance (never DMs)
 };
 
 const OWNER_SITE_PERMISSIONS = Object.values(SITE_PERMISSIONS).reduce((a, b) => a | b, 0);

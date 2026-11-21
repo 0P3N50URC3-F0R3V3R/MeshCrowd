@@ -189,6 +189,7 @@ export function wireRealtime() {
     bus.emit('state:dms');
   });
   bus.on('ws:dm_delete', ({ dmId }) => removeDm(dmId));
+  bus.on('ws:dm_kicked', ({ dmId }) => removeDm(dmId));
   bus.on('ws:dm_read', ({ dmId, userId, messageId }) => applyDmRead(dmId, userId, messageId));
   bus.on('ws:message_delete', ({ messageId, scopeType, scopeId }) => {
     if (scopeType === 'dm' && state.dms.find((d) => d.id === scopeId)?.lastMessage?.id === messageId) bus.emit('dms:unknownScope', scopeId);

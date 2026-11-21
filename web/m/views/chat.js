@@ -65,7 +65,7 @@ export function mountChat(el, params) {
   const deleted = new Set(); // ids deleted over the websocket, so a racing create cannot bring them back
   let pending = uploads.forScope(scopeKey);
   let detail = null; let channel = null; let thread = null;
-  let canSend = true; let canManage = false; let canChecklist = false;
+  let canSend = true; let canManage = false; let canEditOthers = !!state.me?.canEditAnyMessage; let canChecklist = false;
   let atStart = false; let isLatest = true; let loadingOlder = false; let destroyed = false; let stickToBottom = true;
   let composer = null; let readTimer = null; let queue = Promise.resolve();
   const typing = new Map();
@@ -108,9 +108,12 @@ export function mountChat(el, params) {
   el.querySelector('#m-back').addEventListener('click', () => nav.back());
 
   // ---------- context ----------
+  function isGroupCreator() { const d = dm(); return kind === 'dm' && !!d?.isGroup && d.createdBy === state.me.id; }
+
   async function resolveContext() {
     if (kind === 'dm') {
       const d = dm();
+      canManage = canEditOthers = isGroupCreator();
       const title = dmTitle(d, nameFor);
       el.querySelector('#m-title').textContent = title;
       return { placeholder: t('m.composerPhDm', { name: title }) };
@@ -123,6 +126,7 @@ export function mountChat(el, params) {
     const chBits = channelPermissionBits(channel, detail.roles, me, memberBits, isOwner);
     canSend = has(chBits, PERMISSIONS.SEND_MESSAGES) && !(me?.timeoutUntil && new Date(me.timeoutUntil) > new Date());
     canManage = has(chBits, PERMISSIONS.MANAGE_MESSAGES);
+    canEditOthers = canEditOthers || has(chBits, PERMISSIONS.EDIT_MESSAGES);
     canChecklist = channel.type === 'private' || canManage || has(chBits, PERMISSIONS.CREATE_CHECKLISTS);
     if (kind === 'thread') {
       const res = await api.getThread(params.serverId, params.channelId, params.threadId);
@@ -315,6 +319,15 @@ export function mountChat(el, params) {
   // ---------- live ----------
   const belongs = (p) => p.scopeType === scopeType && String(p.scopeId) === String(scopeId);
   const enqueue = (fn) => { queue = queue.then(fn).catch(() => {}); };
+  if (kind === 'dm') {
+    offs.push(bus.on('state:dms', () => {
+      if (destroyed) return;
+      const was = canManage;
+      canManage = canEditOthers = isGroupCreator();
+      if (was !== canManage) paintHeaderActions();
+    }));
+    offs.push(bus.on('ws:dm_kicked', ({ dmId }) => { if (dmId === params.dmId) { toast(t('dmMembers.kickedToast')); nav.back(); } }));
+  }
   offs.push(bus.on('ws:message_create', ({ message }) => enqueue(async () => {
     if (destroyed || !belongs(message) || messages.some((m) => m.id === message.id)) return;
     if (!isLatest) { jumpEl.hidden = false; return; } // would sit after a gap; the jump button reloads the latest page
@@ -432,7 +445,7 @@ export function mountChat(el, params) {
     paint(); scrollBottom(); markReadSoon();
   }));
 
-  const ctxForSheets = () => ({ kind, scopeType, scopeId, params, detail, channel, thread, canSend, canManage, dm: dm(), composer, scrollToMessage });
+  const ctxForSheets = () => ({ kind, scopeType, scopeId, params, detail, channel, thread, canSend, canManage, canEditOthers, dm: dm(), composer, scrollToMessage });
 
   async function boot() {
     let info;
@@ -672,8 +685,9 @@ export function mountChat(el, params) {
     box.innerHTML = `<button class="m-icon-btn" id="m-search" aria-label="${t('m.searchAction')}">${icons.search(20)}</button>`
       + (kind === 'dm' ? `<button class="m-icon-btn" id="m-call" aria-label="${t('m.callAction')}">${icons.phone(20)}</button>` : '')
       + (kind === 'dm' && dm() && !dm().closedBy ? `<button class="m-icon-btn" id="m-add-people" aria-label="${t('dmPicker.addTitle')}">${icons.userPlus(20)}</button>` : '')
+      + (isGroupCreator() ? `<button class="m-icon-btn" id="m-dm-members" aria-label="${t('dmMembers.title')}">${icons.gear(20)}</button>` : '')
       + (kind === 'channel' ? `<button class="m-icon-btn${channelHasUnreadThreads(params.channelId) ? ' m-pin-dot' : ''}" id="m-threads" aria-label="${t('m.threads')}">${icons.messageSquare(20)}</button>` : '')
-      + (kind === 'thread' && thread && (canEditPost(thread, state.me) || canDeletePost(thread, state.me, { canManage })) ? `<button class="m-icon-btn" id="m-post-menu" aria-label="${t('forum.postActions')}">${icons.more(20)}</button>` : '')
+      + (kind === 'thread' && thread && (canEditPost(thread, state.me, { canEditOthers }) || canDeletePost(thread, state.me, { canManage })) ? `<button class="m-icon-btn" id="m-post-menu" aria-label="${t('forum.postActions')}">${icons.more(20)}</button>` : '')
       + `<button class="m-icon-btn${pinUnseen(kind, kind === 'dm' ? params.dmId : kind === 'thread' ? params.threadId : params.channelId) ? ' m-pin-dot' : ''}" id="m-info" aria-label="${t('m.infoMembers')}">${icons.users(20)}</button>`;
     box.querySelector('#m-call')?.addEventListener('click', () => nav.push('voice', { kind: 'dm', dmId: params.dmId }));
     box.querySelector('#m-add-people')?.addEventListener('click', () => {
@@ -687,6 +701,16 @@ export function mountChat(el, params) {
         },
       });
     });
+    box.querySelector('#m-dm-members')?.addEventListener('click', async () => {
+      const cur = dm();
+      const id = await actionSheet({ title: t('dmMembers.title'), items: cur.members.map((u) => ({ id: String(u.id), icon: icons.x(20), label: `${t('dmMembers.removeButton')}: ${nameFor(u)}`, danger: true })) });
+      const target = id && cur.members.find((u) => String(u.id) === id);
+      if (!target || !(await confirmSheet(t('m.removeMemberConfirm', { name: nameFor(target) }), { okLabel: t('dmMembers.removeButton') }))) return;
+      try {
+        const res = await api.kickDmMember(cur.id, target.id);
+        if (res.reverted) nav.replace('chat', { kind: 'dm', dmId: cur.id });
+      } catch (err) { handleError(err, 'dmMembers.removeError'); }
+    });
     box.querySelector('#m-search').addEventListener('click', () => nav.push('search', { serverId: params.serverId, channelId: params.channelId, dmId: params.dmId }));
     box.querySelector('#m-post-menu')?.addEventListener('click', openPostMenu);
     box.querySelector('#m-threads')?.addEventListener('click', () => nav.push('threads', { serverId: params.serverId, channelId: params.channelId }));
@@ -695,7 +719,7 @@ export function mountChat(el, params) {
 
   async function openPostMenu() {
     const id = await actionSheet({ items: [
-      canEditPost(thread, state.me) && { id: 'edit', icon: icons.edit(20), label: t('forum.editPost') },
+      canEditPost(thread, state.me, { canEditOthers }) && { id: 'edit', icon: icons.edit(20), label: t('forum.editPost') },
       canDeletePost(thread, state.me, { canManage }) && { id: 'delete', icon: icons.trash(20), label: t('forum.deletePost'), danger: true },
     ].filter(Boolean) });
     if (id === 'edit') editPostSheet(params.serverId, params.channelId, params.threadId);

@@ -53,6 +53,7 @@ Roles are sets of permission flags. Everyone has the built-in **@everyone** role
 |---|---|
 | View Channel, Send Messages, Attach Files | Basic reading, writing and uploading |
 | Manage Messages | Delete and pin other people's messages |
+| Edit Messages | Edit other people's messages; the message then shows "(edited by Name)". Not part of Manage Messages, grant it separately. Server administrators and the owner always have it |
 | Manage Channels | Create, edit and delete channels, categories and channel webhooks |
 | Manage Roles | Create roles and assign them |
 | Manage Server | Rename the server, invites, onboarding, AutoMod, templates, insights |

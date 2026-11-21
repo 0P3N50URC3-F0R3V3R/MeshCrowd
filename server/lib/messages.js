@@ -3,6 +3,8 @@
 const { db } = require('../db');
 const { toPublicUser } = require('./publicUser');
 const { open } = require('./atRest');
+const { PERMISSIONS, SITE_PERMISSIONS, has, hasSite } = require('./permissions');
+const { getChannelPermissionBits } = require('./channelAccess');
 
 // Reactions are returned as raw {emoji, userIds} aggregates rather than a per-viewer "did I
 // react" flag — a single serialized message is broadcast to every viewer over WS, so "did I
@@ -131,6 +133,7 @@ function serializeMessage(row) {
     eventData: parseEventData(row.event_data),
     createdAt: row.created_at,
     editedAt: row.edited_at,
+    editedBy: row.edited_by && row.edited_by !== row.author_id ? getEditor(row.edited_by) : null,
     attachments,
     reactions: getReactions(row.id),
     replyTo: getReplyTo(row.reply_to_message_id),
@@ -144,6 +147,19 @@ function serializeMessage(row) {
     sound: getSound(row.sound_id),
     interaction: row.interaction_command ? getInteraction(row) : null,
   };
+}
+
+function getEditor(userId) {
+  const u = db.prepare('SELECT id, username, display_name FROM users WHERE id = ?').get(userId);
+  return u ? { id: u.id, username: u.username, displayName: u.display_name || u.username } : null;
+}
+
+// Channel and forum messages only: DMs have no moderators, and an admin rewriting a private
+// conversation would be a privacy hole.
+function canEditOthersMessage(scopeType, channel, userId, sitePermissions) {
+  if (scopeType !== 'channel' && scopeType !== 'thread') return false;
+  if (hasSite(sitePermissions || 0, SITE_PERMISSIONS.EDIT_ANY_MESSAGE)) return true;
+  return !!channel && has(getChannelPermissionBits(channel, userId), PERMISSIONS.EDIT_MESSAGES);
 }
 
 function getInteraction(row) {
@@ -192,4 +208,4 @@ function listMessages(scopeType, scopeId, { before, after, limit = 50, around } 
   return rows.map(serializeMessage);
 }
 
-module.exports = { serializeMessage, listMessages };
+module.exports = { serializeMessage, listMessages, canEditOthersMessage };

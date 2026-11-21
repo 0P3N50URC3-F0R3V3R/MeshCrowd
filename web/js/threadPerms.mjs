@@ -1,4 +1,5 @@
-export const canEditPost = (thread, me) => !!thread && !!me && thread.createdBy?.id === me.id;
+export const canEditPost = (thread, me, { canEditOthers = false } = {}) =>
+  !!thread && !!me && (thread.createdBy?.id === me.id || !!canEditOthers || !!me.canEditAnyMessage);
 
 export const canDeletePost = (thread, me, { canManage = false } = {}) =>
-  canEditPost(thread, me) || !!canManage || !!me?.isSiteAdmin;
+  (!!thread && !!me && thread.createdBy?.id === me.id) || !!canManage || !!me?.isSiteAdmin;

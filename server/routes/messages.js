@@ -9,7 +9,7 @@ const { requireAuth } = require('../middleware/auth');
 const { PERMISSIONS, SITE_PERMISSIONS, has, hasSite } = require('../lib/permissions');
 const { getChannelPermissionBits, isPendingMember } = require('../lib/channelAccess');
 const reactionRoles = require('../lib/reactionRoles');
-const { serializeMessage } = require('../lib/messages');
+const { serializeMessage, canEditOthersMessage } = require('../lib/messages');
 const { broadcastToChannel, broadcastToDm } = require('../socket/hub');
 const { getMemberTimeout } = require('../lib/moderation');
 const { canSendToScope, resolveScope } = require('../lib/scopeAccess');
@@ -34,10 +34,19 @@ function getThreadChannel(threadId) {
   return thread ? getChannel(thread.channel_id) : null;
 }
 
+// Only a group of three or more has a moderator: its creator. 1:1s have none, and a group that
+// shrinks to two reverts to a 1:1 (is_group = 0) so the rights vanish with it.
+function isGroupDmCreator(dmId, userId) {
+  const dm = db.prepare('SELECT is_group, created_by FROM dm_channels WHERE id = ?').get(dmId);
+  return !!dm && !!dm.is_group && dm.created_by === userId
+    && !!db.prepare('SELECT 1 FROM dm_members WHERE dm_channel_id = ? AND user_id = ?').get(dmId, userId);
+}
+
 // Authors of channel/thread messages must still be able to view the channel: a kicked member or
 // one whose access was revoked keeps no write access to what they posted there.
 function canModerate(message, req) {
   if (hasSite(req.sitePermissions || 0, SITE_PERMISSIONS.DELETE_ANY_MESSAGE)) return true;
+  if (message.scope_type === 'dm') return message.author_id === req.user.id || isGroupDmCreator(message.scope_id, req.user.id);
   if (message.scope_type !== 'channel' && message.scope_type !== 'thread') return message.author_id === req.user.id;
   const channel = message.scope_type === 'channel' ? getChannel(message.scope_id) : getThreadChannel(message.scope_id);
   if (!channel) return false;
@@ -150,7 +159,15 @@ router.patch('/:id', requireAuth, (req, res) => {
   const message = db.prepare('SELECT * FROM messages WHERE id = ?').get(req.params.id);
   if (!message) return res.status(404).json({ error: 'message not found' });
   if (message.event_type) return res.status(403).json({ error: 'system messages cannot be edited' });
-  if (message.author_id !== req.user.id) return res.status(403).json({ error: 'only the author can edit this message' });
+  const isAuthor = message.author_id === req.user.id;
+  if (!isAuthor && message.scope_type === 'dm') {
+    if (!isGroupDmCreator(message.scope_id, req.user.id)) return res.status(403).json({ error: 'only the author can edit this message' });
+  } else if (!isAuthor) {
+    const channel = message.scope_type === 'channel' ? getChannel(message.scope_id) : message.scope_type === 'thread' ? getThreadChannel(message.scope_id) : null;
+    if (!canEditOthersMessage(message.scope_type, channel, req.user.id, req.sitePermissions)) {
+      return res.status(403).json({ error: 'only the author can edit this message' });
+    }
+  }
   if ((message.scope_type === 'channel' || message.scope_type === 'thread') && !canViewScope(message, req)) {
     return res.status(403).json({ error: 'no access to this channel' });
   }
@@ -165,8 +182,8 @@ router.patch('/:id', requireAuth, (req, res) => {
     if (blocked) return res.status(403).json({ error: blocked.message, automod: true });
   }
 
-  db.prepare("UPDATE messages SET content = ?, edited_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?")
-    .run(sealFor(message.scope_type, content), message.id);
+  db.prepare("UPDATE messages SET content = ?, edited_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), edited_by = ? WHERE id = ?")
+    .run(sealFor(message.scope_type, content), isAuthor ? null : req.user.id, message.id);
   const updated = serializeMessage(db.prepare('SELECT * FROM messages WHERE id = ?').get(message.id));
   broadcast(message, { type: 'message_update', message: updated });
   relayMessageMutation(message, 'message_edit', { content });

@@ -16,7 +16,7 @@ import { editPost, deletePost } from './postActions.js';
 
 // Discord-style forum channel: a list of titled posts (each its own thread) instead of one flat
 // message log. Posting = creating a thread with a title + opening message.
-export function mountForum(container, { serverId, channelId, channelName, canSend, canManage, canChecklist, channels, customEmoji, stickers, rawHtmlEnabled, roles = [], members = [] }) {
+export function mountForum(container, { serverId, channelId, channelName, canSend, canManage, canEditOthers, canChecklist, channels, customEmoji, stickers, rawHtmlEnabled, roles = [], members = [] }) {
   const colorFor = (userId) => memberNameColor(roles, members.find((m) => m.user.id === userId));
   let posts = [];
   let loading = true;
@@ -148,7 +148,7 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
     openChat?.destroy?.();
     openChat = mountChat(container.querySelector('#forum-pane-body'), {
       kind: 'thread', serverId, channelId, threadId: post.id, jumpToMessageId,
-      canSend: canSend && !post.archived, canManage, canChecklist, channels, customEmoji, stickers, rawHtmlEnabled,
+      canSend: canSend && !post.archived, canManage, canEditOthers, canChecklist, channels, customEmoji, stickers, rawHtmlEnabled,
     }, { emptyTitle: t('shell.startOfThread'), emptyBody: '' });
   }
 
@@ -179,7 +179,7 @@ export function mountForum(container, { serverId, channelId, channelName, canSen
     pane.innerHTML = `
       <div class="forum-pane-head"><span class="fpane-title">${escapeHtml(post.title)}</span>
         <button class="btn-icon" id="forum-pane-pins" title="${escapeHtml(t('shell.pinnedMessagesTitle'))}" aria-label="${escapeHtml(t('shell.pinnedMessagesTitle'))}">${icons.pin(16)}</button>
-        ${canEditPost(post, state.me) ? `<button class="btn-icon" id="forum-pane-edit" title="${escapeHtml(t('forum.editPost'))}" aria-label="${escapeHtml(t('forum.editPost'))}">${icons.edit(16)}</button>` : ''}
+        ${canEditPost(post, state.me, { canEditOthers }) ? `<button class="btn-icon" id="forum-pane-edit" title="${escapeHtml(t('forum.editPost'))}" aria-label="${escapeHtml(t('forum.editPost'))}">${icons.edit(16)}</button>` : ''}
         ${canDeletePost(post, state.me, { canManage }) ? `<button class="btn-icon" id="forum-pane-delete" title="${escapeHtml(t('forum.deletePost'))}" aria-label="${escapeHtml(t('forum.deletePost'))}" style="color:var(--danger)">${icons.trash(16)}</button>` : ''}
         <button class="btn-icon" id="forum-pane-close" aria-label="${t('common.close')}">${icons.x(18)}</button></div>
       ${post.archived ? `<div class="forum-locked">${t('forum.lockedNotice')}</div>` : ''}

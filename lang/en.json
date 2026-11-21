@@ -1257,6 +1257,8 @@
     "levelMute": "Mute",
     "leaveServer": "Leave server",
     "leaveConfirm": "Leave this server?",
+    "deleteGroupConfirm": "Delete this group for everyone? As the creator, leaving ends it for all members. This is permanent.",
+    "removeMemberConfirm": "Remove {name} from this group?",
     "markRead": "Mark as read",
     "channels": "Channels",
     "muteChannel": "Mute channel",
@@ -1282,6 +1284,7 @@
     "typingMany": "Several people are typing…",
     "chatStart": "This is the beginning of the conversation.",
     "edited": "(edited)",
+    "editedBy": "(edited by {name})",
     "pinnedBadge": "Pinned",
     "forwardedFrom": "Forwarded",
     "fileTooBig": "File is too large (max {mb} MB)",
@@ -1616,7 +1619,7 @@
     "leaveConversationMenuItem": "Leave Conversation",
     "unknownUserFallback": "Unknown",
     "thisConversationFallback": "this conversation",
-    "deleteGroupConfirmMessage": "Delete <strong>{name}</strong> for everyone? This is permanent.",
+    "deleteGroupConfirmMessage": "Delete <strong>{name}</strong> for everyone? As the creator, leaving ends the group for all members. This is permanent.",
     "leaveConversationConfirmMessage": "Leave <strong>{name}</strong>?",
     "leaveButton": "Leave",
     "couldNotLeaveConversation": "Could not leave conversation.",
@@ -2005,6 +2008,7 @@
     "forwardActionTitle": "Forward",
     "forwardedMessageTag": "Forwarded message",
     "editedTag": "(edited)",
+    "editedByTag": "(edited by {name})",
     "channelRefLabel": "Open channel #{name}",
     "uploadingProgress": "Uploading… {pct}%",
     "failedToSend": "Failed to send. ",
@@ -2288,6 +2292,15 @@
     "noMutualServers": "You share no servers.",
     "noActivityTitle": "{name} has nothing to share here",
     "noActivityBody": "Their profile is pretty quiet - ask them what they are up to."
+  },
+  "dmMembers": {
+    "title": "Group members",
+    "note": "As the creator you can remove people from this group. When only two of you are left it becomes a normal 1:1 conversation.",
+    "removeButton": "Remove",
+    "removeTitle": "Remove from group",
+    "removeConfirm": "Remove <strong>{name}</strong> from this group?",
+    "removeError": "Could not remove this member.",
+    "kickedToast": "You were removed from this group."
   },
   "dmMenu": {
     "pin": "Pin Conversation",
@@ -2914,9 +2927,17 @@
       "mentionEveryone": {
         "name": "Mention @everyone, @here and roles",
         "desc": "Ping every member, everyone online or a whole role. Without it those mentions are plain text."
+      },
+      "editMessages": {
+        "name": "Edit Messages",
+        "desc": "Edit other members' messages. Edited messages are tagged with who edited them."
       }
     },
     "site": {
+      "editAnyMessage": {
+        "name": "Edit Any Message",
+        "desc": "Edit any channel or forum message on the instance. Never direct messages."
+      },
       "viewAdminPanel": {
         "name": "View Admin Panel",
         "desc": "Access the site admin panel at all."

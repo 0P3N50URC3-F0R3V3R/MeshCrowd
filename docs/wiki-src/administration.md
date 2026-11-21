@@ -15,6 +15,7 @@ The admin panel is shown only to accounts with a **site staff rank**. The **Owne
 | Manage Users | Disable and enable accounts, edit any profile |
 | Manage Site Roles | Create and assign staff ranks |
 | Delete Any Message | Remove content anywhere |
+| Edit Any Message | Edit any channel or forum message on the instance (never direct messages) |
 | Manage Any Server | Delete or transfer any server, create Sites |
 | Manage Reports | Work the user report queue |
 | Prune Data | Bulk-delete history by date |

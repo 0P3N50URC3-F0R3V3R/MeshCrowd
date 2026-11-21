@@ -59,11 +59,12 @@ export function mountMessagesTab(host) {
       { id: 'mute', icon: icons.bell(20), label: muted ? t('m.unmute') : t('m.mute') },
       { id: 'leave', icon: icons.x(20), label: d.isGroup ? t('m.leaveServer') : t('dmMenu.deleteConversation'), danger: true },
     ].filter(Boolean) });
+    const creator = d.isGroup && d.createdBy === state.me.id;
     try {
       if (id === 'pin') { await api.setDmPref(d.id, { pinned: !pinned }); setDmPrefs((await api.getDmPrefs()).prefs); bus.emit('state:dms'); }
       else if (id === 'read' && d.lastMessage) { setReadState('dm', d.id, d.lastMessage.id); api.markRead('dm', d.id, d.lastMessage.id).catch(() => {}); }
       else if (id === 'mute') { const pref = muted ? 'all' : 'mute'; await api.setNotificationPref('dm', d.id, pref); setPrefState('dm', d.id, pref); }
-      else if (id === 'leave' && await confirmSheet(d.isGroup ? t('m.leaveConfirm') : t('dmMenu.deleteConversationConfirm', { name: dmTitle(d, nameFor) }), { okLabel: d.isGroup ? t('m.leaveServer') : t('common.deleteForever') })) { await api.leaveDm(d.id); removeDm(d.id); }
+      else if (id === 'leave' && await confirmSheet(creator ? t('m.deleteGroupConfirm') : d.isGroup ? t('m.leaveConfirm') : t('dmMenu.deleteConversationConfirm', { name: dmTitle(d, nameFor) }), { okLabel: d.isGroup ? t('m.leaveServer') : t('common.deleteForever') })) { await api.leaveDm(d.id); removeDm(d.id); }
     } catch (err) { handleError(err); }
   });
 

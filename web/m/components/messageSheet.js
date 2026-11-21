@@ -59,7 +59,7 @@ export async function openMessageSheet(msg, ctx) {
     { id: 'react', icon: icons.smile(20), label: t('m.actReact') },
     ctx.canSend && { id: 'reply', icon: icons.reply(20), label: t('m.actReply') },
     msg.content && { id: 'copy', icon: icons.copy(20), label: t('m.actCopy') },
-    mine && ctx.canSend && { id: 'edit', icon: icons.edit(20), label: t('m.actEdit') },
+    (mine || ctx.canEditOthers) && ctx.canSend && { id: 'edit', icon: icons.edit(20), label: t('m.actEdit') },
     (ctx.kind === 'dm' || ctx.canManage) && { id: msg.pinnedAt ? 'unpin' : 'pin', icon: icons.pin(20), label: msg.pinnedAt ? t('m.actUnpin') : t('m.actPin') },
     ctx.kind === 'channel' && ctx.canSend && { id: 'thread', icon: icons.messageSquare(20), label: t('m.actThread') },
     { id: 'forward', icon: icons.forward(20), label: t('m.actForward') },
