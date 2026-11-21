@@ -36,10 +36,6 @@ const saveLastTab = debounce((id) => {
 
 export function mountFriends(container, initialTab) {
   let tab = initialTab || defaultFriendsTab();
-  if (REMEMBERED_TABS.includes(tab) && state.uiPrefs?.friendsLastTab !== tab) {
-    state.uiPrefs = { ...state.uiPrefs, friendsLastTab: tab };
-    saveLastTab(tab);
-  }
 
   render();
   const off = bus.on('state:friends', render);
