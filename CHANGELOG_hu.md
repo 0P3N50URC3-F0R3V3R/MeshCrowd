@@ -9,8 +9,8 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 - Témaszerkesztő: minden színfelirathoz lefordított súgószöveg tartozik, amely elmondja, mit színez, az Exportálás és Importálás mezők mellett pedig rövid magyarázat áll arról, mi a CSS-blokk és hogyan oszthatsz meg vagy állíthatsz vissza témát.
 
 #### Módosítva
-- Az animált profilképek (GIF/APNG/WebP) a chatben, a tagok listájában és a hangszobákban az első képkockán állnak; csak a profilpanelen (teljes profil és profil-felugró) és a profilszerkesztőben mozognak.
-- A matrica- és hangpult-gombok el vannak rejtve az üzenetíróban és a hangszobában, ha a szerveren nincs matrica vagy hang (privát üzeneteknél: ha nincs elérhető matrica).
+- Az animált profilképek (GIF/APNG/WebP) a chatben, a tagok listájában és a hangszobákban az első képkockán állnak; csak a profilpanelen (teljes profil, profil-felugró és a telefonos profillap) és a profilszerkesztőben mozognak.
+- A matrica- és hangpult-gombok el vannak rejtve az üzenetíróban (web és telefonos felület) és a hangszobában, ha a szerveren nincs matrica vagy hang (privát üzeneteknél: ha nincs elérhető matrica).
 
 #### Javítva
 - A témaszerkesztő színfeliratai (Kiemelő szín, Szerversáv, Oldalsáv, Chat háttere, Felugró ablak / Modal, Elsődleges szöveg, Másodlagos szöveg) nem voltak lefordítva; mostantól a felület nyelvét követik. Az előre beállított témák nevei angolul maradnak.

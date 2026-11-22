@@ -515,9 +515,17 @@ export function mountChat(el, params) {
     await loadGated();
   }
 
+  // Sticker/sound buttons are pointless on a server with none; hide them once the server detail is known.
+  async function syncToolButtons(host) {
+    const show = (sel, on) => { const b = host.querySelector(sel); if (b) b.style.display = on ? '' : 'none'; };
+    show('#c-sound', !!detail?.sounds?.length);
+    if (kind !== 'dm') { show('#c-sticker', !!detail?.stickers?.length); return; }
+    try { show('#c-sticker', !!(await api.listAvailableStickers()).stickers?.length); } catch { /* keep visible */ }
+  }
+
   async function loadGated() {
     const host = el.querySelector('#m-composer-host');
-    try { await loadInitial(); host.hidden = false; } catch (err) {
+    try { await loadInitial(); host.hidden = false; syncToolButtons(host); } catch (err) {
       if (!isAgeGateError(err)) throw err;
       host.hidden = true;
       renderAgeGate(msgsEl, { channelName: channel?.name, onConfirmed: () => { msgsEl.innerHTML = ''; loadGated().catch((e) => handleError(e, 'm.loadFailed')); }, onLeave: () => nav.back() });

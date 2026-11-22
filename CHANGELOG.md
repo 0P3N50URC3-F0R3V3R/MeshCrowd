@@ -9,8 +9,8 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Theme editor: every color label has a translated tooltip explaining what it colors, and the Export and Import boxes now carry a short explanation of what the CSS block is and how to share or restore a theme.
 
 #### Changed
-- Animated avatars (GIF/APNG/WebP) stay frozen on their first frame in chat, member lists and voice rooms; they only animate in the profile panel (full profile and profile popout) and in the profile editor.
-- The sticker and soundboard buttons are hidden in the message composer and the voice room when the server has no stickers or sounds (DMs: when no stickers are available).
+- Animated avatars (GIF/APNG/WebP) stay frozen on their first frame in chat, member lists and voice rooms; they only animate in the profile panel (full profile, profile popout and the phone profile sheet) and in the profile editor.
+- The sticker and soundboard buttons are hidden in the message composer (web and phone UI) and the voice room when the server has no stickers or sounds (DMs: when no stickers are available).
 
 #### Fixed
 - Theme editor color labels (Accent Color, Server Rail, Sidebar, Chat Background, Popover / Modal, Primary Text, Secondary Text) were not translated; they now follow the interface language. Preset theme names stay English.
