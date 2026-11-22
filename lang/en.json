@@ -556,6 +556,12 @@
     "couldNotDeleteRole": "Could not delete role.",
     "couldNotCreateRole": "Could not create role.",
     "passportResetWarning": "Resetting a password here makes the user's server-side encryption backup unreadable. They can still restore access with their Passport file (Forgot password? on the sign-in screen).",
+    "resetConfirm1Title": "Reset password?",
+    "resetConfirm1": "You are about to reset the password of {name}. You do not know their old password, so their encrypted server-side Passport backup cannot be re-encrypted and becomes unreadable. If they have no Passport file, they permanently lose server-backed recovery of their encrypted messages and notes on any device where they are not already signed in. All their sessions will be ended.",
+    "resetConfirm1Button": "I understand, continue",
+    "resetConfirm2Title": "Are you really sure?",
+    "resetConfirm2": "Final confirmation: reset the password of {name} now?",
+    "resetConfirm2Button": "Yes, reset password",
     "splitResetNote": "This user has strengthened sign-in: the new password is turned into a key in your browser and only that key is sent.",
     "aiTab": "AI",
     "calls": {
@@ -2178,7 +2184,15 @@
     "restoredLocalOnly": "Passport restored on this device. The server backup stays unreadable until your next password change.",
     "noKeyFileOption": "I don't have my Passport key file",
     "dropBackupHeading": "Change password without your key file",
-    "dropBackupWarning": "I understand this discards my encrypted Passport backup on the server. I will need to create a new Passport export afterward if I want one."
+    "dropBackupWarning": "I understand this discards my encrypted Passport backup on the server. I will need to create a new Passport export afterward if I want one.",
+    "changeConfirm1Title": "Change password?",
+    "changeConfirm1": "Your password protects the encrypted backup of your Passport key, which opens your encrypted messages and notes. Changing it re-encrypts that backup under the new password, and all your other devices will be signed out. Keep your Passport key file safe: without it and without the password you cannot get your encrypted data back.",
+    "changeConfirm1Drop": "You are changing your password without your Passport key file. The encrypted Passport backup on the server cannot be re-encrypted and will be DISCARDED. Encrypted messages and notes that are not already readable on a device you are signed in on may become permanently unreadable. All other devices will be signed out.",
+    "changeConfirmNoExport": "You have never exported your Passport file. Export it first (Settings, Passport) so you can recover your account if something goes wrong.",
+    "changeConfirm1Button": "I understand, continue",
+    "changeConfirm2Title": "Are you really sure?",
+    "changeConfirm2": "This is the final confirmation. Change the password now?",
+    "changeConfirm2Button": "Yes, change password"
   },
   "trayMenu": {
     "open": "Open MeshCrowd",

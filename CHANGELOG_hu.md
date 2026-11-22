@@ -9,6 +9,8 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 - Témaszerkesztő: minden színfelirathoz lefordított súgószöveg tartozik, amely elmondja, mit színez, az Exportálás és Importálás mezők mellett pedig rövid magyarázat áll arról, mi a CSS-blokk és hogyan oszthatsz meg vagy állíthatsz vissza témát.
 
 #### Módosítva
+- Admin panel, Felhasználó szerkesztése: új jelszó megadása előtt két megerősítést kér, jelezve, hogy a felhasználó titkosított Passport-mentése olvashatatlanná válik, és a munkamenetei megszűnnek. A konzolos `account passwd` kimenete ugyanezt jelzi.
+- A jelszó módosítása átkerült a Beállítások / Passport fülről a Beállítások / Adatvédelem és biztonság fülre (új jelszó megismétlése mezővel, a kulcsfájl nélküli eset is itt van). Módosítás előtt kétszer is megerősítést kér, és figyelmeztet: újratitkosítja a Passport-mentést, kijelentkezteti a többi eszközt, kulcsfájl nélkül pedig törli a szerveren lévő mentést.
 - Az animált profilképek (GIF/APNG/WebP) a chatben, a tagok listájában és a hangszobákban az első képkockán állnak; csak a profilpanelen (teljes profil, profil-felugró és a telefonos profillap) és a profilszerkesztőben mozognak.
 - A matrica- és hangpult-gombok el vannak rejtve az üzenetíróban (web és telefonos felület) és a hangszobában, ha a szerveren nincs matrica vagy hang (privát üzeneteknél: ha nincs elérhető matrica).
 

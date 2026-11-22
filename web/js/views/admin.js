@@ -833,6 +833,7 @@ function buildAdminPanel() {
       const bio = m.body.querySelector('#eu-bio').value;
       if (bio !== (u.bio || '')) payload.bio = bio;
       if (password && password.length < MIN_PASSWORD_LENGTH) { errEl.textContent = t('auth.passwordTooShort'); return; }
+      if (password && !(await confirmPasswordReset(u))) return;
       const label = saveBtn.textContent;
       saveBtn.disabled = true;
       saveBtn.textContent = t('auth.working');
@@ -852,6 +853,25 @@ function buildAdminPanel() {
         toast(t('admin.userUpdatedToast'));
         m.close();
       } catch (err) { errEl.textContent = apiErrorMessage(err, t('admin.couldNotSaveChanges')); } finally { saveBtn.disabled = false; saveBtn.textContent = label; }
+    });
+  }
+
+  function confirmPasswordReset(u) {
+    const name = escapeHtml(u.displayName || u.username);
+    return new Promise((resolve) => {
+      confirmModal({
+        title: t('admin.resetConfirm1Title'),
+        message: t('admin.resetConfirm1', { name }),
+        confirmLabel: t('admin.resetConfirm1Button'),
+        onConfirm: () => {
+          confirmModal({
+            title: t('admin.resetConfirm2Title'),
+            message: t('admin.resetConfirm2', { name }),
+            confirmLabel: t('admin.resetConfirm2Button'),
+            onConfirm: () => resolve(true),
+          });
+        },
+      });
     });
   }
 

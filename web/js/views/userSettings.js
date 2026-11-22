@@ -14,6 +14,7 @@ import { nameColorPickerHtml, wireNameColorPicker, readNameColor, readNameEffect
 import { bioToolbarHtml, wireBioToolbar } from '../bioEditor.js';
 import { avatarHtml, BIO_MAX, colorForId, escapeHtml, toast, apiErrorMessage, bannerStyle, cardStyle, navScroll, restoreNavScroll } from '../utils.js';
 import { openAdminPanel } from './admin.js';
+import { confirmModal } from './modal.js';
 import { nextZIndex } from '../zstack.js';
 import { voicePrefs, keyLabel, PTT_DELAY_MAX_MS, ECHO_DB_MIN, ECHO_DB_MAX } from '../voicePrefs.js';
 import { soundboardPrefs } from '../soundboardPrefs.js';
@@ -1084,6 +1085,26 @@ export function openUserSettings(initialTab = 'account') {
     }
   }
 
+  function confirmPasswordChange(me, dropsBackup) {
+    const exported = lastExportedAt(me.id);
+    const body = (key) => `${t(key)}${!dropsBackup && !exported ? `<br><br><b>${t('passport.changeConfirmNoExport')}</b>` : ''}`;
+    return new Promise((resolve) => {
+      confirmModal({
+        title: t('passport.changeConfirm1Title'),
+        message: body(dropsBackup ? 'passport.changeConfirm1Drop' : 'passport.changeConfirm1'),
+        confirmLabel: t('passport.changeConfirm1Button'),
+        onConfirm: () => {
+          confirmModal({
+            title: t('passport.changeConfirm2Title'),
+            message: t('passport.changeConfirm2'),
+            confirmLabel: t('passport.changeConfirm2Button'),
+            onConfirm: () => resolve(true),
+          });
+        },
+      });
+    });
+  }
+
   async function renderPassport(inner) {
     const me = state.me;
     const seedBytes = me.passportId ? await getVerifiedSeed(me) : null;
@@ -1153,11 +1174,6 @@ export function openUserSettings(initialTab = 'account') {
       <div class="field"><label>${t('passport.passphraseLabel', { min: MIN_PASSPHRASE_LENGTH })}</label><input class="input" id="pp-pass" type="password" autocomplete="new-password"></div>
       <div class="field"><label>${t('passport.passphraseConfirm')}</label><input class="input" id="pp-pass2" type="password" autocomplete="new-password"></div>
       <button class="btn btn-primary" id="pp-export">${t('passport.exportButton')}</button>
-      <div class="divider"></div>
-      <h3>${t('passport.changePasswordHeading')}</h3>
-      <div class="field"><label>${t('passport.currentPassword')}</label><input class="input" id="pp-cur" type="password" autocomplete="current-password"></div>
-      <div class="field"><label>${t('passport.newPassword')}</label><input class="input" id="pp-new" type="password" autocomplete="new-password"></div>
-      <button class="btn btn-primary" id="pp-change">${t('passport.changePasswordButton')}</button>
       ${strengthenBlock}`
       : `<div class="hint">${t('passport.noSeedOnDevice')}</div>
       <div class="divider"></div>
@@ -1169,17 +1185,7 @@ export function openUserSettings(initialTab = 'account') {
       <div class="field"><label>${t('passport.currentPassword')}</label><input class="input" id="pp-rs-pw" type="password" autocomplete="current-password"><div class="hint">${t('passport.restorePasswordHint')}</div></div>
       <div class="field"><label>${t('passport.newPassword')}</label><input class="input" id="pp-rs-new" type="password" autocomplete="new-password"></div>
       <div class="field"><label>${t('passport.strengthenRepeat')}</label><input class="input" id="pp-rs-new2" type="password" autocomplete="new-password"></div>
-      <button class="btn btn-primary" id="pp-restore">${t('passport.restoreButton')}</button>
-      <div class="divider"></div>
-      <button type="button" class="btn-link" id="pp-rs-nokey">${t('passport.noKeyFileOption')}</button>
-      <div id="pp-nk-form" style="display:none">
-        <h3>${t('passport.dropBackupHeading')}</h3>
-        <div class="field"><label>${t('passport.currentPassword')}</label><input class="input" id="pp-nk-pw" type="password" autocomplete="current-password"></div>
-        <div class="field"><label>${t('passport.newPassword')}</label><input class="input" id="pp-nk-new" type="password" autocomplete="new-password"></div>
-        <div class="field"><label>${t('passport.strengthenRepeat')}</label><input class="input" id="pp-nk-new2" type="password" autocomplete="new-password"></div>
-        <label class="checkbox-row"><input type="checkbox" id="pp-nk-confirm">${t('passport.dropBackupWarning')}</label>
-        <button class="btn btn-primary" id="pp-nk-submit" disabled>${t('passport.changePasswordButton')}</button>
-      </div>`}`;
+      <button class="btn btn-primary" id="pp-restore">${t('passport.restoreButton')}</button>`}`;
 
     inner.querySelector('#pp-copy').addEventListener('click', async () => {
       try { await navigator.clipboard.writeText(me.passportId || ''); toast(t('passport.copied')); } catch { /* clipboard blocked */ }
@@ -1209,28 +1215,6 @@ export function openUserSettings(initialTab = 'account') {
           toast(apiErrorMessage(err), { type: 'error' });
         } finally { restore(); }
       });
-
-      const nokeyToggle = inner.querySelector('#pp-rs-nokey');
-      const nokeyForm = inner.querySelector('#pp-nk-form');
-      nokeyToggle.addEventListener('click', () => { nokeyForm.style.display = nokeyForm.style.display === 'none' ? '' : 'none'; });
-      const nkConfirm = inner.querySelector('#pp-nk-confirm');
-      const nkSubmit = inner.querySelector('#pp-nk-submit');
-      nkConfirm.addEventListener('change', () => { nkSubmit.disabled = !nkConfirm.checked; });
-      nkSubmit.addEventListener('click', async () => {
-        const currentPassword = inner.querySelector('#pp-nk-pw').value;
-        const newPassword = inner.querySelector('#pp-nk-new').value;
-        if (newPassword.length < MIN_PASSWORD_LENGTH) { toast(t('auth.passwordTooShort'), { type: 'error' }); return; }
-        if (newPassword !== inner.querySelector('#pp-nk-new2').value) { toast(t('passport.strengthenMismatch'), { type: 'error' }); return; }
-        if (newPassword.normalize('NFKC') === currentPassword.normalize('NFKC')) { toast(t('passport.strengthenSamePassword'), { type: 'error' }); return; }
-        const done = await showWorking(nkSubmit);
-        try {
-          await changePasswordDroppingBackup(me, currentPassword, newPassword);
-          toast(t('passport.passwordChanged'));
-          renderPassport(inner);
-        } catch (err) {
-          toast(apiErrorMessage(err), { type: 'error' });
-        } finally { done(); }
-      });
       return;
     }
 
@@ -1246,19 +1230,6 @@ export function openUserSettings(initialTab = 'account') {
         toast(t('passport.exported'));
         renderPassport(inner);
       } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); } finally { exportBtn.disabled = false; }
-    });
-
-    const changeBtn = inner.querySelector('#pp-change');
-    changeBtn.addEventListener('click', async () => {
-      const currentPassword = inner.querySelector('#pp-cur').value;
-      const newPassword = inner.querySelector('#pp-new').value;
-      if (newPassword.length < MIN_PASSWORD_LENGTH) { toast(t('auth.passwordTooShort'), { type: 'error' }); return; }
-      const done = await showWorking(changeBtn);
-      try {
-        await changePasswordWithBackup(me, seedBytes, currentPassword, newPassword);
-        toast(t('passport.passwordChanged'));
-        renderPassport(inner);
-      } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); } finally { done(); }
     });
 
     if (split) return;
@@ -1342,6 +1313,9 @@ export function openUserSettings(initialTab = 'account') {
       </label>
       <button class="btn btn-primary" id="priv-save">${t('common.save')}</button>
 
+      <h2 style="margin-top:32px">${t('passport.changePasswordHeading')}</h2>
+      <div id="pw-section"></div>
+
       <h2 style="margin-top:32px">${t('userSettings.twoFactorAuthHeading')}</h2>
       <div id="totp-section"></div>`;
 
@@ -1357,7 +1331,42 @@ export function openUserSettings(initialTab = 'account') {
       } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); }
     });
 
+    renderChangePassword(inner.querySelector('#pw-section'));
     renderTotpSection(inner.querySelector('#totp-section'));
+  }
+
+  async function renderChangePassword(host) {
+    const me = state.me;
+    const seed = me.passportId ? await getVerifiedSeed(me) : null;
+    const noKey = !!me.passportId && !seed;
+    if (!host.isConnected) return;
+    host.innerHTML = `
+      ${noKey ? `<div class="hint" style="margin-bottom:12px">${t('passport.noSeedOnDevice')}</div>` : ''}
+      <div class="field"><label>${t('passport.currentPassword')}</label><input class="input" id="pw-cur" type="password" autocomplete="current-password"></div>
+      <div class="field"><label>${t('passport.newPassword')}</label><input class="input" id="pw-new" type="password" autocomplete="new-password"></div>
+      <div class="field"><label>${t('passport.strengthenRepeat')}</label><input class="input" id="pw-new2" type="password" autocomplete="new-password"></div>
+      ${noKey ? `<label class="checkbox-row"><input type="checkbox" id="pw-drop">${t('passport.dropBackupWarning')}</label>` : ''}
+      <button class="btn btn-primary" id="pw-change" ${noKey ? 'disabled' : ''}>${t('passport.changePasswordButton')}</button>`;
+    const btn = host.querySelector('#pw-change');
+    if (noKey) {
+      const drop = host.querySelector('#pw-drop');
+      drop.addEventListener('change', () => { btn.disabled = !drop.checked; });
+    }
+    btn.addEventListener('click', async () => {
+      const currentPassword = host.querySelector('#pw-cur').value;
+      const newPassword = host.querySelector('#pw-new').value;
+      if (newPassword.length < MIN_PASSWORD_LENGTH) { toast(t('auth.passwordTooShort'), { type: 'error' }); return; }
+      if (newPassword !== host.querySelector('#pw-new2').value) { toast(t('passport.strengthenMismatch'), { type: 'error' }); return; }
+      if (newPassword.normalize('NFKC') === currentPassword.normalize('NFKC')) { toast(t('passport.strengthenSamePassword'), { type: 'error' }); return; }
+      if (!(await confirmPasswordChange(me, !seed && !!me.passportId))) return;
+      const done = await showWorking(btn);
+      try {
+        if (seed) await changePasswordWithBackup(me, seed, currentPassword, newPassword);
+        else await changePasswordDroppingBackup(me, currentPassword, newPassword);
+        toast(t('passport.passwordChanged'));
+        renderChangePassword(host);
+      } catch (err) { toast(apiErrorMessage(err), { type: 'error' }); } finally { done(); }
+    });
   }
 
   function renderTotpSection(host) {

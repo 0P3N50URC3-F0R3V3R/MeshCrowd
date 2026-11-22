@@ -556,6 +556,12 @@
     "couldNotDeleteRole": "Nem sikerült törölni a szerepkört.",
     "couldNotCreateRole": "Nem sikerült létrehozni a szerepkört.",
     "passportResetWarning": "A jelszó itt történő visszaállítása olvashatatlanná teszi a felhasználó szerveren tárolt titkosítási mentését. Az útlevélfájljával továbbra is vissza tudja szerezni a hozzáférést (Elfelejtett jelszó? a bejelentkezési képernyőn).",
+    "resetConfirm1Title": "Jelszó visszaállítása?",
+    "resetConfirm1": "Épp {name} jelszavát készülsz visszaállítani. A régi jelszavát nem ismered, ezért a szerveren tárolt titkosított Passport-mentése nem titkosítható újra, és olvashatatlanná válik. Ha nincs Passport fájlja, véglegesen elveszíti a titkosított üzenetei és jegyzetei szerver alapú helyreállítását minden olyan eszközön, ahol még nincs bejelentkezve. Minden munkamenete megszűnik.",
+    "resetConfirm1Button": "Értem, tovább",
+    "resetConfirm2Title": "Biztos vagy benne?",
+    "resetConfirm2": "Utolsó megerősítés: most visszaállítod {name} jelszavát?",
+    "resetConfirm2Button": "Igen, jelszó visszaállítása",
     "splitResetNote": "Ennek a felhasználónak erősebb bejelentkezése van: az új jelszóból a böngésződben készül kulcs, és csak ez a kulcs kerül elküldésre.",
     "aiTab": "AI",
     "calls": {
@@ -2178,7 +2184,15 @@
     "restoredLocalOnly": "Az Útlevél visszaállítva ezen az eszközön. A szerveren lévő mentés a következő jelszócseréig olvashatatlan marad.",
     "noKeyFileOption": "Nincs meg az Útlevél-kulcsfájlom",
     "dropBackupHeading": "Jelszó módosítása kulcsfájl nélkül",
-    "dropBackupWarning": "Tudomásul veszem, hogy ez törli a szerveren tárolt, titkosított Útlevél-mentésemet. Ha később szeretnék egyet, új Útlevél-exportot kell majd készítenem."
+    "dropBackupWarning": "Tudomásul veszem, hogy ez törli a szerveren tárolt, titkosított Útlevél-mentésemet. Ha később szeretnék egyet, új Útlevél-exportot kell majd készítenem.",
+    "changeConfirm1Title": "Jelszó módosítása?",
+    "changeConfirm1": "A jelszavad védi a Passport-kulcsod titkosított mentését, amely megnyitja a titkosított üzeneteidet és jegyzeteidet. A módosítás az új jelszóval újratitkosítja ezt a mentést, és minden más eszközöd kijelentkezik. Őrizd meg a Passport kulcsfájlodat: ha az nincs meg, és a jelszót is elveszíted, a titkosított adataid nem állíthatók vissza.",
+    "changeConfirm1Drop": "A jelszót a Passport kulcsfájl nélkül módosítod. A szerveren lévő titkosított Passport-mentés nem titkosítható újra, ezért TÖRLŐDIK. Azok a titkosított üzenetek és jegyzetek, amelyek nem olvashatók egy már bejelentkezett eszközön, véglegesen olvashatatlanná válhatnak. Minden más eszköz kijelentkezik.",
+    "changeConfirmNoExport": "Még soha nem exportáltad a Passport fájlodat. Előbb exportáld (Beállítások, Passport), hogy hiba esetén vissza tudd állítani a fiókodat.",
+    "changeConfirm1Button": "Értem, tovább",
+    "changeConfirm2Title": "Biztos vagy benne?",
+    "changeConfirm2": "Ez az utolsó megerősítés. Most módosítod a jelszót?",
+    "changeConfirm2Button": "Igen, jelszó módosítása"
   },
   "trayMenu": {
     "open": "MeshCrowd megnyitása",

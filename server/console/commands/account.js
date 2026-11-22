@@ -128,7 +128,7 @@ module.exports = function register(registry) {
       hub.disconnectUser(target.id);
       authAuditConsole(target.id, 'console_reset', true, actorId(ctx));
       logAdmin(ctx, `reset password of ${target.username}`);
-      return `password reset for ${target.username}; sessions ended`;
+      return `password reset for ${target.username}; sessions ended. Their server-side Passport backup is now unreadable; they can restore with their Passport file.`;
     },
   });
 

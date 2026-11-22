@@ -9,6 +9,8 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Theme editor: every color label has a translated tooltip explaining what it colors, and the Export and Import boxes now carry a short explanation of what the CSS block is and how to share or restore a theme.
 
 #### Changed
+- Admin panel, Edit user: setting a new password for a user now asks for two confirmations, explaining that their encrypted Passport backup becomes unreadable and their sessions end. The console `account passwd` output carries the same warning.
+- Change password moved from Settings, Passport to Settings, Privacy & Safety (with repeat-password field; also covers the no-key-file case). It now asks for two confirmations first, explaining that it re-encrypts the Passport key backup, signs out other devices, and (without the key file) discards the server backup. Warns if no Passport file was ever exported.
 - Animated avatars (GIF/APNG/WebP) stay frozen on their first frame in chat, member lists and voice rooms; they only animate in the profile panel (full profile, profile popout and the phone profile sheet) and in the profile editor.
 - The sticker and soundboard buttons are hidden in the message composer (web and phone UI) and the voice room when the server has no stickers or sounds (DMs: when no stickers are available).
 
