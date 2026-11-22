@@ -98,6 +98,7 @@ export async function mountShell(root) {
   bus.on('state:connection', (connected) => {
     document.getElementById('conn-banner')?.classList.toggle('hidden', connected);
     document.body.classList.toggle('ws-disconnected', !connected);
+    window.dismeshClient?.setConnectionLost?.(!connected);
   });
 
   let currentChat = null;

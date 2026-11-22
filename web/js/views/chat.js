@@ -175,6 +175,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     }
   });
 
+  let dmStickers = null;
   renderComposer();
   loadInitial();
 
@@ -1202,6 +1203,8 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     // startReply()/cancelling a reply both re-run this whole render — preserve whatever draft
     // text was already there instead of silently wiping it.
     const draft = composerWrap.querySelector('#composer-input')?.value ?? '';
+    const hasStickers = scope.kind === 'dm' ? !!dmStickers?.length : !!scope.stickers?.length;
+    const hasSounds = !!getServerDetail(scope.serverId)?.sounds?.length;
     composerWrap.innerHTML = `
       <div class="slash-popup hidden" id="slash-popup"></div>
       ${replyingTo ? `
@@ -1216,14 +1219,15 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
         <textarea id="composer-input" rows="1" enterkeyhint="send" placeholder="${escapeHtml(placeholderFor(scope))}"></textarea>
         <button type="button" class="composer-btn" id="btn-poll" title="${t('chat.createPollTitle')}">${icons.barChart(20)}</button>
         ${scope.kind === 'dm' || scope.canChecklist ? `<button type="button" class="composer-btn" id="btn-checklist" title="${escapeHtml(t('checklist.createTitle'))}">${icons.check(20)}</button>` : ''}
-        <button type="button" class="composer-btn" id="btn-sticker" title="${t('admin.stickersTab')}">${icons.image(22)}</button>
+        <button type="button" class="composer-btn${hasStickers ? '' : ' hidden'}" id="btn-sticker" title="${t('admin.stickersTab')}">${icons.image(22)}</button>
         <button type="button" class="composer-btn" id="btn-emoji" title="${t('serverSettings.navEmoji')}">${icons.smile(22)}</button>
         ${scope.channelType === 'stage' || !canRecordVoice() ? '' : `<button type="button" class="composer-btn" id="btn-voice" title="${t('voiceMsg.record')}">${icons.mic(22)}</button>`}
-        ${scope.serverId ? `<button type="button" class="composer-btn" id="btn-sounds" title="${t('admin.soundboardTab')}">${icons.music(22)}</button>` : ''}
+        ${scope.serverId && hasSounds ? `<button type="button" class="composer-btn" id="btn-sounds" title="${t('admin.soundboardTab')}">${icons.music(22)}</button>` : ''}
         ${scope.channelType === 'stage' ? '' : `<button type="button" class="composer-btn" id="btn-schedule" title="${t('chat.scheduleTitle')}">${icons.clock(22)}</button>`}
         <button type="button" class="composer-btn composer-btn-send" id="btn-send" title="${t('chat.sendTitle')}">${icons.send(20)}</button>
       </div>`;
 
+    if (scope.kind === 'dm' && dmStickers === null) availableDmStickers().then((l) => { if (l.length) renderComposer(); });
     composerWrap.querySelector('#reply-cancel')?.addEventListener('click', () => { replyingTo = null; renderComposer(); focusComposer(); });
 
     const input = composerWrap.querySelector('#composer-input');
@@ -1844,10 +1848,9 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     return users.find((u) => u.username.toLowerCase() === username.toLowerCase()) || (users.length === 1 ? users[0] : null);
   }
 
-  let dmStickers = [];
   async function availableDmStickers() {
     try { dmStickers = (await api.listAvailableStickers()).stickers; } catch { /* keep the last list */ }
-    return dmStickers;
+    return dmStickers || [];
   }
 
   async function submit(sentSticker, voice, sentSound) {

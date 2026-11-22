@@ -4,7 +4,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, ses
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
-const { buildTrayIconPNG, buildBlinkFrames } = require('./trayIcon');
+const { buildTrayIconPNG, buildBlinkFrames, buildErrorFrames } = require('./trayIcon');
 const { pruneRecent, clearRecentOnFocus } = require('./trayState');
 const { findMcrLink, inviteTarget } = require('./inviteUrl');
 const { externalUrl } = require('./externalUrl');
@@ -56,6 +56,7 @@ let mainWindow;
 let pendingInvite = findMcrLink(process.argv); // an mcr:// link that started this process, handled once the window exists
 let tray = null;
 const recentNotifications = []; // most-recent-first, capped — feeds the tray menu's "Recent" section
+let connectionLost = false; // renderer's socket to the server is down: tray + window icon flash the red forbidden sign
 let trayBadge = { status: 'online', count: 0 }; // last badge state pushed from the renderer
 let trayLabels = { open: 'Open MeshCrowd', recent: 'Recent', none: 'No recent notifications', logout: 'Log Out', quit: 'Quit MeshCrowd', unread: '{count} unread', undo: 'Undo', redo: 'Redo', cut: 'Cut', copy: 'Copy', paste: 'Paste', selectAll: 'Select All' };
 app.isQuitting = false;
@@ -110,7 +111,7 @@ function rebuildTrayMenu() {
 // override per presence state for the unread badge. Any field left unset in either just falls
 // back to the built-in brand/status colors (see trayIcon.js's hexToRgb).
 function trayTheme() {
-  return { baseColor: clientConfig.trayIconColor, badgeColors: clientConfig.trayBadgeColors || {} };
+  return { baseColor: clientConfig.trayIconColor, badgeColors: clientConfig.trayBadgeColors || {}, numberColor: clientConfig.trayNumberColor };
 }
 
 // Unread state: the whole icon fades between the plain ghost and a full-size count disc, each way taking
@@ -124,16 +125,29 @@ function stopBlink() {
   clearInterval(blinkTimer);
   blinkTimer = null;
   blinkKey = '';
+  setWindowIconFlash(false);
+}
+
+const pulseEnabled = () => clientConfig.trayPulse !== false;
+
+let windowFlashed = false;
+function setWindowIconFlash(on) {
+  if (on === windowFlashed || !mainWindow || mainWindow.isDestroyed()) return;
+  windowFlashed = on;
+  mainWindow.setIcon(on ? nativeImage.createFromBuffer(buildErrorFrames(trayTheme(), 1)[1]) : appIconImage());
 }
 
 function startBlink() {
-  const key = JSON.stringify([trayBadge.status, trayBadge.count > 9 ? 10 : trayBadge.count, trayTheme()]);
-  if (blinkTimer && key === blinkKey) return;
+  const lost = connectionLost;
+  const key = JSON.stringify([lost, pulseEnabled(), trayBadge.status, trayBadge.count > 9 ? 10 : trayBadge.count, trayTheme()]);
+  if (blinkKey && key === blinkKey) return;
   stopBlink();
   blinkKey = key;
-  const frames = buildBlinkFrames(trayBadge, trayTheme(), BLINK_STEPS).map((png) => nativeImage.createFromBuffer(png));
+  const frames = (lost ? buildErrorFrames(trayTheme(), BLINK_STEPS) : buildBlinkFrames(trayBadge, trayTheme(), BLINK_STEPS)).map((png) => nativeImage.createFromBuffer(png));
+  if (!lost && !pulseEnabled()) { tray.setImage(frames[BLINK_STEPS]); return; }
   const started = Date.now();
   let shown = -1;
+  let flashed = false;
   tray.setImage(frames[0]);
   // Frame chosen from elapsed time, not from tick count, so timer jitter never stretches the blink.
   blinkTimer = setInterval(() => {
@@ -141,12 +155,13 @@ function startBlink() {
     const phase = ((Date.now() - started) % (2 * BLINK_HALF_MS)) / BLINK_HALF_MS; // 0..2
     const idx = Math.round((phase <= 1 ? phase : 2 - phase) * BLINK_STEPS);
     if (idx !== shown) { shown = idx; tray.setImage(frames[idx]); }
+    if (lost && flashed !== (idx >= BLINK_STEPS / 2)) { flashed = !flashed; setWindowIconFlash(flashed); }
   }, 25);
 }
 
 function applyTrayBadge() {
   if (!tray) return;
-  if (trayBadge.count > 0) startBlink();
+  if (connectionLost || trayBadge.count > 0) startBlink();
   else {
     stopBlink();
     tray.setImage(nativeImage.createFromBuffer(buildTrayIconPNG({ status: trayBadge.status, count: 0 }, trayTheme())));
@@ -532,6 +547,8 @@ ipcMain.handle('dismesh:get-app-settings', () => ({
   notifyWhenUnfocused: !!clientConfig.notifyWhenUnfocused,
   trayIconColor: clientConfig.trayIconColor || null,
   trayBadgeColors: clientConfig.trayBadgeColors || {},
+  trayNumberColor: clientConfig.trayNumberColor || null,
+  trayPulse: pulseEnabled(),
 }));
 
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
@@ -540,7 +557,7 @@ const TRAY_BADGE_STATES = ['online', 'idle', 'dnd', 'offline'];
 // Whitelist of keys the renderer is allowed to touch here — anything else in the payload is
 // silently dropped rather than merged into clientConfig, so a new settings key can't be added to
 // this object without an explicit decision about whether the renderer should control it.
-const APP_SETTINGS_KEYS = ['closeToTray', 'startMinimized', 'startWithWindows', 'trayIconColor', 'trayBadgeColors', 'handleInviteLinks', 'f11Fullscreen', 'downloadMode', 'downloadDir', 'trayRecentCount', 'notifyWhenHidden', 'notifyWhenUnfocused'];
+const APP_SETTINGS_KEYS = ['closeToTray', 'startMinimized', 'startWithWindows', 'trayIconColor', 'trayBadgeColors', 'handleInviteLinks', 'f11Fullscreen', 'downloadMode', 'downloadDir', 'trayRecentCount', 'notifyWhenHidden', 'notifyWhenUnfocused', 'trayNumberColor', 'trayPulse'];
 
 ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
   if (!settings || typeof settings !== 'object') return { ok: false, error: 'invalid settings' };
@@ -583,6 +600,8 @@ ipcMain.handle('dismesh:set-app-settings', (event, settings) => {
         clientConfig.trayIconColor = settings.trayIconColor;
       }
     }
+    if (key === 'trayNumberColor' && (settings.trayNumberColor === null || HEX_COLOR_RE.test(settings.trayNumberColor))) clientConfig.trayNumberColor = settings.trayNumberColor;
+    if (key === 'trayPulse') clientConfig.trayPulse = !!settings.trayPulse;
     if (key === 'trayBadgeColors' && typeof settings.trayBadgeColors === 'object') {
       const cleaned = {};
       for (const state of TRAY_BADGE_STATES) {
@@ -679,6 +698,11 @@ ipcMain.on('dismesh:set-tray-labels', (event, labels) => {
 
 ipcMain.on('dismesh:set-tray-badge', (event, { status, count } = {}) => {
   trayBadge = { status: status || 'online', count: Number(count) || 0 };
+  applyTrayBadge();
+});
+
+ipcMain.on('dismesh:set-connection-lost', (event, lost) => {
+  connectionLost = !!lost;
   applyTrayBadge();
 });
 

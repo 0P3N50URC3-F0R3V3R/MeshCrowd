@@ -23,6 +23,8 @@ public sealed class MainForm : Form
     private readonly System.Windows.Forms.Timer _connectTimer = new() { Interval = ConnectTimeoutMs };
     private readonly System.Windows.Forms.Timer _boundsTimer = new() { Interval = 500 };
     private TrayController? _tray;
+    private Icon? _appIcon;
+    private TrayIconHandle? _forbiddenIcon;
     private DownloadManager? _downloads;
 
     private McrLink? _pendingInvite;
@@ -53,6 +55,7 @@ public sealed class MainForm : Form
         BackColor = Color.FromArgb(0x1e, 0x1f, 0x22);
         StartPosition = FormStartPosition.Manual;
         try { Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath!); } catch { }
+        _appIcon = Icon;
 
         _web.Dock = DockStyle.Fill;
         _web.DefaultBackgroundColor = Color.FromArgb(0x31, 0x33, 0x38);
@@ -171,13 +174,23 @@ public sealed class MainForm : Form
 
     // ---- startup ---------------------------------------------------------------------------------
 
+    private void FlashWindowIcon(bool on)
+    {
+        if (on)
+        {
+            _forbiddenIcon ??= TrayIconRenderer.ToIcon(TrayIconRenderer.BuildForbidden());
+            Icon = _forbiddenIcon.Icon;
+        }
+        else if (_appIcon is not null) Icon = _appIcon;
+    }
+
     private async Task InitAsync()
     {
         _tray = new TrayController(_cfg, ShowAndFocus, () => PostEvent("dismesh:request-logout", null), Quit, n =>
         {
             ShowAndFocus();
             PostEvent("dismesh:navigate-to", n);
-        });
+        }, FlashWindowIcon);
         _downloads = new DownloadManager(_cfg, PostEvent, () => Handle);
 
         var options = new CoreWebView2EnvironmentOptions();
@@ -679,6 +692,9 @@ public sealed class MainForm : Form
             case "dismesh:set-tray-labels":
                 if (arg is JsonObject labels) _tray?.SetLabels(labels);
                 break;
+            case "dismesh:set-connection-lost":
+                _tray?.SetConnectionLost(arg is JsonValue lv && lv.TryGetValue<bool>(out var lost) && lost);
+                break;
             case "dismesh:set-tray-badge":
             {
                 string? status = arg?["status"] is JsonValue sv && sv.TryGetValue<string>(out var s) ? s : null;
@@ -776,6 +792,8 @@ public sealed class MainForm : Form
         ["notifyWhenUnfocused"] = _cfg.GetBool("notifyWhenUnfocused", false),
         ["trayIconColor"] = _cfg.GetString("trayIconColor"),
         ["trayBadgeColors"] = (_cfg.Data["trayBadgeColors"] as JsonObject)?.DeepClone() ?? new JsonObject(),
+        ["trayNumberColor"] = _cfg.GetString("trayNumberColor"),
+        ["trayPulse"] = _cfg.GetBool("trayPulse", true),
     };
 
     private static bool IsHex(string? s) => s is { Length: 7 } && s[0] == '#' && int.TryParse(s.AsSpan(1), System.Globalization.NumberStyles.HexNumber, null, out _);
@@ -784,7 +802,7 @@ public sealed class MainForm : Form
     {
         if (settings is null) return new JsonObject { ["ok"] = false, ["error"] = "invalid settings" };
 
-        string[] keys = ["closeToTray", "startMinimized", "startWithWindows", "trayIconColor", "trayBadgeColors", "handleInviteLinks", "f11Fullscreen", "downloadMode", "downloadDir", "trayRecentCount", "notifyWhenHidden", "notifyWhenUnfocused"];
+        string[] keys = ["closeToTray", "startMinimized", "startWithWindows", "trayIconColor", "trayBadgeColors", "handleInviteLinks", "f11Fullscreen", "downloadMode", "downloadDir", "trayRecentCount", "notifyWhenHidden", "notifyWhenUnfocused", "trayNumberColor", "trayPulse"];
         bool Truthy(string k) => settings[k] is JsonValue v && (v.TryGetValue<bool>(out var b) ? b : v.TryGetValue<double>(out var d) ? d != 0 : v.TryGetValue<string>(out var s) && s.Length > 0);
 
         foreach (var key in keys)
@@ -797,6 +815,7 @@ public sealed class MainForm : Form
                 case "f11Fullscreen":
                 case "notifyWhenHidden":
                 case "notifyWhenUnfocused":
+                case "trayPulse":
                     _cfg.Set(key, Truthy(key));
                     break;
                 case "startWithWindows":
@@ -831,6 +850,7 @@ public sealed class MainForm : Form
                     Native.SetProtocolRegistered(Truthy(key));
                     break;
                 case "trayIconColor":
+                case "trayNumberColor":
                     if (settings[key] is null) _cfg.Set(key, null);
                     else if (settings[key] is JsonValue cv && cv.TryGetValue<string>(out var color) && IsHex(color)) _cfg.Set(key, color);
                     break;

@@ -2,6 +2,7 @@
 // stall the page). Opt in by class on an <img>:
 //   anim-hover — frozen on its first frame, plays only while the pointer is over it (or its
 //                nearest button/.list-row ancestor): sticker picker, sticker editors.
+//   anim-still — always frozen on its first frame: avatars outside the profile panel.
 //   anim-limit — plays only if it is among the MAX_PLAYING newest on-screen ones (or hovered);
 //                the rest show their first frame: chat messages.
 // A MutationObserver picks images up wherever they are rendered, so call sites only add the class.
@@ -87,6 +88,7 @@ async function setup(img) {
   if (!animated || !still || !img.isConnected || img.getAttribute('src') !== url) return;
   img.dataset.animSrc = url;
   img.dataset.animStill = still;
+  if (img.classList.contains('anim-still')) { setPlaying(img, false); return; }
   const target = img.closest('button, .list-row') || img;
   const hover = img.classList.contains('anim-hover');
   target.addEventListener('mouseenter', () => { hovered.add(img); setPlaying(img, true); });
@@ -101,8 +103,8 @@ async function setup(img) {
 
 function scan(node) {
   if (node.nodeType !== 1) return;
-  if (node.matches('img.anim-hover, img.anim-limit')) setup(node);
-  node.querySelectorAll?.('img.anim-hover, img.anim-limit').forEach(setup);
+  if (node.matches('img.anim-hover, img.anim-limit, img.anim-still')) setup(node);
+  node.querySelectorAll?.('img.anim-hover, img.anim-limit, img.anim-still').forEach(setup);
 }
 
 if (typeof document !== 'undefined') {

@@ -119,7 +119,7 @@ export function openUserSettings(initialTab = 'account') {
       <h2>${t('userSettings.myAccountTab')}</h2>
       <div class="settings-avatar-row">
         <div class="avatar-edit" id="avatar-edit">
-          ${avatarHtml(previewUser, 80)}
+          ${avatarHtml(previewUser, 80, true)}
           <div class="overlay-hint">${t('userSettings.changeAvatar')}</div>
         </div>
         <input type="file" id="avatar-input" class="hidden" accept="image/png,image/jpeg,image/gif,image/webp">
@@ -173,7 +173,7 @@ export function openUserSettings(initialTab = 'account') {
       <div class="profile-preview" id="acc-preview">
         <div class="pp-banner" id="pp-banner-preview" style="${bannerStyle(previewUser)}"></div>
         <div class="pp-body" id="pp-body-preview" style="${cardStyle(previewUser)}">
-          ${avatarHtml(previewUser, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar')}
+          ${avatarHtml(previewUser, 68, true).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar')}
           <div class="pp-name">${escapeHtml(me.displayName)}</div>
           <div class="pp-username">@${escapeHtml(me.username)}</div>
           <div class="pp-bio" id="pp-bio-preview">${renderBio(me.bio || '')}</div>
@@ -203,16 +203,16 @@ export function openUserSettings(initialTab = 'account') {
       const colorInput = inner.querySelector('#f-avatar-bg-color');
       if (colorInput) colorInput.style.display = pendingAvatarBg ? '' : 'none';
       const pv = { ...me, avatarBackground: pendingAvatarBg, avatarBgColor: pendingAvatarBgColor };
-      inner.querySelector('#avatar-edit .avatar').outerHTML = avatarHtml(pv, 80);
-      inner.querySelector('#pp-body-preview .pp-avatar').outerHTML = avatarHtml(pv, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar');
+      inner.querySelector('#avatar-edit .avatar').outerHTML = avatarHtml(pv, 80, true);
+      inner.querySelector('#pp-body-preview .pp-avatar').outerHTML = avatarHtml(pv, 68, true).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar');
     });
 
     inner.querySelector('#f-avatar-bg-color')?.addEventListener('input', (e) => {
       avatarBgColorTouched = true;
       pendingAvatarBgColor = e.target.value;
       const pv = { ...me, avatarBackground: pendingAvatarBg, avatarBgColor: pendingAvatarBgColor };
-      inner.querySelector('#avatar-edit .avatar').outerHTML = avatarHtml(pv, 80);
-      inner.querySelector('#pp-body-preview .pp-avatar').outerHTML = avatarHtml(pv, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar');
+      inner.querySelector('#avatar-edit .avatar').outerHTML = avatarHtml(pv, 80, true);
+      inner.querySelector('#pp-body-preview .pp-avatar').outerHTML = avatarHtml(pv, 68, true).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar');
     });
 
     const bioInput = inner.querySelector('#f-bio');
@@ -702,7 +702,18 @@ export function openUserSettings(initialTab = 'account') {
             </div>`).join('')}
         </div>
         <button class="btn btn-ghost btn-sm" id="f-tray-badges-reset" style="margin-top:8px">${t('userSettings.resetAllButton')}</button>
-      </div>`;
+      </div>
+      <div class="field">
+        <label>${t('userSettings.trayNumberColorLabel')}</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="color" class="theme-color-input" id="f-tray-number" value="${settings.trayNumberColor || '#ffffff'}">
+          <button class="btn btn-ghost btn-sm" id="f-tray-number-reset">${t('userSettings.resetButton')}</button>
+        </div>
+      </div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="f-tray-pulse" ${settings.trayPulse !== false ? 'checked' : ''}>
+        <span>${t('userSettings.trayPulseCheckbox')}</span>
+      </label>`;
 
     inner.querySelector('#f-close-tray').addEventListener('change', async (e) => {
       await window.dismeshClient.setAppSettings({ closeToTray: e.target.checked });
@@ -743,6 +754,15 @@ export function openUserSettings(initialTab = 'account') {
         toast(t('userSettings.trayBadgeUpdatedToast'));
       });
     });
+    inner.querySelector('#f-tray-number').addEventListener('change', async (e) => {
+      await window.dismeshClient.setAppSettings({ trayNumberColor: e.target.value });
+      toast(t('userSettings.trayBadgeUpdatedToast'));
+    });
+    inner.querySelector('#f-tray-number-reset').addEventListener('click', async () => {
+      await window.dismeshClient.setAppSettings({ trayNumberColor: null });
+      renderApp(inner);
+    });
+    inner.querySelector('#f-tray-pulse').addEventListener('change', (e) => window.dismeshClient.setAppSettings({ trayPulse: e.target.checked }));
     inner.querySelector('#f-tray-badges-reset').addEventListener('click', async () => {
       await window.dismeshClient.setAppSettings({ trayBadgeColors: { online: null, idle: null, dnd: null, offline: null } });
       renderApp(inner);
@@ -871,7 +891,7 @@ export function openUserSettings(initialTab = 'account') {
         <div class="divider"></div>
         ${COLOR_FIELDS.map((f) => `
           <div class="field theme-color-row">
-            <label>${escapeHtml(f.label)}</label>
+            <label title="${escapeHtml(t('userSettings.color' + f.key[0].toUpperCase() + f.key.slice(1) + 'Tip'))}">${escapeHtml(t('userSettings.color' + f.key[0].toUpperCase() + f.key.slice(1)))}</label>
             <div style="display:flex;align-items:center;gap:8px">
               <input type="color" class="theme-color-input" id="f-color-${f.key}" value="${pending[f.key] || f.default}">
               <button type="button" class="btn-icon" data-clear="${f.key}" title="${t('userSettings.resetToDefaultTitle')}">${icons.x(14)}</button>
@@ -919,11 +939,13 @@ export function openUserSettings(initialTab = 'account') {
         <div class="divider"></div>
         <div class="field">
           <label>${t('userSettings.exportLabel')}</label>
+          <div class="hint">${t('userSettings.exportHelp')}</div>
           <textarea class="textarea" id="f-export" readonly rows="5">${escapeHtml(generateCss(pending) || t('userSettings.defaultThemeComment'))}</textarea>
           <button type="button" class="btn btn-secondary" id="f-copy" style="align-self:flex-start">${t('userSettings.copyCssButton')}</button>
         </div>
         <div class="field">
           <label>${t('userSettings.importLabel')}</label>
+          <div class="hint">${t('userSettings.importHelp')}</div>
           <textarea class="textarea" id="f-import" rows="5" placeholder=":root { --brand: #0d9488; }"></textarea>
           <button type="button" class="btn btn-secondary" id="f-import-btn" style="align-self:flex-start">${t('userSettings.applyPastedCssButton')}</button>
         </div>

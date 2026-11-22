@@ -6,7 +6,7 @@ namespace MeshCrowd.Client;
 
 public sealed record TrayBadge(string Status, int Count);
 
-public sealed record TrayTheme(string? BaseColor, IReadOnlyDictionary<string, string?> BadgeColors);
+public sealed record TrayTheme(string? BaseColor, IReadOnlyDictionary<string, string?> BadgeColors, string? NumberColor = null);
 
 // Port of electron/trayIcon.js: the same hand-drawn pixel icon (brand circle, ghost, unread badge,
 // blink frames), so both clients look identical in the tray.
@@ -146,6 +146,8 @@ public static class TrayIconRenderer
     private static int[] BadgeColor(TrayBadge badge, TrayTheme theme) =>
         HexToRgb(theme.BadgeColors.TryGetValue(badge.Status, out var hex) ? hex : null, StatusColor(badge.Status));
 
+    private static int[] NumberColor(TrayTheme theme) => HexToRgb(theme.NumberColor, [255, 255, 255]);
+
     private static byte[] NormalCanvas(TrayTheme theme)
     {
         var baseColor = HexToRgb(theme.BaseColor, Brand);
@@ -168,7 +170,7 @@ public static class TrayIconRenderer
         double textY = pillY + (pillH - 5 * glyphScale) / 2.0;
         FillRoundedRect(buf, pillX - BadgeRing, pillY - BadgeRing, pillW + BadgeRing * 2, pillH + BadgeRing * 2, pillH / 2.0 + BadgeRing, [255, 255, 255]);
         FillRoundedRect(buf, pillX, pillY, pillW, pillH, pillH / 2.0, BadgeColor(badge, theme));
-        DrawText(buf, label, textX, textY, [255, 255, 255], glyphScale);
+        DrawText(buf, label, textX, textY, NumberColor(theme), glyphScale);
         return buf;
     }
 
@@ -182,9 +184,11 @@ public static class TrayIconRenderer
         double x = Math.Round((IconSize - TextWidth(label, scale)) / 2.0);
         double y = Math.Round((IconSize - 5 * scale) / 2.0);
         int o = scale >= 6 ? 2 : 1;
+        var num = NumberColor(theme);
+        int[] outline = (0.299 * num[0] + 0.587 * num[1] + 0.114 * num[2]) / 255 > 0.5 ? [0x1e, 0x1f, 0x22] : [255, 255, 255];
         (int, int)[] offsets = [(-o, 0), (o, 0), (0, -o), (0, o), (-o, -o), (o, o), (-o, o), (o, -o)];
-        foreach (var (dx, dy) in offsets) DrawText(buf, label, x + dx, y + dy, [0x1e, 0x1f, 0x22], scale);
-        DrawText(buf, label, x, y, [255, 255, 255], scale);
+        foreach (var (dx, dy) in offsets) DrawText(buf, label, x + dx, y + dy, outline, scale);
+        DrawText(buf, label, x, y, num, scale);
         return buf;
     }
 
@@ -193,6 +197,35 @@ public static class TrayIconRenderer
         var o = new byte[a.Length];
         for (int i = 0; i < a.Length; i++) o[i] = (byte)Math.Round(a[i] * (1 - f) + b[i] * f);
         return o;
+    }
+
+    private static readonly int[] ErrorRed = [0xed, 0x42, 0x45];
+
+    // Red "forbidden" sign (ring + diagonal bar) shown while the server connection is lost.
+    private static byte[] ForbiddenCanvas()
+    {
+        var buf = NewCanvas();
+        double c = IconSize / 2.0;
+        FillCircle(buf, c, c, c - 1, ErrorRed);
+        FillCircle(buf, c, c, c - 8, [255, 255, 255]);
+        for (int y = 0; y < IconSize; y++)
+        for (int x = 0; x < IconSize; x++)
+        {
+            double dx = x + 0.5 - c, dy = y + 0.5 - c;
+            if (dx * dx + dy * dy <= (c - 1) * (c - 1) && Math.Abs(dx - dy) / Math.Sqrt(2) <= 4) SetPx(buf, x, y, ErrorRed[0], ErrorRed[1], ErrorRed[2], 255);
+        }
+        return buf;
+    }
+
+    public static byte[] BuildForbidden() => ForbiddenCanvas();
+
+    public static List<byte[]> BuildErrorFrames(TrayTheme theme, int steps)
+    {
+        var normal = NormalCanvas(theme);
+        var err = ForbiddenCanvas();
+        var frames = new List<byte[]>();
+        for (int i = 0; i <= steps; i++) frames.Add(Blend(normal, err, (double)i / steps));
+        return frames;
     }
 
     public static byte[] BuildPlain(TrayTheme theme) => NormalCanvas(theme);

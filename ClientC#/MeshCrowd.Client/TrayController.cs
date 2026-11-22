@@ -17,6 +17,7 @@ public sealed class TrayController : IDisposable
     private readonly Action _logout;
     private readonly Action _quit;
     private readonly Action<JsonObject> _navigate;
+    private readonly Action<bool> _flashWindowIcon;
 
     private readonly List<JsonObject> _recent = new();
     private TrayBadge _badge = new("online", 0);
@@ -28,17 +29,20 @@ public sealed class TrayController : IDisposable
 
     private List<TrayIconHandle> _frames = new();
     private TrayIconHandle? _plain;
+    private bool _connectionLost;
     private string _blinkKey = "";
+    private bool _windowFlashed;
     private long _blinkStart;
     private int _shown = -1;
 
-    public TrayController(AppConfig cfg, Action open, Action logout, Action quit, Action<JsonObject> navigate)
+    public TrayController(AppConfig cfg, Action open, Action logout, Action quit, Action<JsonObject> navigate, Action<bool> flashWindowIcon)
     {
         _cfg = cfg;
         _open = open;
         _logout = logout;
         _quit = quit;
         _navigate = navigate;
+        _flashWindowIcon = flashWindowIcon;
 
         _icon.Text = "MeshCrowd";
         _icon.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) _open(); };
@@ -73,7 +77,7 @@ public sealed class TrayController : IDisposable
         var colors = new Dictionary<string, string?>();
         if (_cfg.Data["trayBadgeColors"] is JsonObject o)
             foreach (var (k, v) in o) colors[k] = v is JsonValue jv && jv.TryGetValue<string>(out var s) ? s : null;
-        return new TrayTheme(_cfg.GetString("trayIconColor"), colors);
+        return new TrayTheme(_cfg.GetString("trayIconColor"), colors, _cfg.GetString("trayNumberColor"));
     }
 
     private static string MenuText(string s) => s.Replace("&", "&&");
@@ -144,6 +148,20 @@ public sealed class TrayController : IDisposable
         ApplyBadge();
     }
 
+    public void SetConnectionLost(bool lost)
+    {
+        if (_connectionLost == lost) return;
+        _connectionLost = lost;
+        ApplyBadge();
+    }
+
+    private void SetWindowFlash(bool on)
+    {
+        if (_windowFlashed == on) return;
+        _windowFlashed = on;
+        _flashWindowIcon(on);
+    }
+
     public void SetBadge(string? status, int count)
     {
         _badge = new TrayBadge(string.IsNullOrEmpty(status) ? "online" : status, count);
@@ -155,6 +173,7 @@ public sealed class TrayController : IDisposable
         _blinkTimer.Stop();
         _blinkKey = "";
         DisposeFrames();
+        SetWindowFlash(false);
     }
 
     private void DisposeFrames()
@@ -166,11 +185,14 @@ public sealed class TrayController : IDisposable
     private void StartBlink()
     {
         var theme = Theme();
-        string key = $"{_badge.Status}|{(_badge.Count > 9 ? 10 : _badge.Count)}|{theme.BaseColor}|{string.Join(",", theme.BadgeColors.Select(kv => kv.Key + kv.Value))}";
-        if (_blinkTimer.Enabled && key == _blinkKey) return;
+        bool pulse = _cfg.GetBool("trayPulse", true);
+        string key = $"{_connectionLost}|{pulse}|{theme.NumberColor}|{_badge.Status}|{(_badge.Count > 9 ? 10 : _badge.Count)}|{theme.BaseColor}|{string.Join(",", theme.BadgeColors.Select(kv => kv.Key + kv.Value))}";
+        if (_blinkKey.Length > 0 && key == _blinkKey) return;
         StopBlink();
         _blinkKey = key;
-        _frames = TrayIconRenderer.BuildBlinkFrames(_badge, theme, BlinkSteps).Select(TrayIconRenderer.ToIcon).ToList();
+        var raw = _connectionLost ? TrayIconRenderer.BuildErrorFrames(theme, BlinkSteps) : TrayIconRenderer.BuildBlinkFrames(_badge, theme, BlinkSteps);
+        _frames = raw.Select(TrayIconRenderer.ToIcon).ToList();
+        if (!_connectionLost && !pulse) { _icon.Icon = _frames[BlinkSteps].Icon; return; }
         _blinkStart = Environment.TickCount64;
         _shown = -1;
         _icon.Icon = _frames[0].Icon;
@@ -185,11 +207,12 @@ public sealed class TrayController : IDisposable
         if (idx == _shown) return;
         _shown = idx;
         _icon.Icon = _frames[idx].Icon;
+        if (_connectionLost) SetWindowFlash(idx >= BlinkSteps / 2);
     }
 
     public void ApplyBadge()
     {
-        if (_badge.Count > 0) StartBlink();
+        if (_connectionLost || _badge.Count > 0) StartBlink();
         else
         {
             StopBlink();

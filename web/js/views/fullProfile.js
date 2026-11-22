@@ -56,7 +56,7 @@ export async function openFullProfile(userId, { serverId } = {}) {
           <div class="fp-banner" style="${bannerStyle(live)}"></div>
           <div class="fp-card-body" style="${cardStyle(live)}">
             <div class="fp-avatar-wrap">
-              ${avatarHtml(live, 80)}
+              ${avatarHtml(live, 80, true)}
               <div class="status-dot ${status}" style="position:absolute;bottom:2px;right:-2px;width:18px;height:18px"></div>
             </div>
             <div class="fp-name">${escapeHtml(shownName)}</div>

@@ -83,7 +83,7 @@ export async function openProfileModal(userId, { serverId, anchor, asStranger = 
         </div>
         <div class="pp-body" style="${cardStyle(user)}">
           <div style="position:relative;width:68px">
-            ${avatarHtml(user, 68).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar')}
+            ${avatarHtml(user, 68, true).replace('class="avatar', 'class="avatar pp-avatar').replace('avatar-fallback', 'avatar-fallback pp-avatar')}
             <div class="status-dot ${status}" style="position:absolute;bottom:2px;right:-2px;width:14px;height:14px"></div>
           </div>
           <div${nameAttrs(cardNameFx(user, restr, nameColor), 'pp-name')}>${escapeHtml(user.displayName)}</div>

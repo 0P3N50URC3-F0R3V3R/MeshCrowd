@@ -2,6 +2,19 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-22
+#### Added
+- Desktop clients (Electron and C#): Settings, Desktop App, Tray Icon has a new "Unread number color" picker (the digits in the tray icon, default white) and a "Pulse the tray icon" checkbox (on by default; off shows the count icon statically). Config keys `trayNumberColor`, `trayPulse`.
+- Desktop clients: when the connection to the server is interrupted, the tray icon and the window/taskbar icon flash a red forbidden sign until the connection returns, then go back to normal (new `dismesh:set-connection-lost` bridge message).
+- Theme editor: every color label has a translated tooltip explaining what it colors, and the Export and Import boxes now carry a short explanation of what the CSS block is and how to share or restore a theme.
+
+#### Changed
+- Animated avatars (GIF/APNG/WebP) stay frozen on their first frame in chat, member lists and voice rooms; they only animate in the profile panel (full profile and profile popout) and in the profile editor.
+- The sticker and soundboard buttons are hidden in the message composer and the voice room when the server has no stickers or sounds (DMs: when no stickers are available).
+
+#### Fixed
+- Theme editor color labels (Accent Color, Server Rail, Sidebar, Chat Background, Popover / Modal, Primary Text, Secondary Text) were not translated; they now follow the interface language. Preset theme names stay English.
+
 ### 2026-11-21
 #### Added
 - Friends tab memory: the Friends page reopens on the tab you last used (Online, All, Pending, Blocked). Settings, Appearance has a "Default Friends tab" dropdown (Where I left off, Online, All, Pending, Blocked). Stored server side in `ui-prefs` (`friendsTabDefault`, `friendsLastTab`), so it follows you across devices. Notification links still open their own tab.

@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('dismeshClient', {
   clearNotifications: (keys) => ipcRenderer.send('dismesh:clear-notifications', keys),
   setTrayLabels: (labels) => ipcRenderer.send('dismesh:set-tray-labels', labels),
   setTrayBadge: (badge) => ipcRenderer.send('dismesh:set-tray-badge', badge),
+  setConnectionLost: (lost) => ipcRenderer.send('dismesh:set-connection-lost', !!lost),
   selectDownloadDir: () => ipcRenderer.invoke('dismesh:select-download-dir'),
   showDownload: (id) => ipcRenderer.invoke('dismesh:show-download', id),
   openDownload: (id) => ipcRenderer.invoke('dismesh:open-download', id),

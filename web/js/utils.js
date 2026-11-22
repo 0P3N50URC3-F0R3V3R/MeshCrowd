@@ -270,11 +270,12 @@ export function customStatusLabel(user) {
   return [user.customStatusEmoji, user.customStatusText].filter(Boolean).join(' ');
 }
 
-export function avatarHtml(user, size = 40) {
+// Animated avatars (GIF/APNG/WebP) stay frozen everywhere except the profile panel and editor (animate=true).
+export function avatarHtml(user, size = 40, animate = false) {
   const style = `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.4)}px`;
   if (user?.avatarPath) {
     const bgStyle = user.avatarBackground ? `;background:${escapeHtml(user.avatarBgColor || colorForId(user.id))}` : '';
-    return `<img class="avatar" style="${style}${bgStyle}" src="${escapeHtml(user.avatarPath)}" alt="" draggable="false">`;
+    return `<img class="avatar${animate ? '' : ' anim-still'}" style="${style}${bgStyle}" src="${escapeHtml(user.avatarPath)}" alt="" draggable="false">`;
   }
   const bg = colorForId(user?.id);
   return `<div class="avatar avatar-fallback" style="${style};background:${bg}">${escapeHtml(initials(user?.displayName || user?.username))}</div>`;

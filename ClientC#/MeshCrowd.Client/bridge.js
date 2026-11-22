@@ -69,6 +69,7 @@
       clearNotifications: (keys) => send('dismesh:clear-notifications', keys),
       setTrayLabels: (labels) => send('dismesh:set-tray-labels', labels),
       setTrayBadge: (badge) => send('dismesh:set-tray-badge', badge),
+      setConnectionLost: (lost) => send('dismesh:set-connection-lost', !!lost),
       selectDownloadDir: () => invoke('dismesh:select-download-dir'),
       showDownload: (id) => invoke('dismesh:show-download', id),
       openDownload: (id) => invoke('dismesh:open-download', id),

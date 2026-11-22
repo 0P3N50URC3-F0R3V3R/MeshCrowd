@@ -2,6 +2,19 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-22
+#### Hozzáadva
+- Asztali kliensek (Electron és C#): a Beállítások, Asztali alkalmazás, Tálcaikon oldalon új "Olvasatlan szám színe" választó (a tálcaikonon lévő számjegyek, alapból fehér) és "Tálcaikon pulzáltatása" jelölőnégyzet (alapból bekapcsolva; kikapcsolva a számmal ellátott ikon állóképként látszik). Konfigurációs kulcsok: `trayNumberColor`, `trayPulse`.
+- Asztali kliensek: ha megszakad a kapcsolat a szerverrel, a tálcaikon és az ablak/tálcagomb ikonja piros tiltó jelet villogtat, amíg a kapcsolat vissza nem áll, utána minden visszatér a normál állapotba (új `dismesh:set-connection-lost` híd-üzenet).
+- Témaszerkesztő: minden színfelirathoz lefordított súgószöveg tartozik, amely elmondja, mit színez, az Exportálás és Importálás mezők mellett pedig rövid magyarázat áll arról, mi a CSS-blokk és hogyan oszthatsz meg vagy állíthatsz vissza témát.
+
+#### Módosítva
+- Az animált profilképek (GIF/APNG/WebP) a chatben, a tagok listájában és a hangszobákban az első képkockán állnak; csak a profilpanelen (teljes profil és profil-felugró) és a profilszerkesztőben mozognak.
+- A matrica- és hangpult-gombok el vannak rejtve az üzenetíróban és a hangszobában, ha a szerveren nincs matrica vagy hang (privát üzeneteknél: ha nincs elérhető matrica).
+
+#### Javítva
+- A témaszerkesztő színfeliratai (Kiemelő szín, Szerversáv, Oldalsáv, Chat háttere, Felugró ablak / Modal, Elsődleges szöveg, Másodlagos szöveg) nem voltak lefordítva; mostantól a felület nyelvét követik. Az előre beállított témák nevei angolul maradnak.
+
 ### 2026-11-21
 #### Hozzáadva
 - Barátok fül megjegyzése: a Barátok oldal azon a fülön nyílik újra, amelyet utoljára használtál (Elérhető, Összes, Függőben, Letiltva). A Beállítások, Megjelenés oldalon új "Alapértelmezett Barátok fül" legördülő van (Ahol abbahagytam, Elérhető, Összes, Függőben, Letiltva). Szerveroldalon, az `ui-prefs`-ben tárolódik (`friendsTabDefault`, `friendsLastTab`), így eszközök között is követ. Az értesítési linkek továbbra is a saját fülüket nyitják.

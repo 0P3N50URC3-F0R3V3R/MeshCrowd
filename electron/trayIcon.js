@@ -148,6 +148,7 @@ function drawGhost(buf, size, baseColor) {
 }
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+const ERROR_RED = [0xed, 0x42, 0x45];
 
 // '#rrggbb' -> [r,g,b], falling back to `fallback` for anything not a clean 6-digit hex - this
 // feeds straight into a hand-rolled pixel buffer with no other validation downstream, so a
@@ -156,6 +157,10 @@ function hexToRgb(hex, fallback) {
   if (typeof hex !== 'string' || !HEX_RE.test(hex)) return fallback;
   const n = parseInt(hex.slice(1), 16);
   return [(n >> 16) & 0xff, (n >> 8) & 0xff, n & 0xff];
+}
+
+function numberColor(theme) {
+  return hexToRgb(theme?.numberColor, [255, 255, 255]);
 }
 
 // The tray is only 16-24 px, so the unread badge has to be big: a fixed tall pill (over half the
@@ -213,7 +218,7 @@ function buildTrayIconPNG({ status, count }, theme) {
   const L = unreadBadgeLayout(count);
   fillRoundedRect(buf, ICON_SIZE, L.pillX - L.ring, L.pillY - L.ring, L.pillW + L.ring * 2, L.pillH + L.ring * 2, L.pillH / 2 + L.ring, [255, 255, 255]);
   fillRoundedRect(buf, ICON_SIZE, L.pillX, L.pillY, L.pillW, L.pillH, L.pillH / 2, badgeColor);
-  drawText(buf, ICON_SIZE, L.label, L.textX, L.textY, [255, 255, 255], L.glyphScale);
+  drawText(buf, ICON_SIZE, L.label, L.textX, L.textY, numberColor(theme), L.glyphScale);
 
   return encodePNG(ICON_SIZE, buf);
 }
@@ -244,11 +249,13 @@ function alertCanvas({ status, count }, theme) {
   fillCircle(buf, ICON_SIZE, ICON_SIZE / 2, ICON_SIZE / 2, ICON_SIZE / 2 - 1, [255, 255, 255]);
   fillCircle(buf, ICON_SIZE, ICON_SIZE / 2, ICON_SIZE / 2, ICON_SIZE / 2 - 3, badgeColor);
   const L = alertLayout(count);
-  const o = L.scale >= 6 ? 2 : 1; // dark outline keeps the digits readable on a light status color
+  const o = L.scale >= 6 ? 2 : 1; // contrasting outline keeps the digits readable on any status color
+  const num = numberColor(theme);
+  const outline = (0.299 * num[0] + 0.587 * num[1] + 0.114 * num[2]) / 255 > 0.5 ? [0x1e, 0x1f, 0x22] : [255, 255, 255];
   for (const [dx, dy] of [[-o, 0], [o, 0], [0, -o], [0, o], [-o, -o], [o, o], [-o, o], [o, -o]]) {
-    drawText(buf, ICON_SIZE, L.label, L.x + dx, L.y + dy, [0x1e, 0x1f, 0x22], L.scale);
+    drawText(buf, ICON_SIZE, L.label, L.x + dx, L.y + dy, outline, L.scale);
   }
-  drawText(buf, ICON_SIZE, L.label, L.x, L.y, [255, 255, 255], L.scale);
+  drawText(buf, ICON_SIZE, L.label, L.x, L.y, num, L.scale);
   return buf;
 }
 
@@ -267,4 +274,28 @@ function buildBlinkFrames(badge, theme, steps = 8) {
   return frames;
 }
 
-module.exports = { buildBlinkFrames, alertLayout, ICON_SIZE, unreadBadgeLayout, buildTrayIconPNG, encodePNG, newCanvas, fillCircle, fillRoundedRect, drawText, textWidth };
+// Red "forbidden" sign (ring + diagonal bar) shown while the server connection is lost.
+function forbiddenCanvas() {
+  const buf = newCanvas(ICON_SIZE);
+  const c = ICON_SIZE / 2;
+  fillCircle(buf, ICON_SIZE, c, c, c - 1, ERROR_RED);
+  fillCircle(buf, ICON_SIZE, c, c, c - 8, [255, 255, 255]);
+  for (let y = 0; y < ICON_SIZE; y++) {
+    for (let x = 0; x < ICON_SIZE; x++) {
+      const dx = x + 0.5 - c; const dy = y + 0.5 - c;
+      if (dx * dx + dy * dy <= (c - 1) * (c - 1) && Math.abs(dx - dy) / Math.SQRT2 <= 4) setPx(buf, ICON_SIZE, x, y, ERROR_RED[0], ERROR_RED[1], ERROR_RED[2], 255);
+    }
+  }
+  return buf;
+}
+
+// Frames going from the plain icon (index 0) to the forbidden sign (index steps).
+function buildErrorFrames(theme, steps = 8) {
+  const normal = normalCanvas(theme);
+  const err = forbiddenCanvas();
+  const frames = [];
+  for (let i = 0; i <= steps; i++) frames.push(encodePNG(ICON_SIZE, blend(normal, err, i / steps)));
+  return frames;
+}
+
+module.exports = { buildErrorFrames, buildBlinkFrames, alertLayout, ICON_SIZE, unreadBadgeLayout, buildTrayIconPNG, encodePNG, newCanvas, fillCircle, fillRoundedRect, drawText, textWidth };
