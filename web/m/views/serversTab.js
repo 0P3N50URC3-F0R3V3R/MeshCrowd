@@ -10,6 +10,7 @@ import { nav } from '../router.js';
 import { ensureServerDetail, refreshServerDetailSilently } from '../data.js';
 import { openScreeningSheet } from '../components/screeningSheet.js';
 import { handleError } from '../lib/errors.js';
+import { getPref, setPref } from '../lib/prefs.js';
 import { onLongPress } from '../lib/longPress.js';
 import { actionSheet, confirmSheet, promptSheet, openSheet } from '../components/bottomSheet.js';
 import { PERMISSIONS, has, memberPermissionBits } from '../../js/permissions.js';
@@ -43,6 +44,8 @@ export function mountServersTab(host) {
   let destroyed = false;
   host.innerHTML = '<div class="m-servers"><div class="m-rail" id="m-rail"></div><div class="m-chanpane" id="m-chanpane"></div></div>';
   const rail = host.querySelector('#m-rail');
+  let railHidden = getPref('railHidden', null) === '1';
+  rail.hidden = railHidden;
   const pane = host.querySelector('#m-chanpane');
 
   function paintRail() {
@@ -60,10 +63,15 @@ export function mountServersTab(host) {
     const server = state.servers.find((s) => s.id === sid);
     if (!server) { pane.innerHTML = `<div class="m-empty">${t('m.noServers')}</div>`; return; }
     state.lastServerId = sid;
-    pane.innerHTML = `<div class="m-header"><h1>${escapeHtml(server.name)}</h1>
+    pane.innerHTML = `<div class="m-header"><button class="m-icon-btn" id="m-rail-toggle" aria-label="${t('m.toggleServerList')}">${icons.menu(20)}</button><h1>${escapeHtml(server.name)}</h1>
       <button class="m-icon-btn" id="m-srv-search" aria-label="${t('m.searchAction')}">${icons.search(20)}</button>
       <button class="m-icon-btn" id="m-srv-menu" aria-label="${t('m.notifLevel')}">${icons.chevronDown(20)}</button></div>
       <div class="m-scroll" id="m-chans"><div class="m-empty">${t('m.loading')}</div></div>`;
+    pane.querySelector('#m-rail-toggle').addEventListener('click', () => {
+      railHidden = !railHidden;
+      setPref('railHidden', railHidden ? '1' : null);
+      rail.hidden = railHidden;
+    });
     pane.querySelector('#m-srv-menu').addEventListener('click', () => openServerMenu(server));
     pane.querySelector('#m-srv-search').addEventListener('click', () => nav.push('search', { serverId: sid, entire: true }));
     let detail;

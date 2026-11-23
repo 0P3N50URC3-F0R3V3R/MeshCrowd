@@ -2,6 +2,14 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-23
+#### Added
+- Checklists: the "Who else can help?" section now has a user search box, a multi-select result list with a level picker (Can check / Can edit) and an "Add selected" button, and a list of the chosen helpers below with per-user level and remove buttons. Works with 100+ member servers (50 results shown, refine to narrow).
+- Phone UI: a hamburger button at the top left of the channel pane hides or shows the server list; the choice is remembered.
+
+#### Fixed
+- Chat (desktop): the "(edited by X)" tag no longer enlarges its line, which made the gap before the next author's message bigger when the last message of a group was edited by someone else.
+
 ### 2026-11-22
 #### Added
 - Desktop clients (Electron and C#): Settings, Desktop App, Tray Icon has a new "Unread number color" picker (the digits in the tray icon, default white) and a "Pulse the tray icon" checkbox (on by default; off shows the count icon statically). Config keys `trayNumberColor`, `trayPulse`.

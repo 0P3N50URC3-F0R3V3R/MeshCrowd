@@ -69,6 +69,7 @@ export function messageHtml(msg, ctx) {
   const compact = shouldCompact(ctx.prev, msg);
   const member = ctx.detail?.members?.find((m) => m.user.id === msg.author.id);
   const fx = member ? memberNameFx(ctx.detail.roles, member) : (ctx.detail ? {} : personalFx(msg.author));
+  const editedTag = msg.editedAt ? `<span class="m-edited">${msg.editedBy ? t('m.editedBy', { name: escapeHtml(msg.editedBy.displayName) }) : t('m.edited')}</span>` : '';
   const text = (msg.content && !msg.checklist ? `<div class="m-text${isEmojiOnly(msg.content, ctx.detail?.customEmoji) ? ' m-emoji-only' : ''}">${renderMessageContent(msg.content, { channels: ctx.detail?.channels, customEmoji: ctx.detail?.customEmoji, rawHtmlEnabled: !!ctx.detail?.server?.raw_html_enabled, mentionNames: ctx.mentionNames })}</div>` : '');
   return `
   <div class="m-msg${compact ? ' compact' : ''}${msg.author.id === ctx.meId ? ' mine' : ''}" data-id="${msg.id}">
@@ -79,7 +80,7 @@ export function messageHtml(msg, ctx) {
         <time title="${escapeHtml(formatTimestamp(msg.createdAt))}">${formatShortTime(msg.createdAt)}</time>${msg.pinnedAt ? `<span class="m-pin" title="${t('m.pinnedBadge')}">${icons.pin(12)}</span>` : ''}</div>`}
       ${msg.forwardedFrom ? `<div class="m-forwarded">${icons.forward(12)} ${t('m.forwardedFrom')}</div>` : ''}
       ${replyHtml(msg.replyTo)}
-      ${text}${msg.editedAt ? `<span class="m-edited">${msg.editedBy ? t('m.editedBy', { name: escapeHtml(msg.editedBy.displayName) }) : t('m.edited')}</span>` : ''}
+      ${text}${editedTag}
       ${msg.sound ? soundHtml(msg.sound) : ''}
       ${msg.sticker ? `<img class="m-sticker anim-limit" src="${escapeHtml(msg.sticker.imagePath)}" alt="${escapeHtml(msg.sticker.name)}">` : ''}
       ${attachmentsHtml(msg)}${msg.poll ? pollHtml(msg.poll, ctx.meId, msg.id) : ''}${msg.checklist ? checklistHtml(msg.checklist, ctx.meId, undefined, msg.content) : ''}${embedHtml(msg.embed)}${reactionsHtml(msg, ctx.meId, ctx.detail?.customEmoji)}

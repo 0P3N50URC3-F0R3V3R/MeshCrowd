@@ -2,6 +2,14 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-23
+#### Hozzáadva
+- Ellenőrzőlisták: a "Ki segíthet még?" rész kapott felhasználókereső mezőt, többszörösen kijelölhető találati listát szintválasztóval (Pipálhat / Szerkeszthet) és "Kijelöltek hozzáadása" gombot, alatta pedig a kiválasztott segítők listáját felhasználónkénti szinttel és eltávolítás gombbal. 100+ tagú szervereken is használható (50 találat látszik, szűkíthető).
+- Telefonos felület: a csatornapanel bal felső sarkában lévő hamburger gomb elrejti vagy megjeleníti a szerverlistát; a választás megmarad.
+
+#### Javítva
+- Chat (asztali): a "(szerkesztette: X)" jelölés már nem növeli meg a sorát, ami miatt egy csoport utolsó üzenetének más általi szerkesztésekor nagyobb lett a hézag a következő szerző üzenete előtt.
+
 ### 2026-11-22
 #### Hozzáadva
 - Asztali kliensek (Electron és C#): a Beállítások, Asztali alkalmazás, Tálcaikon oldalon új "Olvasatlan szám színe" választó (a tálcaikonon lévő számjegyek, alapból fehér) és "Tálcaikon pulzáltatása" jelölőnégyzet (alapból bekapcsolva; kikapcsolva a számmal ellátott ikon állóképként látszik). Konfigurációs kulcsok: `trayNumberColor`, `trayPulse`.

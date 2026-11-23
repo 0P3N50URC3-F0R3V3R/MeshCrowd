@@ -75,15 +75,57 @@ export function openChecklistForm({ openPanel, mode, scope, message, members = [
 
       if (showHelpers) {
         const hEl = body.querySelector('#cl-helpers');
-        hEl.innerHTML = members.map((m) => `<div class="cl-helper"><span>${escapeHtml(m.name)}</span>
-          <select class="input m-input" data-helper="${m.id}">
-            <option value="">${t('checklist.helperNone')}</option>
-            <option value="check"${helpers.get(m.id) === 'check' ? ' selected' : ''}>${t('checklist.helperCheck')}</option>
-            <option value="edit"${helpers.get(m.id) === 'edit' ? ' selected' : ''}>${t('checklist.helperEdit')}</option></select></div>`).join('');
-        hEl.addEventListener('change', (e) => {
-          const id = Number(e.target.dataset.helper);
-          if (e.target.value) helpers.set(id, e.target.value); else helpers.delete(id);
+        const byId = new Map(members.map((m) => [m.id, m]));
+        const picked = new Set();
+        const levelOpts = (sel) => `<option value="check"${sel === 'check' ? ' selected' : ''}>${t('checklist.helperCheck')}</option><option value="edit"${sel === 'edit' ? ' selected' : ''}>${t('checklist.helperEdit')}</option>`;
+        hEl.innerHTML = `<div class="cl-helper-added" id="cl-h-added"></div>
+          <input class="input m-input" id="cl-h-search" placeholder="${escapeHtml(t('checklist.helperSearchPh'))}" autocomplete="off">
+          <div class="cl-helper-results" id="cl-h-results"></div>
+          <div class="cl-helper cl-helper-bar"><select class="input m-input" id="cl-h-level">${levelOpts('check')}</select>
+          <button type="button" class="btn btn-secondary btn-sm" id="cl-h-add" disabled></button></div>`;
+        const addedEl = hEl.querySelector('#cl-h-added');
+        const resultsEl = hEl.querySelector('#cl-h-results');
+        const searchEl = hEl.querySelector('#cl-h-search');
+        const addBtn = hEl.querySelector('#cl-h-add');
+        const levelEl = hEl.querySelector('#cl-h-level');
+        const MAX_SHOWN = 50;
+
+        function drawAdded() {
+          addedEl.innerHTML = [...helpers].map(([id, level]) => `<div class="cl-helper"><span>${escapeHtml(byId.get(id)?.name || `#${id}`)}</span>
+            <span class="cl-helper-ctl"><select class="input m-input" data-helper="${id}">${levelOpts(level)}</select>
+            <button type="button" class="btn-icon" data-h-rm="${id}" title="${escapeHtml(t('checklist.removeItem'))}">${icons.x(14)}</button></span></div>`).join('');
+        }
+        function drawResults() {
+          const q = searchEl.value.trim().toLowerCase();
+          const hits = members.filter((m) => !helpers.has(m.id) && (!q || m.name.toLowerCase().includes(q)));
+          resultsEl.innerHTML = hits.slice(0, MAX_SHOWN).map((m) => `<label class="cl-helper"><span>${escapeHtml(m.name)}</span>
+            <input type="checkbox" data-pick="${m.id}"${picked.has(m.id) ? ' checked' : ''}></label>`).join('')
+            + (hits.length > MAX_SHOWN ? `<div class="cl-helper-more">${t('checklist.helperMore', { n: hits.length - MAX_SHOWN })}</div>` : '')
+            + (hits.length ? '' : `<div class="cl-helper-more">${t('checklist.helperNoMatch')}</div>`);
+          addBtn.textContent = t('checklist.helperAddSelected', { n: picked.size });
+          addBtn.disabled = picked.size === 0;
+        }
+        searchEl.addEventListener('input', drawResults);
+        searchEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
+        resultsEl.addEventListener('change', (e) => {
+          const id = Number(e.target.dataset.pick);
+          if (e.target.checked) picked.add(id); else picked.delete(id);
+          addBtn.textContent = t('checklist.helperAddSelected', { n: picked.size });
+          addBtn.disabled = picked.size === 0;
         });
+        addBtn.addEventListener('click', () => {
+          for (const id of picked) helpers.set(id, levelEl.value);
+          picked.clear(); drawAdded(); drawResults();
+        });
+        addedEl.addEventListener('change', (e) => {
+          if (e.target.dataset.helper) helpers.set(Number(e.target.dataset.helper), e.target.value);
+        });
+        addedEl.addEventListener('click', (e) => {
+          const b = e.target.closest('[data-h-rm]');
+          if (!b) return;
+          helpers.delete(Number(b.dataset.hRm)); drawAdded(); drawResults();
+        });
+        drawAdded(); drawResults();
       }
 
       saveBtn.addEventListener('click', async () => {

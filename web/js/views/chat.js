@@ -568,7 +568,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     }
     if (m.content && !m.checklist) {
       const emojiOnly = isEmojiOnly(m.content, scope.customEmoji) && !m.poll;
-      parts.push(`<div class="msg-line ${emojiOnly ? 'msg-emoji-only' : ''}">${renderMessageContent(m.content, { channels: scope.channels, customEmoji: scope.customEmoji, rawHtmlEnabled: scope.rawHtmlEnabled, mentionNames: scopeMentionNames() })}${m.editedAt ? `<span class="edited-tag">${m.editedBy ? t('chat.editedByTag', { name: escapeHtml(m.editedBy.displayName) }) : t('chat.editedTag')}</span>` : ''}</div>`);
+      parts.push(`<div class="msg-line ${emojiOnly ? 'msg-emoji-only' : ''}">${renderMessageContent(m.content, { channels: scope.channels, customEmoji: scope.customEmoji, rawHtmlEnabled: scope.rawHtmlEnabled, mentionNames: scopeMentionNames() })}${m.editedAt ? `<span class="edited-tag${m.editedBy ? ' edited-by' : ''}">${m.editedBy ? t('chat.editedByTag', { name: escapeHtml(m.editedBy.displayName) }) : t('chat.editedTag')}</span>` : ''}</div>`);
     }
     if (m.sticker) parts.push(`<img class="sticker-message anim-limit" src="${escapeHtml(m.sticker.imagePath)}" alt="${escapeHtml(m.sticker.name)}" title="${escapeHtml(m.sticker.name)}">`);
     if (m.sound) parts.push(`<div class="sound-message"><button type="button" class="btn sound-play" data-sound-src="${escapeHtml(m.sound.audioPath)}" title="${escapeHtml(m.sound.name)}">${icons.music(18)} ${m.sound.emoji ? `${escapeHtml(m.sound.emoji)} ` : ''}${escapeHtml(m.sound.name)}</button></div>`);

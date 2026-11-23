@@ -170,6 +170,7 @@
   overflow-wrap: anywhere;
 }
 .msg-line .edited-tag { font-size: 10px; color: var(--text-faint); margin-left: 4px; }
+.msg-line .edited-tag.edited-by { line-height: 1; }
 .custom-emoji { width: 1.375em; height: 1.375em; object-fit: contain; vertical-align: bottom; margin: 0 1px; }
 .msg-line a { color: var(--link); }
 .msg-line .mention {
@@ -337,6 +338,12 @@
 .cl-row .input { flex: 1; min-width: 0; }
 .cl-helper { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .cl-helper select { width: auto; }
+.cl-helper-ctl { display: flex; gap: 4px; align-items: center; }
+.cl-helper-added { margin-bottom: 8px; }
+.cl-helper-results { max-height: 180px; overflow-y: auto; margin: 6px 0; }
+.cl-helper-results .cl-helper { cursor: pointer; padding: 2px 4px; text-transform: none; font-weight: normal; font-size: 14px; letter-spacing: 0; color: var(--text-secondary); }
+.cl-helper-more { color: var(--text-faint); font-size: 12px; padding: 2px 4px; }
+.cl-helper-bar { margin-bottom: 0; }
 
 .msg-actions {
   position: absolute;
