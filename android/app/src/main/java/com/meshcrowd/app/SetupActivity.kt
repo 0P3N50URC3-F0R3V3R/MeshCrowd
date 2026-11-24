@@ -6,10 +6,15 @@ import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
 import android.view.inputmethod.EditorInfo
+import android.graphics.BitmapFactory
+import android.util.Base64
 import android.widget.Button
+import android.widget.ImageView
+import android.widget.ScrollView
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ProgressBar
+import android.widget.Switch
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -26,6 +31,9 @@ class SetupActivity : AppCompatActivity() {
     private lateinit var status: TextView
     private lateinit var button: Button
     private lateinit var progress: ProgressBar
+    private lateinit var knownBox: LinearLayout
+    private lateinit var swarmBox: LinearLayout
+    private var swarmLoad = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +47,8 @@ class SetupActivity : AppCompatActivity() {
         }
         root.addView(TextView(this).apply { text = getString(R.string.setup_title); textSize = 24f; setTextColor(Color.WHITE) })
         root.addView(TextView(this).apply { text = getString(R.string.setup_hint); setTextColor(Color.parseColor("#B5BAC1")); setPadding(0, pad / 2, 0, pad / 2) })
+        knownBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(knownBox)
         input = EditText(this).apply {
             hint = getString(R.string.setup_placeholder)
             setHintTextColor(Color.parseColor("#80848E"))
@@ -61,14 +71,164 @@ class SetupActivity : AppCompatActivity() {
         root.addView(progress)
         status = TextView(this).apply { setTextColor(Color.parseColor("#F23F43")); setPadding(0, pad / 2, 0, 0) }
         root.addView(status)
-        setContentView(root)
-        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+        addPublicSection(root, pad)
+        val scroll = ScrollView(this).apply { isFillViewport = true; addView(root) }
+        setContentView(scroll)
+        renderKnown()
+        ViewCompat.setOnApplyWindowInsetsListener(scroll) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-            v.setPadding(pad + bars.left, pad + bars.top, pad + bars.right, pad + maxOf(bars.bottom, ime.bottom))
+            root.setPadding(pad + bars.left, pad + bars.top, pad + bars.right, pad + maxOf(bars.bottom, ime.bottom))
             WindowInsetsCompat.CONSUMED
         }
         input.requestFocus()
+        if (intent.getBooleanExtra(EXTRA_AUTOCONNECT, false)) connect()
+    }
+
+    private fun addPublicSection(root: LinearLayout, pad: Int) {
+        val toggle = Switch(this).apply {
+            text = getString(R.string.setup_public_show)
+            setTextColor(Color.WHITE)
+            isChecked = settings.swarmShow
+            setPadding(0, pad / 2, 0, 0)
+        }
+        root.addView(TextView(this).apply { text = getString(R.string.setup_public_title); setTextColor(Color.parseColor("#B5BAC1")); setPadding(0, pad, 0, 0) })
+        root.addView(toggle)
+        root.addView(TextView(this).apply { text = getString(R.string.setup_public_privacy); setTextColor(Color.parseColor("#80848E")); textSize = 12f })
+        swarmBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = android.view.View.GONE }
+        root.addView(swarmBox)
+        toggle.setOnCheckedChangeListener { _, on -> settings.swarmShow = on; refreshPublic() }
+        refreshPublic()
+    }
+
+    private fun refreshPublic() {
+        swarmLoad++
+        swarmBox.removeAllViews()
+        if (!settings.swarmShow) { swarmBox.visibility = android.view.View.GONE; return }
+        swarmBox.visibility = android.view.View.VISIBLE
+        val mine = swarmLoad
+        val dp = resources.displayMetrics.density
+        val trackers = settings.swarmTrackers
+        val note = TextView(this).apply { text = getString(R.string.setup_public_loading); setTextColor(Color.parseColor("#80848E")); setPadding(0, (dp * 8).toInt(), 0, 0) }
+        swarmBox.addView(note)
+        swarmBox.addView(Button(this).apply {
+            text = getString(R.string.setup_public_trackers)
+            setOnClickListener { editTrackers() }
+        })
+        if (trackers.isEmpty()) { note.text = getString(R.string.setup_public_unreachable); return }
+        Thread {
+            val result = SwarmClient.loadList(trackers, { url ->
+                val res = Net.get(url, null)
+                if (res.code != 200) throw java.io.IOException("answered ${res.code}")
+                res.body
+            })
+            runOnUiThread {
+                if (mine != swarmLoad || isFinishing) return@runOnUiThread
+                note.text = when {
+                    result.servers.isNotEmpty() -> ""
+                    result.errors.size == trackers.size -> getString(R.string.setup_public_unreachable)
+                    else -> getString(R.string.setup_public_empty)
+                }
+                var at = 0
+                for (e in result.servers) swarmBox.addView(publicRow(e), at++)
+            }
+        }.start()
+    }
+
+    private fun ago(ms: Long): String {
+        val mins = maxOf(0L, (System.currentTimeMillis() - ms) / 60000)
+        return when {
+            mins < 1 -> getString(R.string.setup_ago_now)
+            mins < 60 -> getString(R.string.setup_ago_min, mins)
+            mins < 48 * 60 -> getString(R.string.setup_ago_hour, mins / 60)
+            else -> getString(R.string.setup_ago_day, mins / 1440)
+        }
+    }
+
+    private fun publicRow(e: SwarmClient.Entry): android.view.View {
+        val dp = resources.displayMetrics.density
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, (dp * 8).toInt(), 0, (dp * 8).toInt())
+            setOnClickListener { input.setText(e.url); connect() }
+        }
+        val icon = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; setBackgroundColor(Color.parseColor("#2B2D31")) }
+        e.icon?.let {
+            try {
+                val bytes = Base64.decode(it.substringAfter("base64,"), Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.let { bmp -> icon.setImageBitmap(bmp) }
+            } catch (_: Exception) { /* empty tile */ }
+        }
+        row.addView(icon, LinearLayout.LayoutParams((dp * 40).toInt(), (dp * 40).toInt()))
+        val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding((dp * 12).toInt(), 0, 0, 0) }
+        texts.addView(TextView(this).apply { text = e.name; setTextColor(Color.WHITE); textSize = 16f })
+        if (e.description.isNotEmpty()) texts.addView(TextView(this).apply { text = e.description; setTextColor(Color.parseColor("#B5BAC1")); textSize = 13f })
+        val reg = when (e.registration) { "open" -> R.string.setup_reg_open; "invite" -> R.string.setup_reg_invite; else -> R.string.setup_reg_closed }
+        texts.addView(TextView(this).apply {
+            text = "${java.net.URI(e.url).authority} · ${getString(reg)} · ${getString(R.string.setup_online)} ${ago(e.lastSeen)} · ${getString(R.string.setup_updated)} ${ago(e.updated)}"
+            setTextColor(Color.parseColor("#949BA4")); textSize = 12f
+        })
+        row.addView(texts, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        return row
+    }
+
+    private fun editTrackers() {
+        val field = EditText(this).apply {
+            setText(settings.swarmTrackers.joinToString("\n"))
+            setTextColor(Color.WHITE)
+            minLines = 3
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_VARIATION_URI
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.setup_public_trackers)
+            .setMessage(R.string.setup_public_trackers_hint)
+            .setView(field)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val list = SwarmClient.normalizeTrackers(field.text.toString().lines())
+                if (list == null) status.text = getString(R.string.setup_public_trackers_bad) else { settings.swarmTrackers = list; status.text = ""; refreshPublic() }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun renderKnown() {
+        knownBox.removeAllViews()
+        val list = settings.knownServers
+        if (list.isEmpty()) return
+        val dp = resources.displayMetrics.density
+        knownBox.addView(TextView(this).apply { text = getString(R.string.setup_known); setTextColor(Color.parseColor("#B5BAC1")); setPadding(0, 0, 0, (dp * 6).toInt()) })
+        for (s in list) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, (dp * 6).toInt(), 0, (dp * 6).toInt())
+                setOnClickListener { input.setText(s.url); busy(true); status.text = ""; Thread { probe(listOf(s.url), s.pin) }.start() }
+                setOnLongClickListener { askRemove(s); true }
+            }
+            val icon = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; setBackgroundColor(Color.parseColor("#2B2D31")) }
+            if (s.icon.isNotEmpty()) {
+                try {
+                    val bytes = Base64.decode(s.icon.substringAfter("base64,"), Base64.DEFAULT)
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.let { icon.setImageBitmap(it) }
+                } catch (_: Exception) { /* keep the empty tile */ }
+            }
+            row.addView(icon, LinearLayout.LayoutParams((dp * 40).toInt(), (dp * 40).toInt()))
+            val texts = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding((dp * 12).toInt(), 0, 0, 0) }
+            texts.addView(TextView(this).apply { text = s.name; setTextColor(Color.WHITE); textSize = 16f; setSingleLine(); ellipsize = android.text.TextUtils.TruncateAt.END })
+            texts.addView(TextView(this).apply { text = java.net.URI(s.url).authority; setTextColor(Color.parseColor("#949BA4")); textSize = 12f; setSingleLine(); ellipsize = android.text.TextUtils.TruncateAt.END })
+            row.addView(texts, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            knownBox.addView(row)
+        }
+        knownBox.addView(android.view.View(this), LinearLayout.LayoutParams(1, (dp * 12).toInt()))
+    }
+
+    private fun askRemove(s: KnownServer) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.setup_known_remove_title)
+            .setMessage(getString(R.string.setup_known_remove_body, s.name))
+            .setPositiveButton(R.string.setup_known_remove) { _, _ -> settings.knownServers = KnownServers.remove(settings.knownServers, s.url); renderKnown() }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun busy(on: Boolean) {
@@ -81,7 +241,8 @@ class SetupActivity : AppCompatActivity() {
         if (candidates.isEmpty()) { status.text = getString(R.string.setup_invalid); return }
         status.text = ""
         busy(true)
-        Thread { probe(candidates, null) }.start()
+        val pin = KnownServers.find(settings.knownServers, candidates.first())?.pin
+        Thread { probe(candidates, pin) }.start()
     }
 
     // Tries each origin (https first). A TLS failure on https offers to trust the certificate by fingerprint.
@@ -91,7 +252,10 @@ class SetupActivity : AppCompatActivity() {
             try {
                 val res = Net.get("$origin/api/config", pin)
                 if (res.code == 200 && JSONObject(res.body).has("maxUploadMb")) {
-                    runOnUiThread { accept(origin, pin) }
+                    val instance = JSONObject(res.body).optJSONObject("instance")
+                    val name = instance?.optString("name")
+                    val icon = if (instance?.optBoolean("hasIcon") == true) fetchIcon(origin, pin) else null
+                    runOnUiThread { accept(origin, pin, name, icon) }
                     return
                 }
             } catch (e: SSLException) {
@@ -109,6 +273,12 @@ class SetupActivity : AppCompatActivity() {
         runOnUiThread { busy(false); status.text = getString(R.string.setup_failed) }
     }
 
+    private fun fetchIcon(origin: String, pin: String?): String? = try {
+        Net.getBytes("$origin/instance/icon", pin, 17000)?.let { "data:image/png;base64," + Base64.encodeToString(it, Base64.NO_WRAP) }
+    } catch (_: Exception) {
+        null
+    }
+
     private fun askTrust(candidates: List<String>, fingerprint: String) {
         busy(false)
         AlertDialog.Builder(this)
@@ -119,8 +289,12 @@ class SetupActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun accept(origin: String, pin: String?) {
-        if (settings.origin != origin) settings.lastNotificationId = 0
+    private fun accept(origin: String, pin: String?, name: String?, icon: String?) {
+        settings.knownServers = KnownServers.upsert(settings.knownServers, origin, name, icon, pin, System.currentTimeMillis())
+        if (settings.origin != origin) {
+            SessionCookies.dropIfSessionOnly(settings.origin, settings.knownServers)
+            settings.lastNotificationId = 0
+        }
         settings.origin = origin
         settings.pin = pin
         busy(false)
@@ -147,6 +321,7 @@ class SetupActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_CHANGE = "change"
         const val EXTRA_ADDRESS = "address"
+        const val EXTRA_AUTOCONNECT = "autoconnect"
         const val EXTRA_INVITE_HASH = "inviteHash"
     }
 }

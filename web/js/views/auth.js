@@ -66,9 +66,11 @@ export function renderAuth(root) {
       if (capSlot) { cap = createCaptcha(mode === 'register' ? 'register' : 'login'); cap.mount(capSlot); }
 
       root.querySelectorAll('[data-switch]').forEach((a) => a.addEventListener('click', (e) => {
-        if (!window.dismeshClient?.switchServer) return;
+        const native = window.dismeshClient?.switchServer ? (u) => window.dismeshClient.switchServer(u)
+          : window.MeshCrowdAndroid?.switchServer ? (u) => window.MeshCrowdAndroid.switchServer(u) : null;
+        if (!native) return;
         e.preventDefault();
-        window.dismeshClient.switchServer(a.dataset.switch);
+        native(a.dataset.switch);
       }));
 
       root.querySelector('#auth-lang')?.addEventListener('change', (e) => {

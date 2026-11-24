@@ -82,6 +82,22 @@ class AndroidBridge(private val activity: MainActivity) {
         activity.runOnUiThread { activity.startActivity(Intent(activity, SetupActivity::class.java).putExtra(SetupActivity.EXTRA_CHANGE, true)) }
     }
 
+    private var switchAsking = false
+
+    // Asked for by the login page's public list. Never silent: the user confirms the target host, and the
+    // setup screen then probes it (https/http choice, self-signed trust) before anything is switched.
+    @JavascriptInterface
+    fun switchServer(url: String): Boolean {
+        val origin = KnownServers.switchTarget(url, settings.knownServers) ?: return false
+        if (origin == KnownServers.normalizeOrigin(settings.origin)) return false
+        synchronized(this) {
+            if (switchAsking) return false
+            switchAsking = true
+        }
+        activity.runOnUiThread { activity.confirmSwitchTo(origin) { synchronized(this) { switchAsking = false } } }
+        return true
+    }
+
     @JavascriptInterface
     fun reload() {
         activity.runOnUiThread { activity.loadApp(null) }

@@ -93,6 +93,7 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
             WindowInsetsCompat.CONSUMED
         }
+        SessionCookies.onColdStart()
         configureWebView()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -109,6 +110,18 @@ class MainActivity : AppCompatActivity() {
         val sameServer = invite != null && InviteLink.sameServer(invite, settings.origin)
         loadApp(intent?.getStringExtra(NotificationHelper.EXTRA_DEEP_LINK) ?: if (sameServer) InviteLink.hash(invite!!) else null)
         if (invite != null && !sameServer) confirmSwitchServer(invite)
+    }
+
+    fun confirmSwitchTo(origin: String, done: () -> Unit) {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.switch_title)
+            .setMessage(getString(R.string.switch_body, Uri.parse(origin).authority ?: origin, Uri.parse(settings.origin ?: "").authority ?: ""))
+            .setPositiveButton(R.string.switch_confirm) { _, _ ->
+                startActivity(Intent(this, SetupActivity::class.java).putExtra(SetupActivity.EXTRA_ADDRESS, origin).putExtra(SetupActivity.EXTRA_AUTOCONNECT, true))
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .setOnDismissListener { done() }
+            .show()
     }
 
     private fun setupIntent(invite: InviteLink.Link?) = Intent(this, SetupActivity::class.java).apply {
@@ -181,6 +194,49 @@ class MainActivity : AppCompatActivity() {
         val hash = link.removePrefix("#")
         // The running page listens to hashchange (web/m/lib/deepLink.mjs), so no reload is needed.
         webView.evaluateJavascript("location.hash = ${org.json.JSONObject.quote(hash)};", null)
+    }
+
+    private val signInHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var askingSignIn = false
+    private val signInPoll = object : Runnable {
+        override fun run() {
+            checkSignIn()
+            signInHandler.postDelayed(this, 3000)
+        }
+    }
+
+    // There is no cookie-changed event, so the login is noticed by looking while the app is on screen.
+    private fun checkSignIn() {
+        val origin = settings.origin ?: return
+        val value = SessionCookies.current(origin) ?: return
+        val entry = KnownServers.find(settings.knownServers, origin) ?: return
+        if (SignInPolicy.shouldAsk(entry, true) && !askingSignIn) {
+            askingSignIn = true
+            fun answer(mode: String) {
+                settings.knownServers = KnownServers.setSignIn(settings.knownServers, origin, mode)
+                if (mode == "session") SessionCookies.current(origin)?.let { SessionCookies.makeSessionOnly(origin, it) }
+            }
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(R.string.signin_title)
+                .setMessage(getString(R.string.signin_body, Uri.parse(origin).authority ?: origin))
+                .setPositiveButton(R.string.signin_keep) { _, _ -> answer("keep") }
+                .setNegativeButton(R.string.signin_session) { _, _ -> answer("session") }
+                .setOnCancelListener { answer("session") }
+                .setOnDismissListener { askingSignIn = false }
+                .show()
+            return
+        }
+        if (entry.signIn == "session") SessionCookies.makeSessionOnly(origin, value)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (settings.configured) signInHandler.postDelayed(signInPoll, 1500)
+    }
+
+    override fun onPause() {
+        signInHandler.removeCallbacks(signInPoll)
+        super.onPause()
     }
 
     override fun onStart() {

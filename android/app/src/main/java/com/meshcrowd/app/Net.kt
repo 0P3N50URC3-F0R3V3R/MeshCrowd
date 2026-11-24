@@ -71,6 +71,27 @@ object Net {
         }
     }
 
+    // Small binary download (a server icon); anything over maxBytes or a non-200 answer is null.
+    fun getBytes(url: String, pin: String?, maxBytes: Int): ByteArray? {
+        val conn = open(url, pin)
+        try {
+            if (conn.responseCode != 200) return null
+            val out = java.io.ByteArrayOutputStream()
+            conn.inputStream.use { input ->
+                val buf = ByteArray(4096)
+                while (true) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    out.write(buf, 0, n)
+                    if (out.size() > maxBytes) return null
+                }
+            }
+            return out.toByteArray()
+        } finally {
+            conn.disconnect()
+        }
+    }
+
     fun send(method: String, url: String, pin: String?, cookie: String?, json: String): Response {
         val conn = open(url, pin, cookie)
         try {
