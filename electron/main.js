@@ -533,6 +533,19 @@ ipcMain.handle('dismesh:get-network-interfaces', () => {
   return out;
 });
 
+// Keeps cookies and localStorage so the user stays logged in and keeps their settings.
+ipcMain.handle('dismesh:clear-cache', async () => {
+  const ses = session.defaultSession;
+  try {
+    const before = await ses.getCacheSize();
+    await ses.clearCache();
+    await ses.clearStorageData({ storages: ['indexdb', 'cachestorage', 'serviceworkers', 'filesystem', 'websql', 'shadercache'] });
+    return { ok: true, freedBytes: before };
+  } catch {
+    return { ok: false };
+  }
+});
+
 ipcMain.handle('dismesh:get-app-settings', () => ({
   downloadMode: clientConfig.downloadMode === 'folder' ? 'folder' : 'ask',
   downloadDir: clientConfig.downloadDir || '',

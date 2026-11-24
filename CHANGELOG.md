@@ -2,6 +2,10 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-24
+#### Added
+- Desktop clients (Electron and C#): Settings, Desktop App has a new "Clear cache" button that deletes the HTTP cache, IndexedDB, CacheStorage, service workers, filesystem and WebSQL data to free disk space. Cookies and localStorage are kept, so you stay logged in and keep your settings (the custom notification sound lives in IndexedDB and must be set again). Electron shows how many MB were freed. New `dismesh:clear-cache` bridge message.
+
 ### 2026-11-23
 #### Added
 - Checklists: the "Who else can help?" section now has a user search box, a multi-select result list with a level picker (Can check / Can edit) and an "Add selected" button, and a list of the chosen helpers below with per-user level and remove buttons. Works with 100+ member servers (50 results shown, refine to narrow).

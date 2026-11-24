@@ -728,6 +728,7 @@ public sealed class MainForm : Form
                 LoadTarget();
                 return new JsonObject { ["ok"] = true };
             case "dismesh:get-network-interfaces": return NetworkInterfaces();
+            case "dismesh:clear-cache": _ = ClearCacheAsync(); return new JsonObject { ["ok"] = true };
             case "dismesh:get-app-settings": return AppSettingsView();
             case "dismesh:set-app-settings": return SetAppSettings(arg as JsonObject);
             case "dismesh:select-download-dir": return _downloads!.SelectDownloadDir(this);
@@ -737,6 +738,15 @@ public sealed class MainForm : Form
             case "dismesh:open-download-dir": return _downloads!.OpenDir();
         }
         return null;
+    }
+
+    // Keeps cookies and localStorage so the user stays logged in and keeps their settings.
+    private async Task ClearCacheAsync()
+    {
+        var kinds = CoreWebView2BrowsingDataKinds.DiskCache | CoreWebView2BrowsingDataKinds.IndexedDb
+            | CoreWebView2BrowsingDataKinds.CacheStorage | CoreWebView2BrowsingDataKinds.ServiceWorkers
+            | CoreWebView2BrowsingDataKinds.FileSystems | CoreWebView2BrowsingDataKinds.WebSql;
+        try { await _web.CoreWebView2.Profile.ClearBrowsingDataAsync(kinds); } catch { }
     }
 
     private static int IdOf(JsonNode? arg) => arg is JsonValue v && v.TryGetValue<double>(out var d) ? (int)d : -1;

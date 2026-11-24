@@ -683,6 +683,10 @@ export function openUserSettings(initialTab = 'account') {
         <div class="hint">${t('userSettings.trayRecentCountHint')}</div>
       </div>
       <div class="hint" style="margin-top:8px">${t('userSettings.trayRightClickHint')}</div>
+      <div class="field" style="margin-top:16px">
+        <button class="btn btn-secondary" id="f-clear-cache">${t('userSettings.clearCacheButton')}</button>
+        <div class="hint">${t('userSettings.clearCacheHint')}</div>
+      </div>
       <div class="divider"></div>
       <h2>${t('userSettings.trayIconHeading')}</h2>
       <p class="hint" style="margin:-8px 0 16px">${t('userSettings.trayIconHint')}</p>
@@ -716,6 +720,13 @@ export function openUserSettings(initialTab = 'account') {
         <span>${t('userSettings.trayPulseCheckbox')}</span>
       </label>`;
 
+    inner.querySelector('#f-clear-cache').addEventListener('click', async (e) => {
+      e.target.disabled = true;
+      const res = await window.dismeshClient.clearCache();
+      e.target.disabled = false;
+      if (!res || !res.ok) { toast(t('userSettings.clearCacheFailedToast')); return; }
+      toast(res.freedBytes ? t('userSettings.clearCacheDoneSizeToast', { size: (res.freedBytes / 1048576).toFixed(1) }) : t('userSettings.clearCacheDoneToast'));
+    });
     inner.querySelector('#f-close-tray').addEventListener('change', async (e) => {
       await window.dismeshClient.setAppSettings({ closeToTray: e.target.checked });
       toast(e.target.checked ? t('userSettings.minimizeToTrayToast') : t('userSettings.quitOnCloseToast'));

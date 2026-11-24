@@ -65,6 +65,7 @@
 
       getAppSettings: () => invoke('dismesh:get-app-settings'),
       setAppSettings: (settings) => invoke('dismesh:set-app-settings', settings),
+      clearCache: () => invoke('dismesh:clear-cache'),
       pushNotification: (n) => send('dismesh:push-notification', n),
       clearNotifications: (keys) => send('dismesh:clear-notifications', keys),
       setTrayLabels: (labels) => send('dismesh:set-tray-labels', labels),

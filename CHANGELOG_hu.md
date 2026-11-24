@@ -2,6 +2,10 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-24
+#### Hozzáadva
+- Asztali kliensek (Electron és C#): a Beállítások, Asztali alkalmazás oldalon új "Gyorsítótár törlése" gomb, amely törli a HTTP gyorsítótárat, az IndexedDB-t, a CacheStorage-t, a service workereket, a fájlrendszer és WebSQL adatokat, hogy helyet szabadítson fel. A sütik és a localStorage megmaradnak, így bejelentkezve maradsz és a beállításaid is megmaradnak (az egyéni értesítési hang az IndexedDB-ben van, azt újra be kell állítani). Az Electron kiírja, hány MB szabadult fel. Új `dismesh:clear-cache` híd-üzenet.
+
 ### 2026-11-23
 #### Hozzáadva
 - Ellenőrzőlisták: a "Ki segíthet még?" rész kapott felhasználókereső mezőt, többszörösen kijelölhető találati listát szintválasztóval (Pipálhat / Szerkeszthet) és "Kijelöltek hozzáadása" gombot, alatta pedig a kiválasztott segítők listáját felhasználónkénti szinttel és eltávolítás gombbal. 100+ tagú szervereken is használható (50 találat látszik, szűkíthető).
