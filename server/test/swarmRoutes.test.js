@@ -90,6 +90,17 @@ test('enabling advertising announces to the tracker and the public list shows it
   assert.equal(status.status[0].ok, true);
 });
 
+test('turning advertising off sends a DELETE whose body reaches the tracker', async () => {
+  appConfig.save({ swarm: { advertise: true, trackers: [trackerUrl] } });
+  await admin('POST', '/api/admin/swarm/announce');
+  announces.length = 0;
+  assert.equal((await admin('PATCH', '/api/admin/swarm', { advertise: false })).status, 200);
+  await new Promise((r) => setTimeout(r, 300));
+  const del = announces.find((x) => x.method === 'DELETE');
+  assert.ok(del, 'a DELETE arrived');
+  assert.equal(advert.verify(del.body).ok, true);
+});
+
 test('an unreachable tracker never breaks the list route', async () => {
   appConfig.save({ swarm: { advertise: true, trackers: ['http://127.0.0.1:1'] } });
   await admin('POST', '/api/admin/swarm/announce');

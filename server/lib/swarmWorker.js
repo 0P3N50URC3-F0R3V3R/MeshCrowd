@@ -34,7 +34,7 @@ function createWorker({ fetchImpl = safeFetch, now = Date.now, load = config.loa
   function call(url, opts) {
     let t;
     const timeout = new Promise((_, rej) => { t = setTimeout(() => rej(new Error('request timed out')), timeoutMs); });
-    return Promise.race([Promise.resolve().then(() => fetchImpl(url, { ...opts, signal: AbortSignal.timeout(timeoutMs) })), timeout]).finally(() => clearTimeout(t));
+    return Promise.race([Promise.resolve().then(() => fetchImpl(url, { ...opts, headers: opts.body === undefined ? opts.headers : { ...opts.headers, 'content-length': String(Buffer.byteLength(opts.body)) }, signal: AbortSignal.timeout(timeoutMs) })), timeout]).finally(() => clearTimeout(t));
   }
 
   function fail(st, err) {
