@@ -21,6 +21,8 @@ import { confirmLeaveRemote } from '../../js/views/remoteServer.js';
 const TYPE_ICON = { public: 'hash', private: 'lock', announcement: 'megaphone', readonly: 'eye', voice: 'headphones', forum: 'messageSquare', stage: 'stage', notes: 'book' };
 const CHAT_TYPES = new Set(['public', 'private', 'announcement', 'readonly']);
 
+const phoneServers = () => state.servers.filter((s) => s.site_mobile !== 0);
+
 const serverUnread = (id) => {
   const d = state.serverDetail.get(id);
   return !!d && d.channels.some((c) => isUnread('channel', c.id, c.last_message_id) && !isChannelMuted(id, c.id));
@@ -40,7 +42,7 @@ export async function copyText(text) {
 const screeningShown = new Set(); // servers whose rules prompt was already offered this session
 
 export function mountServersTab(host) {
-  let sid = state.servers.some((s) => s.id === state.lastServerId) ? state.lastServerId : (state.servers[0]?.id ?? null);
+  let sid = phoneServers().some((s) => s.id === state.lastServerId) ? state.lastServerId : (phoneServers()[0]?.id ?? null);
   let destroyed = false;
   host.innerHTML = '<div class="m-servers"><div class="m-rail" id="m-rail"></div><div class="m-chanpane" id="m-chanpane"></div></div>';
   const rail = host.querySelector('#m-rail');
@@ -49,7 +51,7 @@ export function mountServersTab(host) {
   const pane = host.querySelector('#m-chanpane');
 
   function paintRail() {
-    rail.innerHTML = state.servers.map((s) => `
+    rail.innerHTML = phoneServers().map((s) => `
       <button class="m-rail-item${s.id === sid ? ' active' : ''}" data-sid="${s.id}" aria-label="${escapeHtml(s.name)}">
         ${serverIconHtml(s, 44)}${serverUnread(s.id) && s.id !== sid ? '<i class="m-rail-dot"></i>' : ''}
       </button>`).join('')
@@ -60,7 +62,7 @@ export function mountServersTab(host) {
   }
 
   async function paintPane() {
-    const server = state.servers.find((s) => s.id === sid);
+    const server = phoneServers().find((s) => s.id === sid);
     if (!server) { pane.innerHTML = `<div class="m-empty">${t('m.noServers')}</div>`; return; }
     state.lastServerId = sid;
     pane.innerHTML = `<div class="m-header"><button class="m-icon-btn" id="m-rail-toggle" aria-label="${t('m.toggleServerList')}">${icons.menu(20)}</button><h1>${escapeHtml(server.name)}</h1>
@@ -278,7 +280,7 @@ export function mountServersTab(host) {
 
   const offs = [
     bus.on('state:remoteServers', paintRail),
-    bus.on('state:servers', () => { if (!state.servers.some((s) => s.id === sid)) sid = state.servers[0]?.id ?? null; refreshAll(); }),
+    bus.on('state:servers', () => { if (!phoneServers().some((s) => s.id === sid)) sid = phoneServers()[0]?.id ?? null; refreshAll(); }),
     bus.on('state:serverVoice', () => { const d = state.serverDetail.get(sid); if (d) paintChannels(d); }),
     bus.on('state:channelActivity', () => { paintRail(); const d = state.serverDetail.get(sid); if (d) paintChannels(d); }),
     bus.on('state:threads', () => { const d = state.serverDetail.get(sid); if (d) paintChannels(d); }),

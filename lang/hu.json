@@ -2404,6 +2404,8 @@
     "tabLabel": "Új oldal",
     "nameLabel": "Oldal neve",
     "namePlaceholder": "Céges intranet",
+    "mobileLabel": "Elérhető mobilon",
+    "mobileHint": "Kikapcsolva a telefonos felület és az Android alkalmazás nem listázza és nem nyitja meg ezt az oldalt; PC-n továbbra is elérhető. Használd a nem mobilbarát oldalakhoz.",
     "createHint": "Minden felhasználó látja. Csak az oldaladminok és a tulajdonos szerkesztheti az oldalakat.",
     "createButton": "Oldal létrehozása",
     "couldNotCreate": "Az oldalt nem sikerült létrehozni.",

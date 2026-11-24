@@ -684,6 +684,7 @@ export function mountServerRail(container) {
     let autoJoin = false;
     let discoverResults = null;
     let draftName = '';
+    let draftMobile = true;
     let draftDescription = '';
     let draftTemplate = '';
     const m = openModal({
@@ -733,6 +734,8 @@ export function mountServerRail(container) {
                 <label>${t('sites.nameLabel')}</label>
                 <input class="input" id="site-name" maxlength="100" placeholder="${t('sites.namePlaceholder')}" value="${escapeHtml(draftName)}">
               </div>
+              <label class="checkbox-row"><input type="checkbox" id="site-mobile" ${draftMobile ? 'checked' : ''}><span>${t('sites.mobileLabel')}</span></label>
+              <p class="hint">${t('sites.mobileHint')}</p>
               <p class="hint">${t('sites.createHint')}</p>
               <div class="error-text" id="srv-err"></div>
               <button class="btn btn-primary btn-block" id="site-create">${t('sites.createButton')}</button>
@@ -793,8 +796,9 @@ export function mountServerRail(container) {
               const name = nameInput.value.trim();
               if (!name) return;
               draftName = name;
+              draftMobile = body.querySelector('#site-mobile').checked;
               try {
-                const res = await api.siteCreate({ name });
+                const res = await api.siteCreate({ name, mobile: draftMobile });
                 bus.emit('ui:serverCreated', res.server);
                 m.close();
               } catch (err) {

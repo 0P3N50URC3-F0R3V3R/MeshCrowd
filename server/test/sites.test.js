@@ -132,6 +132,20 @@ test('trusted sites mode: off by default, only an editor can flip it, boolean on
   assert.equal((await call('PATCH', `/api/sites/${s.id}`, { uid: staff, perms: STAFF, json: { trusted: false } })).data.server.site_trusted, 0);
 });
 
+test('mobile availability: on by default, can be created off, editor-only boolean toggle, audited', async () => {
+  const staff = makeUser('st_m1'); const plain = makeUser('st_m2');
+  const s = await makeSite(staff);
+  assert.equal(s.site_mobile, 1);
+  const off = await call('POST', '/api/sites', { uid: staff, perms: STAFF, json: { name: 'Desktop only', mobile: false } });
+  assert.equal(off.data.server.site_mobile, 0);
+  assert.equal((await call('POST', '/api/sites', { uid: staff, perms: STAFF, json: { name: 'Bad', mobile: 'no' } })).status, 400);
+  assert.equal((await call('PATCH', `/api/sites/${s.id}`, { uid: plain, json: { mobile: false } })).status, 403);
+  assert.equal((await call('PATCH', `/api/sites/${s.id}`, { uid: staff, perms: STAFF, json: { mobile: 0 } })).status, 400);
+  assert.equal((await call('PATCH', `/api/sites/${s.id}`, { uid: staff, perms: STAFF, json: { mobile: false } })).data.server.site_mobile, 0);
+  assert.ok(db.prepare("SELECT 1 FROM audit_log WHERE server_id = ? AND action = 'site_mobile_change'").get(s.id));
+  assert.equal((await call('PATCH', `/api/sites/${s.id}`, { uid: staff, perms: STAFF, json: { mobile: true } })).data.server.site_mobile, 1);
+});
+
 test('DELETE removes the row and folder for the owner or staff only', async () => {
   const staff = makeUser('st_d1'); const plain = makeUser('st_d2');
   const s = await makeSite(staff);

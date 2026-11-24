@@ -42,6 +42,10 @@ export function openSiteSettings(server) {
           <p class="hint">${t('sites.settings.originsHint')}</p>
         </div>
         <div class="field">
+          <label class="checkbox-row"><input type="checkbox" id="ss-mobile"><span>${t('sites.mobileLabel')}</span></label>
+          <p class="hint">${t('sites.mobileHint')}</p>
+        </div>
+        <div class="field">
           <label class="checkbox-row"><input type="checkbox" id="ss-trusted"><span>${t('sites.settings.trustedLabel')}</span></label>
           <p class="hint" style="color:var(--danger, #f04747)">${t('sites.settings.trustedWarn')}</p>
         </div>
@@ -50,6 +54,8 @@ export function openSiteSettings(server) {
       const err = body.querySelector('#ss-err');
       const trustedBox = body.querySelector('#ss-trusted');
       trustedBox.checked = !!server.site_trusted;
+      const mobileBox = body.querySelector('#ss-mobile');
+      mobileBox.checked = server.site_mobile !== 0;
       const bgBox = body.querySelector('#ss-icon-bg');
       const colorInput = body.querySelector('#ss-icon-color');
       const removeBtn = body.querySelector('#ss-icon-remove');
@@ -88,7 +94,7 @@ export function openSiteSettings(server) {
         try {
           if (pendingFile) await api.siteUploadIcon(server.id, pendingFile);
           else if (removeIcon && server.icon_path) await api.siteRemoveIcon(server.id);
-          const res = await api.siteUpdate(server.id, { name, origins, iconBackground: bgOn, iconBgColor: bgColor, trusted: trustedBox.checked });
+          const res = await api.siteUpdate(server.id, { name, origins, iconBackground: bgOn, iconBgColor: bgColor, trusted: trustedBox.checked, mobile: mobileBox.checked });
           upsertServer(res.server);
           close();
         } catch (e) {

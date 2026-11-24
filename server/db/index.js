@@ -118,6 +118,7 @@ const COLUMN_MIGRATIONS = [
   { table: 'reports', column: 'plaintext_evidence', ddl: 'ALTER TABLE reports ADD COLUMN plaintext_evidence TEXT' },
   { table: 'servers', column: 'kind', ddl: "ALTER TABLE servers ADD COLUMN kind TEXT NOT NULL DEFAULT 'chat'" },
   { table: 'servers', column: 'site_csp_origins', ddl: "ALTER TABLE servers ADD COLUMN site_csp_origins TEXT NOT NULL DEFAULT '[]'" },
+  { table: 'servers', column: 'site_mobile', ddl: 'ALTER TABLE servers ADD COLUMN site_mobile INTEGER NOT NULL DEFAULT 1' },
   { table: 'servers', column: 'site_trusted', ddl: 'ALTER TABLE servers ADD COLUMN site_trusted INTEGER NOT NULL DEFAULT 0' },
   { table: 'users', column: 'is_bot', ddl: 'ALTER TABLE users ADD COLUMN is_bot INTEGER NOT NULL DEFAULT 0' },
   { table: 'channels', column: 'nsfw', ddl: 'ALTER TABLE channels ADD COLUMN nsfw INTEGER NOT NULL DEFAULT 0' },

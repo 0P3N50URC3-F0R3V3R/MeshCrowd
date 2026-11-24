@@ -2404,6 +2404,8 @@
     "tabLabel": "New Site",
     "nameLabel": "Site name",
     "namePlaceholder": "Company intranet",
+    "mobileLabel": "Available on mobile",
+    "mobileHint": "When off, the phone and Android app do not list or open this site; it stays available on PC. Use it for pages that are not mobile friendly.",
     "createHint": "Visible to every user. Only site admins and the owner can edit its pages.",
     "createButton": "Create Site",
     "couldNotCreate": "Could not create the site.",

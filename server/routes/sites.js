@@ -67,13 +67,14 @@ router.post('/:id/view-token', loadSite, (req, res) => {
 
 router.post('/', (req, res) => {
   if (!isStaff(req)) return res.status(403).json({ error: 'site admin required' });
-  const { name, description } = req.body || {};
+  const { name, description, mobile } = req.body || {};
+  if (mobile !== undefined && typeof mobile !== 'boolean') return res.status(400).json({ error: 'mobile must be a boolean' });
   const cleanName = typeof name === 'string' ? singleLine(name, 100) : '';
   if (!cleanName) return res.status(400).json({ error: 'site name required' });
 
   const info = db.prepare(
-    "INSERT INTO servers (name, description, owner_id, invite_code, visibility, auto_join, kind) VALUES (?, ?, ?, ?, 'public', 1, 'site')"
-  ).run(cleanName, String(description || '').slice(0, 500), req.user.id, crypto.randomBytes(6).toString('hex'));
+    "INSERT INTO servers (name, description, owner_id, invite_code, visibility, auto_join, kind, site_mobile) VALUES (?, ?, ?, ?, 'public', 1, 'site', ?)"
+  ).run(cleanName, String(description || '').slice(0, 500), req.user.id, crypto.randomBytes(6).toString('hex'), mobile === false ? 0 : 1);
   const id = Number(info.lastInsertRowid);
   db.prepare('INSERT INTO roles (server_id, name, permissions, position, is_default) VALUES (?, ?, ?, 0, 1)').run(id, '@everyone', DEFAULT_EVERYONE_PERMISSIONS);
   const users = db.prepare("SELECT id FROM users WHERE is_disabled = 0 AND username != '__webhook__' AND is_bot = 0").all();
@@ -122,7 +123,8 @@ router.delete('/:id/icon', loadSite, requireEditor, (req, res) => {
 });
 
 router.patch('/:id', loadSite, requireEditor, (req, res) => {
-  const { name, description, origins, iconBackground, iconBgColor, trusted } = req.body || {};
+  const { name, description, origins, iconBackground, iconBgColor, trusted, mobile } = req.body || {};
+  if (mobile !== undefined && typeof mobile !== 'boolean') return res.status(400).json({ error: 'mobile must be a boolean' });
   if (trusted !== undefined && typeof trusted !== 'boolean') return res.status(400).json({ error: 'trusted must be a boolean' });
   if (iconBgColor !== undefined && iconBgColor !== '' && !/^#[0-9a-fA-F]{6}$/.test(String(iconBgColor))) return res.status(400).json({ error: 'iconBgColor must be #rrggbb or empty' });
   if (iconBackground !== undefined) db.prepare('UPDATE servers SET icon_bg = ? WHERE id = ?').run(iconBackground ? 1 : 0, req.site.id);
@@ -138,6 +140,10 @@ router.patch('/:id', loadSite, requireEditor, (req, res) => {
     if (!r.ok) return res.status(400).json({ error: r.error });
     db.prepare('UPDATE servers SET site_csp_origins = ? WHERE id = ?').run(JSON.stringify(r.origins), req.site.id);
     logAudit(req.site.id, req.user.id, 'site_origins_change', 'server', req.site.id, { origins: r.origins });
+  }
+  if (mobile !== undefined && mobile !== !!req.site.site_mobile) {
+    db.prepare('UPDATE servers SET site_mobile = ? WHERE id = ?').run(mobile ? 1 : 0, req.site.id);
+    logAudit(req.site.id, req.user.id, 'site_mobile_change', 'server', req.site.id, { mobile });
   }
   if (trusted !== undefined && trusted !== !!req.site.site_trusted) {
     db.prepare('UPDATE servers SET site_trusted = ? WHERE id = ?').run(trusted ? 1 : 0, req.site.id);

@@ -5,6 +5,7 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 ### 2026-11-24
 #### Added
 - Desktop clients (Electron and C#): Settings, Desktop App has a new "Clear cache" button that deletes the HTTP cache, IndexedDB, CacheStorage, service workers, filesystem and WebSQL data to free disk space. Cookies and localStorage are kept, so you stay logged in and keep your settings (the custom notification sound lives in IndexedDB and must be set again). Electron shows how many MB were freed. New `dismesh:clear-cache` bridge message.
+- Sites: new "Available on mobile" switch in the create-site form and in the site settings (default on). When off, the phone UI and the Android app do not list or open that site; it stays available on PC. Needs a server restart (new `site_mobile` column, added automatically) and a web deploy; no APK rebuild.
 
 ### 2026-11-23
 #### Added
