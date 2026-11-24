@@ -21,6 +21,14 @@ test('brand shows the logo and the escaped instance name', () => {
   assert.ok(!out.includes(MARK));
 });
 
+test('without a logo the instance icon replaces the default mark', () => {
+  const out = renderBrand({ name: 'X', hasLogo: false, hasIcon: true }, esc, MARK);
+  assert.ok(out.includes('/instance/icon'));
+  assert.ok(!out.includes(MARK));
+  const both = renderBrand({ name: 'X', hasLogo: true, hasIcon: true }, esc, MARK);
+  assert.ok(both.includes('/instance/logo') && !both.includes('/instance/icon'));
+});
+
 test('info shows the escaped description and a badge for each registration state', () => {
   const info = (reg) => renderInstanceInfo({ description: '<b>hi</b>' }, reg, t, esc);
   assert.ok(info('open').includes('&lt;b&gt;hi&lt;/b&gt;'));

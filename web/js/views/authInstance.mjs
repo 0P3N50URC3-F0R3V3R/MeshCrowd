@@ -2,7 +2,8 @@ const REG_KEY = { open: 'auth.registrationOpen', invite: 'auth.registrationInvit
 
 export function renderBrand(instance, esc, markHtml) {
   const name = instance && instance.name ? esc(instance.name) : 'MeshCrowd';
-  const logo = instance && instance.hasLogo ? '<img class="auth-logo" src="/instance/logo" alt="">' : `<div class="mark">${markHtml}</div>`;
+  const logo = instance && instance.hasLogo ? '<img class="auth-logo" src="/instance/logo" alt="">'
+    : instance && instance.hasIcon ? '<img class="auth-icon" src="/instance/icon" alt="">' : `<div class="mark">${markHtml}</div>`;
   return `<div class="auth-brand">${logo}<div class="name">${name}</div></div>`;
 }
 

@@ -36,6 +36,7 @@ class MainActivity : AppCompatActivity() {
     private var fileCallback: ValueCallback<Array<Uri>>? = null
     private var offlineShown = false
     private var pendingAppUrl: String? = null
+    private var loadedOrigin: String? = null
 
     private val pickFiles = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val data = result.data
@@ -171,6 +172,7 @@ class MainActivity : AppCompatActivity() {
 
     fun loadApp(deepLink: String?) {
         val origin = settings.origin ?: return
+        loadedOrigin = origin
         offlineShown = false
         // The server picks the mobile UI from the user agent; /m/ is requested directly to skip a redirect.
         // A local loading screen shows instantly while the (possibly slow) network request is in flight.
@@ -182,6 +184,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        // Setup finished for a different server while this activity was kept: show that server, not the old page.
+        if (::webView.isInitialized && settings.configured && settings.origin != loadedOrigin) {
+            loadApp(intent.getStringExtra(NotificationHelper.EXTRA_DEEP_LINK))
+            return
+        }
         val invite = InviteLink.parse(intent.dataString)
         if (invite != null && ::webView.isInitialized) {
             if (InviteLink.sameServer(invite, settings.origin)) {

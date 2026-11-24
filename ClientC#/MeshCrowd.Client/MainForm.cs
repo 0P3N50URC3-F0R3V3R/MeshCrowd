@@ -843,17 +843,22 @@ public sealed class MainForm : Form
         return list;
     }
 
-    private const string PageInfoScript = @"(async () => {
-  try {
-    const c = await (await fetch('/api/config')).json();
-    const i = c.instance || {};
-    let icon = '';
-    if (i.hasIcon) {
-      const b = await (await fetch('/instance/icon')).blob();
-      icon = await new Promise((ok) => { const f = new FileReader(); f.onload = () => ok(String(f.result)); f.readAsDataURL(b); });
-    }
-    return { name: i.name || '', icon };
-  } catch { return null; }
+    // ExecuteScriptAsync does not wait for a returned Promise, so the result is parked on window and read back.
+    private const string PageInfoScript = @"(function () {
+  window.__mcInfo = undefined;
+  (async () => {
+    try {
+      const c = await (await fetch('/api/config')).json();
+      const i = c.instance || {};
+      let icon = '';
+      if (i.hasIcon) {
+        const b = await (await fetch('/instance/icon')).blob();
+        icon = await new Promise((ok) => { const f = new FileReader(); f.onload = () => ok(String(f.result)); f.readAsDataURL(b); });
+      }
+      window.__mcInfo = { name: i.name || '', icon };
+    } catch { window.__mcInfo = null; }
+  })();
+  return 0;
 })()";
 
     private readonly HashSet<string> _recordedOrigins = new();
@@ -871,11 +876,19 @@ public sealed class MainForm : Form
             string? name = null; string? icon = null;
             try
             {
-                string json = await _web.CoreWebView2.ExecuteScriptAsync(PageInfoScript);
-                if (JsonNode.Parse(json) is JsonObject info)
+                await _web.CoreWebView2.ExecuteScriptAsync(PageInfoScript);
+                for (int attempt = 0; attempt < 20; attempt++)
                 {
-                    name = info["name"] is JsonValue nv && nv.TryGetValue<string>(out var n) ? n : null;
-                    icon = info["icon"] is JsonValue iv && iv.TryGetValue<string>(out var ic) ? ic : null;
+                    await Task.Delay(300);
+                    string raw = await _web.CoreWebView2.ExecuteScriptAsync("JSON.stringify(window.__mcInfo === undefined ? 'pending' : window.__mcInfo)");
+                    if (JsonNode.Parse(raw) is not JsonValue wrapped || !wrapped.TryGetValue<string>(out var inner)) break;
+                    if (inner == "\"pending\"") continue;
+                    if (JsonNode.Parse(inner) is JsonObject info)
+                    {
+                        name = info["name"] is JsonValue nv && nv.TryGetValue<string>(out var n) ? n : null;
+                        icon = info["icon"] is JsonValue iv && iv.TryGetValue<string>(out var ic) ? ic : null;
+                    }
+                    break;
                 }
             }
             catch { }
