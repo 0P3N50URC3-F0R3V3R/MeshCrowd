@@ -15,6 +15,8 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Android: switching server (from the login page list or "change server") now loads the newly chosen server instead of leaving the old server's page on screen.
 - C# client: the remembered-server entry now gets the server's real name and icon (WebView2 `ExecuteScriptAsync` does not wait for promises, so the page result is read back from `window`).
 - Login page: with an instance icon but no logo, the icon is shown instead of the default mark.
+- MeshSwarm advertising (server): an advert keeps its `updated` time across restarts when its content is unchanged; a tracker removed from the list, or advertising switched off (also by hand, then restart), now gets a signed delete; an address trackers would reject (no https, empty `publicHost`) is reported in the Admin Panel instead of announced; tracker entries that are not https addresses are ignored; the login page only asks for the public list when advertising is on; remote adverts are cleaned (only known fields, control and bidi characters refused, `url` must be a string); the instance icon and logo paths in `config.json` are only trusted when they are exactly the files the Admin Panel writes.
+- Android: the app no longer asks whether to stay signed in. A login is kept until you log off (or the server's session expires), also across app restarts; "this session only" is removed on Android.
 
 ### 2026-11-23
 #### Added

@@ -44,3 +44,28 @@ test('tampering, a swapped key, bad shapes and oversize are all refused', () => 
   assert.equal(advert.verify('nonsense').ok, false);
   assert.equal(advert.verify(42).ok, false);
 });
+
+function custom(fields) {
+  const key = advert.loadOrCreateKey();
+  const payload = Buffer.from(JSON.stringify({ v: 1, url: 'https://a.example.com', name: 'A', description: '', icon: null, registration: 'open', updated: 1, pub: key.publicKey, ...fields }));
+  return `${payload.toString('base64url')}.${key.sign(payload).toString('base64url')}`;
+}
+
+test('only the known fields survive; a __proto__ or extra key is dropped', () => {
+  const r = advert.verify(custom({ extra: 'x'.repeat(1000), nested: { a: 1 } }).replace(/^/, ''));
+  assert.equal(r.ok, true);
+  assert.deepEqual(Object.keys(r.advert).sort(), ['description', 'icon', 'name', 'pub', 'registration', 'updated', 'url']);
+  const proto = Buffer.from('{"v":1,"url":"https://a.example.com","name":"A","description":"","icon":null,"registration":"open","updated":1,"pub":"' + advert.loadOrCreateKey().publicKey + '","__proto__":{"polluted":true}}');
+  const str = `${proto.toString('base64url')}.${advert.loadOrCreateKey().sign(proto).toString('base64url')}`;
+  const p = advert.verify(str);
+  assert.equal(p.ok, true);
+  assert.equal(Object.keys(p.advert).includes('__proto__'), false);
+  assert.equal({}.polluted, undefined);
+});
+
+test('the url must be a string, and control or bidi characters in text are refused', () => {
+  assert.equal(advert.verify(custom({ url: ['https://a.example.com'] })).ok, false);
+  assert.equal(advert.verify(custom({ name: 'a‮b' })).ok, false);
+  assert.equal(advert.verify(custom({ description: 'line\nbreak' })).ok, false);
+  assert.equal(advert.verify(custom({ name: 'a\u0007b' })).ok, false);
+});

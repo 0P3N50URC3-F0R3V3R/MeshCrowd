@@ -230,7 +230,7 @@ require('./lib/uploads').migrateUploadLimit();
 app.get('/api/config', (req, res) => {
   const dl = config.downloads || {};
   const downloads = { clientDesktop: httpsLink(dl.clientDesktop), clientAndroid: httpsLink(dl.clientAndroid), website: httpsLink(dl.website) };
-  res.json({ maxUploadMb: require('./lib/uploads').effectiveMaxUploadMb(), maxMessageChars: require('./lib/messageLimits').maxMessageChars(), publicHost: config.publicHost, iceServers: turnManager.publicIceServers(), version: APP_VERSION, federationEnabled: !!(config.federation && config.federation.enabled), registrationMode: require('./lib/registration').getMode(), instance: require('./lib/instanceProfile').get(), downloads });
+  res.json({ maxUploadMb: require('./lib/uploads').effectiveMaxUploadMb(), maxMessageChars: require('./lib/messageLimits').maxMessageChars(), publicHost: config.publicHost, iceServers: turnManager.publicIceServers(), version: APP_VERSION, federationEnabled: !!(config.federation && config.federation.enabled), registrationMode: require('./lib/registration').getMode(), swarm: { enabled: !!require('./lib/config').load().swarm.advertise }, instance: require('./lib/instanceProfile').get(), downloads });
 });
 
 const WEB_DIR = path.join(__dirname, '..', 'web');

@@ -65,3 +65,24 @@ test('logo: image types only, up to 1 MB, replacing removes the old file', () =>
   assert.equal(profile.get().hasLogo, false);
   assert.equal(profile.logoFile(), null);
 });
+
+test('a hand-edited config cannot point the logo or icon outside the instance files', () => {
+  profile.setIcon(png(64, 64, 2000));
+  profile.setLogo(png(300, 100, 500), 'image/png');
+  for (const bad of ['..', '.', '../config.json', 'sub/icon.png', 'other.png', '']) {
+    config.save({ instance: { iconPath: bad } });
+    assert.equal(profile.iconFile(), null, `icon ${bad}`);
+    assert.equal(profile.iconDataUri(), null);
+    config.save({ instance: { logoPath: bad } });
+    assert.equal(profile.logoFile(), null, `logo ${bad}`);
+  }
+  config.save({ instance: { iconPath: 'logo.png' } });
+  assert.equal(profile.iconFile(), null);
+  config.save({ instance: { iconPath: 'icon.png', logoPath: 'logo.png' } });
+  assert.ok(profile.iconFile());
+  assert.ok(profile.logoFile());
+  config.save({ instance: { name: `  ${'x'.repeat(200)}\ny`, description: 'a\r\nb' } });
+  const got = profile.get();
+  assert.equal(got.name.length, 60);
+  assert.ok(!got.description.includes('\n'));
+});

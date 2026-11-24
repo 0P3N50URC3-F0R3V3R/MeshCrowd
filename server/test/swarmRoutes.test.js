@@ -101,6 +101,14 @@ test('turning advertising off sends a DELETE whose body reaches the tracker', as
   assert.equal(advert.verify(del.body).ok, true);
 });
 
+test('the admin view says when the address cannot be advertised', async () => {
+  appConfig.save({ useHttps: true, publicHost: 'localhost', federationPublicUrl: '', swarm: { advertise: false } });
+  assert.equal((await admin('GET', '/api/admin/swarm')).data.problem, null);
+  appConfig.save({ useHttps: false });
+  assert.match((await admin('GET', '/api/admin/swarm')).data.problem, /https/i);
+  appConfig.save({ useHttps: true });
+});
+
 test('an unreachable tracker never breaks the list route', async () => {
   appConfig.save({ swarm: { advertise: true, trackers: ['http://127.0.0.1:1'] } });
   await admin('POST', '/api/admin/swarm/announce');

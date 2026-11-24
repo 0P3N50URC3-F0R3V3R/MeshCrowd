@@ -290,11 +290,8 @@ class SetupActivity : AppCompatActivity() {
     }
 
     private fun accept(origin: String, pin: String?, name: String?, icon: String?) {
-        settings.knownServers = KnownServers.upsert(settings.knownServers, origin, name, icon, pin, System.currentTimeMillis())
-        if (settings.origin != origin) {
-            SessionCookies.dropIfSessionOnly(settings.origin, settings.knownServers)
-            settings.lastNotificationId = 0
-        }
+        settings.knownServers = KnownServers.setSignIn(KnownServers.upsert(settings.knownServers, origin, name, icon, pin, System.currentTimeMillis()), origin, "keep")
+        if (settings.origin != origin) settings.lastNotificationId = 0
         settings.origin = origin
         settings.pin = pin
         busy(false)

@@ -68,6 +68,7 @@ export function renderInstanceTab(inner) {
       <h2>${t('admin.instance.swarmTitle')}</h2>
       <label class="checkbox-row"><input type="checkbox" id="sw-adv" ${swarm.advertise ? 'checked' : ''}><span>${t('admin.instance.advertiseLabel')}</span></label>
       <div class="hint">${t('admin.instance.advertiseHint')}</div>
+      ${swarm.problem ? `<div class="error-text">${escapeHtml(t('admin.instance.problemLabel'))} ${escapeHtml(swarm.problem)}</div>` : ''}
       <div class="field" style="margin-top:12px"><label>${t('admin.instance.trackersLabel')}</label>
         <div id="sw-trackers">${trackerRows()}</div>
         <div style="display:flex;gap:8px"><input class="input" id="sw-new" placeholder="https://tracker.example.com:19898"><button class="btn btn-secondary" id="sw-add">${t('admin.instance.addTracker')}</button></div>

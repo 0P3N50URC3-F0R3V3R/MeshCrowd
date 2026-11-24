@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
 const config = require('./config');
 const advert = require('./swarmAdvert');
 const instanceProfile = require('./instanceProfile');
@@ -12,6 +14,43 @@ const STALE_AFTER = 3_600_000;
 const MAX_ENTRIES_PER_TRACKER = 500;
 const MAX_FUTURE_SKEW = 5 * 60_000;
 
+const STATE_FILE = path.join(path.dirname(config.CONFIG_PATH), 'swarm-state.json');
+const MAX_DELETE_TRIES = 3;
+
+// config.json can be edited by hand or with `config set`, so trackers are re-checked every time they are read.
+function cleanTrackers(list) {
+  const out = [];
+  for (const item of Array.isArray(list) ? list : []) {
+    if (typeof item !== 'string') continue;
+    let u;
+    try { u = new URL(item.trim()); } catch { continue; }
+    const loopbackTest = process.env.DISMESH_FEDERATION_ALLOW_LOOPBACK === '1' && u.protocol === 'http:';
+    if ((u.protocol !== 'https:' && !loopbackTest) || u.username || u.password || u.search || u.hash) continue;
+    const base = `${u.origin}${u.pathname.replace(/\/+$/, '')}`;
+    if (!out.includes(base)) out.push(base);
+  }
+  return out.slice(0, 20);
+}
+
+// Why this server cannot be advertised right now (trackers only accept an https address), or null.
+function addressProblem(cfg) {
+  const given = cfg.federationPublicUrl ? String(cfg.federationPublicUrl).trim() : '';
+  if (!given && !cfg.useHttps) return 'This server is not served over https. Set federationPublicUrl to its public https address to advertise it.';
+  if (!given && !String(cfg.publicHost || '').trim()) return 'publicHost is empty, so there is no address to advertise.';
+  try {
+    const u = new URL(ownUrl(cfg));
+    if (u.protocol !== 'https:' || u.username || u.password || !u.hostname) throw new Error('bad');
+  } catch { return 'The public address is not a valid https address (check publicHost, httpsPort and federationPublicUrl).'; }
+  return null;
+}
+
+function readState() {
+  try {
+    const s = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+    return { fingerprint: typeof s.fingerprint === 'string' ? s.fingerprint : null, updated: Number(s.updated) || 0, announcedTo: cleanTrackers(s.announcedTo) };
+  } catch { return { fingerprint: null, updated: 0, announcedTo: [] }; }
+}
+
 function ownUrl(cfg) {
   const own = cfg.federationPublicUrl ? String(cfg.federationPublicUrl).replace(/\/+$/, '') : '';
   if (own) return own;
@@ -21,9 +60,11 @@ function ownUrl(cfg) {
 function createWorker({ fetchImpl = safeFetch, now = Date.now, load = config.load, timeoutMs = 10_000 } = {}) {
   const trackers = new Map();
   let timer = null;
-  let announced = false;
-  let lastFingerprint = null;
-  let updatedAt = 0;
+  const state = readState();
+  const deleteTries = new Map();
+  let problem = null;
+
+  const saveState = () => { try { fs.writeFileSync(STATE_FILE, JSON.stringify(state)); } catch { /* the data folder is read-only: the worker still runs */ } };
 
   const stateOf = (url) => {
     let st = trackers.get(url);
@@ -57,9 +98,9 @@ function createWorker({ fetchImpl = safeFetch, now = Date.now, load = config.loa
       url: ownUrl(cfg), name: cfg.instance.name || '', description: cfg.instance.description || '',
       icon: instanceProfile.iconDataUri(), registration: registration.getMode(),
     };
-    const fp = JSON.stringify(fields);
-    if (fp !== lastFingerprint) { lastFingerprint = fp; updatedAt = now(); }
-    return advert.build({ ...fields, updated: updatedAt });
+    const fp = require('node:crypto').createHash('sha256').update(JSON.stringify(fields)).digest('hex');
+    if (fp !== state.fingerprint) { state.fingerprint = fp; state.updated = now(); saveState(); }
+    return advert.build({ ...fields, updated: state.updated });
   }
 
   async function talk(st, cfg, str, wantList) {
@@ -86,21 +127,39 @@ function createWorker({ fetchImpl = safeFetch, now = Date.now, load = config.loa
 
   async function pass(force) {
     const cfg = load();
-    const urls = cfg.swarm.advertise ? cfg.swarm.trackers : [];
-    for (const url of [...trackers.keys()]) if (!cfg.swarm.trackers.includes(url)) trackers.delete(url);
-    if (!cfg.swarm.advertise) {
-      if (announced) {
-        announced = false;
-        const str = currentAdvert(cfg);
-        await Promise.all([...trackers.values()].map((st) => call(`${st.url}/announce`, { method: 'DELETE', headers: { 'content-type': 'text/plain' }, body: str }).catch(() => {})));
-      }
+    const configured = cleanTrackers(cfg.swarm.trackers);
+    problem = cfg.swarm.advertise ? addressProblem(cfg) : null;
+    const urls = cfg.swarm.advertise && !problem ? configured : [];
+    for (const url of [...trackers.keys()]) if (!configured.includes(url)) trackers.delete(url);
+
+    // Anything that still holds our advert but should not (advertising off, tracker removed, address unusable,
+    // also after a restart) is asked to drop it. A tracker that stays unreachable is given up on after a few passes.
+    const stale = state.announcedTo.filter((u) => !urls.includes(u));
+    if (stale.length) {
+      const str = currentAdvert(cfg);
+      await Promise.all(stale.map(async (u) => {
+        try {
+          await call(`${u}/announce`, { method: 'DELETE', headers: { 'content-type': 'text/plain' }, body: str });
+          deleteTries.delete(u);
+        } catch {
+          const n = (deleteTries.get(u) || 0) + 1;
+          if (n < MAX_DELETE_TRIES) { deleteTries.set(u, n); return; }
+          deleteTries.delete(u);
+        }
+        state.announcedTo = state.announcedTo.filter((x) => x !== u);
+      }));
+      saveState();
+    }
+    if (!urls.length) {
       for (const st of trackers.values()) st.entries = [];
       return;
     }
     const str = currentAdvert(cfg);
-    announced = true;
     const due = urls.map(stateOf).filter((st) => force || st.nextTry <= now());
-    await Promise.all(due.map((st) => talk(st, cfg, str, true)));
+    await Promise.all(due.map(async (st) => {
+      await talk(st, cfg, str, true);
+      if (st.ok && !state.announcedTo.includes(st.url)) { state.announcedTo.push(st.url); saveState(); }
+    }));
   }
 
   let current = null;
@@ -173,9 +232,10 @@ function createWorker({ fetchImpl = safeFetch, now = Date.now, load = config.loa
     stop() { if (timer) { clearTimeout(timer); timer = null; } },
     getList,
     getStatus,
+    getProblem: () => problem,
   };
 }
 
 const worker = createWorker();
 
-module.exports = { createWorker, worker, ownUrl };
+module.exports = { createWorker, worker, ownUrl, cleanTrackers, addressProblem };

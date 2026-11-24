@@ -590,6 +590,7 @@
       "iconHint": "Kis ikon, amely a hirdetéssel együtt kerül a trackerekre. Automatikusan átméreteződik 128x128 pixelre és 16 KB alá.",
       "swarmTitle": "MeshSwarm hirdetés",
       "advertiseLabel": "Szerver hirdetése nyilvános trackereken",
+      "problemLabel": "Nem hirdethető:",
       "advertiseHint": "Alapból kikapcsolva. Bekapcsolva a szerver elküldi a nevét, leírását, ikonját, címét és a regisztráció állapotát az alábbi trackereknek, és megjeleníti azok nyilvános szerverlistáját a bejelentkezési oldalon. Kikapcsolva semmi nem megy ki, a lista rejtett.",
       "trackersLabel": "Trackerek",
       "trackersHint": "MeshSwarm trackerek https címei. Mindegyiket lekérdezi; ha egyik sem érhető el, a szerver a megszokott módon működik.",

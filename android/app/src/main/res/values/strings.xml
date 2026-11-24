@@ -59,8 +59,4 @@
     <string name="switch_title">Switch server</string>
     <string name="switch_body">Switch to %1$s? You will leave %2$s. Your sign-in there is kept as you chose.</string>
     <string name="switch_confirm">Switch</string>
-    <string name="signin_title">Stay signed in?</string>
-    <string name="signin_body">Stay signed in to %1$s on this device? Choose \"This session only\" on a shared phone: you will be signed out when the app is closed and reopened.</string>
-    <string name="signin_keep">Stay signed in</string>
-    <string name="signin_session">This session only</string>
 </resources>

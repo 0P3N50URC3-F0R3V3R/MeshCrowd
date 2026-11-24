@@ -15,6 +15,8 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 - Android: a szerverváltás (a bejelentkezési oldal listájáról vagy a "szerver módosítása" menüből) mostantól az újonnan választott szervert tölti be, nem marad a régi szerver oldala a képernyőn.
 - C# kliens: a megjegyzett szerver bejegyzése most megkapja a szerver valódi nevét és ikonját (a WebView2 `ExecuteScriptAsync` nem várja meg a promise-okat, ezért az oldal eredményét a `window`-ból olvassuk vissza).
 - Bejelentkezési oldal: ha van példányikon, de nincs logó, az ikon jelenik meg az alapértelmezett jel helyett.
+- MeshSwarm hirdetés (szerver): a hirdetés `updated` ideje újraindításkor is megmarad, ha a tartalom nem változott; a listából eltávolított tracker, illetve a kikapcsolt hirdetés (kézzel is, újraindítás után) aláírt törlést kap; a trackerek által elutasított cím (nincs https, üres `publicHost`) az Admin panelen jelenik meg hirdetés helyett; a nem https tracker-bejegyzések figyelmen kívül maradnak; a bejelentkezési oldal csak bekapcsolt hirdetésnél kéri a nyilvános listát; a távoli hirdetések megtisztítva (csak ismert mezők, vezérlő és kétirányú karakterek tiltva, az `url` csak szöveg lehet); a `config.json` példányikon és logó útvonalát csak akkor fogadja el, ha pontosan az Admin panel által írt fájlra mutat.
+- Android: az alkalmazás már nem kérdezi, hogy maradj-e bejelentkezve. A bejelentkezés kijelentkezésig (vagy a szerver munkamenetének lejártáig) megmarad, az alkalmazás újraindítása után is; a "csak ez a munkamenet" Androidon megszűnt.
 
 ### 2026-11-23
 #### Hozzáadva

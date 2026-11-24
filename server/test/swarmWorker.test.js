@@ -23,7 +23,10 @@ const T1 = 'https://t1.example.com'; const T2 = 'https://t2.example.com';
 const other = (over = {}) => advert.build({ url: 'https://other.example.com', name: 'Other', description: 'd', icon: null, registration: 'invite', updated: 1000, ...over });
 const reply = (status, json) => ({ ok: status < 400, status, json: async () => json, text: async () => '' });
 
+const resetState = () => fs.rmSync(path.join(tmpDir, 'swarm-state.json'), { force: true });
+
 function setup({ trackers = [T1], advertise = true, lists = {}, fail = new Set() } = {}) {
+  resetState();
   config.save({ publicHost: 'me.example.com', httpsPort: 8443, instance: { name: 'Me' }, swarm: { advertise, trackers, intervalSeconds: 300 } });
   const calls = [];
   let clock = 1_000_000;
@@ -176,4 +179,85 @@ test('turning advertising off during a running pass still sends the DELETE', asy
   const second = slow.announceNow();
   await Promise.all([first, second]);
   assert.ok(calls.some((c) => c.method === 'DELETE'));
+});
+
+
+function recorder(trackers) {
+  const calls = [];
+  const fetchImpl = async (url, opts = {}) => {
+    const t = trackers.find((x) => url.startsWith(x)) || url;
+    calls.push({ url, method: opts.method || 'GET', body: opts.body, tracker: t });
+    if ((opts.method || 'GET') === 'GET') return reply(200, { servers: [] });
+    return reply(204, null);
+  };
+  return { calls, fetchImpl };
+}
+const advertisedUpdated = (calls) => advert.verify(calls.find((c) => c.method === 'POST').body).advert.updated;
+
+test('"updated" does not change when the server restarts with the same content', async () => {
+  resetState();
+  config.save({ publicHost: 'persist.example.com', httpsPort: 8443, instance: { name: 'Same' }, swarm: { advertise: true, trackers: [T1], intervalSeconds: 300 } });
+  const first = recorder([T1]);
+  await createWorker({ fetchImpl: first.fetchImpl, now: () => 5_000_000 }).announceNow();
+  const second = recorder([T1]);
+  await createWorker({ fetchImpl: second.fetchImpl, now: () => 9_000_000 }).announceNow();
+  assert.equal(advertisedUpdated(first.calls), 5_000_000);
+  assert.equal(advertisedUpdated(second.calls), 5_000_000);
+  config.save({ instance: { name: 'Changed' } });
+  const third = recorder([T1]);
+  await createWorker({ fetchImpl: third.fetchImpl, now: () => 9_500_000 }).announceNow();
+  assert.equal(advertisedUpdated(third.calls), 9_500_000);
+});
+
+test('a tracker removed from the list gets a DELETE, once', async () => {
+  resetState();
+  config.save({ publicHost: 'rm.example.com', httpsPort: 8443, instance: { name: 'Rm' }, swarm: { advertise: true, trackers: [T1, T2] } });
+  const r = recorder([T1, T2]);
+  const worker = createWorker({ fetchImpl: r.fetchImpl, now: () => 1_000_000 });
+  await worker.announceNow();
+  config.save({ swarm: { trackers: [T1] } });
+  r.calls.length = 0;
+  await worker.announceNow();
+  await worker.announceNow();
+  assert.deepEqual(r.calls.filter((c) => c.method === 'DELETE').map((c) => c.tracker), [T2]);
+});
+
+test('advertising switched off by hand and a restart still sends the DELETE', async () => {
+  resetState();
+  config.save({ publicHost: 'off.example.com', httpsPort: 8443, instance: { name: 'Off' }, swarm: { advertise: true, trackers: [T1] } });
+  const r1 = recorder([T1]);
+  await createWorker({ fetchImpl: r1.fetchImpl, now: () => 1_000_000 }).announceNow();
+  config.save({ swarm: { advertise: false } });
+  const r2 = recorder([T1]);
+  const restarted = createWorker({ fetchImpl: r2.fetchImpl, now: () => 2_000_000 });
+  await restarted.announceNow();
+  await restarted.announceNow();
+  assert.equal(r2.calls.filter((c) => c.method === 'DELETE').length, 1);
+  assert.equal(r2.calls.filter((c) => c.method === 'POST').length, 0);
+});
+
+test('an address trackers would reject is reported and not announced', async () => {
+  resetState();
+  config.save({ publicHost: 'plain.example.com', httpsPort: 8443, useHttps: false, federationPublicUrl: '', instance: { name: 'Plain' }, swarm: { advertise: true, trackers: [T1] } });
+  const r = recorder([T1]);
+  const worker = createWorker({ fetchImpl: r.fetchImpl, now: () => 1_000_000 });
+  await worker.announceNow();
+  assert.equal(r.calls.filter((c) => c.method === 'POST').length, 0);
+  assert.match(worker.getProblem(), /https/i);
+  config.save({ federationPublicUrl: 'https://chat.example.com' });
+  await worker.announceNow();
+  assert.equal(worker.getProblem(), null);
+  assert.equal(advert.verify(r.calls.find((c) => c.method === 'POST').body).advert.url, 'https://chat.example.com');
+  config.save({ useHttps: true, federationPublicUrl: '', publicHost: '' });
+  await worker.announceNow();
+  assert.match(worker.getProblem(), /publicHost/);
+  config.save({ publicHost: 'localhost', federationPublicUrl: '' });
+});
+
+test('tracker entries that are not https addresses are ignored', async () => {
+  resetState();
+  config.save({ publicHost: 'trk.example.com', httpsPort: 8443, useHttps: true, instance: { name: 'Trk' }, swarm: { advertise: true, trackers: ['http://plain.example.com', 'ftp://y.example.com', 'https://ok.example.com', 5, 'https://u:p@bad.example.com'] } });
+  const r = recorder(['https://ok.example.com']);
+  await createWorker({ fetchImpl: r.fetchImpl, now: () => 1_000_000 }).announceNow();
+  assert.deepEqual([...new Set(r.calls.map((c) => c.tracker))], ['https://ok.example.com']);
 });

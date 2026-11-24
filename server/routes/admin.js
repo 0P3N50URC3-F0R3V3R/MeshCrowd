@@ -192,7 +192,7 @@ for (const [kind, set, clear] of [['logo', instanceProfile.setLogo, instanceProf
 }
 
 // ---- MeshSwarm advertising (config.json: swarm) ----
-const swarmView = () => ({ ...appConfig.load().swarm, status: swarmWorker.getStatus() });
+const swarmView = () => { const cfg = appConfig.load(); return { ...cfg.swarm, status: swarmWorker.getStatus(), problem: require('../lib/swarmWorker').addressProblem(cfg) }; };
 
 function normalizeTrackers(list) {
   if (!Array.isArray(list) || list.length > 20) return null;

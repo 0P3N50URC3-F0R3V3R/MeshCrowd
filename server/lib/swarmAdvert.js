@@ -10,6 +10,7 @@ const MAX_ADVERT = 32768;
 const MAX_ICON_URI = 24000;
 const SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex');
 const REGISTRATION = ['open', 'invite', 'closed'];
+const BAD_TEXT = /[\p{Cc}‪-‮⁦-⁩‎‏]/u;
 
 let cached = null;
 
@@ -50,8 +51,10 @@ function verify(str) {
   } catch { return fail('bad advert payload'); }
   if (!a || typeof a !== 'object' || a.v !== 1) return fail('unsupported advert');
   if (typeof a.name !== 'string' || a.name.length > 60 || typeof a.description !== 'string' || a.description.length > 300) return fail('bad advert text');
+  if (BAD_TEXT.test(a.name) || BAD_TEXT.test(a.description)) return fail('bad advert text');
   if (a.icon !== null && (typeof a.icon !== 'string' || a.icon.length > MAX_ICON_URI || !a.icon.startsWith('data:image/png;base64,'))) return fail('bad advert icon');
   if (!REGISTRATION.includes(a.registration) || !Number.isFinite(a.updated) || typeof a.pub !== 'string') return fail('bad advert fields');
+  if (typeof a.url !== 'string') return fail('bad advert url');
   let u;
   try { u = new URL(a.url); } catch { return fail('bad advert url'); }
   if (u.protocol !== 'https:' || u.username || u.password || a.url.length > 200) return fail('bad advert url');
@@ -59,7 +62,8 @@ function verify(str) {
     const pub = crypto.createPublicKey({ key: Buffer.concat([SPKI_PREFIX, Buffer.from(a.pub, 'base64url')]), format: 'der', type: 'spki' });
     if (!crypto.verify(null, payload, pub, Buffer.from(parts[1], 'base64url'))) return fail('bad signature');
   } catch { return fail('bad signature'); }
-  return { ok: true, advert: a };
+  const { url, name, description, icon, registration, updated, pub } = a;
+  return { ok: true, advert: { url, name, description, icon, registration, updated, pub } };
 }
 
 module.exports = { loadOrCreateKey, build, verify, MAX_ADVERT };

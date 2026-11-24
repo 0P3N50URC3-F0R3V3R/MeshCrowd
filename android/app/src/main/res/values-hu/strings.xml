@@ -59,8 +59,4 @@
     <string name="switch_title">Szerverváltás</string>
     <string name="switch_body">Átváltasz a(z) %1$s szerverre? Elhagyod a(z) %2$s szervert. A bejelentkezésed ott a választásod szerint megmarad.</string>
     <string name="switch_confirm">Váltás</string>
-    <string name="signin_title">Bejelentkezve maradsz?</string>
-    <string name="signin_body">Bejelentkezve maradsz a(z) %1$s szerveren ezen az eszközön? Közös telefonon válaszd a „Csak ez a munkamenet” lehetőséget: az alkalmazás bezárása és újranyitása után kijelentkezel.</string>
-    <string name="signin_keep">Maradok bejelentkezve</string>
-    <string name="signin_session">Csak ez a munkamenet</string>
 </resources>

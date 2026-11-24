@@ -26,15 +26,20 @@ function magicMatches(buf, mime) {
   return buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP';
 }
 
+// The config file can be edited by hand or with `config set`, so only the exact names this module writes are trusted.
+const FILE_NAME = { logoPath: /^logo\.(png|jpg|webp|gif)$/, iconPath: /^icon\.png$/ };
+
 function fileFor(key) {
   const rel = config.load().instance[key];
-  if (!rel) return null;
-  const file = path.join(DIR, path.basename(rel));
+  if (typeof rel !== 'string' || !FILE_NAME[key].test(rel)) return null;
+  const file = path.join(DIR, rel);
   return fs.existsSync(file) ? file : null;
 }
 
 function get() {
-  const { name, description } = config.load().instance;
+  const cfg = config.load().instance;
+  const name = typeof cfg.name === 'string' ? singleLine(cfg.name, MAX_NAME) : '';
+  const description = typeof cfg.description === 'string' ? singleLine(cfg.description, MAX_DESCRIPTION) : '';
   return { name, description, hasLogo: !!fileFor('logoPath'), hasIcon: !!fileFor('iconPath') };
 }
 

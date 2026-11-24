@@ -590,6 +590,7 @@
       "iconHint": "Small icon sent with the advert to trackers. It is resized to fit 128x128 pixels and 16 KB automatically.",
       "swarmTitle": "MeshSwarm advertising",
       "advertiseLabel": "Advertise this server on public trackers",
+      "problemLabel": "Cannot advertise:",
       "advertiseHint": "Off by default. When on, this server announces its name, description, icon, address and registration state to every tracker below and shows their public server list on the login page. When off, nothing is sent and the list is hidden.",
       "trackersLabel": "Trackers",
       "trackersHint": "https addresses of MeshSwarm trackers. All of them are asked; if none are reachable the server works as usual.",

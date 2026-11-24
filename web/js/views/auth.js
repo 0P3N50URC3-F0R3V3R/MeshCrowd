@@ -35,10 +35,10 @@ export function renderAuth(root) {
       website = c.downloads?.website || '';
       regMode = c.registrationMode || 'open';
       if (c.instance) instance = c.instance;
+      if (c.swarm && c.swarm.enabled) api.swarmList().then((s) => { swarm = s; if (mode === 'login' || mode === 'register') render(); }).catch(() => {});
       if (regMode === 'closed' && mode === 'register') mode = 'login';
       if (mode === 'login' || mode === 'register') render();
     }).catch(() => {});
-    api.swarmList().then((s) => { swarm = s; if (mode === 'login' || mode === 'register') render(); }).catch(() => {});
     let pendingCred = null;
     let pendingSeed = null;
     let cap = null;
