@@ -142,8 +142,100 @@ router.patch('/registration', requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATO
   const mode = req.body?.mode;
   if (!registration.MODES.includes(mode)) return res.status(400).json({ error: 'mode must be open, closed or invite' });
   appConfig.save({ registrationMode: mode });
+  nudgeSwarm();
   require('../lib/logger').log(`[registration] mode set to ${mode} by user ${req.user.id}`);
   res.json({ mode: registration.getMode() });
+});
+
+// ---- Instance identity (config.json: instance) ----
+const instanceProfile = require('../lib/instanceProfile');
+const swarmWorker = require('../lib/swarmWorker').worker;
+const nudgeSwarm = () => { if (appConfig.load().swarm.advertise) swarmWorker.announceNow(); };
+const uploadInstanceImage = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024 + 1 } });
+const siteAdminOnly = requireSitePerm(SITE_PERMISSIONS.SITE_ADMINISTRATOR);
+const profileFail = (res, e) => {
+  if (e instanceof instanceProfile.ProfileError) return res.status(e.status).json({ error: e.message });
+  throw e;
+};
+
+router.get('/instance', siteAdminOnly, (req, res) => res.json(instanceProfile.get()));
+
+router.patch('/instance', siteAdminOnly, (req, res) => {
+  try {
+    const out = instanceProfile.update({ name: req.body?.name, description: req.body?.description });
+    require('../lib/logger').log(`[instance] profile updated by user ${req.user.id}`);
+    nudgeSwarm();
+    res.json(out);
+  } catch (e) { profileFail(res, e); }
+});
+
+for (const [kind, set, clear] of [['logo', instanceProfile.setLogo, instanceProfile.clearLogo], ['icon', instanceProfile.setIcon, instanceProfile.clearIcon]]) {
+  router.post(`/instance/${kind}`, siteAdminOnly, (req, res, next) => {
+    uploadInstanceImage.single('file')(req, res, (err) => {
+      if (err) return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({ error: 'upload failed' });
+      next();
+    });
+  }, (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'file required' });
+    try {
+      set(req.file.buffer, req.file.mimetype);
+      require('../lib/logger').log(`[instance] ${kind} changed by user ${req.user.id}`);
+      nudgeSwarm();
+      res.json(instanceProfile.get());
+    } catch (e) { profileFail(res, e); }
+  });
+  router.delete(`/instance/${kind}`, siteAdminOnly, (req, res) => {
+    clear();
+    nudgeSwarm();
+    res.json(instanceProfile.get());
+  });
+}
+
+// ---- MeshSwarm advertising (config.json: swarm) ----
+const swarmView = () => ({ ...appConfig.load().swarm, status: swarmWorker.getStatus() });
+
+function normalizeTrackers(list) {
+  if (!Array.isArray(list) || list.length > 20) return null;
+  const out = [];
+  for (const item of list) {
+    let u;
+    try { u = new URL(String(item).trim()); } catch { return null; }
+    if (u.protocol !== 'https:' || u.username || u.password || u.search || u.hash) return null;
+    const base = `${u.origin}${u.pathname.replace(/\/+$/, '')}`;
+    if (!out.includes(base)) out.push(base);
+  }
+  return out;
+}
+
+router.get('/swarm', siteAdminOnly, (req, res) => res.json(swarmView()));
+
+router.patch('/swarm', siteAdminOnly, (req, res) => {
+  const { advertise, trackers, intervalSeconds } = req.body || {};
+  const patch = {};
+  if (advertise !== undefined) {
+    if (typeof advertise !== 'boolean') return res.status(400).json({ error: 'advertise must be a boolean' });
+    patch.advertise = advertise;
+  }
+  if (trackers !== undefined) {
+    const list = normalizeTrackers(trackers);
+    if (!list) return res.status(400).json({ error: 'trackers must be at most 20 https addresses' });
+    patch.trackers = list;
+  }
+  if (intervalSeconds !== undefined) {
+    if (!Number.isInteger(intervalSeconds) || intervalSeconds < 60 || intervalSeconds > 86400) return res.status(400).json({ error: 'intervalSeconds must be between 60 and 86400' });
+    patch.intervalSeconds = intervalSeconds;
+  }
+  if (Object.keys(patch).length) {
+    appConfig.save({ swarm: patch });
+    require('../lib/logger').log(`[swarm] settings changed by user ${req.user.id}: ${Object.keys(patch).join(',')}`);
+    swarmWorker.announceNow();
+  }
+  res.json(swarmView());
+});
+
+router.post('/swarm/announce', siteAdminOnly, async (req, res) => {
+  await swarmWorker.announceNow();
+  res.json({ ok: true });
 });
 
 // ---- Calls: built-in STUN/TURN server and external ICE servers ----

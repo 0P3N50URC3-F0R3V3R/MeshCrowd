@@ -6,6 +6,8 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 #### Added
 - Desktop clients (Electron and C#): Settings, Desktop App has a new "Clear cache" button that deletes the HTTP cache, IndexedDB, CacheStorage, service workers, filesystem and WebSQL data to free disk space. Cookies and localStorage are kept, so you stay logged in and keep your settings (the custom notification sound lives in IndexedDB and must be set again). Electron shows how many MB were freed. New `dismesh:clear-cache` bridge message.
 - Sites: new "Available on mobile" switch in the create-site form and in the site settings (default on). When off, the phone UI and the Android app do not list or open that site; it stays available on PC. Needs a server restart (new `site_mobile` column, added automatically) and a web deploy; no APK rebuild.
+- Instance profile: Admin Panel has a new Instance tab with the instance name, description, logo and a small icon (auto-shrunk to 128x128 and 16 KB). The login page shows the logo, name, description and a registration badge (open, invite only, closed). Stored in `data/config.json` (`instance`) and `data/instance/`.
+- MeshSwarm advertising (off by default): the same tab has an Advertise switch and an editable tracker list (default `https://nexnet.hu:19898`). When on, the server announces a signed advert (name, description, icon, address, registration state) to every tracker, and the login page lists the public servers the trackers return, with last online and last updated times. Clicking a name opens that server. When off, nothing is sent and the list is hidden. An unreachable tracker never affects the server. The trackers themselves are a separate app (MeshSwarm).
 
 ### 2026-11-23
 #### Added

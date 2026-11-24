@@ -6,6 +6,7 @@ import { generateSeed, deriveKeys, MIN_PASSWORD_LENGTH } from '../e2ee/crypto.mj
 import { ensureIdentity, cacheSeed } from '../e2ee/identity.js';
 import { parseInviteHash } from '../inviteHash.mjs';
 import { createCaptcha, captchaErrorMessage } from '../captcha.js';
+import { renderBrand, renderInstanceInfo, renderSwarmList } from './authInstance.mjs';
 import { proveWith, passportBundle, readFileWithPassphrase, prepareLogin, splitCredential, wrapFor } from '../passport/flow.js';
 
 const PASSPORT_FILE_ERROR = /unsupported passport file|wrong passphrase|does not match|no passport file/;
@@ -27,13 +28,17 @@ export function renderAuth(root) {
     api.getLanguages().then((res) => { languages = res.languages; if (mode === 'login' || mode === 'register') render(); }).catch(() => {});
     let website = '';
     let regMode = 'open';
+    let instance = { name: '', description: '', hasLogo: false, hasIcon: false };
+    let swarm = null;
     const hashInvite = parseInviteHash(location.hash) || '';
     api.config().then((c) => {
       website = c.downloads?.website || '';
       regMode = c.registrationMode || 'open';
+      if (c.instance) instance = c.instance;
       if (regMode === 'closed' && mode === 'register') mode = 'login';
       if (mode === 'login' || mode === 'register') render();
     }).catch(() => {});
+    api.swarmList().then((s) => { swarm = s; if (mode === 'login' || mode === 'register') render(); }).catch(() => {});
     let pendingCred = null;
     let pendingSeed = null;
     let cap = null;
@@ -44,15 +49,14 @@ export function renderAuth(root) {
           <div class="auth-blob b1"></div>
           <div class="auth-blob b2"></div>
           <div class="auth-card">
-            <div class="auth-brand">
-              <div class="mark">${icons.dismesh(24)}</div>
-              <div class="name">MeshCrowd</div>
-            </div>
+            ${renderBrand(instance, escapeHtml, icons.dismesh(24))}
+            ${mode === 'login' || mode === 'register' ? renderInstanceInfo(instance, regMode, t, escapeHtml) : ''}
             ${mode !== 'totp' && languages.length > 1 ? `
             <select class="input" id="auth-lang" style="align-self:flex-end;width:auto;margin-bottom:8px">
               ${languages.map((l) => `<option value="${escapeHtml(l.code)}" ${l.code === currentLanguage() ? 'selected' : ''}>${escapeHtml(l.name)}</option>`).join('')}
             </select>` : ''}
             ${mode === 'totp' ? renderTotpForm() : mode === 'passportLogin' ? renderPassportLoginForm() : mode === 'recover' ? renderRecoverForm() : renderCredentialsForm()}
+            ${mode === 'login' || mode === 'register' ? renderSwarmList(swarm, t, escapeHtml, Date.now()) : ''}
             ${website && (mode === 'login' || mode === 'register') ? `<div class="auth-switch"><a href="${escapeHtml(website)}" target="_blank" rel="noopener noreferrer">${t('serverRail.projectWebsiteLink')}</a></div>` : ''}
           </div>
         </div>`;

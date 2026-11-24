@@ -178,3 +178,19 @@ test('a write failure keeps the parsed config instead of falling back to default
     fs.writeFileSync = origWrite;
   }
 });
+
+test('instance and swarm defaults exist, merge per key, and the swarm interval has a floor', () => {
+  fs.writeFileSync(config.CONFIG_PATH, JSON.stringify({ instance: { name: 'Home' }, swarm: { advertise: true } }));
+  const cfg = config.load();
+  assert.equal(cfg.instance.name, 'Home');
+  assert.equal(cfg.instance.description, '');
+  assert.equal(cfg.swarm.advertise, true);
+  assert.deepEqual(cfg.swarm.trackers, ['https://nexnet.hu:19898']);
+  assert.equal(cfg.swarm.intervalSeconds, 300);
+  fs.rmSync(config.CONFIG_PATH, { force: true });
+  assert.equal(config.load().swarm.advertise, false);
+  const schema = require('../lib/configSchema');
+  assert.throws(() => schema.coerce('swarm.intervalSeconds', '30'), /at least 60/);
+  assert.equal(schema.lookup('swarm.advertise').restart, false);
+  assert.equal(schema.lookup('instance.name').restart, false);
+});

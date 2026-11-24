@@ -70,6 +70,8 @@ app.use(attachUser);
 app.use(guard.floodGuard);
 
 // Only the upload subfolders are served publicly, never the whole data/ dir (db, certs, config live there too).
+app.use('/instance', require('./routes/instancePublic'));
+app.use('/api/swarm', require('./routes/swarm'));
 app.use('/uploads/avatars', express.static(path.join(DATA_DIR, 'avatars')));
 app.use('/uploads/servericons', express.static(path.join(DATA_DIR, 'servericons')));
 app.use('/uploads/channelicons', express.static(path.join(DATA_DIR, 'channelicons')));
@@ -228,7 +230,7 @@ require('./lib/uploads').migrateUploadLimit();
 app.get('/api/config', (req, res) => {
   const dl = config.downloads || {};
   const downloads = { clientDesktop: httpsLink(dl.clientDesktop), clientAndroid: httpsLink(dl.clientAndroid), website: httpsLink(dl.website) };
-  res.json({ maxUploadMb: require('./lib/uploads').effectiveMaxUploadMb(), maxMessageChars: require('./lib/messageLimits').maxMessageChars(), publicHost: config.publicHost, iceServers: turnManager.publicIceServers(), version: APP_VERSION, federationEnabled: !!(config.federation && config.federation.enabled), registrationMode: require('./lib/registration').getMode(), downloads });
+  res.json({ maxUploadMb: require('./lib/uploads').effectiveMaxUploadMb(), maxMessageChars: require('./lib/messageLimits').maxMessageChars(), publicHost: config.publicHost, iceServers: turnManager.publicIceServers(), version: APP_VERSION, federationEnabled: !!(config.federation && config.federation.enabled), registrationMode: require('./lib/registration').getMode(), instance: require('./lib/instanceProfile').get(), downloads });
 });
 
 const WEB_DIR = path.join(__dirname, '..', 'web');
@@ -285,6 +287,7 @@ sfuSocket.start(logger);
 turnManager.onIpChange(() => sfuSocket.restartForAnnouncedChange());
 
 const closeServer = (s) => new Promise((resolve) => { s.close(() => resolve()); s.closeAllConnections?.(); });
+require('./lib/swarmWorker').worker.start();
 lifecycle.registerCloser('http', () => closeServer(server), { resume: () => server.listen(config.useHttps ? config.httpsPort : config.port) });
 if (redirectServer) lifecycle.registerCloser('http-redirect', () => closeServer(redirectServer), { resume: () => redirectServer.listen(config.port) });
 // Upgraded sockets are detached from the HTTP server, so server.close() alone would wait on them forever.

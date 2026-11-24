@@ -43,6 +43,22 @@
 }
 .auth-brand .name { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
 
+/* a custom instance logo replaces the brand mark; the box keeps it from taking over the card */
+.auth-logo { max-height: 64px; max-width: 200px; object-fit: contain; border-radius: 8px; }
+.auth-instance-desc { text-align: center; color: var(--text-secondary); font-size: 14px; margin: -8px 0 12px; overflow-wrap: anywhere; }
+.auth-reg-badge { display: table; margin: 0 auto 16px; padding: 2px 10px; border-radius: 999px; font-size: 12px; background: var(--bg-tertiary, rgba(255,255,255,0.08)); color: var(--text-secondary); }
+.auth-reg-badge.open { color: #23a55a; }
+.auth-reg-badge.invite { color: #f0b232; }
+.auth-reg-badge.closed { color: #f23f43; }
+.auth-swarm { margin-top: 16px; border-top: 1px solid var(--border, rgba(255,255,255,0.08)); padding-top: 12px; }
+.auth-swarm h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin: 0 0 8px; }
+.swarm-row { display: flex; gap: 10px; padding: 6px 0; }
+.swarm-icon { width: 36px; height: 36px; border-radius: 8px; flex: none; background: var(--bg-tertiary, rgba(255,255,255,0.08)); object-fit: cover; }
+.swarm-main { min-width: 0; }
+.swarm-name a { font-weight: 600; color: var(--header-primary); text-decoration: none; }
+.swarm-name a:hover { text-decoration: underline; }
+.swarm-desc, .swarm-meta { font-size: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
+
 .auth-card h1 {
   font-size: 24px; text-align: center; margin: 0 0 8px;
   color: var(--header-primary);

@@ -10,6 +10,7 @@ import { renderStickerEditor } from './stickerEditor.js';
 import { renderSoundEditor } from './soundEditor.js';
 import { renderFederationTab } from './federationAdmin.js';
 import { renderCallsTab } from './adminCalls.js';
+import { renderInstanceTab } from './adminInstance.js';
 import { renderSecurityTab } from './adminSecurity.js';
 import { renderAdminAi } from './adminAi.js';
 import { t } from '../i18n.js';
@@ -107,6 +108,7 @@ function buildAdminPanel() {
           <div class="snav-item ${tab === 'ai' ? 'active' : ''}" data-tab="ai">${t('admin.aiTab')}</div>
           <div class="snav-item ${tab === 'languages' ? 'active' : ''}" data-tab="languages">${t('admin.languagesTab')}</div>
           ${state.me.isSiteAdmin ? `<div class="snav-item ${tab === 'calls' ? 'active' : ''}" data-tab="calls">${t('admin.calls.tab')}</div>` : ''}
+          ${state.me.isSiteAdmin ? `<div class="snav-item ${tab === 'instance' ? 'active' : ''}" data-tab="instance">${t('admin.instance.tab')}</div>` : ''}
           ${state.me.isSiteAdmin ? `<div class="snav-item ${tab === 'security' ? 'active' : ''}" data-tab="security">${t('admin.security.tab')}</div>` : ''}
           <div class="snav-item ${tab === 'prune' ? 'active' : ''}" data-tab="prune">${t('admin.dataPruningTab')}</div>
           ${state.config.federationEnabled ? `<div class="snav-item ${tab === 'federation' ? 'active' : ''}" data-tab="federation">${t('admin.federationTab')}</div>` : ''}
@@ -130,6 +132,7 @@ function buildAdminPanel() {
     else if (tab === 'ai') renderAdminAi(inner);
     else if (tab === 'languages') renderLanguagesTab(inner);
     else if (tab === 'calls') renderCallsTab(inner);
+    else if (tab === 'instance') renderInstanceTab(inner);
     else if (tab === 'security') renderSecurityTab(inner);
     else if (tab === 'prune') renderPruneTab(inner);
     else if (tab === 'federation') renderFederationTab(inner);

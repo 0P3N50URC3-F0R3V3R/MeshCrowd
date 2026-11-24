@@ -4,7 +4,7 @@ const { DEFAULTS } = require('./config');
 
 // registrationMode is re-read from the config on every request; the logging keys go through the logger;
 // the voice keys refresh the SFU facade's cache.
-const LIVE = new Set(['registrationMode', 'maxUploadMb', 'logging.level', 'logging.keepDays', 'logging.maxFileMb', 'voice.mode', 'voice.sfu.maxKbpsPerUser']);
+const LIVE = new Set(['registrationMode', 'maxUploadMb', 'logging.level', 'logging.keepDays', 'logging.maxFileMb', 'voice.mode', 'voice.sfu.maxKbpsPerUser', 'swarm.advertise', 'swarm.trackers', 'swarm.intervalSeconds', 'instance.name', 'instance.description', 'instance.logoPath', 'instance.iconPath']);
 const SECRET = new Set(['turn.secret', 'purgePassword']);
 
 const port = { min: 1, max: 65535 };
@@ -19,6 +19,8 @@ const OVERRIDES = {
   lanNetworks: { type: 'json', array: true, check: 'lanNetworks' },
   passportOrigins: { type: 'json', array: true },
   'sites.maxWorkers': { min: 1, max: 16 },
+  'swarm.intervalSeconds': { min: 60, max: 86400 },
+  'swarm.trackers': { type: 'json', array: true },
   'turn.port': port,
   'turn.relayPortMin': port,
   'turn.relayPortMax': port,

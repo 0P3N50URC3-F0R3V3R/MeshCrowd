@@ -54,6 +54,10 @@ const DEFAULTS = {
   // Sites (PHP intranet servers). phpPath: explicit php binary; empty = runtime/php/php.exe, then PATH.
   // maxWorkers: parallel php processes per Site (php -S handles one request at a time), 1-16.
   sites: { phpPath: '', maxWorkers: 4 },
+  // This server's identity on the login page and in tracker adverts. Images live under data/instance/.
+  instance: { name: '', description: '', logoPath: '', iconPath: '' },
+  // MeshSwarm trackers: advertise is off by default; the tracker list is a seed the owner can edit or extend.
+  swarm: { advertise: false, trackers: ['https://nexnet.hu:19898'], intervalSeconds: 300 },
   // Download/project links shown in the web UI (https:// only; anything else is ignored). Replace the
   // https://# placeholders and restart the server. `server` is just recorded here; the UI shows the
   // other three.
@@ -171,7 +175,7 @@ function sweepTempFiles(maxAgeMs = 60_000) {
 
 function parse(text) {
   const file = JSON.parse(text);
-  return { ...DEFAULTS, ...file, turn: { ...DEFAULTS.turn, ...(file.turn || {}) }, voice: { ...DEFAULTS.voice, ...(file.voice || {}), sfu: { ...DEFAULTS.voice.sfu, ...((file.voice || {}).sfu || {}) } }, downloads: { ...DEFAULTS.downloads, ...(file.downloads || {}) }, logging: { ...DEFAULTS.logging, ...(file.logging || {}) }, ssh: { ...DEFAULTS.ssh, ...(file.ssh || {}) }, backup: { ...DEFAULTS.backup, ...(file.backup || {}) } };
+  return { ...DEFAULTS, ...file, turn: { ...DEFAULTS.turn, ...(file.turn || {}) }, voice: { ...DEFAULTS.voice, ...(file.voice || {}), sfu: { ...DEFAULTS.voice.sfu, ...((file.voice || {}).sfu || {}) } }, downloads: { ...DEFAULTS.downloads, ...(file.downloads || {}) }, logging: { ...DEFAULTS.logging, ...(file.logging || {}) }, ssh: { ...DEFAULTS.ssh, ...(file.ssh || {}) }, backup: { ...DEFAULTS.backup, ...(file.backup || {}) }, instance: { ...DEFAULTS.instance, ...(file.instance || {}) }, swarm: { ...DEFAULTS.swarm, ...(file.swarm || {}) } };
 }
 
 function unreadable(why) {
