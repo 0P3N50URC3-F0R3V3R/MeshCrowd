@@ -15,7 +15,7 @@
     "fetch:ffmpeg": "node scripts/fetch-ffmpeg.js",
     "fetch:mediasoup": "node scripts/fetch-mediasoup.js",
     "build:vendor": "node scripts/build-vendor.js",
-    "test": "node --test \"server/test/*.test.js\" \"web/**/*.test.mjs\" \"electron/*.test.js\""
+    "test": "node --test \"server/test/*.test.js\" \"web/**/*.test.mjs\" \"electron/*.test.js\" \"electron/renderer/*.test.js\""
   },
   "engines": {
     "node": ">=22.5.0"

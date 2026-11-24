@@ -42,6 +42,11 @@ test('swarm list is empty when disabled or empty, and escapes every field', () =
   assert.ok(out.includes('auth.swarmDays|3'));
 });
 
+test('the server name link carries the address for the desktop client switch', () => {
+  const out = renderSwarmList({ enabled: true, servers: [{ url: 'https://x.example.com:8443', name: 'X', description: '', icon: null, registration: 'open', lastSeen: 1, updated: 1 }] }, t, esc, 10);
+  assert.ok(out.includes('data-switch="https://x.example.com:8443"'));
+});
+
 test('a non-https url from a tracker is never made a link', () => {
   const out = renderSwarmList({ enabled: true, servers: [{ url: 'javascript:alert(1)', name: 'Bad', description: '', icon: null, registration: 'open', lastSeen: 1, updated: 1 }] }, t, esc, 10);
   assert.equal(out, '');

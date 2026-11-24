@@ -9,6 +9,8 @@ const { pruneRecent, clearRecentOnFocus } = require('./trayState');
 const { findMcrLink, inviteTarget } = require('./inviteUrl');
 const { externalUrl } = require('./externalUrl');
 const { isPermissionAllowed, isServerOrigin, isLocalAppPage } = require('./permissions');
+const knownServers = require('./knownServers');
+const signIn = require('./signIn');
 
 // `-dev`/`--dev` is the one supported "show debugging stuff" switch: gates the DevTools shortcut
 // (see setupDevToolsGate below) and the start-client.bat console window — nothing else changes.
@@ -26,6 +28,7 @@ const CONFIG_PATH = path.join(app.getPath('userData'), 'dismesh-client-config.js
 const DEFAULT_CLIENT_CONFIG = {
   serverUrl: null, trustedFingerprints: {}, closeToTray: false, startMinimized: false, startWithWindows: false,
   trayIconColor: null, trayBadgeColors: {}, windowBounds: null, handleInviteLinks: true,
+  knownServers: [], swarm: { show: false, trackers: ['https://nexnet.hu:19898'] },
 };
 
 // A hand-edited or older config file may lack keys the code dereferences unguarded (trustedFingerprints
@@ -34,9 +37,11 @@ function loadClientConfig() {
   try {
     const cfg = { ...DEFAULT_CLIENT_CONFIG, ...JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) };
     if (!cfg.trustedFingerprints || typeof cfg.trustedFingerprints !== 'object') cfg.trustedFingerprints = {};
+    if (!Array.isArray(cfg.knownServers)) cfg.knownServers = [];
+    cfg.swarm = { ...DEFAULT_CLIENT_CONFIG.swarm, ...(cfg.swarm && typeof cfg.swarm === 'object' ? cfg.swarm : {}) };
     return cfg;
   } catch {
-    return { ...DEFAULT_CLIENT_CONFIG, trustedFingerprints: {}, trayBadgeColors: {} };
+    return { ...DEFAULT_CLIENT_CONFIG, trustedFingerprints: {}, trayBadgeColors: {}, knownServers: [], swarm: { ...DEFAULT_CLIENT_CONFIG.swarm } };
   }
 }
 
@@ -317,6 +322,7 @@ function createWindow() {
   // Hiding to the tray doesn't reliably flip document.hidden in the renderer, so tell it directly.
   for (const ev of ['show', 'hide', 'minimize', 'restore', 'focus', 'blur']) mainWindow.on(ev, sendWindowState);
   mainWindow.webContents.on('did-finish-load', sendWindowState);
+  mainWindow.webContents.on('did-finish-load', () => { recordServer().then(checkSignIn); });
   mainWindow.on('resize', scheduleSaveBounds);
   mainWindow.on('move', scheduleSaveBounds);
   mainWindow.on('maximize', scheduleSaveBounds);
@@ -508,6 +514,131 @@ ipcMain.handle('dismesh:set-server', (event, rawUrl) => {
   saveClientConfig(clientConfig);
   loadTarget();
   return { ok: true };
+});
+
+const recordedOrigins = new Set();
+const PAGE_INFO_SCRIPT = `(async () => {
+  try {
+    const c = await (await fetch('/api/config')).json();
+    const i = c.instance || {};
+    let icon = '';
+    if (i.hasIcon) {
+      const b = await (await fetch('/instance/icon')).blob();
+      icon = await new Promise((ok) => { const f = new FileReader(); f.onload = () => ok(String(f.result)); f.readAsDataURL(b); });
+    }
+    return { name: i.name || '', icon };
+  } catch { return null; }
+})()`;
+
+// Remembers the server once per run; the page's answer is untrusted and is cleaned by knownServers.upsert.
+async function recordServer() {
+  const pageUrl = mainWindow.webContents.getURL();
+  if (!clientConfig.serverUrl || !isServerOrigin(pageUrl, clientConfig.serverUrl)) return;
+  const origin = knownServers.normalizeOrigin(pageUrl);
+  if (!origin || recordedOrigins.has(origin)) return;
+  recordedOrigins.add(origin);
+  let info = null;
+  try { info = await mainWindow.webContents.executeJavaScript(PAGE_INFO_SCRIPT); } catch { /* page unusable: still remember the address */ }
+  clientConfig.knownServers = knownServers.upsert(clientConfig.knownServers, { url: origin, name: info && info.name, icon: info && info.icon }, Date.now());
+  saveClientConfig(clientConfig);
+}
+
+const SIGN_IN_TEXT = {
+  en: { title: 'Stay signed in?', message: (host) => `Stay signed in to ${host} on this device?`, detail: 'Choose "This session only" on a shared computer: you will be signed out when MeshCrowd closes.', keep: 'Stay signed in', session: 'This session only' },
+  hu: { title: 'Bejelentkezve maradsz?', message: (host) => `Bejelentkezve maradsz a(z) ${host} szerveren ezen az eszközön?`, detail: 'Közös számítógépen válaszd a „Csak ez a munkamenet” lehetőséget: a MeshCrowd bezárásakor kijelentkezel.', keep: 'Maradok bejelentkezve', session: 'Csak ez a munkamenet' },
+};
+let askingSignIn = false;
+
+const serverEntry = () => {
+  const origin = knownServers.normalizeOrigin(clientConfig.serverUrl);
+  return origin ? clientConfig.knownServers.find((e) => e.url === origin) : undefined;
+};
+
+// Keeps the login of "this session only" servers out of the cookie file: the cookie is re-set without an
+// expiry, so Chromium drops it when the app closes. Other servers' cookies are never touched.
+async function checkSignIn() {
+  try {
+    const entry = serverEntry();
+    if (!entry) return;
+    const [cookie] = await session.defaultSession.cookies.get({ url: entry.url, name: signIn.COOKIE_NAME });
+    if (!cookie) return;
+    if (signIn.shouldAsk(entry, true) && !askingSignIn) {
+      askingSignIn = true;
+      try {
+        const text = app.getLocale().toLowerCase().startsWith('hu') ? SIGN_IN_TEXT.hu : SIGN_IN_TEXT.en;
+        const { response } = await dialog.showMessageBox(mainWindow, {
+          type: 'question', buttons: [text.keep, text.session], defaultId: 0, cancelId: 1,
+          title: text.title, message: text.message(new URL(entry.url).host), detail: text.detail,
+        });
+        clientConfig.knownServers = knownServers.setSignIn(clientConfig.knownServers, entry.url, response === 0 ? 'keep' : 'session');
+        saveClientConfig(clientConfig);
+      } finally { askingSignIn = false; }
+    }
+    const now = serverEntry();
+    if (signIn.needsSessionConversion(now, cookie)) {
+      await session.defaultSession.cookies.set({
+        url: entry.url, name: cookie.name, value: cookie.value, path: cookie.path,
+        httpOnly: cookie.httpOnly, secure: cookie.secure, sameSite: cookie.sameSite,
+      });
+    }
+  } catch { /* the cookie store is not reachable: leave the login as it is */ }
+}
+
+function dropSessionOnlyCookies(origins) {
+  return Promise.all(origins.map((o) => session.defaultSession.cookies.remove(o, signIn.COOKIE_NAME).catch(() => {})));
+}
+
+ipcMain.handle('dismesh:get-known-servers', (event) => (fromLocalPage(event) ? clientConfig.knownServers : []));
+
+ipcMain.handle('dismesh:forget-known-server', (event, url) => {
+  if (!fromLocalPage(event)) return [];
+  clientConfig.knownServers = knownServers.remove(clientConfig.knownServers, url);
+  saveClientConfig(clientConfig);
+  return clientConfig.knownServers;
+});
+
+ipcMain.handle('dismesh:set-swarm-settings', (event, settings) => {
+  if (!fromLocalPage(event) || !settings || typeof settings !== 'object') return clientConfig.swarm;
+  if (typeof settings.show === 'boolean') clientConfig.swarm.show = settings.show;
+  if (Array.isArray(settings.trackers)) {
+    const out = [];
+    for (const raw of settings.trackers) {
+      try {
+        const u = new URL(String(raw).trim());
+        if (u.protocol !== 'https:' || u.username || u.password || u.search || u.hash) continue;
+        const base = `${u.origin}${u.pathname.replace(/\/+$/, '')}`;
+        if (!out.includes(base)) out.push(base);
+      } catch { /* skip invalid entries */ }
+    }
+    clientConfig.swarm.trackers = out.slice(0, 20);
+  }
+  saveClientConfig(clientConfig);
+  return clientConfig.swarm;
+});
+
+let switchPending = false;
+
+// Asked for by a server's own login page. Never silent: the user always confirms the target host.
+ipcMain.handle('dismesh:switch-server', async (event, rawUrl) => {
+  const sender = event.senderFrame;
+  if (!sender || sender !== event.sender.mainFrame || !isServerOrigin(sender.url, clientConfig.serverUrl) || switchPending) return { ok: false };
+  const origin = knownServers.switchTarget(rawUrl, clientConfig.knownServers);
+  if (!origin || origin === knownServers.normalizeOrigin(clientConfig.serverUrl)) return { ok: false };
+  switchPending = true;
+  try {
+    const { response } = await dialog.showMessageBox(mainWindow, {
+      type: 'question', buttons: ['Cancel', 'Switch'], defaultId: 0, cancelId: 0,
+      title: 'Switch server', message: `Switch to ${new URL(origin).host}?`,
+      detail: `You will leave ${new URL(clientConfig.serverUrl).host}. Your sign-in there is kept as you chose.`,
+    });
+    if (response !== 1) return { ok: false };
+    const leaving = serverEntry();
+    if (leaving && leaving.signIn === 'session') await dropSessionOnlyCookies([leaving.url]);
+    clientConfig.serverUrl = `${origin}/`;
+    saveClientConfig(clientConfig);
+    loadTarget();
+    return { ok: true };
+  } finally { switchPending = false; }
 });
 
 ipcMain.handle('dismesh:retry-connect', (event) => {
@@ -770,12 +901,14 @@ app.on('second-instance', (event, argv) => {
   mainWindow.focus();
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   if (!gotSingleInstanceLock) return;
   setupCertHandling();
   setupPermissionHandlers();
   setupDisplayMediaHandler();
   downloads.setupDownloads({ session: session.defaultSession, ipcMain, dialog, shell, app, getWindow: () => mainWindow, getConfig: () => clientConfig });
+  session.defaultSession.cookies.on('changed', (event, cookie, cause, removed) => { if (!removed && cookie.name === signIn.COOKIE_NAME) checkSignIn(); });
+  await dropSessionOnlyCookies(signIn.sessionOrigins(clientConfig.knownServers));
   createWindow();
   setupTray();
   app.setLoginItemSettings({ openAtLogin: !!clientConfig.startWithWindows });

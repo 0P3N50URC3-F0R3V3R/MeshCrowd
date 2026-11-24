@@ -22,6 +22,7 @@ public sealed class MainForm : Form
     private readonly WebView2 _web = new();
     private readonly System.Windows.Forms.Timer _connectTimer = new() { Interval = ConnectTimeoutMs };
     private readonly System.Windows.Forms.Timer _boundsTimer = new() { Interval = 500 };
+    private readonly System.Windows.Forms.Timer _signInTimer = new() { Interval = 3000 };
     private TrayController? _tray;
     private Icon? _appIcon;
     private TrayIconHandle? _forbiddenIcon;
@@ -207,6 +208,9 @@ public sealed class MainForm : Form
         Native.SetLoginItem(_cfg.GetBool("startWithWindows", false));
         EnsureProtocolRegistered();
 
+        foreach (string origin in KnownServers.SessionOrigins(KnownList()).ToList()) await DropSessionCookieAsync(origin);
+        _signInTimer.Tick += async (_, _) => await CheckSignInAsync();
+        _signInTimer.Start();
         LoadTarget();
     }
 
@@ -344,6 +348,7 @@ public sealed class MainForm : Form
             _appPageLoaded?.TrySetResult();
             if (!_firstShowDone) ApplyInitialVisibility();
         }
+        else if (e.IsSuccess) _ = RecordServerAsync();
         SendWindowState();
     }
 
@@ -727,6 +732,14 @@ public sealed class MainForm : Form
                 _cfg.Save();
                 LoadTarget();
                 return new JsonObject { ["ok"] = true };
+            case "dismesh:get-known-servers": return FromLocalPage() ? KnownList().DeepClone() : new JsonArray();
+            case "dismesh:forget-known-server":
+                if (!FromLocalPage()) return new JsonArray();
+                _cfg.Set("knownServers", KnownServers.Remove(KnownList(), arg is JsonValue fk && fk.TryGetValue<string>(out var fu) ? fu : null));
+                _cfg.Save();
+                return KnownList().DeepClone();
+            case "dismesh:set-swarm-settings": return SetSwarmSettings(arg as JsonObject);
+            case "dismesh:switch-server": return SwitchServer(arg is JsonValue sw && sw.TryGetValue<string>(out var swUrl) ? swUrl : null);
             case "dismesh:get-network-interfaces": return NetworkInterfaces();
             case "dismesh:clear-cache": _ = ClearCacheAsync(); return new JsonObject { ["ok"] = true };
             case "dismesh:get-app-settings": return AppSettingsView();
@@ -747,6 +760,151 @@ public sealed class MainForm : Form
             | CoreWebView2BrowsingDataKinds.CacheStorage | CoreWebView2BrowsingDataKinds.ServiceWorkers
             | CoreWebView2BrowsingDataKinds.FileSystems | CoreWebView2BrowsingDataKinds.WebSql;
         try { await _web.CoreWebView2.Profile.ClearBrowsingDataAsync(kinds); } catch { }
+    }
+
+    private const string SessionCookie = "dismesh_session";
+    private bool _askingSignIn;
+
+    private async Task DropSessionCookieAsync(string origin)
+    {
+        try
+        {
+            var cm = _web.CoreWebView2.CookieManager;
+            foreach (var c in (await cm.GetCookiesAsync(origin)).Where(c => c.Name == SessionCookie)) cm.DeleteCookie(c);
+        }
+        catch { }
+    }
+
+    // Keeps the login of "this session only" servers out of the cookie file: the cookie is re-created
+    // without an expiry, so WebView2 drops it when the app closes. Other servers' cookies are never touched.
+    private async Task CheckSignInAsync()
+    {
+        if (_askingSignIn || _web.CoreWebView2 is null) return;
+        _askingSignIn = true;
+        try
+        {
+            string? origin = ServerOrigin();
+            var entry = origin is null ? null : KnownServers.Find(KnownList(), origin);
+            if (origin is null || entry is null) return;
+            var cm = _web.CoreWebView2.CookieManager;
+            var cookie = (await cm.GetCookiesAsync(origin)).FirstOrDefault(c => c.Name == SessionCookie);
+            if (cookie is null) return;
+            if (KnownServers.ModeOf(entry) is null)
+            {
+                bool hu = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "hu";
+                string host = new Uri(origin).Authority;
+                int choice = hu
+                    ? Ask("Bejelentkezve maradsz?", $"Bejelentkezve maradsz a(z) {host} szerveren ezen az eszközön?", "Közös számítógépen válaszd a „Csak ez a munkamenet” lehetőséget: a MeshCrowd bezárásakor kijelentkezel.", ["Csak ez a munkamenet", "Maradok bejelentkezve"], false)
+                    : Ask("Stay signed in?", $"Stay signed in to {host} on this device?", "Choose \"This session only\" on a shared computer: you will be signed out when MeshCrowd closes.", ["This session only", "Stay signed in"], false);
+                KnownServers.SetSignIn(KnownList(), origin, choice == 1 ? "keep" : "session");
+                _cfg.Save();
+            }
+            if (KnownServers.ModeOf(entry) == "session" && !cookie.IsSession)
+            {
+                var session = cm.CreateCookie(cookie.Name, cookie.Value, cookie.Domain, cookie.Path);
+                session.IsHttpOnly = cookie.IsHttpOnly;
+                session.IsSecure = cookie.IsSecure;
+                session.SameSite = cookie.SameSite;
+                cm.AddOrUpdateCookie(session);
+            }
+        }
+        catch { }
+        finally { _askingSignIn = false; }
+    }
+
+    private bool _switchPending;
+
+    // Asked for by a server's own login page. Never silent: the user always confirms the target host.
+    private JsonNode SwitchServer(string? raw)
+    {
+        string? current = ServerOrigin();
+        if (_switchPending || current is null || FromLocalPage()) return new JsonObject { ["ok"] = false };
+        string? origin = KnownServers.SwitchTarget(raw, KnownList());
+        if (origin is null || origin == KnownServers.NormalizeOrigin(current)) return new JsonObject { ["ok"] = false };
+        _switchPending = true;
+        try
+        {
+            int choice = Ask("Switch server", $"Switch to {new Uri(origin).Authority}?", $"You will leave {new Uri(current).Authority}. Your sign-in there is kept as you chose.", ["Cancel", "Switch"], false);
+            if (choice != 1) return new JsonObject { ["ok"] = false };
+            if (KnownServers.ModeOf(KnownServers.Find(KnownList(), current)) == "session") _ = DropSessionCookieAsync(current);
+            _cfg.ServerUrl = origin + "/";
+            _cfg.Save();
+            LoadTarget();
+            return new JsonObject { ["ok"] = true };
+        }
+        finally { _switchPending = false; }
+    }
+
+    private bool FromLocalPage() => IsAppUri(_web.CoreWebView2.Source);
+
+    private JsonArray KnownList()
+    {
+        if (_cfg.Data["knownServers"] is not JsonArray list) _cfg.Data["knownServers"] = list = new JsonArray();
+        return list;
+    }
+
+    private const string PageInfoScript = @"(async () => {
+  try {
+    const c = await (await fetch('/api/config')).json();
+    const i = c.instance || {};
+    let icon = '';
+    if (i.hasIcon) {
+      const b = await (await fetch('/instance/icon')).blob();
+      icon = await new Promise((ok) => { const f = new FileReader(); f.onload = () => ok(String(f.result)); f.readAsDataURL(b); });
+    }
+    return { name: i.name || '', icon };
+  } catch { return null; }
+})()";
+
+    private readonly HashSet<string> _recordedOrigins = new();
+
+    // Remembers the server once per run; the page's answer is untrusted and is cleaned by KnownServers.Upsert.
+    private async Task RecordServerAsync()
+    {
+        try
+        {
+            string? origin = ServerOrigin();
+            if (origin is null || _web.CoreWebView2 is null || !Uri.TryCreate(_web.CoreWebView2.Source, UriKind.Absolute, out var src)) return;
+            if (!src.GetLeftPart(UriPartial.Authority).Equals(origin, StringComparison.OrdinalIgnoreCase)) return;
+            string? norm = KnownServers.NormalizeOrigin(origin);
+            if (norm is null || !_recordedOrigins.Add(norm)) return;
+            string? name = null; string? icon = null;
+            try
+            {
+                string json = await _web.CoreWebView2.ExecuteScriptAsync(PageInfoScript);
+                if (JsonNode.Parse(json) is JsonObject info)
+                {
+                    name = info["name"] is JsonValue nv && nv.TryGetValue<string>(out var n) ? n : null;
+                    icon = info["icon"] is JsonValue iv && iv.TryGetValue<string>(out var ic) ? ic : null;
+                }
+            }
+            catch { }
+            _cfg.Set("knownServers", KnownServers.Upsert(KnownList(), norm, name, icon, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+            _cfg.Save();
+        }
+        catch { }
+    }
+
+    private JsonNode SetSwarmSettings(JsonObject? settings)
+    {
+        if (_cfg.Data["swarm"] is not JsonObject swarm) _cfg.Data["swarm"] = swarm = new JsonObject { ["show"] = false, ["trackers"] = new JsonArray("https://nexnet.hu:19898") };
+        if (!FromLocalPage() || settings is null) return swarm.DeepClone();
+        if (settings["show"] is JsonValue sv && sv.TryGetValue<bool>(out var show)) swarm["show"] = show;
+        if (settings["trackers"] is JsonArray raw)
+        {
+            var list = new JsonArray();
+            var seen = new HashSet<string>();
+            foreach (var item in raw)
+            {
+                if (item is not JsonValue v || !v.TryGetValue<string>(out var t)) continue;
+                if (!Uri.TryCreate(t.Trim(), UriKind.Absolute, out var u) || u.Scheme != "https" || u.UserInfo.Length > 0 || u.Query.Length > 0 || u.Fragment.Length > 0) continue;
+                string b = $"https://{u.Authority}{u.AbsolutePath.TrimEnd('/')}";
+                if (seen.Add(b) && list.Count < 20) list.Add(b);
+            }
+            swarm["trackers"] = list;
+        }
+        _cfg.Save();
+        return swarm.DeepClone();
     }
 
     private static int IdOf(JsonNode? arg) => arg is JsonValue v && v.TryGetValue<double>(out var d) ? (int)d : -1;

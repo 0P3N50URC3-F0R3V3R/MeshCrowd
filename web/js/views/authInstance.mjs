@@ -24,7 +24,7 @@ function ago(ms, now, t) {
 export function renderSwarmList(swarm, t, esc, now) {
   if (!swarm || !swarm.enabled || !Array.isArray(swarm.servers) || !swarm.servers.length) return '';
   const rows = swarm.servers.filter((s) => typeof s.url === 'string' && /^https:\/\//i.test(s.url)).map((s) => {
-    const name = `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.name || s.url)}</a>`;
+    const name = `<a href="${esc(s.url)}" data-switch="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.name || s.url)}</a>`;
     const icon = typeof s.icon === 'string' && s.icon.startsWith('data:image/png;base64,') ? `<img class="swarm-icon" src="${esc(s.icon)}" alt="">` : '<span class="swarm-icon"></span>';
     const reg = REG_KEY[s.registration] ? esc(t(REG_KEY[s.registration])) : '';
     return `<div class="swarm-row">${icon}<div class="swarm-main"><div class="swarm-name">${name}</div><div class="swarm-desc">${esc(s.description || '')}</div>`

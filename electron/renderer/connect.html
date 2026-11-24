@@ -7,18 +7,19 @@
   :root { color-scheme: dark; }
   * { box-sizing: border-box; }
   body {
-    margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center;
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 0;
     background: #313338; color: #dbdee1;
     font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   }
   .card {
-    width: 420px; background: #2b2d31; border-radius: 12px; padding: 32px;
+    width: 520px; max-width: calc(100vw - 32px); background: #2b2d31; border-radius: 12px; padding: 32px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.4);
   }
   h1 { margin: 0 0 4px; font-size: 22px; color: #f2f3f5; }
+  h2 { margin: 24px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: #b5bac1; }
   p.sub { margin: 0 0 24px; color: #949ba4; font-size: 14px; }
   label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #b5bac1; margin-bottom: 6px; }
-  input {
+  input[type=text], input:not([type]) {
     width: 100%; padding: 10px 12px; margin-bottom: 16px; border-radius: 6px; border: none;
     background: #1e1f22; color: #dbdee1; font-size: 15px;
   }
@@ -28,22 +29,56 @@
     color: white; font-weight: 600; font-size: 15px; cursor: pointer;
   }
   button:hover { background: #0b7a70; }
+  button.small { width: auto; padding: 6px 12px; font-size: 13px; }
+  button.ghost { background: transparent; color: #949ba4; }
+  button.ghost:hover { background: #35373c; color: #dbdee1; }
+  #known { margin-bottom: 16px; }
   .error { color: #f23f42; font-size: 13px; margin: -8px 0 16px; min-height: 16px; }
   .hint { margin-top: 16px; font-size: 12px; color: #6d6f78; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; cursor: pointer; }
+  .row:hover { background: #35373c; }
+  .row .icon { width: 36px; height: 36px; border-radius: 8px; background: #1e1f22; flex: none; object-fit: cover; }
+  .row .main { min-width: 0; flex: 1; }
+  .row .name { font-weight: 600; color: #f2f3f5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .meta { font-size: 12px; color: #949ba4; overflow-wrap: anywhere; }
+  .badge { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: #1e1f22; }
+  .badge.open { color: #23a55a; } .badge.invite { color: #f0b232; } .badge.closed { color: #f23f43; }
+  .toggle { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; text-transform: none; font-weight: 400; color: #dbdee1; margin: 0; }
+  .toggle input { margin-top: 3px; }
+  .tracker { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 4px; }
+  .tracker code { flex: 1; overflow-wrap: anywhere; color: #b5bac1; }
+  .add { display: flex; gap: 8px; margin-top: 8px; }
+  .add input { margin: 0; flex: 1; }
 </style>
 </head>
 <body>
   <div class="card">
-    <h1>Connect to a MeshCrowd server</h1>
-    <p class="sub">Enter the address of the server you want to connect to.</p>
+    <h1 id="t-title">Connect to a MeshCrowd server</h1>
+    <p class="sub" id="t-sub">Enter the address of the server you want to connect to.</p>
+    <div id="known" hidden>
+      <h2 id="t-known">Your servers</h2>
+      <div id="known-list"></div>
+    </div>
     <form id="connect-form">
-      <label for="url">Server address</label>
+      <label for="url" id="t-addr">Server address</label>
       <input id="url" placeholder="https://192.168.1.10:8443" autofocus>
       <div class="error" id="error"></div>
-      <button type="submit">Connect</button>
+      <button type="submit" id="t-connect">Connect</button>
     </form>
-    <p class="hint">This is the same address you'd type into a browser to reach the MeshCrowd web client on that machine. Self-signed certificates are supported — you'll be asked to confirm trust on first connect.</p>
+    <p class="hint" id="t-hint">This is the same address you'd type into a browser to reach the MeshCrowd web client on that machine. Self-signed certificates are supported — you'll be asked to confirm trust on first connect.</p>
+    <h2 id="t-public">Public servers</h2>
+    <label class="toggle"><input type="checkbox" id="swarm-show"><span id="t-show">Show the public server list</span></label>
+    <p class="hint" id="t-privacy" style="margin-top:6px">Asking the trackers shows them your IP address. Off by default.</p>
+    <div id="swarm" hidden>
+      <div id="swarm-status" class="hint"></div>
+      <div id="swarm-list"></div>
+      <h2 id="t-trackers">Trackers</h2>
+      <div id="trackers"></div>
+      <div class="add"><input id="tracker-new" placeholder="https://tracker.example.com:19898"><button type="button" class="small" id="tracker-add">Add</button></div>
+      <div class="error" id="tracker-error" style="margin:6px 0 0"></div>
+    </div>
   </div>
+  <script src="swarm.js"></script>
   <script src="connect.js"></script>
 </body>
 </html>

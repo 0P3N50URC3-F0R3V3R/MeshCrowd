@@ -65,6 +65,12 @@ export function renderAuth(root) {
       const capSlot = root.querySelector('#captcha-slot');
       if (capSlot) { cap = createCaptcha(mode === 'register' ? 'register' : 'login'); cap.mount(capSlot); }
 
+      root.querySelectorAll('[data-switch]').forEach((a) => a.addEventListener('click', (e) => {
+        if (!window.dismeshClient?.switchServer) return;
+        e.preventDefault();
+        window.dismeshClient.switchServer(a.dataset.switch);
+      }));
+
       root.querySelector('#auth-lang')?.addEventListener('change', (e) => {
         setPreLoginLanguage(e.target.value);
         window.location.reload();
