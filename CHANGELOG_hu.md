@@ -3,6 +3,9 @@
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
 ### 2026-11-25
+#### Hozzáadva
+- Android alkalmazás 3.26: "Küldés a MeshCrowdnak". Az alkalmazás megjelenik más appok (böngésző, galéria, fájlkezelő) rendszer Megosztás menüjében: linkek, szöveg, képek, videók, hang és bármilyen fájl, akár egyszerre többet is. Megnyílik a "Küldés ide..." lap előnézettel, kereséssel, a bejelentkezett szerver privát üzeneteivel és írható szöveges csatornáival (legutóbbiak elöl, mindegyik avatárral vagy szerverikonnal), és egy opcionális megjegyzéssel. A fájlok a szokásos feltöltésen mennek át (a szerver feltöltési korlátja érvényes, és érthetően jelezzük), semmi nem megy el a Küldés gomb előtt, a Mégse nem küld semmit, és utána visszakerülsz abba az appba, ahonnan megosztottál. A négy legutóbbi úti cél Direct Share célként is megjelenik a rendszer megosztási lapján. Csak content:// fájlok fogadhatók, és az oldal csak a függőben lévő megosztás fájljait olvashatja. A telefonos weboldal megkapja a lapot (a szerver/web telepítése kell hozzá; a service worker gyorsítótár most v12).
+
 #### Módosítva
 - Az asztali kliensek (Electron és C#) már nem kérdezik, hogy maradj-e bejelentkezve: a bejelentkezés kijelentkezésig megmarad, újraindítás után is (mint Androidon). A korábbi "csak ez a munkamenet" válaszok "megmarad"-ként működnek.
 - Oldalak (sandbox mód, az alapértelmezett): a tárolt adatok korlátai jóval magasabbak, böngészős játékokhoz és eszközökhöz méretezve: 64 MB localStorage és cookie nézőnként és oldalanként (egy érték legfeljebb 16 MB, 100 000 bejegyzés, 180 cookie), 256 MB IndexedDB, és ötszörös írási keret. A megbízható oldalak módja nem változott, és alapból kikapcsolva marad.

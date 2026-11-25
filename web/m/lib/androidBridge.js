@@ -12,6 +12,11 @@ export function androidBridge() {
     setInCall(on) { if (typeof b.setInCall === 'function') b.setInCall(!!on); },
     setSpeaker(on) { if (typeof b.setSpeaker === 'function') b.setSpeaker(!!on); },
     hasCallSupport: typeof b.setInCall === 'function',
+    // "Send to MeshCrowd" (Android share target); older APKs lack these.
+    hasShareSupport: typeof b.takeShare === 'function',
+    takeShare() { try { return b.takeShare() || ''; } catch { return ''; } },
+    setShareTargets(list) { try { if (typeof b.setShareTargets === 'function') b.setShareTargets(JSON.stringify(list)); } catch { /* not in the app */ } },
+    finishShare() { try { b.finishShare(); } catch { /* not in the app */ } },
     // UnifiedPush (older APKs lack these).
     hasPushSupport: typeof b.pushEnable === 'function',
     pushDistributors() { try { return JSON.parse(b.pushDistributors()); } catch { return []; } },

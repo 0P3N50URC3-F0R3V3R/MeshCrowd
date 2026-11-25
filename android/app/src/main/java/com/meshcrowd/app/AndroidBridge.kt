@@ -79,6 +79,7 @@ class AndroidBridge(private val activity: MainActivity) {
 
     @JavascriptInterface
     fun changeServer() {
+        ShareShortcuts.clear(activity)
         activity.runOnUiThread { activity.startActivity(Intent(activity, SetupActivity::class.java).putExtra(SetupActivity.EXTRA_CHANGE, true)) }
     }
 
@@ -89,6 +90,7 @@ class AndroidBridge(private val activity: MainActivity) {
     @JavascriptInterface
     fun switchServer(url: String): Boolean {
         val origin = KnownServers.switchTarget(url, settings.knownServers) ?: return false
+        ShareShortcuts.clear(activity)
         if (origin == KnownServers.normalizeOrigin(settings.origin)) return false
         synchronized(this) {
             if (switchAsking) return false
@@ -96,6 +98,20 @@ class AndroidBridge(private val activity: MainActivity) {
         }
         activity.runOnUiThread { activity.confirmSwitchTo(origin) { synchronized(this) { switchAsking = false } } }
         return true
+    }
+
+    // "Send to MeshCrowd": the page asks for what another app shared (once), and says when it is done.
+    @JavascriptInterface
+    fun takeShare(): String = ShareStore.take()
+
+    @JavascriptInterface
+    fun setShareTargets(json: String) {
+        ShareShortcuts.publish(activity, json)
+    }
+
+    @JavascriptInterface
+    fun finishShare() {
+        activity.runOnUiThread { activity.finishShare() }
     }
 
     @JavascriptInterface

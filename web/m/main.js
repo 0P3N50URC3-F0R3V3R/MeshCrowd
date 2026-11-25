@@ -16,6 +16,7 @@ import { confirmSheet } from './components/bottomSheet.js';
 import { toast } from '../js/utils.js';
 import { installKeyboardSupport } from './lib/keyboard.js';
 import { mountCallBar } from './components/callBar.js';
+import { initShare } from './components/sharePicker.js';
 import { initCallSession } from './lib/callSession.js';
 import { getPref } from './lib/prefs.js';
 import { installReauthGate } from './lib/reauth.js';
@@ -117,6 +118,7 @@ async function boot() {
   };
   window.addEventListener('hashchange', openLink);
   openLink();
+  initShare();
   if (!parseDeepLink(location.hash) && getPref('startView', 'messages') === 'last') {
     try {
       const last = JSON.parse(getPref('lastChat', 'null'));

@@ -17,6 +17,9 @@ import android.webkit.SslErrorHandler
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
+import android.webkit.WebResourceResponse
+import android.provider.OpenableColumns
+import androidx.core.content.IntentCompat
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -37,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     private var offlineShown = false
     private var pendingAppUrl: String? = null
     private var loadedOrigin: String? = null
+    private var launchedByShare = false
 
     private val pickFiles = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val data = result.data
@@ -72,6 +76,7 @@ class MainActivity : AppCompatActivity() {
         // A login is kept until the user logs off (or leaves for another server): older "this session only" answers become "keep".
         KnownServers.find(settings.knownServers, settings.origin)?.takeIf { it.signIn != "keep" }?.let { settings.knownServers = KnownServers.setSignIn(settings.knownServers, it.url, "keep") }
         val invite = InviteLink.parse(intent?.dataString)
+        captureShare(intent)
         if (!settings.configured) {
             startActivity(setupIntent(invite))
             finish()
@@ -112,6 +117,60 @@ class MainActivity : AppCompatActivity() {
         val sameServer = invite != null && InviteLink.sameServer(invite, settings.origin)
         loadApp(intent?.getStringExtra(NotificationHelper.EXTRA_DEEP_LINK) ?: if (sameServer) InviteLink.hash(invite!!) else null)
         if (invite != null && !sameServer) confirmSwitchServer(invite)
+    }
+
+    private fun isShare(intent: Intent?) = intent?.action == Intent.ACTION_SEND || intent?.action == Intent.ACTION_SEND_MULTIPLE
+
+    // Reads what another app shared and parks it for the page (see ShareStore); the page picks the destination.
+    private fun captureShare(intent: Intent?) {
+        if (!isShare(intent) || intent == null) return
+        val streams = ArrayList<String>()
+        if (intent.action == Intent.ACTION_SEND) {
+            IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let { streams.add(it.toString()) }
+        } else {
+            IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.forEach { streams.add(it.toString()) }
+        }
+        val clip = intent.clipData
+        if (streams.isEmpty() && clip != null) for (i in 0 until clip.itemCount) clip.getItemAt(i).uri?.let { streams.add(it.toString()) }
+        if (streams.isEmpty()) intent.data?.let { streams.add(it.toString()) }
+        val item = ShareParser.parse(intent.action, intent.type, intent.getCharSequenceExtra(Intent.EXTRA_TEXT), intent.getCharSequenceExtra(Intent.EXTRA_SUBJECT), streams) ?: return
+        ShareStore.set(item, ::shareMeta, intent.getStringExtra(Intent.EXTRA_SHORTCUT_ID))
+        launchedByShare = true
+    }
+
+    private fun shareMeta(uri: String): Triple<String, String, Long> {
+        var name = Uri.parse(uri).lastPathSegment ?: "file"
+        var size = -1L
+        try {
+            contentResolver.query(Uri.parse(uri), arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { c ->
+                if (c.moveToFirst()) {
+                    c.getString(0)?.let { name = it }
+                    if (!c.isNull(1)) size = c.getLong(1)
+                }
+            }
+        } catch (_: Exception) { /* a provider that does not answer: serve the file without a size */ }
+        val mime = try { contentResolver.getType(Uri.parse(uri)) } catch (_: Exception) { null }
+        return Triple(name.take(200), mime.orEmpty(), size)
+    }
+
+    // The page is done with the share (sent or cancelled): go back to the app that shared.
+    fun finishShare() {
+        ShareStore.clear()
+        if (launchedByShare) { launchedByShare = false; moveTaskToBack(true) }
+    }
+
+    private fun serveSharedFile(url: String): WebResourceResponse? {
+        val origin = settings.origin ?: return null
+        val prefix = "$origin/__mcshare/"
+        if (!url.startsWith(prefix)) return null
+        val notFound = WebResourceResponse("text/plain", "utf-8", 404, "Not Found", mapOf("Cache-Control" to "no-store"), java.io.ByteArrayInputStream(ByteArray(0)))
+        val file = ShareStore.fileFor(url.removePrefix(prefix).substringBefore('?')) ?: return notFound
+        val stream = try { contentResolver.openInputStream(Uri.parse(file.uri)) } catch (_: Exception) { null } ?: return notFound
+        val headers = HashMap<String, String>()
+        headers["Cache-Control"] = "no-store"
+        if (file.size >= 0) headers["Content-Length"] = file.size.toString()
+        headers["Content-Disposition"] = "inline; filename*=UTF-8''" + Uri.encode(file.name)
+        return WebResourceResponse(file.mime, null, 200, "OK", headers, stream)
     }
 
     fun confirmSwitchTo(origin: String, done: () -> Unit) {
@@ -185,6 +244,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        if (isShare(intent)) {
+            captureShare(intent)
+            if (::webView.isInitialized) webView.evaluateJavascript("window.dispatchEvent(new Event('mc-share'))", null)
+            return
+        }
         // Setup finished for a different server while this activity was kept: show that server, not the old page.
         if (::webView.isInitialized && settings.configured && settings.origin != loadedOrigin) {
             loadApp(intent.getStringExtra(NotificationHelper.EXTRA_DEEP_LINK))
@@ -306,6 +370,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private inner class ShellClient : WebViewClient() {
+        override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
+            if (request.method == "GET") serveSharedFile(request.url.toString()) else null
+
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val url = request.url
             val origin = settings.origin ?: return false

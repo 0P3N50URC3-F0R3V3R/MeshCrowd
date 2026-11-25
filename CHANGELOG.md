@@ -3,6 +3,9 @@
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
 ### 2026-11-25
+#### Added
+- Android app 3.26: "Send to MeshCrowd". The app appears in the system Share menu of other apps (browser, gallery, files): links, text, images, videos, audio and any file, also several at once. A "Send to..." sheet opens with a preview, a search box and the direct messages and writable text channels of the server you are logged in to (recent destinations first, each with its avatar or server icon) plus an optional note. Files go through the normal upload (the server's upload limit applies and is explained), nothing is sent until you tap Send, Cancel sends nothing, and afterwards you land back in the app you shared from. Your four most recent destinations also appear as Direct Share targets in the system share sheet. Only content:// files are accepted and only the pending share's files are readable by the page. The phone web UI gets the sheet (deploy the server/web for it; the service worker cache is now v12).
+
 #### Changed
 - Desktop clients (Electron and C#) no longer ask whether to stay signed in: a login is kept until you log off, also across restarts (same as Android). Earlier "this session only" answers are treated as "keep".
 - Sites (sandbox mode, the default): the stored-data caps are much higher, sized for browser games and tools: 64 MB local storage and cookies per viewer and site (single value 16 MB, 100,000 entries, 180 cookies), 256 MB IndexedDB, and 5 times the write allowance. Trusted sites mode is unchanged and stays off by default.

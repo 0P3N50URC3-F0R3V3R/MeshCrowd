@@ -345,3 +345,19 @@ button.m-att-file { width: 100%; border: 0; text-align: left; font: inherit; }
 @keyframes nfx-pulse { 50% { opacity: 0.45; } }
 @keyframes nfx-flicker { 0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; } 20%, 24%, 55% { opacity: 0.6; } }
 @keyframes nfx-wave { 50% { transform: translateY(-2px); } }
+
+/* Send to MeshCrowd (Android share target) */
+.m-share-preview { margin: 4px 0 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg-hover); max-height: 24vh; overflow: auto; text-align: left; }
+.m-share-subject { font-weight: 600; margin-bottom: 4px; overflow-wrap: anywhere; }
+.m-share-text { color: var(--text-secondary); overflow-wrap: anywhere; white-space: pre-wrap; }
+.m-share-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.m-share-thumb { max-width: 84px; max-height: 84px; border-radius: 8px; object-fit: cover; }
+#m-share-q { width: 100%; box-sizing: border-box; margin-bottom: 4px; }
+.m-share-list { max-height: 36vh; overflow-y: auto; text-align: left; }
+.m-share-list .m-row { width: 100%; text-align: left; background: none; border: 0; color: inherit; font: inherit; }
+.m-share-list .m-row.selected { background: var(--bg-hover); }
+.m-share-check { color: var(--brand); font-weight: 700; }
+#m-share-note { width: 100%; box-sizing: border-box; margin: 8px 0; resize: none; }
+#m-share-send { width: 100%; margin: 4px 0 8px; }
+.m-share-srv { flex: 0 0 32px; width: 32px; height: 32px; border-radius: 10px; overflow: hidden; display: block; background: var(--bg-hover); font-size: 13px; font-weight: 700; color: #fff; }
+.m-share-list .avatar { flex: 0 0 auto; }
