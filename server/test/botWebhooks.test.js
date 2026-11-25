@@ -81,7 +81,7 @@ test('a mention is delivered with a valid HMAC signature and the documented payl
   assert.equal(h.json.server.id, s.sid);
   assert.equal(h.json.message.content, `@${s.username} what's up?`);
   assert.equal(h.json.message.author.id, s.owner);
-  assert.equal(botStore.getBotRow(s.bot.id).webhook_last_status, 'ok 200');
+  assert.ok(await waitFor(() => botStore.getBotRow(s.bot.id).webhook_last_status === 'ok 200'), 'the outcome is recorded after the response');
 });
 
 test('scope "mention" ignores ordinary chatter, scope "all" hears everything in channels it can view', async () => {
@@ -164,7 +164,7 @@ test('a 5xx is retried and then succeeds; a 4xx is not retried', async () => {
   assert.ok(await waitFor(() => hits.length === 1));
   await new Promise((r) => setTimeout(r, 150));
   assert.equal(hits.length, 1);
-  assert.equal(botStore.getBotRow(s.bot.id).webhook_last_status, 'failed: HTTP 400');
+  assert.ok(await waitFor(() => botStore.getBotRow(s.bot.id).webhook_last_status === 'failed: HTTP 400'), 'the outcome is recorded after the response');
 });
 
 test('a server admin cannot aim a webhook at localhost, a site admin can', async () => {
