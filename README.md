@@ -19,6 +19,10 @@ Everything about MeshCrowd (features, screenshots, installation, configuration, 
 
 To **use** MeshCrowd, download the ready-made portable packages from the [Releases](https://github.com/0P3N50URC3-F0R3V3R/MeshCrowd/releases) page: the server, the Windows desktop client and the Android app. Extract, double-click `start-server.bat`, done.
 
+## Public server list (MeshSwarm)
+
+Servers can optionally advertise themselves to a **MeshSwarm tracker**, and the login page of the clients then lists the public servers. There is no central tracker: you run your own, then add its address in the server's Admin Panel and in the clients. MeshSwarm lives in its own repository, with no releases: just check out [MeshSwarm](https://github.com/0P3N50URC3-F0R3V3R/MeshSwarm) and run it. The runtimes are included.
+
 ## This repository is the source code only
 
 The **runtimes are not in this repository.** The bundled Node.js, the portable PHP used by Sites, the Electron desktop runtime, the vendored `node_modules` and the built Android APKs are only published in the [Releases](https://github.com/0P3N50URC3-F0R3V3R/MeshCrowd/releases). The `runtime/`, `node_modules/` and `data/` folders in the GitHub repository are empty on purpose. (A downloaded release package already contains all of it: just run `start-server.bat` / `start-server.sh`.)
