@@ -439,7 +439,7 @@ up to 1 MB and 4096 px; the server shrinks it to 128x128 px and 16 KB itself). T
 registration badge (open, invite only, closed). Stored in `config.json` (`instance`) and `data/instance/`.
 
 **Advertise** (off by default) announces a signed advert (name, description, icon, address, registration state) to one or
-more **MeshSwarm trackers** (default `https://nexnet.hu:19898`, editable). The login page then lists the public servers
+more **MeshSwarm trackers** (none by default, you add your own). The login page then lists the public servers
 the trackers return, with last online and last updated times; a click switches to that server. Off means nothing is sent
 and the list is hidden. Unreachable trackers never affect the server, an address trackers would reject is reported in the
 panel, and removed trackers get a signed delete. Desktop clients (Electron, C#) and the Android app remember the servers

@@ -27,7 +27,7 @@ const CONFIG_PATH = path.join(app.getPath('userData'), 'dismesh-client-config.js
 const DEFAULT_CLIENT_CONFIG = {
   serverUrl: null, trustedFingerprints: {}, closeToTray: false, startMinimized: false, startWithWindows: false,
   trayIconColor: null, trayBadgeColors: {}, windowBounds: null, handleInviteLinks: true,
-  knownServers: [], swarm: { show: false, trackers: ['https://nexnet.hu:19898'] },
+  knownServers: [], swarm: { show: false, trackers: [] },
 };
 
 // A hand-edited or older config file may lack keys the code dereferences unguarded (trustedFingerprints

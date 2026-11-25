@@ -852,7 +852,7 @@ public sealed class MainForm : Form
 
     private JsonNode SetSwarmSettings(JsonObject? settings)
     {
-        if (_cfg.Data["swarm"] is not JsonObject swarm) _cfg.Data["swarm"] = swarm = new JsonObject { ["show"] = false, ["trackers"] = new JsonArray("https://nexnet.hu:19898") };
+        if (_cfg.Data["swarm"] is not JsonObject swarm) _cfg.Data["swarm"] = swarm = new JsonObject { ["show"] = false, ["trackers"] = new JsonArray() };
         if (!FromLocalPage() || settings is null) return swarm.DeepClone();
         if (settings["show"] is JsonValue sv && sv.TryGetValue<bool>(out var show)) swarm["show"] = show;
         if (settings["trackers"] is JsonArray raw)

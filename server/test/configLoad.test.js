@@ -185,7 +185,7 @@ test('instance and swarm defaults exist, merge per key, and the swarm interval h
   assert.equal(cfg.instance.name, 'Home');
   assert.equal(cfg.instance.description, '');
   assert.equal(cfg.swarm.advertise, true);
-  assert.deepEqual(cfg.swarm.trackers, ['https://nexnet.hu:19898']);
+  assert.deepEqual(cfg.swarm.trackers, []);
   assert.equal(cfg.swarm.intervalSeconds, 300);
   fs.rmSync(config.CONFIG_PATH, { force: true });
   assert.equal(config.load().swarm.advertise, false);

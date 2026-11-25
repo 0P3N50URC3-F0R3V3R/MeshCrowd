@@ -122,6 +122,6 @@ $('tracker-add').addEventListener('click', async () => {
 (async () => {
   const [known, config] = await Promise.all([window.dismeshClient.getKnownServers(), window.dismeshClient.getConfig()]);
   renderKnown(known || []);
-  swarm = { show: false, trackers: ['https://nexnet.hu:19898'], ...((config && config.swarm) || {}) };
+  swarm = { show: false, trackers: [], ...((config && config.swarm) || {}) };
   applySwarmVisibility();
 })();
