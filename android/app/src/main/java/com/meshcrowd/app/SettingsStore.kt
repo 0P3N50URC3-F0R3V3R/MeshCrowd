@@ -60,6 +60,6 @@ class SettingsStore(context: Context) {
     }
 
     companion object {
-        val DEFAULT_TRACKERS = emptyList()
+        val DEFAULT_TRACKERS = emptyList<String>()
     }
 }
