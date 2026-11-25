@@ -8,9 +8,15 @@ All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https
 - Sites (sandbox mode, the default): the stored-data caps are much higher, sized for browser games and tools: 64 MB local storage and cookies per viewer and site (single value 16 MB, 100,000 entries, 180 cookies), 256 MB IndexedDB, and 5 times the write allowance. Trusted sites mode is unchanged and stays off by default.
 - Instance icon: the server now resizes the uploaded PNG itself to at most 128x128 pixels and 16 KB (aspect ratio kept, transparency kept, metadata such as text chunks dropped), so any non-interlaced PNG up to 1 MB and 4096x4096 works, not only ones already that small. JPEG, WebP and GIF are still converted to PNG by the Admin Panel first. Interlaced PNGs are refused with a clear message.
 
+#### Fixed
+- Sites: the page-side storage shims still enforced the old caps (1 MB local storage, 20 MB IndexedDB), so the raised server limits did nothing for real pages; the shims now take their quotas from the server. A page can store 5 MB of local storage and 3 MB of IndexedDB (tested in a real site).
+- Login page: the public list is asked once more a few seconds later when it comes back empty, and the first request after a server restart waits briefly for the first tracker pass, so the first visitor does not see an empty list.
+- Desktop clients (Electron and C#): the "Switch server" confirmation is now in Hungarian on a Hungarian system.
+- Android: the public server list on the setup screen is part of the page scroll again (a separate scroll box inside the page did not respond to touch).
+
 #### Added
 - Sites: a member can clear what a site stored for them (local storage, cookies, IndexedDB) with "Clear site data", in the site settings and in the site's right-click menu (also for non-editors). In trusted mode the site's IndexedDB databases in the app are removed too.
-- The public server list is scrollable on the login page, the desktop connect screen (also the remembered-servers list) and the Android setup screen, so a long list does not push the rest of the page away.
+- The public server list is scrollable on the login page, the desktop connect screen (also the remembered-servers list) and (as part of the page) the Android setup screen, so a long list does not push the rest of the page away.
 
 ### 2026-11-24
 #### Added

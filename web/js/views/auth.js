@@ -35,7 +35,15 @@ export function renderAuth(root) {
       website = c.downloads?.website || '';
       regMode = c.registrationMode || 'open';
       if (c.instance) instance = c.instance;
-      if (c.swarm && c.swarm.enabled) api.swarmList().then((s) => { swarm = s; if (mode === 'login' || mode === 'register') render(); }).catch(() => {});
+      if (c.swarm && c.swarm.enabled) {
+        // Just after a server restart the list can still be empty: ask once more shortly after.
+        const load = (retry) => api.swarmList().then((s) => {
+          swarm = s;
+          if (mode === 'login' || mode === 'register') render();
+          if (retry && s.enabled && !s.servers.length) setTimeout(() => load(false), 5000);
+        }).catch(() => {});
+        load(true);
+      }
       if (regMode === 'closed' && mode === 'register') mode = 'login';
       if (mode === 'login' || mode === 'register') render();
     }).catch(() => {});

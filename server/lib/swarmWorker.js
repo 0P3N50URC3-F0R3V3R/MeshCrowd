@@ -233,6 +233,7 @@ function createWorker({ fetchImpl = safeFetch, now = Date.now, load = config.loa
     getList,
     getStatus,
     getProblem: () => problem,
+    hasData: () => [...trackers.values()].some((st) => st.lastSuccess > 0),
   };
 }
 

@@ -581,10 +581,14 @@ ipcMain.handle('dismesh:switch-server', async (event, rawUrl) => {
   if (!origin || origin === knownServers.normalizeOrigin(clientConfig.serverUrl)) return { ok: false };
   switchPending = true;
   try {
+    const hu = app.getLocale().toLowerCase().startsWith('hu');
+    const to = new URL(origin).host;
+    const from = new URL(clientConfig.serverUrl).host;
     const { response } = await dialog.showMessageBox(mainWindow, {
-      type: 'question', buttons: ['Cancel', 'Switch'], defaultId: 0, cancelId: 0,
-      title: 'Switch server', message: `Switch to ${new URL(origin).host}?`,
-      detail: `You will leave ${new URL(clientConfig.serverUrl).host}. Your sign-in there is kept.`,
+      type: 'question', buttons: hu ? ['Mégse', 'Váltás'] : ['Cancel', 'Switch'], defaultId: 0, cancelId: 0,
+      title: hu ? 'Szerverváltás' : 'Switch server',
+      message: hu ? `Átváltasz a(z) ${to} szerverre?` : `Switch to ${to}?`,
+      detail: hu ? `Elhagyod a(z) ${from} szervert. A bejelentkezésed ott megmarad.` : `You will leave ${from}. Your sign-in there is kept.`,
     });
     if (response !== 1) return { ok: false };
     clientConfig.serverUrl = `${origin}/`;

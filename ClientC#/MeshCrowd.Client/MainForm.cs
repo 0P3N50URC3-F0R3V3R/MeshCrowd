@@ -772,7 +772,11 @@ public sealed class MainForm : Form
         _switchPending = true;
         try
         {
-            int choice = Ask("Switch server", $"Switch to {new Uri(origin).Authority}?", $"You will leave {new Uri(current).Authority}. Your sign-in there is kept.", ["Cancel", "Switch"], false);
+            bool hu = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "hu";
+            string to = new Uri(origin).Authority; string from = new Uri(current).Authority;
+            int choice = hu
+                ? Ask("Szerverváltás", $"Átváltasz a(z) {to} szerverre?", $"Elhagyod a(z) {from} szervert. A bejelentkezésed ott megmarad.", ["Mégse", "Váltás"], false)
+                : Ask("Switch server", $"Switch to {to}?", $"You will leave {from}. Your sign-in there is kept.", ["Cancel", "Switch"], false);
             if (choice != 1) return new JsonObject { ["ok"] = false };
             _cfg.ServerUrl = origin + "/";
             _cfg.Save();

@@ -109,6 +109,16 @@ test('the admin view says when the address cannot be advertised', async () => {
   appConfig.save({ useHttps: true });
 });
 
+test('the first list request waits briefly for the first tracker pass instead of answering with a cold, empty list', async () => {
+  appConfig.save({ swarm: { advertise: true, trackers: [trackerUrl], intervalSeconds: 300 } });
+  const fresh = require('../lib/swarmWorker').createWorker();
+  const before = fresh.getList().servers.length;
+  assert.equal(before, 0);
+  assert.equal(fresh.hasData(), false);
+  await fresh.runPass();
+  assert.equal(fresh.hasData(), true);
+});
+
 test('an unreachable tracker never breaks the list route', async () => {
   appConfig.save({ swarm: { advertise: true, trackers: ['http://127.0.0.1:1'] } });
   await admin('POST', '/api/admin/swarm/announce');

@@ -41,7 +41,7 @@ function rewriteHtml(html, prefix, extra = '') {
 const UNSAFE_IN_SCRIPT = new RegExp('[<' + String.fromCharCode(0x2028, 0x2029) + ']', 'g');
 
 function shimTags(prefix, snap, html) {
-  const data = JSON.stringify({ p: prefix, l: snap.local, c: snap.cookies, idb: snap.idb })
+  const data = JSON.stringify({ p: prefix, l: snap.local, c: snap.cookies, idb: snap.idb, q: snap.quota, iq: snap.idbQuota })
     .replace(UNSAFE_IN_SCRIPT, (c) => String.fromCharCode(92) + 'u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
   const idb = /<script[\s>]/i.test(html) ? `<script src="${prefix}/__idb.js"></script>` : '';
   return `<script>window.__mcSite=${data}</script><script src="${prefix}/__shim.js"></script>${idb}`;

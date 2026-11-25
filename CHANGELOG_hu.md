@@ -6,11 +6,17 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 #### Módosítva
 - Az asztali kliensek (Electron és C#) már nem kérdezik, hogy maradj-e bejelentkezve: a bejelentkezés kijelentkezésig megmarad, újraindítás után is (mint Androidon). A korábbi "csak ez a munkamenet" válaszok "megmarad"-ként működnek.
 - Oldalak (sandbox mód, az alapértelmezett): a tárolt adatok korlátai jóval magasabbak, böngészős játékokhoz és eszközökhöz méretezve: 64 MB localStorage és cookie nézőnként és oldalanként (egy érték legfeljebb 16 MB, 100 000 bejegyzés, 180 cookie), 256 MB IndexedDB, és ötszörös írási keret. A megbízható oldalak módja nem változott, és alapból kikapcsolva marad.
-- Példányikon: a szerver maga méretezi át a feltöltött PNG-t legfeljebb 128x128 pixelre és 16 KB-ra (az oldalarány és az átlátszóság megmarad, a metaadatok, például szövegblokkok, törlődnek), így bármilyen nem átlapolt, legfeljebb 1 MB és 4096x4096-os PNG megfelel, nem csak az eleve ilyen kicsik. A JPEG, WebP és GIF képeket továbbra is az Admin panel alakítja PNG-vé. Az átlapolt PNG-ket érthető üzenettel elutasítja.
+- Példányikon: a szerver maga méretezi át a feltöltött PNG-t legfeljebb 128x128 pixelre és 16 KB-ra (az oldalarány és az átlátszóság megmarad, a metaadatok, például szövegblokkok, törlődnek), így bármilyen nem átlapolt, legfeljebb 1 MB és 4096x4096-os PNG megfelel, nem csak az eleve ilyen kicsik. A JPEG, WebP és GIF képeket továbbra is az Admin panel alakítja PNG-vé. Az átlapolt PNG-ket érthető üzenettel elutasítja.#### Javítva
+- Oldalak: az oldalon futó tárolási rétegek még a régi korlátokat (1 MB localStorage, 20 MB IndexedDB) érvényesítették, ezért a megemelt szerverkorlátok a valódi oldalakon nem számítottak; most a korlátokat a szervertől kapják. Egy oldal 5 MB localStorage-t és 3 MB IndexedDB-t tud tárolni (valódi oldalon tesztelve).
+- Bejelentkezési oldal: ha a nyilvános lista üresen érkezik, néhány másodperc múlva még egyszer lekéri, és a szerver újraindítása utáni első kérés megvárja az első tracker-lekérdezést, így az első látogató nem lát üres listát.
+- Asztali kliensek (Electron és C#): a "Szerverváltás" megerősítés magyar rendszeren magyarul jelenik meg.
+- Android: a nyilvános szerverlista a beállítási képernyőn újra az oldal görgetésének része (az oldalon belüli külön görgethető doboz nem reagált az érintésre).
+
+
 
 #### Hozzáadva
 - Oldalak: a tag törölheti, amit egy oldal neki eltárolt (localStorage, cookie, IndexedDB) az "Oldaladatok törlése" gombbal, az oldal beállításaiban és a jobb gombos menüben (nem szerkesztőknek is). Megbízható módban az oldal IndexedDB adatbázisai az alkalmazásban is törlődnek.
-- A nyilvános szerverlista görgethető a bejelentkezési oldalon, az asztali csatlakozási képernyőn (a megjegyzett szerverek listája is) és az Android beállítási képernyőn, így a hosszú lista nem tolja el az oldal többi részét.
+- A nyilvános szerverlista görgethető a bejelentkezési oldalon, az asztali csatlakozási képernyőn (a megjegyzett szerverek listája is) és (az oldal részeként) az Android beállítási képernyőn, így a hosszú lista nem tolja el az oldal többi részét.
 
 ### 2026-11-24
 #### Hozzáadva

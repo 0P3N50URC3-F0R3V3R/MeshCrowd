@@ -61,7 +61,7 @@ function snapshot(siteId, userId) {
   for (const r of db.prepare("SELECT key, value FROM site_storage WHERE site_id = ? AND user_id = ? AND kind = 'local'").all(siteId, userId)) local[r.key] = r.value;
   const cookies = db.prepare("SELECT key AS n, value AS v, path AS p, expires AS e FROM site_storage WHERE site_id = ? AND user_id = ? AND kind = 'cookie' AND http_only = 0").all(siteId, userId);
   const idb = db.prepare('SELECT bytes FROM site_idb WHERE site_id = ? AND user_id = ?').get(siteId, userId);
-  return { local, cookies, idb: idb ? idb.bytes : 0 };
+  return { local, cookies, idb: idb ? idb.bytes : 0, quota: LIMITS.maxBytes, idbQuota: LIMITS.maxIdbBytes };
 }
 
 const UPSERT = db.prepare(

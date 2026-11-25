@@ -7,7 +7,7 @@
   if (!S) return;
   var P = S.p;
   var ENDPOINT = P + '/__storage';
-  var QUOTA = 1000000;
+  var QUOTA = S.q || 1000000;
 
   var queue = [];
   var timer = 0;

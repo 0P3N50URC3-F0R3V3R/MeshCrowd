@@ -271,3 +271,13 @@ test('trusted sites mode: no sandbox in the CSP and no shims; default mode is sa
   assert.doesNotMatch(html, /__shim\.js|__mcSite/);
   assert.match(html, /__site\.js/);
 });
+
+test('the page shims get their quotas from the server limits, not from hard-coded numbers', () => {
+  const { shimTags } = require('../lib/siteRewrite');
+  const tags = shimTags('/site/1/~t', st.snapshot(siteA, alice), '<script>1</script>');
+  const data = JSON.parse(/window\.__mcSite=(\{.*?\})<\/script>/.exec(tags)[1]);
+  assert.equal(data.q, st.LIMITS.maxBytes);
+  assert.equal(data.iq, st.LIMITS.maxIdbBytes);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'assets', 'site-shim.js'), 'utf8'), /S\.q/);
+  assert.match(fs.readFileSync(path.join(__dirname, '..', 'assets', 'site-idb.js'), 'utf8'), /\.iq/);
+});
