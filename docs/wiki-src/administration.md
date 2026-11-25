@@ -39,6 +39,10 @@ The **Instance** tab of the Admin Panel gives your server an identity: a **name*
 
 **Advertise** (off by default) lets the server announce itself to one or more **MeshSwarm trackers** (default `https://nexnet.hu:19898`, the list is editable). The advert (name, description, icon, address and registration state) is signed with the server's key; the first key to claim an address owns it. When it is on, the login page lists the public servers the trackers return, with last online and last updated times, and clicking one opens it. When it is off nothing is sent and the list is hidden. The panel reports an address trackers would reject (no HTTPS, empty `publicHost`), and an unreachable tracker never affects the server. A tracker you remove, or advertising you switch off, gets a signed delete. Trackers are a separate app (MeshSwarm, with its own README); the server works the same without any.
 
+![The Instance tab of the Admin Panel](../assets/img/admin-instance.jpg)
+
+![The login page with the instance name, logo, registration badge and public server list](../assets/img/login-instance.jpg)
+
 ## Attachments
 
 Under **Admin, Overview** you can lower the upload size limit at runtime (never above `maxUploadMb` in the configuration) and optionally restrict uploads to an allowlist of extensions such as `.png, .jpg, .pdf`. Executables, HTML and SVG are always blocked, and files are served as downloads under a sandboxing Content-Security-Policy so an upload can never run as script in the app's origin.

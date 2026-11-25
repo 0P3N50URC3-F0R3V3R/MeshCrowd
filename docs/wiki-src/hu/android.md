@@ -41,6 +41,8 @@ Koppints egy úti célra, majd a **Küldés** gombra. Addig semmi nem megy el, a
 
 Csak azokat a fájlokat olvassa az app, amelyeket a megosztó alkalmazás átad, és csak az éppen látott megosztáshoz.
 
+![A Küldés ide... lap](../assets/img/m-share.jpg)
+
 ## Mi működik a telefonon
 
 A telefonos felület ugyanazokat a funkciókat fedi le, mint az asztali:

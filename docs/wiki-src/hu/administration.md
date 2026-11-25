@@ -39,6 +39,10 @@ Az adminpanel **Példány** füle identitást ad a szerverednek: **név**, **le�
 
 A **Hirdetés** (alapból ki) lehetővé teszi, hogy a szerver bejelentkezzen egy vagy több **MeshSwarm követőnél** (alapból `https://nexnet.hu:19898`, a lista szerkeszthető). A hirdetést (név, leírás, ikon, cím és regisztrációs állapot) a szerver kulcsa írja alá; egy címet az a kulcs birtokol, amelyik először lefoglalta. Bekapcsolva a bejelentkezési oldal felsorolja a követők által visszaadott nyilvános szervereket az utolsó online és az utolsó frissítés idejével, és egyre kattintva megnyílik. Kikapcsolva semmi nem megy ki, és a lista el van rejtve. A panel jelzi, ha egy címet a követők elutasítanának (nincs HTTPS, üres `publicHost`), és egy elérhetetlen követő sosem érinti a szervert. Az eltávolított követő vagy a kikapcsolt hirdetés aláírt törlést kap. A követők külön alkalmazás (MeshSwarm, saját README-vel); a szerver nélkülük is ugyanúgy működik.
 
+![Az adminpanel Példány füle](../assets/img/admin-instance.jpg)
+
+![A bejelentkezési oldal a példány nevével, logójával, regisztrációs jelvényével és a nyilvános szerverlistával](../assets/img/login-instance.jpg)
+
 ## Mellékletek
 
 Az **Admin, Áttekintés** alatt futás közben csökkentheted a feltöltési méretkorlátot (a konfiguráció `maxUploadMb` értéke fölé sosem), és opcionálisan engedélyezőlistára korlátozhatod a feltöltéseket olyan kiterjesztésekkel, mint `.png, .jpg, .pdf`. A futtathatók, a HTML és az SVG mindig tiltottak, a fájlokat pedig letöltésként, homokozó Content-Security-Policy alatt szolgálja ki a rendszer, így a feltöltés sosem futhat szkriptként az alkalmazás eredetében.

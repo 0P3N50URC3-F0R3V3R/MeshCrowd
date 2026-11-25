@@ -41,6 +41,8 @@ Tap a destination and **Send**. Nothing is sent before that, **Cancel** (or tapp
 
 Only files that the sharing app hands over are read, and only for the share you are looking at.
 
+![The Send to... sheet](../assets/img/m-share.jpg)
+
 ## What works on the phone
 
 The phone interface covers the same features as the desktop one:

@@ -55,7 +55,7 @@ export function renderInstanceTab(inner) {
       <button class="btn btn-primary" id="inst-save">${t('common.save')}</button>
       <div class="divider"></div>
       <div class="field"><label>${t('admin.instance.logoLabel')}</label>
-        ${profile.hasLogo ? `<img src="/instance/logo?t=${Date.now()}" style="max-height:64px;max-width:240px;display:block;margin-bottom:8px">` : ''}
+        ${profile.hasLogo ? `<img src="/instance/logo?t=${Date.now()}" style="max-height:64px;max-width:240px;width:auto;height:auto;object-fit:contain;display:block;margin:0 auto 8px 0">` : ''}
         <input type="file" id="inst-logo" accept="image/png,image/jpeg,image/webp,image/gif">
         ${profile.hasLogo ? `<button class="btn btn-ghost btn-sm" id="inst-logo-rm">${t('common.remove')}</button>` : ''}
         <div class="hint">${t('admin.instance.logoHint')}</div></div>
