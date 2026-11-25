@@ -21,7 +21,7 @@ Choose **Online**, **Idle**, **Do not disturb** or **Invisible**, and add a cust
 
 ## Themes
 
-Every member picks their own look under **Settings, Appearance**. Start with a preset and adjust the colors, or build your own:
+Every member picks their own look under **Settings, Appearance**. Start with a preset and adjust the colors (every color label has a tooltip that says what it colors), or build your own:
 
 - **Presets**: MeshCrowd Dark, MeshCrowd Light, Midnight Purple, Forest, Sunset and High Contrast.
 - **Colors** for the brand, the rail, the sidebar, the chat background and the text.
@@ -38,7 +38,7 @@ Themes are validated to be plain colors and a font choice. They never carry arbi
 
 ## Layout
 
-Drag the edges of the channel list and the member list to resize them; the sizes are saved with your account. The server rail can be arranged with folders.
+Drag the edges of the channel list and the member list to resize them; the sizes are saved with your account. The server rail can be arranged with folders. On the phone layout of a wide screen, a hamburger button at the top left of the channel pane hides or shows the server list, and the choice is remembered. Animated avatars (GIF, APNG, WebP) stay on their first frame in chat, member lists and voice rooms and only move in the profile panel and the profile editor.
 
 ## When you open MeshCrowd
 

@@ -459,6 +459,21 @@ Content is proxied live via RPC; no local copies.
 **Rate limits** (per user): 600/min GET, 60/min writes (POST/PATCH/DELETE). All calls fan out via RPC 
 to the peer; failures (403, 404, 429) are passed through; 502 if peer unreachable.
 
+## Instance profile and MeshSwarm
+
+Admin routes need the Site Administrator permission (`server/routes/admin.js`, `server/routes/swarm.js`).
+
+| Method & path | Body | Notes |
+|---|---|---|
+| `GET /api/admin/instance` | | `{name, description, hasLogo, hasIcon}` |
+| `PATCH /api/admin/instance` | `{name?, description?}` | Live. |
+| `POST /api/admin/instance/logo`, `/icon` | image upload | Logo: PNG, JPEG, WebP or GIF. Icon: non-interlaced PNG up to 1 MB and 4096 px, resized server-side to 128 px and 16 KB. |
+| `DELETE /api/admin/instance/logo`, `/icon` | | Removes the image. |
+| `GET /api/admin/swarm` | | `{advertise, trackers, intervalSeconds, status, problem}`; `problem` names an address trackers would reject. |
+| `PATCH /api/admin/swarm` | `{advertise?, trackers?}` | `trackers` must be `https://` addresses. Removed trackers get a signed delete; advertising off sends deletes. |
+| `POST /api/admin/swarm/announce` | | Runs a pass now. |
+| `GET /api/swarm/list` | | Public, rate limited (60/min). The servers returned by the trackers (verified adverts) when advertising is on, otherwise empty. |
+
 ## Misc
 
 - `GET /api/voice/ice` — signed-in users; `{iceServers, ttlMs, builtIn}`: the operator's external ICE servers plus, when the
@@ -564,10 +579,11 @@ JSON, session cookie auth. "Editor" means the Site owner or a user with `MANAGE_
 
 | Method & path | Body / query | Notes |
 |---|---|---|
-| `POST /api/sites` | `{name, description?}` | Site staff only. Creates a public auto-join Site, adds every active user as a member, writes a starter `index.php`. `201 {server}`. |
+| `POST /api/sites` | `{name, description?, mobile?}` | Site staff only. Creates a public auto-join Site, adds every active user as a member, writes a starter `index.php`. `201 {server}`. |
 | `GET /api/sites/runtime` | | Site staff only. PHP status `{ok, reason?, version?, detail?}`. |
 | `GET /api/sites/:id` | | Members. `{server, canEdit, origins}`. |
-| `PATCH /api/sites/:id` | `{name?, description?, origins?}` | Editors. `origins` is a list of `https://host[:port]` origins (no wildcard, path, or credentials), canonicalised and de-duplicated, at most 20. Pushes `server_update` to members. |
+| `PATCH /api/sites/:id` | `{name?, description?, origins?, mobile?}` | Editors. `origins` is a list of `https://host[:port]` origins (no wildcard, path, or credentials), canonicalised and de-duplicated, at most 20. Pushes `server_update` to members. |
+| `DELETE /api/sites/:id/storage` | | Any member. Clears what the Site stored for the caller (local storage, cookies, IndexedDB). |
 | `DELETE /api/sites/:id` | | Owner or `MANAGE_ANY_SERVER`. Stops the workers, removes the row and folder, pushes `server_delete`. |
 | `GET /api/sites/:id/files` | | Editors. `{files, usage, limits}`. |
 | `GET /api/sites/:id/files/content` | `?path=` | Editors. `{binary, content?, size, mtimeMs}`. |

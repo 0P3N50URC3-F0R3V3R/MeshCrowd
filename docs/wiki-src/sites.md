@@ -33,6 +33,12 @@ Allowed files: `php html htm css js json txt md svg png jpg jpeg gif webp ico`, 
 
 In **Site settings** you can click the round icon to upload a picture for the Site (PNG, JPEG, GIF or WebP, up to 5 MB) and **Remove picture** to go back to the globe. Untick **Show icon background** to show a transparent picture alone, or pick the color of the plate behind it. A Site without a picture shows the globe on the chosen color.
 
+## Mobile and storage
+
+- **Available on mobile**: a switch in the create form and the Site settings (on by default). Off, the phone interface and the Android app do not list or open the Site; it stays available on PC.
+- **Stored data**: pages keep local storage, cookies and IndexedDB for each viewer, sized for browser games and tools: 64 MB of local storage and cookies per viewer and Site (a single value up to 16 MB, 100,000 entries, 180 cookies) and 256 MB of IndexedDB. Trusted sites mode is a separate, riskier setting and stays off by default.
+- **Clear site data**: any member can remove what a Site stored for them (local storage, cookies and IndexedDB) from the Site settings or the Site's right-click menu, also without edit rights. Handy when a client grows large.
+
 ## External origins
 
 A Site's settings list the extra `https://` origins its pages may load scripts, styles, images and frames from. Adding one shows a warning, because a script loaded from another origin runs with the page's privileges. Wildcards are not allowed.

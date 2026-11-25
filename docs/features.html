@@ -163,6 +163,7 @@
         <li>Appears in the server rail and renders in a same-origin frame, with no channels or notifications.</li>
         <li>Built-in <b>code editor</b> (CodeMirror) and a <b>visual editor</b> (TinyMCE) that keeps PHP blocks intact.</li>
         <li>A portable PHP runtime is bundled for Windows; elsewhere use your own PHP.</li>
+        <li>Roomy per-viewer storage for browser games and tools (64 MB local storage and cookies, 256 MB IndexedDB), a <b>Clear site data</b> button for every member, and an <b>Available on mobile</b> switch per Site.</li>
       </ul>
       <div class="callout danger"><strong>Trust</strong><p>Site pages run as part of MeshCrowd. Only give edit rights to people you would give server access.</p></div>
     </section>
@@ -174,6 +175,7 @@
         <li>Pair with an invite link; each side explicitly accepts or rejects the other, and revoking drops trust on both sides.</li>
         <li>Share friend requests and DMs, list the public servers of every paired instance and join with a <code>code@domain</code> invite.</li>
         <li>Remote servers are proxied live, never copied. Permissions are always decided by the server that owns the community.</li>
+        <li><b>MeshSwarm</b>: servers can optionally advertise themselves (signed, off by default) to public trackers, and the login page lists the public servers with last online and last updated times. Desktop clients and the Android app remember the servers you use.</li>
       </ul>
     </section>
 
@@ -212,7 +214,7 @@
       <div class="grid c3">
         <div class="card"><div class="ic"><i data-icon="globe"></i></div><h3>Web</h3><p>Nothing to install, every feature available in any modern browser.</p></div>
         <div class="card"><div class="ic"><i data-icon="monitor"></i></div><h3>Desktop</h3><p>A tray badge with your own colors, a clickable list of recent notifications in the tray menu, native notifications, download progress, close to tray and certificate pinning for self-signed servers. Comes as an Electron app and as a smaller single-exe WebView2 client.</p></div>
-        <div class="card"><div class="ic"><i data-icon="phone"></i></div><h3>Android</h3><p>A phone-first interface with local background notifications and optional UnifiedPush, no Google services needed. Recent chats and servers stay readable offline.</p></div>
+        <div class="card"><div class="ic"><i data-icon="phone"></i></div><h3>Android</h3><p>A phone-first interface with local background notifications and optional UnifiedPush, no Google services needed. Recent chats and servers stay readable offline. Share links, text, pictures and files from any app straight into a chat with <b>Send to MeshCrowd</b>.</p></div>
       </div>
     </section>
 
@@ -222,6 +224,7 @@
       <div class="feat-split">
         <ul class="checks">
           <li><b>Admin panel</b> with stats, user management, staff ranks and instance-wide server management.</li>
+          <li><b>Instance profile</b>: a name, description, logo and icon shown on the login page, with a registration badge.</li>
           <li>Runtime <b>upload size limit</b> and optional extension allowlist.</li>
           <li><b>Portable bundle</b> with its own runtime, and a backup that is just a folder copy.</li>
           <li><b>Admin console</b> in the server window or over SSH (password plus TOTP), with account, ban, config and backup commands, plus scheduled zip backups, restore and leveled log files.</li>

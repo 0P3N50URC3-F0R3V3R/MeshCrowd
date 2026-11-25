@@ -37,7 +37,7 @@ Turn on TOTP under **Settings, Account**. Scan the QR code with an authenticator
 
 ## Changing your password
 
-Use **Settings, Account, Change password**. For strengthened accounts the browser re-wraps your Passport with the new password.
+Use **Settings, Privacy & Safety, Change password** (with a repeat-password field). It asks for two confirmations first: it re-encrypts your Passport key backup, signs out your other devices, and without the key file it discards the server backup. It warns you if you never exported a Passport file. When an administrator sets a new password for you, your encrypted Passport backup becomes unreadable and your sessions end, so the Admin Panel asks them to confirm twice too.
 
 ## Your devices
 

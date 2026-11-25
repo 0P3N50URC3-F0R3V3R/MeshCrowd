@@ -33,6 +33,12 @@ Engedélyezett fájlok: `php html htm css js json txt md svg png jpg jpeg gif we
 
 Az **Oldal beállításai** között a kerek ikonra kattintva képet tölthetsz fel az Oldalhoz (PNG, JPEG, GIF vagy WebP, legfeljebb 5 MB); a **Kép eltávolítása** visszaállítja a földgömböt. Az **Ikon háttere** jelölőnégyzet kikapcsolásával az átlátszó kép egyedül jelenik meg, vagy kiválaszthatod a mögötte lévő lap színét. Kép nélkül az Oldal a földgömböt mutatja a választott színen.
 
+## Mobil és tárolás
+
+- **Elérhető mobilon**: kapcsoló a létrehozó űrlapon és az Oldal beállításaiban (alapból be). Kikapcsolva a telefonos felület és az Android app nem listázza és nem nyitja meg az Oldalt; PC-n továbbra is elérhető.
+- **Tárolt adatok**: az oldalak nézőnként tárolhatnak localStorage-ot, sütiket és IndexedDB-t, böngészős játékokhoz és eszközökhöz méretezve: nézőnként és Oldalanként 64 MB localStorage és süti (egy érték legfeljebb 16 MB, 100 000 bejegyzés, 180 süti) és 256 MB IndexedDB. A megbízható oldalak mód külön, kockázatosabb beállítás, alapból ki van kapcsolva.
+- **Oldaladatok törlése**: bármely tag törölheti, amit egy Oldal neki tárolt (localStorage, sütik és IndexedDB) az Oldal beállításaiból vagy az Oldal jobb gombos menüjéből, szerkesztési jog nélkül is. Jól jön, ha a kliens túl nagyra nő.
+
 ## Külső eredetek
 
 Az Oldal beállításai felsorolják azokat a további `https://` eredeteket, amelyekről az oldalai szkripteket, stíluslapokat, képeket és kereteket tölthetnek be. Hozzáadáskor figyelmeztetést mutat, mert egy másik eredetről betöltött szkript az oldal jogosultságaival fut. Helyettesítő karakter nem engedélyezett.

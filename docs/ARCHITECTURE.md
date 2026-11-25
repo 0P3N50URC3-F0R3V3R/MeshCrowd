@@ -621,6 +621,29 @@ it returns null or the verdict that becomes a `403`. Rules and the hit log live 
 `[letters/digits/_]*`), so no user-supplied regular expression ever runs. Flood and duplicate
 detection keep a short per-member history in memory only.
 
+## Instance profile, MeshSwarm and the share target
+
+- **Instance profile** (`server/lib/instanceProfile.js`, `pngResize.js`): `config.instance` plus images in `data/instance/`.
+  Only the exact file names the panel writes (`logo.png|jpg|webp|gif`, `icon.png`) are trusted; the icon is re-encoded by a
+  small PNG resizer to at most 128 px and 16 KB.
+- **Swarm worker** (`server/lib/swarmWorker.js`, `swarmAdvert.js`, `routes/swarm.js`): adverts are
+  `base64url(JSON).base64url(ed25519 signature)`; the first key to claim an address owns it. The worker announces to every
+  tracker with per-tracker backoff (60 s to 1 h), keeps `data/swarm-state.json` (content fingerprint, `updated`,
+  `announcedTo` for signed deletes), refuses non-https trackers (loopback http only with
+  `DISMESH_FEDERATION_ALLOW_LOOPBACK=1`) and cleans remote adverts (known fields only, control and bidi characters refused).
+  `GET /api/swarm/list` waits up to 4 s for the first pass, then refreshes in the background.
+- **Clients**: `web/js/views/auth.js` renders the login branding and list; Electron (`knownServers`), the C# client
+  (`KnownServers.cs`) and Android (`KnownServers.kt`, `SwarmClient.kt`, `Ed25519Verify.kt`) keep up to 50 known servers and
+  verify adverts themselves. Switching servers goes through a native confirmation.
+- **Sites storage**: the sandbox shims take their quotas from the server (`siteStorage.LIMITS`, embedded as `q`/`iq`);
+  `DELETE /api/sites/:id/storage` clears a viewer's data.
+- **Android share target** (`ShareParser.kt`, `ShareStore.kt`, `ShareShortcuts.kt`, `MainActivity`): `ACTION_SEND` and
+  `ACTION_SEND_MULTIPLE` intents are reduced to a `ShareItem` (content:// uris only, max 20 files, text capped) and parked
+  in `ShareStore`. The page picks it up through `MeshCrowdAndroid.takeShare()` (once), reads files from
+  `<origin>/__mcshare/<opaque id>` served by `shouldInterceptRequest` straight from the content resolver, and calls
+  `finishShare()` when done. `web/m/components/sharePicker.js` builds the sheet and sends through the normal message APIs;
+  `shareTargets.mjs` holds the pure ordering/search/message helpers.
+
 ## Mobile UI (/m/)
 
 A second, phone-first front-end lives in `web/m/` and is served at `/m/`. It shares all logic modules with the desktop client by importing them in place (`web/js/api.js`, `ws.js`, `state.js`, `bus.js`, `i18n.js`, `permissions.js`, `utils.js`, `theme.js`, `e2ee/`, and `views/auth.js` for sign-in) and replaces only the views.

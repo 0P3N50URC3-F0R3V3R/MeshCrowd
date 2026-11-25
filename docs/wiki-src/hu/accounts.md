@@ -37,7 +37,7 @@ Kapcsold be a TOTP-t a **Beállítások, Fiókom** oldalon. Olvasd be a QR-kódo
 
 ## A jelszavad módosítása
 
-Használd a **Beállítások, Fiókom, Jelszó módosítása** lehetőséget. A megerősített fiókoknál a böngésző újracsomagolja az Útleveledet az új jelszóval.
+Használd a **Beállítások, Adatvédelem és biztonság, Jelszó módosítása** lehetőséget (jelszó-ismétlő mezővel). Előbb kétszer megerősítést kér: újratitkosítja az Útlevél-kulcs biztonsági mentését, kijelentkeztet a többi eszközről, és kulcsfájl nélkül a szerveren lévő mentést eldobja. Figyelmeztet, ha sosem exportáltál Útlevél-fájlt. Ha egy adminisztrátor állít be neked új jelszót, a titkosított Útlevél-mentésed olvashatatlanná válik és a munkameneteid véget érnek, ezért az adminpanel tőle is kétszer kér megerősítést.
 
 ## Az eszközeid
 

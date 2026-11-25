@@ -28,6 +28,8 @@ Az első indítás létrehoz egy `data/` mappát az adatbázissal, egy konfigur�
 
 Nyisd meg a `https://localhost:8443` címet, és fogadd el egyszer a tanúsítvány-figyelmeztetést. A figyelmeztetés várható: a tanúsítványt a saját szervered generálta. Regisztrálj. **Az első fiók lesz a Tulajdonos**, teljes adminisztrátori jogokkal.
 
+A bejelentkezési oldal megmutatja a szervered nevét, logóját és regisztrációs állapotát, ha beállítod őket (lásd [Példányprofil és MeshSwarm](administration.html#p-ld-nyprofil-s-meshswarm)).
+
 ![A csevegőnézet bejelentkezés után](../assets/img/chat-general.jpg)
 
 ## 3. Hozd létre az első szerveredet

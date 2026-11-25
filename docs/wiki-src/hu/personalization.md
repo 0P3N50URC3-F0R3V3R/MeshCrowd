@@ -21,7 +21,7 @@ Válaszd az **Online**, **Tétlen**, **Ne zavarjanak** vagy **Láthatatlan** leh
 
 ## Témák
 
-Minden tag a saját kinézetét választja a **Beállítások, Megjelenés** alatt. Indulj egy előbeállításból és igazítsd a színeket, vagy építs sajátot:
+Minden tag a saját kinézetét választja a **Beállítások, Megjelenés** alatt. Indulj egy előbeállításból és igazítsd a színeket (minden színfeliratnak van súgója, amely megmondja, mit színez), vagy építs sajátot:
 
 - **Előbeállítások**: MeshCrowd Dark, MeshCrowd Light, Midnight Purple, Forest, Sunset és High Contrast.
 - **Színek** a márkaszínhez, a sávhoz, az oldalsávhoz, a csevegés hátteréhez és a szöveghez.
@@ -38,7 +38,7 @@ A témák egyszerű színekre és betűválasztásra vannak validálva. Sosem ho
 
 ## Elrendezés
 
-Húzd a csatornalista és a taglista szélét az átméretezéshez; a méretek a fiókoddal együtt mentődnek. A szerversáv mappákkal rendezhető.
+Húzd a csatornalista és a taglista szélét az átméretezéshez; a méretek a fiókoddal együtt mentődnek. A szerversáv mappákkal rendezhető. A telefonos elrendezésű széles képernyőn a csatornaablak bal felső hamburger gombja elrejti vagy megmutatja a szerverlistát, és a választás megmarad. Az animált avatarok (GIF, APNG, WebP) a csevegésben, a taglistákon és a hangszobákban az első képkockán maradnak, és csak a profilpanelen és a profilszerkesztőben mozognak.
 
 ## A MeshCrowd megnyitásakor
 

@@ -432,6 +432,29 @@ How it works:
   written to the audit log.
 - The admin DM list is sorted by size and shows only member usernames — never message content.
 
+## Instance profile and MeshSwarm
+
+**Admin Panel, Instance** gives the server an identity: name, description, logo and a small icon (any non-interlaced PNG
+up to 1 MB and 4096 px; the server shrinks it to 128x128 px and 16 KB itself). The login page shows them with a
+registration badge (open, invite only, closed). Stored in `config.json` (`instance`) and `data/instance/`.
+
+**Advertise** (off by default) announces a signed advert (name, description, icon, address, registration state) to one or
+more **MeshSwarm trackers** (default `https://nexnet.hu:19898`, editable). The login page then lists the public servers
+the trackers return, with last online and last updated times; a click switches to that server. Off means nothing is sent
+and the list is hidden. Unreachable trackers never affect the server, an address trackers would reject is reported in the
+panel, and removed trackers get a signed delete. Desktop clients (Electron, C#) and the Android app remember the servers
+you use and can show the same public list (off by default, because asking a tracker reveals your IP); switching servers
+always asks for a native confirmation. A login is kept until you log off. The trackers are a separate app (MeshSwarm).
+
+## Send to MeshCrowd (Android share target)
+
+Android app 3.26 appears in the system Share menu for links, text, images, video, audio and any file. A **Send to...**
+sheet shows a preview, a search box and the direct messages and writable text channels of the server you are logged in to
+(recents first, with avatars), plus an optional note. Nothing is sent before **Send**, Cancel sends nothing, and the app
+returns to the sharing app afterwards. Files use the normal upload (the upload limit applies). Only `content://` files are
+accepted and only the pending share's files are readable by the page. The four most recent destinations are published as
+Direct Share targets (Android 10+).
+
 ## Admin panel
 
 Visible only when `user.isSiteAdmin === true` (hidden entirely otherwise, not just disabled).

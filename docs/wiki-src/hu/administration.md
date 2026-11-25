@@ -33,6 +33,12 @@ Az **Admin, Szerverek** lista minden szervert mutat tulajdonossal, tagszámmal �
 
 Mindkettőhöz a **Bármely szerver kezelése** jogosultság kell.
 
+## Példányprofil és MeshSwarm
+
+Az adminpanel **Példány** füle identitást ad a szerverednek: **név**, **leírás**, **logó** és egy kis **ikon** (PNG legfeljebb 1 MB és 4096 pixel; a szerver maga kicsinyíti 128x128 pixelre és 16 KB-ra, a JPEG-et, WebP-t és GIF-et a panel előbb PNG-vé alakítja). A bejelentkezési oldal megmutatja őket a regisztrációs mód jelvényével együtt (nyitott, csak meghívóval, zárt). A `data/config.json` `instance` kulcsa alatt és a `data/instance/` mappában tárolódnak.
+
+A **Hirdetés** (alapból ki) lehetővé teszi, hogy a szerver bejelentkezzen egy vagy több **MeshSwarm követőnél** (alapból `https://nexnet.hu:19898`, a lista szerkeszthető). A hirdetést (név, leírás, ikon, cím és regisztrációs állapot) a szerver kulcsa írja alá; egy címet az a kulcs birtokol, amelyik először lefoglalta. Bekapcsolva a bejelentkezési oldal felsorolja a követők által visszaadott nyilvános szervereket az utolsó online és az utolsó frissítés idejével, és egyre kattintva megnyílik. Kikapcsolva semmi nem megy ki, és a lista el van rejtve. A panel jelzi, ha egy címet a követők elutasítanának (nincs HTTPS, üres `publicHost`), és egy elérhetetlen követő sosem érinti a szervert. Az eltávolított követő vagy a kikapcsolt hirdetés aláírt törlést kap. A követők külön alkalmazás (MeshSwarm, saját README-vel); a szerver nélkülük is ugyanúgy működik.
+
 ## Mellékletek
 
 Az **Admin, Áttekintés** alatt futás közben csökkentheted a feltöltési méretkorlátot (a konfiguráció `maxUploadMb` értéke fölé sosem), és opcionálisan engedélyezőlistára korlátozhatod a feltöltéseket olyan kiterjesztésekkel, mint `.png, .jpg, .pdf`. A futtathatók, a HTML és az SVG mindig tiltottak, a fájlokat pedig letöltésként, homokozó Content-Security-Policy alatt szolgálja ki a rendszer, így a feltöltés sosem futhat szkriptként az alkalmazás eredetében.

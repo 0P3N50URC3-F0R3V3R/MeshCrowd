@@ -27,6 +27,16 @@ later. Checklists in Notes are stored inside the encrypted note.
 new group (the 1:1 stays as it is); on a group it adds people in place, up to ten, with live updates. Works on web, desktop, phone
 and Android. Needs a server deploy.
 
+## New: instance profile, MeshSwarm and Send to MeshCrowd
+
+- **Instance profile**: name, description, logo and icon for the server, shown on the login page with a registration badge.
+- **MeshSwarm**: optional, signed adverts to public trackers (off by default) and a public server list on the login page,
+  the desktop connect screen and the Android setup screen; the clients remember the servers you use and keep you signed in
+  until you log off.
+- **Sites**: much roomier per-viewer storage, a **Clear site data** button and an **Available on mobile** switch.
+- **Desktop clients**: **Clear cache** in Settings, Desktop App.
+- **Android 3.26**: a Share target ("Send to MeshCrowd") for links, text, pictures and files, with Direct Share shortcuts.
+
 ## New: invite links
 
 Every invite works as `https://host:port/i/<code>`: a join page with the server name and icon, **Join in browser** and

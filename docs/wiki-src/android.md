@@ -21,11 +21,25 @@ The Android app is a thin Kotlin shell (Android 8.0 or newer, one universal APK,
 - **Back button**: closes sheets and screens first. On another tab it goes back to the Servers tab, and from Servers it exits.
 - **Calls**: voice, camera and DM calls work in the phone interface. The app asks for microphone and camera permission for your server only.
 - **Changing server**: the **You** tab has an option to disconnect and enter another address.
+- **Known servers**: the app remembers the servers you have used (name, icon and trusted certificate) and lists them on the connect screen: tap one to reconnect, long-press to remove it. A login page's public list can switch the app to another server after a native confirmation. Notifications always follow the one server the app is set up for.
+- **Staying signed in**: a login is kept until you log off (or the server's session expires), also across restarts. There is no "stay signed in" question.
 - **Start view**: under **You**, **Open on start**, choose the tab the app opens on (Servers, Messages, Notifications or You) or the last chat you had open.
 - **Message style**: choose plain chat or chat bubbles under **You**.
 - **Administration asks for your password**: opening the Admin Panel or Server Settings asks you to confirm your password first, so a phone left unlocked does not hand over the administration screens.
 
 ![The soundboard button in the phone composer](../assets/img/m-soundboard.jpg)
+
+## Sharing to MeshCrowd
+
+From 3.26 the app is a target in Android's **Share** menu. Share a link from your browser, a picture from the gallery or any file from a file manager, choose **MeshCrowd**, and a **Send to...** sheet opens:
+
+- a preview of what you are sharing (the link or text, picture thumbnails, file names and sizes);
+- a search box and the list of your **direct messages** and the **text channels you may write in** on the server you are logged in to, recent destinations first, each with its avatar or server icon;
+- an optional note that is sent with it.
+
+Tap a destination and **Send**. Nothing is sent before that, **Cancel** (or tapping outside the sheet) sends nothing, and after sending you are back in the app you shared from. Files use the normal upload, so the server's size limit applies and is explained when a file is too large. Several files can be shared at once. Your four most recent destinations also appear as **Direct Share** targets in the system share sheet (Android 10 and newer).
+
+Only files that the sharing app hands over are read, and only for the share you are looking at.
 
 ## What works on the phone
 

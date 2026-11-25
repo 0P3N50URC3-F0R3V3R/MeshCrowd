@@ -21,11 +21,25 @@ Az Android-alkalmazás egy vékony Kotlin-burok (Android 8.0 vagy újabb, egyetl
 - **Vissza gomb**: előbb a lapokat és képernyőket zárja be. Más fülről a Szerverek fülre lép vissza, a Szerverekről pedig kilép.
 - **Hívások**: a hang, a kamera és a privát hívások működnek a telefonos felületen. Az alkalmazás csak a te szerveredhez kér mikrofon- és kamera-engedélyt.
 - **Szerverváltás**: a **Te** fülön van lehetőség a lecsatlakozásra és másik cím megadására.
+- **Ismert szerverek**: az alkalmazás megjegyzi a használt szervereket (név, ikon és megbízott tanúsítvány), és felsorolja őket a csatlakozási képernyőn: koppints egyre az újracsatlakozáshoz, tartsd lenyomva az eltávolításhoz. Egy bejelentkezési oldal nyilvános listájáról natív megerősítés után másik szerverre válthatsz. Az értesítések mindig arra az egy szerverre követnek, amelyre az app be van állítva.
+- **Bejelentkezve maradás**: a bejelentkezés kijelentkezésig (vagy a szerver munkamenetének lejártáig) megmarad, újraindítások között is. "Maradjak bejelentkezve" kérdés nincs.
 - **Kezdőnézet**: a **Te** fülön, az **Indításkor megnyílik** alatt választhatod ki, melyik fülön nyíljon az alkalmazás (Szerverek, Üzenetek, Értesítések vagy Te), vagy az utoljára megnyitott csevegésen.
 - **Üzenetstílus**: a **Te** fülön választhatsz sima csevegés és csevegőbuborékok között.
 - **Az adminisztráció jelszót kér**: az Adminpanel vagy a Szerver beállításai megnyitása előtt meg kell erősítened a jelszavadat, így egy feloldva hagyott telefon nem adja ki az adminisztrációs képernyőket.
 
 ![A hangeffekt-gomb a telefonos üzenetmezőben](../assets/img/m-soundboard.jpg)
+
+## Megosztás a MeshCrowdnak
+
+A 3.26-os verziótól az alkalmazás célpont az Android **Megosztás** menüjében. Oszd meg egy linket a böngészőből, egy képet a galériából vagy bármilyen fájlt a fájlkezelőből, válaszd a **MeshCrowd** lehetőséget, és megnyílik a **Küldés ide...** lap:
+
+- a megosztott tartalom előnézete (a link vagy szöveg, képek bélyegképei, fájlnevek és méretek);
+- kereső és a **privát üzeneteid**, valamint azoknak a **szöveges csatornáknak** a listája, ahová írhatsz azon a szerveren, amelyre be vagy jelentkezve; elöl a legutóbbi úti célok, mindegyik avatárral vagy szerverikonnal;
+- egy opcionális megjegyzés, amely vele együtt megy.
+
+Koppints egy úti célra, majd a **Küldés** gombra. Addig semmi nem megy el, a **Mégse** (vagy a lapon kívülre koppintás) nem küld semmit, küldés után pedig visszakerülsz abba az appba, ahonnan megosztottál. A fájlok a szokásos feltöltésen mennek át, így a szerver méretkorlátja érvényes, és ha egy fájl túl nagy, érthetően jelezzük. Több fájlt is megoszthatsz egyszerre. A négy legutóbbi úti célod **Direct Share** célként is megjelenik a rendszer megosztási lapján (Android 10-től).
+
+Csak azokat a fájlokat olvassa az app, amelyeket a megosztó alkalmazás átad, és csak az éppen látott megosztáshoz.
 
 ## Mi működik a telefonon
 

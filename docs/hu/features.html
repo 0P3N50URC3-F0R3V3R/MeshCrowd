@@ -163,6 +163,7 @@
         <li>Megjelenik a szerversávban, és azonos eredetű keretben jelenik meg, csatornák és értesítések nélkül.</li>
         <li>Beépített <b>kódszerkesztő</b> (CodeMirror) és <b>vizuális szerkesztő</b> (TinyMCE), amely érintetlenül hagyja a PHP-blokkokat.</li>
         <li>Windowsra hordozható PHP futtatókörnyezet jár mellé; máshol használd a saját PHP-dat.</li>
+        <li>Bőséges nézőnkénti tárolás böngészős játékokhoz és eszközökhöz (64 MB localStorage és süti, 256 MB IndexedDB), minden tagnak <b>Oldaladatok törlése</b> gomb, és Oldalanként <b>Elérhető mobilon</b> kapcsoló.</li>
       </ul>
       <div class="callout danger"><strong>Bizalom</strong><p>Az Oldalak a MeshCrowd részeként futnak. Csak olyanoknak adj szerkesztési jogot, akiknek szerverhozzáférést is adnál.</p></div>
     </section>
@@ -173,6 +174,7 @@
       <ul class="checks">
         <li>Párosítás meghívólinkkel; mindkét oldal kifejezetten elfogadja vagy elutasítja a másikat, a visszavonás pedig mindkét oldalon megszünteti a bizalmat.</li>
         <li>Barátkérések és privát üzenetek megosztása, minden párosított példány nyilvános szervereinek listázása és csatlakozás <code>kód@domain</code> meghívóval.</li>
+        <li><b>MeshSwarm</b>: a szerverek opcionálisan (aláírva, alapból kikapcsolva) hirdethetik magukat nyilvános követőknél, és a bejelentkezési oldal felsorolja a nyilvános szervereket az utolsó online és utolsó frissítés idejével. Az asztali kliensek és az Android-alkalmazás megjegyzik a használt szervereket.</li>
         <li>A távoli szerverek élőben, proxyn át jelennek meg, soha nem másolódnak. A jogosultságokat mindig a közösséget birtokló szerver dönti el.</li>
       </ul>
     </section>
@@ -212,7 +214,7 @@
       <div class="grid c3">
         <div class="card"><div class="ic"><i data-icon="globe"></i></div><h3>Web</h3><p>Nincs mit telepíteni, minden funkció elérhető bármely modern böngészőben.</p></div>
         <div class="card"><div class="ic"><i data-icon="monitor"></i></div><h3>Asztali</h3><p>Tálcaikon-jelvény saját színekkel, kattintható legutóbbi értesítések listája a tálcamenüben, natív értesítések, letöltési folyamatjelző, tálcára zárás és tanúsítvány-rögzítés önaláírt szerverekhez. Electron-alkalmazásként és kisebb, egyetlen exe-s WebView2 kliensként is elérhető.</p></div>
-        <div class="card"><div class="ic"><i data-icon="phone"></i></div><h3>Android</h3><p>Telefonra tervezett felület helyi háttérértesítésekkel és opcionális UnifiedPush-sal, Google-szolgáltatások nélkül. A legutóbbi csevegések és szerverek offline is olvashatók.</p></div>
+        <div class="card"><div class="ic"><i data-icon="phone"></i></div><h3>Android</h3><p>Telefonra tervezett felület helyi háttérértesítésekkel és opcionális UnifiedPush-sal, Google-szolgáltatások nélkül. A legutóbbi csevegések és szerverek offline is olvashatók. Linkeket, szöveget, képeket és fájlokat bármely appból egyenesen egy csevegésbe oszthatsz meg a <b>Küldés a MeshCrowdnak</b> funkcióval.</p></div>
       </div>
     </section>
 
@@ -222,6 +224,7 @@
       <div class="feat-split">
         <ul class="checks">
           <li><b>Adminpanel</b> statisztikákkal, felhasználókezeléssel, személyzeti rangokkal és az egész példányra kiterjedő szerverkezeléssel.</li>
+          <li><b>Példányprofil</b>: név, leírás, logó és ikon a bejelentkezési oldalon, regisztrációs jelvénnyel.</li>
           <li>Futásidőben állítható <b>feltöltési méretkorlát</b> és opcionális kiterjesztés-engedélyezőlista.</li>
           <li><b>Hordozható csomag</b> saját futtatókörnyezettel, és mentés, ami egyszerűen egy mappa másolata.</li>
           <li><b>Admin konzol</b> a szerverablakban vagy SSH-n át (jelszó és TOTP), fiók-, tiltás-, beállítás- és mentésparancsokkal, valamint ütemezett zip-mentések, visszaállítás és szintezett naplófájlok.</li>
