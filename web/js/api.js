@@ -147,6 +147,7 @@ export const api = {
   swarmAdminGet: () => get('/api/admin/swarm'),
   swarmAdminUpdate: (payload) => patch('/api/admin/swarm', payload),
   swarmAnnounce: () => post('/api/admin/swarm/announce', {}),
+  siteClearStorage: (id) => del(`/api/sites/${id}/storage`),
   siteRuntime: () => get('/api/sites/runtime'),
   siteViewToken: (id) => post(`/api/sites/${id}/view-token`, {}),
   siteFiles: (id) => get(`/api/sites/${id}/files`),

@@ -74,7 +74,42 @@ test('local storage ops persist per viewer and site and never leak across them',
   assert.deepEqual(st.snapshot(siteA, bob).local, { theme: 'light' });
 });
 
-test('caps: oversized key/value, total quota and malformed ops are rejected and change nothing', () => {
+function withLimits(over, fn) {
+  const saved = { ...st.LIMITS };
+  Object.assign(st.LIMITS, over);
+  try { return fn(); } finally { Object.assign(st.LIMITS, saved); }
+}
+async function withLimitsAsync(over, fn) {
+  const saved = { ...st.LIMITS };
+  Object.assign(st.LIMITS, over);
+  try { return await fn(); } finally { Object.assign(st.LIMITS, saved); }
+}
+
+test('the default caps are generous enough for games and tools (but still bounded)', () => {
+  assert.ok(st.LIMITS.maxBytes >= 64 * 1024 * 1024);
+  assert.ok(st.LIMITS.maxValue >= 16 * 1024 * 1024);
+  assert.ok(st.LIMITS.maxIdbBytes >= 256 * 1024 * 1024);
+  assert.ok(st.LIMITS.maxEntries >= 100_000);
+  assert.ok(st.LIMITS.writesPerMinute >= 1200);
+  assert.ok(st.LIMITS.maxIdbBytes <= 512 * 1024 * 1024);
+});
+
+test('clearAll removes one viewer data for one site only', () => {
+  const zed = makeUser('ss_zed'); const yan = makeUser('ss_yan');
+  st.applyOps(siteA, zed, [{ t: 'set', k: 'k', v: 'v' }, { t: 'cset', n: 'c', v: '1' }]);
+  st.putIdb(siteA, zed, '{"v":1,"dbs":[]}');
+  st.applyOps(siteB, zed, [{ t: 'set', k: 'k', v: 'b' }]);
+  st.applyOps(siteA, yan, [{ t: 'set', k: 'k', v: 'y' }]);
+  st.clearAll(siteA, zed);
+  const snap = st.snapshot(siteA, zed);
+  assert.deepEqual(snap.local, {});
+  assert.deepEqual(snap.cookies, []);
+  assert.equal(st.getIdb(siteA, zed), null);
+  assert.equal(st.snapshot(siteB, zed).local.k, 'b');
+  assert.equal(st.snapshot(siteA, yan).local.k, 'y');
+});
+
+test('caps: oversized key/value, total quota and malformed ops are rejected and change nothing', () => withLimits({ maxBytes: 1024 * 1024, maxValue: 512 * 1024 }, () => {
   const carol = makeUser('ss_carol');
   const big = (n) => 'x'.repeat(n);
   assert.throws(() => st.applyOps(siteA, carol, [{ t: 'set', k: big(st.LIMITS.maxKey + 1), v: '1' }]), { status: 413 });
@@ -86,9 +121,9 @@ test('caps: oversized key/value, total quota and malformed ops are rejected and 
   assert.throws(() => st.applyOps(siteA, carol, [{ t: 'set', k: 'small', v: '1' }, { t: 'set', k: 'c', v: big(400_000) }]), { status: 413 });
   assert.deepEqual(Object.keys(st.snapshot(siteA, carol).local).sort(), ['a', 'b']);
   assert.throws(() => st.applyOps(siteA, carol, Array.from({ length: st.LIMITS.maxOps + 1 }, (_, i) => ({ t: 'del', k: `k${i}` }))), { status: 400 });
-});
+}));
 
-test('writes are rate limited per viewer and site', () => {
+test('writes are rate limited per viewer and site', () => withLimits({ writesPerMinute: 240 }, () => {
   const dave = makeUser('ss_dave');
   let hit = 0;
   for (let i = 0; i < st.LIMITS.writesPerMinute + 5; i++) {
@@ -96,7 +131,7 @@ test('writes are rate limited per viewer and site', () => {
   }
   assert.equal(hit, 5);
   st.applyOps(siteA, dave, [{ t: 'set', k: 'k', v: '1' }]); // another site has its own budget
-});
+}));
 
 test('cookies: path scoping, expiry, deletion, httpOnly stays out of the page snapshot', () => {
   const eve = makeUser('ss_eve');
@@ -125,7 +160,7 @@ test('indexedDB snapshots are per viewer and site, capped, and report their size
   assert.equal(st.getIdb(siteB, finn), null);
   assert.equal(st.getIdb(siteA, alice), null);
   assert.equal(st.snapshot(siteA, finn).idb, 16);
-  assert.throws(() => st.putIdb(siteA, finn, 'x'.repeat(st.LIMITS.maxIdbBytes + 1)), { status: 413 });
+  withLimits({ maxIdbBytes: 1024 * 1024 }, () => assert.throws(() => st.putIdb(siteA, finn, 'x'.repeat(st.LIMITS.maxIdbBytes + 1)), { status: 413 }));
   assert.equal(st.getIdb(siteA, finn), '{"v":1,"dbs":[]}');
 });
 
@@ -189,7 +224,7 @@ test('POST /__storage applies the ops of the token\'s user and site only', async
   assert.equal(st.snapshot(siteA, alice).local.viaHttp, undefined);
   assert.equal(st.snapshot(siteB, bob).local.viaHttp, undefined);
   assert.equal((await post(`${u}/__storage`, 'not json')).status, 400);
-  assert.equal((await post(`${u}/__storage`, [{ t: 'set', k: 'k', v: 'x'.repeat(st.LIMITS.maxValue + 1) }])).status, 413);
+  await withLimitsAsync({ maxValue: 256 * 1024 }, async () => assert.equal((await post(`${u}/__storage`, [{ t: 'set', k: 'k', v: 'x'.repeat(st.LIMITS.maxValue + 1) }])).status, 413));
   assert.equal((await fetch(`${u}/__storage`)).status, 405);
 });
 
@@ -199,7 +234,7 @@ test('POST/GET /__idb stores the snapshot, enforces the cap, and a missing snaps
   assert.equal((await post(`${u}/__idb`, '{"v":1,"dbs":[{"name":"d"}]}')).status, 204);
   assert.equal(await (await fetch(`${u}/__idb`)).text(), '{"v":1,"dbs":[{"name":"d"}]}');
   assert.equal(await (await fetch(`${urlFor(siteB, alice)}/__idb`)).status, 204);
-  const tooBig = await post(`${u}/__idb`, 'x'.repeat(st.LIMITS.maxIdbBytes + 2048));
+  const tooBig = await withLimitsAsync({ maxIdbBytes: 1024 * 1024 }, () => post(`${u}/__idb`, 'x'.repeat(st.LIMITS.maxIdbBytes + 2048)));
   assert.equal(tooBig.status, 413);
   assert.equal(await (await fetch(`${u}/__idb`)).text(), '{"v":1,"dbs":[{"name":"d"}]}');
 });

@@ -6,17 +6,19 @@ const { db } = require('../db');
 // Site pages run in an opaque origin, so their localStorage, cookies and IndexedDB live here instead,
 // per viewer and per site. Nothing in this module ever reads another user's or another site's rows.
 const LIMITS = {
-  maxBytes: 1024 * 1024,        // local + cookie keys and values, per viewer and site
-  maxEntries: 500,
-  maxKey: 256,
-  maxValue: 512 * 1024,
-  maxCookies: 60,
+  // Sized for browser games and tools (DOSBox saves, cached disk images), still bounded because this lives in the
+  // server database. The IndexedDB snapshot is one string in memory, so 256 MB is the practical ceiling.
+  maxBytes: 64 * 1024 * 1024,   // local + cookie keys and values, per viewer and site
+  maxEntries: 100_000,
+  maxKey: 1024,
+  maxValue: 16 * 1024 * 1024,
+  maxCookies: 180,
   maxCookieValue: 4096,
-  maxOps: 200,
-  maxIdbBytes: 20 * 1024 * 1024,
+  maxOps: 2000,
+  maxIdbBytes: 256 * 1024 * 1024,
   cookieDefaultDays: 30,
-  writesPerMinute: 240,
-  idbWritesPerMinute: 30,
+  writesPerMinute: 1200,
+  idbWritesPerMinute: 120,
 };
 
 class StorageError extends Error {
@@ -164,4 +166,9 @@ function putIdb(siteId, userId, text) {
   ).run(siteId, userId, zlib.gzipSync(Buffer.from(text, 'utf8')), bytes);
 }
 
-module.exports = { LIMITS, StorageError, snapshot, applyOps, cookieHeader, applySetCookies, getIdb, putIdb };
+function clearAll(siteId, userId) {
+  db.prepare('DELETE FROM site_storage WHERE site_id = ? AND user_id = ?').run(siteId, userId);
+  db.prepare('DELETE FROM site_idb WHERE site_id = ? AND user_id = ?').run(siteId, userId);
+}
+
+module.exports = { clearAll, LIMITS, StorageError, snapshot, applyOps, cookieHeader, applySetCookies, getIdb, putIdb };

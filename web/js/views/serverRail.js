@@ -4,6 +4,7 @@ import { state, getServerDetail, isUnread, getUnreadDmCount, upsertServer, setRe
 import { icons, FOLDER_BUILTIN_ICONS } from '../icons.js';
 import { serverIconHtml, escapeHtml, apiErrorMessage, toast } from '../utils.js';
 import { openModal, openContextMenu } from './modal.js';
+import { clearSiteData } from '../siteData.js';
 import { openInviteModal, leaveServer, deleteServer } from './sidebar.js';
 import { has, PERMISSIONS, memberPermissionBits } from '../permissions.js';
 import { t } from '../i18n.js';
@@ -472,7 +473,8 @@ export function mountServerRail(container) {
 
   function openSiteContextMenu(x, y, server) {
     const editable = canEditSite(server);
-    const items = [];
+    const items = [{ label: t('sites.settings.clearData'), icon: icons.trash, onClick: () => clearSiteData(server) }];
+    if (editable) items.push('sep');
     if (editable) {
       const act = (action) => () => {
         bus.emit('ui:navigate', { type: 'server', serverId: server.id });

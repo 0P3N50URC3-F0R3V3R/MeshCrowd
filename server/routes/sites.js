@@ -12,6 +12,7 @@ const { hasSite, SITE_PERMISSIONS, DEFAULT_EVERYONE_PERMISSIONS } = require('../
 const { singleLine } = require('../lib/textSanitize');
 const { logAudit } = require('../lib/auditLog');
 const siteFiles = require('../lib/siteFiles');
+const siteStorage = require('../lib/siteStorage');
 const siteProcesses = require('../lib/siteProcesses');
 const phpRuntime = require('../lib/phpRuntime');
 const { normalizeOrigins } = require('../lib/siteCsp');
@@ -63,6 +64,12 @@ router.get('/runtime', (req, res) => {
 
 router.post('/:id/view-token', loadSite, (req, res) => {
   res.json({ path: `/site/${req.site.id}/~${siteViewToken.mint(req.site.id, req.user.id, req.sessionToken)}/`, trusted: !!req.site.site_trusted });
+});
+
+// Any member can wipe what a site stored for them (local storage, cookies, IndexedDB), e.g. when it grew too big.
+router.delete('/:id/storage', loadSite, (req, res) => {
+  siteStorage.clearAll(req.site.id, req.user.id);
+  res.status(204).end();
 });
 
 router.post('/', (req, res) => {

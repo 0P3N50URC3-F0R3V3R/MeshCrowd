@@ -22,7 +22,7 @@ const asset = (name) => {
 const MAX_REQ_BODY = 1024 * 1024;
 const MAX_HTML_BYTES = 5 * 1024 * 1024;
 const FORWARD_REQ = ['accept', 'accept-language', 'content-type', 'content-length', 'user-agent'];
-const MAX_STORAGE_BODY = 2 * 1024 * 1024;
+const MAX_STORAGE_BODY = 64 * 1024 * 1024;
 const STRIP_RES = new Set(['access-control-allow-origin', 'access-control-allow-credentials', 'set-cookie', 'content-security-policy', 'x-frame-options', 'content-length', 'transfer-encoding', 'connection', 'keep-alive']);
 
 const plain = (res, status, text) => res.status(status).type('text').send(text);

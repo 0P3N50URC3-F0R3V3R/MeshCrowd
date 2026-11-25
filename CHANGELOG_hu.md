@@ -5,9 +5,11 @@ A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a 
 ### 2026-11-25
 #### Módosítva
 - Az asztali kliensek (Electron és C#) már nem kérdezik, hogy maradj-e bejelentkezve: a bejelentkezés kijelentkezésig megmarad, újraindítás után is (mint Androidon). A korábbi "csak ez a munkamenet" válaszok "megmarad"-ként működnek.
+- Oldalak (sandbox mód, az alapértelmezett): a tárolt adatok korlátai jóval magasabbak, böngészős játékokhoz és eszközökhöz méretezve: 64 MB localStorage és cookie nézőnként és oldalanként (egy érték legfeljebb 16 MB, 100 000 bejegyzés, 180 cookie), 256 MB IndexedDB, és ötszörös írási keret. A megbízható oldalak módja nem változott, és alapból kikapcsolva marad.
 - Példányikon: a szerver maga méretezi át a feltöltött PNG-t legfeljebb 128x128 pixelre és 16 KB-ra (az oldalarány és az átlátszóság megmarad, a metaadatok, például szövegblokkok, törlődnek), így bármilyen nem átlapolt, legfeljebb 1 MB és 4096x4096-os PNG megfelel, nem csak az eleve ilyen kicsik. A JPEG, WebP és GIF képeket továbbra is az Admin panel alakítja PNG-vé. Az átlapolt PNG-ket érthető üzenettel elutasítja.
 
 #### Hozzáadva
+- Oldalak: a tag törölheti, amit egy oldal neki eltárolt (localStorage, cookie, IndexedDB) az "Oldaladatok törlése" gombbal, az oldal beállításaiban és a jobb gombos menüben (nem szerkesztőknek is). Megbízható módban az oldal IndexedDB adatbázisai az alkalmazásban is törlődnek.
 - A nyilvános szerverlista görgethető a bejelentkezési oldalon, az asztali csatlakozási képernyőn (a megjegyzett szerverek listája is) és az Android beállítási képernyőn, így a hosszú lista nem tolja el az oldal többi részét.
 
 ### 2026-11-24

@@ -3,6 +3,7 @@ import { upsertServer } from '../state.js';
 import { escapeHtml, apiErrorMessage, serverIconHtml } from '../utils.js';
 import { openModal, confirmModal } from './modal.js';
 import { t } from '../i18n.js';
+import { clearSiteData } from '../siteData.js';
 
 function currentOrigins(server) {
   try { return JSON.parse(server.site_csp_origins || '[]'); } catch { return []; }
@@ -48,6 +49,10 @@ export function openSiteSettings(server) {
         <div class="field">
           <label class="checkbox-row"><input type="checkbox" id="ss-trusted"><span>${t('sites.settings.trustedLabel')}</span></label>
           <p class="hint" style="color:var(--danger, #f04747)">${t('sites.settings.trustedWarn')}</p>
+        </div>
+        <div class="field">
+          <button class="btn btn-secondary" id="ss-clear-data" type="button">${t('sites.settings.clearData')}</button>
+          <p class="hint">${t('sites.settings.clearDataHint')}</p>
         </div>
         <div class="error-text" id="ss-err"></div>
         <button class="btn btn-primary btn-block" id="ss-save">${t('common.save')}</button>`;
@@ -101,6 +106,7 @@ export function openSiteSettings(server) {
           err.textContent = apiErrorMessage(e, t('sites.settings.saveFailed'));
         }
       };
+      body.querySelector('#ss-clear-data').addEventListener('click', () => clearSiteData(server));
       body.querySelector('#ss-save').addEventListener('click', () => {
         const origins = body.querySelector('#ss-origins').value.split('\n').map((l) => l.trim()).filter(Boolean);
         const added = origins.some((o) => !before.includes(o));

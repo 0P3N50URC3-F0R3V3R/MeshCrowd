@@ -146,6 +146,20 @@ test('mobile availability: on by default, can be created off, editor-only boolea
   assert.equal((await call('PATCH', `/api/sites/${s.id}`, { uid: staff, perms: STAFF, json: { mobile: true } })).data.server.site_mobile, 1);
 });
 
+test('a member can clear their own stored site data, a non-member cannot', async () => {
+  const staff = makeUser('st_cl1'); const member = makeUser('st_cl2');
+  const s = await makeSite(staff);
+  const outsider = makeUser('st_cl3');
+  db.prepare('INSERT OR IGNORE INTO server_members (server_id, user_id) VALUES (?, ?)').run(s.id, member);
+  const store = require('../lib/siteStorage');
+  store.applyOps(s.id, member, [{ t: 'set', k: 'k', v: 'v' }]);
+  store.applyOps(s.id, staff, [{ t: 'set', k: 'k', v: 'staff' }]);
+  assert.equal((await call('DELETE', `/api/sites/${s.id}/storage`, { uid: outsider })).status, 403);
+  assert.equal((await call('DELETE', `/api/sites/${s.id}/storage`, { uid: member })).status, 204);
+  assert.deepEqual(store.snapshot(s.id, member).local, {});
+  assert.equal(store.snapshot(s.id, staff).local.k, 'staff');
+});
+
 test('DELETE removes the row and folder for the owner or staff only', async () => {
   const staff = makeUser('st_d1'); const plain = makeUser('st_d2');
   const s = await makeSite(staff);
