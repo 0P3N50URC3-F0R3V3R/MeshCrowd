@@ -45,6 +45,7 @@ test('swarm list is empty when disabled or empty, and escapes every field', () =
   const out = renderSwarmList({ enabled: true, servers: [{ url: 'https://x.example.com:8443', name: '<script>', description: 'a"b', icon: 'data:image/png;base64,AAAA', registration: 'invite', lastSeen: now - 120_000, updated: now - 3 * 86_400_000 }] }, t, esc, now);
   assert.ok(!out.includes('<script>'));
   assert.ok(out.includes('rel="noopener noreferrer"'));
+  assert.ok(out.includes('class="swarm-scroll"'));
   assert.ok(out.includes('href="https://x.example.com:8443"'));
   assert.ok(out.includes('auth.swarmMinutes|2'));
   assert.ok(out.includes('auth.swarmDays|3'));

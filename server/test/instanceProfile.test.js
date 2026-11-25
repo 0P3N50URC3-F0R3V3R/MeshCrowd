@@ -11,6 +11,8 @@ process.env.DISMESH_DATA_DIR = tmpDir;
 
 const config = require('../lib/config');
 const profile = require('../lib/instanceProfile');
+const { makePng, noise } = require('./pngFixture');
+const { decode } = require('../lib/pngResize');
 
 test.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
 
@@ -34,15 +36,18 @@ test('name and description are single-line, trimmed and clamped', () => {
   assert.throws(() => profile.update({ name: 5 }), { status: 400 });
 });
 
-test('icon: only a real PNG up to 16384 bytes and 128x128 is accepted', () => {
-  assert.throws(() => profile.setIcon(png(64, 64, 16385)), { status: 413 });
-  assert.throws(() => profile.setIcon(png(129, 128)), { status: 400 });
-  assert.throws(() => profile.setIcon(png(128, 129)), { status: 400 });
+test('icon: any PNG is re-encoded to at most 128x128 and 16 KB; anything else is refused', () => {
+  assert.throws(() => profile.setIcon(Buffer.alloc(1024 * 1024 + 1)), { status: 413 });
   assert.throws(() => profile.setIcon(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])), { status: 400 });
-  assert.throws(() => profile.setIcon(png(64, 64).subarray(0, 14)), { status: 400 });
+  assert.throws(() => profile.setIcon(makePng(64, 64).subarray(0, 40)), { status: 400 });
+  assert.throws(() => profile.setIcon(makePng(10, 10, { interlace: 1 })), { status: 400 });
   assert.equal(profile.get().hasIcon, false);
-  profile.setIcon(png(64, 64, 2000));
+  profile.setIcon(makePng(500, 300, { pixel: noise }));
   assert.equal(profile.get().hasIcon, true);
+  const stored = fs.readFileSync(profile.iconFile().file);
+  assert.ok(stored.length <= 16384, String(stored.length));
+  const img = decode(stored);
+  assert.ok(img.width <= 128 && img.height <= 128);
   assert.match(profile.iconDataUri(), /^data:image\/png;base64,/);
   assert.equal(profile.iconFile().mime, 'image/png');
   profile.clearIcon();
@@ -67,7 +72,7 @@ test('logo: image types only, up to 1 MB, replacing removes the old file', () =>
 });
 
 test('a hand-edited config cannot point the logo or icon outside the instance files', () => {
-  profile.setIcon(png(64, 64, 2000));
+  profile.setIcon(makePng(64, 64));
   profile.setLogo(png(300, 100, 500), 'image/png');
   for (const bad of ['..', '.', '../config.json', 'sub/icon.png', 'other.png', '']) {
     config.save({ instance: { iconPath: bad } });

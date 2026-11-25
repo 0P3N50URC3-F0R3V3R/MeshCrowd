@@ -2,6 +2,14 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-25
+#### Módosítva
+- Az asztali kliensek (Electron és C#) már nem kérdezik, hogy maradj-e bejelentkezve: a bejelentkezés kijelentkezésig megmarad, újraindítás után is (mint Androidon). A korábbi "csak ez a munkamenet" válaszok "megmarad"-ként működnek.
+- Példányikon: a szerver maga méretezi át a feltöltött PNG-t legfeljebb 128x128 pixelre és 16 KB-ra (az oldalarány és az átlátszóság megmarad, a metaadatok, például szövegblokkok, törlődnek), így bármilyen nem átlapolt, legfeljebb 1 MB és 4096x4096-os PNG megfelel, nem csak az eleve ilyen kicsik. A JPEG, WebP és GIF képeket továbbra is az Admin panel alakítja PNG-vé. Az átlapolt PNG-ket érthető üzenettel elutasítja.
+
+#### Hozzáadva
+- A nyilvános szerverlista görgethető a bejelentkezési oldalon, az asztali csatlakozási képernyőn (a megjegyzett szerverek listája is) és az Android beállítási képernyőn, így a hosszú lista nem tolja el az oldal többi részét.
+
 ### 2026-11-24
 #### Hozzáadva
 - Asztali kliensek (Electron és C#): a Beállítások, Asztali alkalmazás oldalon új "Gyorsítótár törlése" gomb, amely törli a HTTP gyorsítótárat, az IndexedDB-t, a CacheStorage-t, a service workereket, a fájlrendszer és WebSQL adatokat, hogy helyet szabadítson fel. A sütik és a localStorage megmaradnak, így bejelentkezve maradsz és a beállításaid is megmaradnak (az egyéni értesítési hang az IndexedDB-ben van, azt újra be kell állítani). Az Electron kiírja, hány MB szabadult fel. Új `dismesh:clear-cache` híd-üzenet.

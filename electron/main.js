@@ -10,7 +10,6 @@ const { findMcrLink, inviteTarget } = require('./inviteUrl');
 const { externalUrl } = require('./externalUrl');
 const { isPermissionAllowed, isServerOrigin, isLocalAppPage } = require('./permissions');
 const knownServers = require('./knownServers');
-const signIn = require('./signIn');
 
 // `-dev`/`--dev` is the one supported "show debugging stuff" switch: gates the DevTools shortcut
 // (see setupDevToolsGate below) and the start-client.bat console window — nothing else changes.
@@ -37,7 +36,8 @@ function loadClientConfig() {
   try {
     const cfg = { ...DEFAULT_CLIENT_CONFIG, ...JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')) };
     if (!cfg.trustedFingerprints || typeof cfg.trustedFingerprints !== 'object') cfg.trustedFingerprints = {};
-    if (!Array.isArray(cfg.knownServers)) cfg.knownServers = [];
+    // A login is kept until the user logs off: older "this session only" answers become "keep".
+    cfg.knownServers = Array.isArray(cfg.knownServers) ? cfg.knownServers.map((e) => (e && e.signIn === 'session' ? { ...e, signIn: 'keep' } : e)) : [];
     cfg.swarm = { ...DEFAULT_CLIENT_CONFIG.swarm, ...(cfg.swarm && typeof cfg.swarm === 'object' ? cfg.swarm : {}) };
     return cfg;
   } catch {
@@ -322,7 +322,7 @@ function createWindow() {
   // Hiding to the tray doesn't reliably flip document.hidden in the renderer, so tell it directly.
   for (const ev of ['show', 'hide', 'minimize', 'restore', 'focus', 'blur']) mainWindow.on(ev, sendWindowState);
   mainWindow.webContents.on('did-finish-load', sendWindowState);
-  mainWindow.webContents.on('did-finish-load', () => { recordServer().then(checkSignIn); });
+  mainWindow.webContents.on('did-finish-load', () => { recordServer(); });
   mainWindow.on('resize', scheduleSaveBounds);
   mainWindow.on('move', scheduleSaveBounds);
   mainWindow.on('maximize', scheduleSaveBounds);
@@ -539,53 +539,8 @@ async function recordServer() {
   recordedOrigins.add(origin);
   let info = null;
   try { info = await mainWindow.webContents.executeJavaScript(PAGE_INFO_SCRIPT); } catch { /* page unusable: still remember the address */ }
-  clientConfig.knownServers = knownServers.upsert(clientConfig.knownServers, { url: origin, name: info && info.name, icon: info && info.icon }, Date.now());
+  clientConfig.knownServers = knownServers.setSignIn(knownServers.upsert(clientConfig.knownServers, { url: origin, name: info && info.name, icon: info && info.icon }, Date.now()), origin, 'keep');
   saveClientConfig(clientConfig);
-}
-
-const SIGN_IN_TEXT = {
-  en: { title: 'Stay signed in?', message: (host) => `Stay signed in to ${host} on this device?`, detail: 'Choose "This session only" on a shared computer: you will be signed out when MeshCrowd closes.', keep: 'Stay signed in', session: 'This session only' },
-  hu: { title: 'Bejelentkezve maradsz?', message: (host) => `Bejelentkezve maradsz a(z) ${host} szerveren ezen az eszközön?`, detail: 'Közös számítógépen válaszd a „Csak ez a munkamenet” lehetőséget: a MeshCrowd bezárásakor kijelentkezel.', keep: 'Maradok bejelentkezve', session: 'Csak ez a munkamenet' },
-};
-let askingSignIn = false;
-
-const serverEntry = () => {
-  const origin = knownServers.normalizeOrigin(clientConfig.serverUrl);
-  return origin ? clientConfig.knownServers.find((e) => e.url === origin) : undefined;
-};
-
-// Keeps the login of "this session only" servers out of the cookie file: the cookie is re-set without an
-// expiry, so Chromium drops it when the app closes. Other servers' cookies are never touched.
-async function checkSignIn() {
-  try {
-    const entry = serverEntry();
-    if (!entry) return;
-    const [cookie] = await session.defaultSession.cookies.get({ url: entry.url, name: signIn.COOKIE_NAME });
-    if (!cookie) return;
-    if (signIn.shouldAsk(entry, true) && !askingSignIn) {
-      askingSignIn = true;
-      try {
-        const text = app.getLocale().toLowerCase().startsWith('hu') ? SIGN_IN_TEXT.hu : SIGN_IN_TEXT.en;
-        const { response } = await dialog.showMessageBox(mainWindow, {
-          type: 'question', buttons: [text.keep, text.session], defaultId: 0, cancelId: 1,
-          title: text.title, message: text.message(new URL(entry.url).host), detail: text.detail,
-        });
-        clientConfig.knownServers = knownServers.setSignIn(clientConfig.knownServers, entry.url, response === 0 ? 'keep' : 'session');
-        saveClientConfig(clientConfig);
-      } finally { askingSignIn = false; }
-    }
-    const now = serverEntry();
-    if (signIn.needsSessionConversion(now, cookie)) {
-      await session.defaultSession.cookies.set({
-        url: entry.url, name: cookie.name, value: cookie.value, path: cookie.path,
-        httpOnly: cookie.httpOnly, secure: cookie.secure, sameSite: cookie.sameSite,
-      });
-    }
-  } catch { /* the cookie store is not reachable: leave the login as it is */ }
-}
-
-function dropSessionOnlyCookies(origins) {
-  return Promise.all(origins.map((o) => session.defaultSession.cookies.remove(o, signIn.COOKIE_NAME).catch(() => {})));
 }
 
 ipcMain.handle('dismesh:get-known-servers', (event) => (fromLocalPage(event) ? clientConfig.knownServers : []));
@@ -629,11 +584,9 @@ ipcMain.handle('dismesh:switch-server', async (event, rawUrl) => {
     const { response } = await dialog.showMessageBox(mainWindow, {
       type: 'question', buttons: ['Cancel', 'Switch'], defaultId: 0, cancelId: 0,
       title: 'Switch server', message: `Switch to ${new URL(origin).host}?`,
-      detail: `You will leave ${new URL(clientConfig.serverUrl).host}. Your sign-in there is kept as you chose.`,
+      detail: `You will leave ${new URL(clientConfig.serverUrl).host}. Your sign-in there is kept.`,
     });
     if (response !== 1) return { ok: false };
-    const leaving = serverEntry();
-    if (leaving && leaving.signIn === 'session') await dropSessionOnlyCookies([leaving.url]);
     clientConfig.serverUrl = `${origin}/`;
     saveClientConfig(clientConfig);
     loadTarget();
@@ -901,14 +854,12 @@ app.on('second-instance', (event, argv) => {
   mainWindow.focus();
 });
 
-app.whenReady().then(async () => {
+app.whenReady().then(() => {
   if (!gotSingleInstanceLock) return;
   setupCertHandling();
   setupPermissionHandlers();
   setupDisplayMediaHandler();
   downloads.setupDownloads({ session: session.defaultSession, ipcMain, dialog, shell, app, getWindow: () => mainWindow, getConfig: () => clientConfig });
-  session.defaultSession.cookies.on('changed', (event, cookie, cause, removed) => { if (!removed && cookie.name === signIn.COOKIE_NAME) checkSignIn(); });
-  await dropSessionOnlyCookies(signIn.sessionOrigins(clientConfig.knownServers));
   createWindow();
   setupTray();
   app.setLoginItemSettings({ openAtLogin: !!clientConfig.startWithWindows });

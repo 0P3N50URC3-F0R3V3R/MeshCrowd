@@ -57,6 +57,6 @@
     <string name="setup_ago_hour">%1$d h ago</string>
     <string name="setup_ago_day">%1$d d ago</string>
     <string name="switch_title">Switch server</string>
-    <string name="switch_body">Switch to %1$s? You will leave %2$s. Your sign-in there is kept as you chose.</string>
+    <string name="switch_body">Switch to %1$s? You will leave %2$s. Your sign-in there is kept.</string>
     <string name="switch_confirm">Switch</string>
 </resources>

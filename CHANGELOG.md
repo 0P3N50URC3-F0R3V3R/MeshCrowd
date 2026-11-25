@@ -2,6 +2,14 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-25
+#### Changed
+- Desktop clients (Electron and C#) no longer ask whether to stay signed in: a login is kept until you log off, also across restarts (same as Android). Earlier "this session only" answers are treated as "keep".
+- Instance icon: the server now resizes the uploaded PNG itself to at most 128x128 pixels and 16 KB (aspect ratio kept, transparency kept, metadata such as text chunks dropped), so any non-interlaced PNG up to 1 MB and 4096x4096 works, not only ones already that small. JPEG, WebP and GIF are still converted to PNG by the Admin Panel first. Interlaced PNGs are refused with a clear message.
+
+#### Added
+- The public server list is scrollable on the login page, the desktop connect screen (also the remembered-servers list) and the Android setup screen, so a long list does not push the rest of the page away.
+
 ### 2026-11-24
 #### Added
 - Desktop clients (Electron and C#): Settings, Desktop App has a new "Clear cache" button that deletes the HTTP cache, IndexedDB, CacheStorage, service workers, filesystem and WebSQL data to free disk space. Cookies and localStorage are kept, so you stay logged in and keep your settings (the custom notification sound lives in IndexedDB and must be set again). Electron shows how many MB were freed. New `dismesh:clear-cache` bridge message.

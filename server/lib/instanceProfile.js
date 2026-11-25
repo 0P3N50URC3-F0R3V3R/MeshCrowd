@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const config = require('./config');
+const { makeIcon, PngError } = require('./pngResize');
 
 const DIR = path.join(path.dirname(config.CONFIG_PATH), 'instance');
 const MAX_NAME = 60;
@@ -79,12 +80,16 @@ function setLogo(buf, mime) {
   store('logoPath', `logo.${ext}`, buf);
 }
 
+// The icon travels inside every tracker advert, so the server re-encodes whatever PNG it is given to at most
+// 128x128 pixels and 16 KB (this also drops metadata). JPEG/WebP/GIF are converted to PNG by the Admin Panel first.
 function setIcon(buf) {
-  if (buf.length > MAX_ICON) throw new ProfileError(413, `icon is larger than ${MAX_ICON} bytes`);
-  if (buf.length < 24 || !magicMatches(buf, 'image/png')) throw new ProfileError(400, 'icon must be a PNG image');
-  if (buf.subarray(12, 16).toString('latin1') !== 'IHDR') throw new ProfileError(400, 'icon must be a PNG image');
-  if (buf.readUInt32BE(16) > MAX_ICON_PX || buf.readUInt32BE(20) > MAX_ICON_PX) throw new ProfileError(400, `icon must be at most ${MAX_ICON_PX}x${MAX_ICON_PX} pixels`);
-  store('iconPath', 'icon.png', buf);
+  if (buf.length > MAX_LOGO) throw new ProfileError(413, 'icon is larger than 1 MB');
+  let png;
+  try { png = makeIcon(buf, { maxPx: MAX_ICON_PX, maxBytes: MAX_ICON }); } catch (e) {
+    if (e instanceof PngError) throw new ProfileError(e.status, e.message);
+    throw e;
+  }
+  store('iconPath', 'icon.png', png);
 }
 
 const clearLogo = () => remove('logoPath');

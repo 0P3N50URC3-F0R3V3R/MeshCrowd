@@ -57,6 +57,6 @@
     <string name="setup_ago_hour">%1$d órája</string>
     <string name="setup_ago_day">%1$d napja</string>
     <string name="switch_title">Szerverváltás</string>
-    <string name="switch_body">Átváltasz a(z) %1$s szerverre? Elhagyod a(z) %2$s szervert. A bejelentkezésed ott a választásod szerint megmarad.</string>
+    <string name="switch_body">Átváltasz a(z) %1$s szerverre? Elhagyod a(z) %2$s szervert. A bejelentkezésed ott megmarad.</string>
     <string name="switch_confirm">Váltás</string>
 </resources>

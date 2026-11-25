@@ -111,6 +111,12 @@ class SetupActivity : AppCompatActivity() {
         val trackers = settings.swarmTrackers
         val note = TextView(this).apply { text = getString(R.string.setup_public_loading); setTextColor(Color.parseColor("#80848E")); setPadding(0, (dp * 8).toInt(), 0, 0) }
         swarmBox.addView(note)
+        val listBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val scroller = ScrollView(this).apply {
+            addView(listBox)
+            setOnTouchListener { v, _ -> v.parent.requestDisallowInterceptTouchEvent(true); false }
+        }
+        swarmBox.addView(scroller)
         swarmBox.addView(Button(this).apply {
             text = getString(R.string.setup_public_trackers)
             setOnClickListener { editTrackers() }
@@ -129,8 +135,8 @@ class SetupActivity : AppCompatActivity() {
                     result.errors.size == trackers.size -> getString(R.string.setup_public_unreachable)
                     else -> getString(R.string.setup_public_empty)
                 }
-                var at = 0
-                for (e in result.servers) swarmBox.addView(publicRow(e), at++)
+                for (e in result.servers) listBox.addView(publicRow(e))
+                if (result.servers.size > 3) scroller.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (dp * 300).toInt())
             }
         }.start()
     }

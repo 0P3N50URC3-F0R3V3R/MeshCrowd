@@ -13,6 +13,7 @@ process.env.DISMESH_DATA_DIR = tmpDir;
 
 const { db } = require('../db');
 const { SITE_PERMISSIONS } = require('../lib/permissions');
+const { makePng } = require('./pngFixture');
 
 const VIEW = SITE_PERMISSIONS.VIEW_ADMIN_PANEL;
 const ADMIN = VIEW | SITE_PERMISSIONS.SITE_ADMINISTRATOR;
@@ -67,14 +68,17 @@ test('name and description round-trip', async () => {
   assert.equal((await call('PATCH', '/api/admin/instance', { json: { name: 7 } })).status, 400);
 });
 
-test('icon upload enforces the advert limits and the public route serves it', async () => {
-  const big = await call('POST', '/api/admin/instance/icon', { file: png(200, 200, 2000), mime: 'image/png' });
-  assert.equal(big.status, 400);
-  assert.match(big.data.error, /128/);
+test('icon upload is resized on the server and the public route serves it', async () => {
+  const notPng = await call('POST', '/api/admin/instance/icon', { file: Buffer.from('<html>'), mime: 'image/png' });
+  assert.equal(notPng.status, 400);
   assert.equal((await fetch(`${base}/instance/icon`)).status, 404);
-  assert.equal((await call('POST', '/api/admin/instance/icon', { file: png(64, 64, 2000), mime: 'image/png' })).status, 200);
+  assert.equal((await call('POST', '/api/admin/instance/icon', { file: makePng(600, 400), mime: 'image/png' })).status, 200);
   const pub = await fetch(`${base}/instance/icon`);
   assert.equal(pub.status, 200);
+  const bytes = Buffer.from(await pub.clone().arrayBuffer());
+  assert.ok(bytes.length <= 16384);
+  assert.equal(bytes.readUInt32BE(16), 128);
+  assert.equal(bytes.readUInt32BE(20), 85);
   assert.equal(pub.headers.get('content-type'), 'image/png');
   assert.equal(pub.headers.get('x-content-type-options'), 'nosniff');
   assert.equal((await call('DELETE', '/api/admin/instance/icon')).status, 200);

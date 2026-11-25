@@ -32,5 +32,5 @@ export function renderSwarmList(swarm, t, esc, now) {
       + `<div class="swarm-meta">${esc(s.url)} · ${reg} · ${esc(t('auth.swarmOnline'))} ${esc(ago(s.lastSeen, now, t))} · ${esc(t('auth.swarmUpdated'))} ${esc(ago(s.updated, now, t))}</div></div></div>`;
   }).join('');
   if (!rows) return '';
-  return `<div class="auth-swarm"><h3>${esc(t('auth.swarmHeading'))}</h3>${rows}</div>`;
+  return `<div class="auth-swarm"><h3>${esc(t('auth.swarmHeading'))}</h3><div class="swarm-scroll">${rows}</div></div>`;
 }

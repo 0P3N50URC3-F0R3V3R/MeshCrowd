@@ -22,7 +22,6 @@ public sealed class MainForm : Form
     private readonly WebView2 _web = new();
     private readonly System.Windows.Forms.Timer _connectTimer = new() { Interval = ConnectTimeoutMs };
     private readonly System.Windows.Forms.Timer _boundsTimer = new() { Interval = 500 };
-    private readonly System.Windows.Forms.Timer _signInTimer = new() { Interval = 3000 };
     private TrayController? _tray;
     private Icon? _appIcon;
     private TrayIconHandle? _forbiddenIcon;
@@ -208,9 +207,8 @@ public sealed class MainForm : Form
         Native.SetLoginItem(_cfg.GetBool("startWithWindows", false));
         EnsureProtocolRegistered();
 
-        foreach (string origin in KnownServers.SessionOrigins(KnownList()).ToList()) await DropSessionCookieAsync(origin);
-        _signInTimer.Tick += async (_, _) => await CheckSignInAsync();
-        _signInTimer.Start();
+        // A login is kept until the user logs off: older "this session only" answers become "keep".
+        foreach (string origin in KnownServers.SessionOrigins(KnownList()).ToList()) KnownServers.SetSignIn(KnownList(), origin, "keep");
         LoadTarget();
     }
 
@@ -762,56 +760,6 @@ public sealed class MainForm : Form
         try { await _web.CoreWebView2.Profile.ClearBrowsingDataAsync(kinds); } catch { }
     }
 
-    private const string SessionCookie = "dismesh_session";
-    private bool _askingSignIn;
-
-    private async Task DropSessionCookieAsync(string origin)
-    {
-        try
-        {
-            var cm = _web.CoreWebView2.CookieManager;
-            foreach (var c in (await cm.GetCookiesAsync(origin)).Where(c => c.Name == SessionCookie)) cm.DeleteCookie(c);
-        }
-        catch { }
-    }
-
-    // Keeps the login of "this session only" servers out of the cookie file: the cookie is re-created
-    // without an expiry, so WebView2 drops it when the app closes. Other servers' cookies are never touched.
-    private async Task CheckSignInAsync()
-    {
-        if (_askingSignIn || _web.CoreWebView2 is null) return;
-        _askingSignIn = true;
-        try
-        {
-            string? origin = ServerOrigin();
-            var entry = origin is null ? null : KnownServers.Find(KnownList(), origin);
-            if (origin is null || entry is null) return;
-            var cm = _web.CoreWebView2.CookieManager;
-            var cookie = (await cm.GetCookiesAsync(origin)).FirstOrDefault(c => c.Name == SessionCookie);
-            if (cookie is null) return;
-            if (KnownServers.ModeOf(entry) is null)
-            {
-                bool hu = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "hu";
-                string host = new Uri(origin).Authority;
-                int choice = hu
-                    ? Ask("Bejelentkezve maradsz?", $"Bejelentkezve maradsz a(z) {host} szerveren ezen az eszközön?", "Közös számítógépen válaszd a „Csak ez a munkamenet” lehetőséget: a MeshCrowd bezárásakor kijelentkezel.", ["Csak ez a munkamenet", "Maradok bejelentkezve"], false)
-                    : Ask("Stay signed in?", $"Stay signed in to {host} on this device?", "Choose \"This session only\" on a shared computer: you will be signed out when MeshCrowd closes.", ["This session only", "Stay signed in"], false);
-                KnownServers.SetSignIn(KnownList(), origin, choice == 1 ? "keep" : "session");
-                _cfg.Save();
-            }
-            if (KnownServers.ModeOf(entry) == "session" && !cookie.IsSession)
-            {
-                var session = cm.CreateCookie(cookie.Name, cookie.Value, cookie.Domain, cookie.Path);
-                session.IsHttpOnly = cookie.IsHttpOnly;
-                session.IsSecure = cookie.IsSecure;
-                session.SameSite = cookie.SameSite;
-                cm.AddOrUpdateCookie(session);
-            }
-        }
-        catch { }
-        finally { _askingSignIn = false; }
-    }
-
     private bool _switchPending;
 
     // Asked for by a server's own login page. Never silent: the user always confirms the target host.
@@ -824,9 +772,8 @@ public sealed class MainForm : Form
         _switchPending = true;
         try
         {
-            int choice = Ask("Switch server", $"Switch to {new Uri(origin).Authority}?", $"You will leave {new Uri(current).Authority}. Your sign-in there is kept as you chose.", ["Cancel", "Switch"], false);
+            int choice = Ask("Switch server", $"Switch to {new Uri(origin).Authority}?", $"You will leave {new Uri(current).Authority}. Your sign-in there is kept.", ["Cancel", "Switch"], false);
             if (choice != 1) return new JsonObject { ["ok"] = false };
-            if (KnownServers.ModeOf(KnownServers.Find(KnownList(), current)) == "session") _ = DropSessionCookieAsync(current);
             _cfg.ServerUrl = origin + "/";
             _cfg.Save();
             LoadTarget();
@@ -893,6 +840,7 @@ public sealed class MainForm : Form
             }
             catch { }
             _cfg.Set("knownServers", KnownServers.Upsert(KnownList(), norm, name, icon, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+            KnownServers.SetSignIn(KnownList(), norm, "keep");
             _cfg.Save();
         }
         catch { }
