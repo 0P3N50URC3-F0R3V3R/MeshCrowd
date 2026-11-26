@@ -2,6 +2,18 @@
 
 All notable changes to MeshCrowd. Newest first. Format: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-26
+#### Changed
+- Android app 3.28: the "MeshCrowd is connected" notification now stays up while the app is open, not only in the background.
+- Android app 3.28: new messages are announced while you use the app. Only the conversation on screen stays silent; other channels, threads and DMs notify as in the background, following your mute, "mentions only" and notification grid settings. Opening a conversation removes its notifications. Needs the new APK and the server/web deploy; with an older server the app behaves as before. The service worker cache is now v14.
+
+#### Fixed
+- Image previews keep their own proportions on every client. The phone UI stretched them sideways and then cut the height; desktop, web, Electron and C# cropped them. Small images are no longer enlarged.
+- Custom emoji in direct messages showed only as `:name:` and the picker had no server emoji there. DMs now offer your servers' emoji, and each message shows the image from its author's servers (new `GET /api/dms/:dmId/emoji`, so the server must be updated and restarted).
+- Phone emoji picker: the Recent row printed custom emoji as `:name:` text.
+- A custom emoji sat on its own line instead of inside the text.
+- Phone UI: after sending a new or an edited message the chat now jumps to that message, also with the keyboard open and images still loading.
+
 ### 2026-11-25
 #### Added
 - Android app 3.26: "Send to MeshCrowd". The app appears in the system Share menu of other apps (browser, gallery, files): links, text, images, videos, audio and any file, also several at once. A "Send to..." sheet opens with a preview, a search box and the direct messages and writable text channels of the server you are logged in to (recent destinations first, each with its avatar or server icon) plus an optional note. Files go through the normal upload (the server's upload limit applies and is explained), nothing is sent until you tap Send, Cancel sends nothing, and afterwards you land back in the app you shared from. Your four most recent destinations also appear as Direct Share targets in the system share sheet. Only content:// files are accepted and only the pending share's files are readable by the page. The phone web UI gets the sheet (deploy the server/web for it; the service worker cache is now v13).

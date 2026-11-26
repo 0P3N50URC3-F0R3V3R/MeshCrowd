@@ -111,7 +111,7 @@ img, video { max-width: 100%; }
 .m-reply span { overflow: hidden; text-overflow: ellipsis; }
 .m-forwarded { color: var(--text-muted); font-size: 0.75rem; }
 .m-atts { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
-.m-att-img, .m-att-video { max-width: min(100%, 420px); max-height: 50dvh; border-radius: 10px; }
+.m-att-img, .m-att-video { align-self: flex-start; width: auto; height: auto; max-width: min(100%, 420px); max-height: 50dvh; border-radius: 10px; }
 .m-att-file { display: flex; align-items: center; gap: 10px; background: var(--bg-sidebar); border-radius: 10px; padding: 10px; color: var(--text-primary); text-decoration: none; min-width: 0; }
 .m-att-audio { width: 100%; }
 .m-sticker { width: min(40vw, 160px); }

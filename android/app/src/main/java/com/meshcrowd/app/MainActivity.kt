@@ -233,6 +233,7 @@ class MainActivity : AppCompatActivity() {
     fun loadApp(deepLink: String?) {
         val origin = settings.origin ?: return
         loadedOrigin = origin
+        NotificationPoller.openScope = null
         offlineShown = false
         // The server picks the mobile UI from the user agent; /m/ is requested directly to skip a redirect.
         // A local loading screen shows instantly while the (possibly slow) network request is in flight.
@@ -272,17 +273,19 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
         NotificationPoller.appVisible = true
         NotificationHelper.cancelMessages(this)
-        stopService(Intent(this, ConnectionService::class.java))
+        // The connection notification stays up while the app is open as well as in the background.
+        if (settings.configured) {
+            try { ContextCompat.startForegroundService(this, Intent(this, ConnectionService::class.java)) } catch (_: Exception) { /* not allowed right now; retried on the next start */ }
+        }
     }
 
     override fun onStop() {
         NotificationPoller.appVisible = false
         val appContext = applicationContext
-        kotlin.concurrent.thread { try { NotificationPoller.markSeen(appContext) } catch (_: Exception) { /* next poll catches up */ } }
-        CookieManager.getInstance().flush() // so the background poller sees the current session cookie
-        if (settings.configured && !isChangingConfigurations) {
-            try { ContextCompat.startForegroundService(this, Intent(this, ConnectionService::class.java)) } catch (_: Exception) { /* not allowed right now; the poller still runs */ }
+        if (NotificationPoller.openScope == null) {
+            kotlin.concurrent.thread { try { NotificationPoller.markSeen(appContext) } catch (_: Exception) { /* next poll catches up */ } }
         }
+        CookieManager.getInstance().flush() // so the background poller sees the current session cookie
         super.onStop()
     }
 

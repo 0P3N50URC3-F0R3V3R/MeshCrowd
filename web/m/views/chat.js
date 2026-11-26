@@ -42,6 +42,7 @@ import { copyText } from './serversTab.js';
 import { unreadPrefs, firstUnreadIndex, anchorIndex, unreadEligible, unreadCount } from '../../js/unreadLine.mjs';
 import { offlineWindows } from '../../js/offlineTracker.js';
 import { uploads } from '../../js/uploadTracker.js';
+import { emojiFor, emojiForReaction } from '../../js/dmEmoji.mjs';
 
 const MAX_WINDOW = 400;
 
@@ -71,6 +72,9 @@ export function mountChat(el, params) {
   const typing = new Map();
   const offs = [];
   let botCommands = [];
+  let dmEmoji = [];
+  const emojiOf = (userId) => (kind === 'dm' ? emojiFor(dmEmoji, userId) : detail?.customEmoji || []);
+  const myEmoji = () => emojiOf(state.me.id);
   const ephemerals = [];
   const dm = () => (kind === 'dm' ? state.dms.find((d) => d.id === params.dmId) : null);
 
@@ -116,6 +120,7 @@ export function mountChat(el, params) {
       canManage = canEditOthers = isGroupCreator();
       const title = dmTitle(d, nameFor);
       el.querySelector('#m-title').textContent = title;
+      api.listDmEmoji(params.dmId).then((r) => { dmEmoji = r.emoji; if (!destroyed && messages.length) paint({ anchor: true }); }).catch(() => {});
       return { placeholder: t('m.composerPhDm', { name: title }) };
     }
     detail = await ensureServerDetail(params.serverId);
@@ -143,7 +148,7 @@ export function mountChat(el, params) {
   }
 
   // ---------- rendering ----------
-  const ctxFor = (prev) => ({ prev, meId: state.me.id, detail, mentionNames: mentionNamesFor(kind === 'dm' ? { dmMembers: [...(dm()?.members || []), state.me] } : { detail }) });
+  const ctxFor = (prev) => ({ prev, meId: state.me.id, detail, emojiOf, reactionEmoji: kind === 'dm' ? (r) => emojiForReaction(dmEmoji, r) : undefined, mentionNames: mentionNamesFor(kind === 'dm' ? { dmMembers: [...(dm()?.members || []), state.me] } : { detail }) });
   function paint({ keepScroll = false, anchor = false } = {}) {
     const before = msgsEl.scrollHeight;
     const top = msgsEl.scrollTop;
@@ -175,6 +180,7 @@ export function mountChat(el, params) {
   }
   unreadBannerEl.addEventListener('click', (e) => {
     if (e.target.closest('.m-unread-jump')) {
+      follow = null;
       msgsEl.querySelector('.m-unread-divider')?.scrollIntoView({ block: 'start' });
       bannerDismissed = true;
       paintUnreadBanner();
@@ -200,17 +206,30 @@ export function mountChat(el, params) {
     const node = anchorAt === at ? msgsEl.querySelector('.m-unread-divider') : msgsEl.querySelector(`[data-id="${messages[anchorAt].id}"]`);
     if (!node) return false;
     node.scrollIntoView({ block: 'start' });
+    follow = null;
     // Short chats can't scroll that far — then the bottom is already in view and counts as read.
     const nearBottom = msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight < 80;
     stickToBottom = nearBottom && isLatest;
     jumpEl.hidden = stickToBottom;
     return true;
   }
-  const scrollBottom = () => { msgsEl.scrollTop = msgsEl.scrollHeight; stickToBottom = true; jumpEl.hidden = true; };
+  // Where the view was last sent: 'bottom' or a message id. Images loading after a repaint, and the
+  // keyboard dipping on the Send tap (the list resizes), both move the target away, so it is applied
+  // again on each of those until the user touches the list.
+  let follow = null;
+  const scrollBottom = () => { msgsEl.scrollTop = msgsEl.scrollHeight; stickToBottom = true; jumpEl.hidden = true; follow = 'bottom'; };
+  for (const ev of ['touchstart', 'wheel']) msgsEl.addEventListener(ev, () => { follow = null; }, { passive: true });
+  const refollow = () => {
+    if (follow === 'bottom') { if (isLatest) scrollBottom(); } else if (follow !== null) msgsEl.querySelector(`[data-id="${follow}"]`)?.scrollIntoView({ block: 'center' });
+  };
+  msgsEl.addEventListener('load', refollow, true);
+  const resizeWatch = typeof ResizeObserver === 'function' ? new ResizeObserver(refollow) : null;
+  resizeWatch?.observe(msgsEl);
   function scrollToMessage(id) {
     const node = msgsEl.querySelector(`[data-id="${id}"]`);
     if (!node) return false;
     node.scrollIntoView({ block: 'center' });
+    follow = id;
     node.classList.add('m-flash');
     setTimeout(() => node.classList.remove('m-flash'), 1500);
     return true;
@@ -445,7 +464,20 @@ export function mountChat(el, params) {
     paint(); scrollBottom(); markReadSoon();
   }));
 
-  const ctxForSheets = () => ({ kind, scopeType, scopeId, params, detail, channel, thread, canSend, canManage, canEditOthers, dm: dm(), composer, scrollToMessage });
+  const ctxForSheets = () => ({ customEmoji: myEmoji(), kind, scopeType, scopeId, params, detail, channel, thread, canSend, canManage, canEditOthers, dm: dm(), composer, scrollToMessage });
+
+  async function showEdited(message) {
+    if (messages.some((m) => m.id === message.id)) {
+      messages = applyUpdate(messages, message);
+      paint({ anchor: true });
+    } else {
+      params = { ...params, jumpToMessageId: message.id };
+      try { await loadInitial(); } catch (err) { handleError(err, 'm.loadFailed'); return; }
+    }
+    scrollToMessage(message.id);
+    stickToBottom = isLatest && msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight < 80;
+    jumpEl.hidden = stickToBottom;
+  }
 
   async function boot() {
     let info;
@@ -455,7 +487,7 @@ export function mountChat(el, params) {
       placeholder: info.placeholder, canSend, readOnlyText: thread?.archived ? t('m.threadArchived') : t('m.readOnly'),
       attachEnabled: true,
       onInput: paintHints,
-      onEmoji: (insert) => openEmojiSheet(detail?.customEmoji || [], insert),
+      onEmoji: (insert) => openEmojiSheet(myEmoji(), insert, kind === 'dm' ? t('emojiPicker.serverEmoji') : undefined),
       onSend: async ({ text, files }) => {
         if (!files.length && text.startsWith('/')) {
           const handled = await runSlash(text);
@@ -474,7 +506,12 @@ export function mountChat(el, params) {
         deliver(p);
         return true;
       },
-      onEdit: async (msg, text) => { try { await api.editMessage(msg.id, text); return true; } catch (err) { handleError(err); return false; } },
+      onEdit: async (msg, text) => {
+        let res;
+        try { res = await api.editMessage(msg.id, text); } catch (err) { handleError(err); return false; }
+        await showEdited(res.message);
+        return true;
+      },
       onVoice: async ({ file, durationMs, replyToMessageId }) => {
         const p = { key: `${Date.now()}${Math.random().toString(36).slice(2, 6)}`, text: '', files: [file], voiceDurationMs: durationMs, replyToMessageId };
         pending.push(p); paint(); scrollBottom();
@@ -543,7 +580,7 @@ export function mountChat(el, params) {
   function emojiCandidates(q) {
     const out = [];
     const taken = new Set();
-    for (const e of detail?.customEmoji || []) {
+    for (const e of myEmoji()) {
       taken.add(e.name.toLowerCase());
       out.push({ label: e.name, image: e.image_path, insert: `:${e.name}:` });
     }
@@ -785,11 +822,17 @@ export function mountChat(el, params) {
     if (msg && dx < -70 && dy < 30 && canSend) composer.setReply(msg);
   }, { passive: true });
 
-  state.mOpenScope = scopeKey;
+  // The Android app is told which conversation is on screen: only that one stays silent.
+  const setOpen = (open) => {
+    if (open) state.mOpenScope = scopeKey;
+    else if (state.mOpenScope === scopeKey) state.mOpenScope = null;
+    androidBridge()?.setOpenScope?.(state.mOpenScope || '');
+  };
+  setOpen(true);
   boot();
   return {
-    destroy() { destroyed = true; saveCached(); clearTimeout(readTimer); offs.forEach((off) => off()); if (state.mOpenScope === scopeKey) state.mOpenScope = null; },
-    onShow() { state.mOpenScope = scopeKey; markReadSoon(); },
-    onHide() { if (state.mOpenScope === scopeKey) state.mOpenScope = null; },
+    destroy() { destroyed = true; resizeWatch?.disconnect(); saveCached(); clearTimeout(readTimer); offs.forEach((off) => off()); setOpen(false); },
+    onShow() { setOpen(true); markReadSoon(); },
+    onHide() { setOpen(false); },
   };
 }

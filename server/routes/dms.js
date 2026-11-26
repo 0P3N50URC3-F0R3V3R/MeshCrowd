@@ -25,7 +25,7 @@ const prune = require('../lib/prune');
 const { enqueueEvent } = require('../lib/federationOutbox');
 const { ownDomain } = require('../lib/federationOutboxWorker');
 const { readContent } = require('../lib/messageLimits');
-const { stickersForUser, userCanUseSticker } = require('../lib/stickers');
+const { stickersForUser, userCanUseSticker, emojiForDm } = require('../lib/stickers');
 const { afterResponse } = require('../lib/deferred');
 
 const router = express.Router();
@@ -337,6 +337,10 @@ router.delete('/:dmId', loadDm, requireGroupCreator, (req, res) => {
 
 router.get('/stickers', (req, res) => {
   res.json({ stickers: stickersForUser(req.user.id) });
+});
+
+router.get('/:dmId/emoji', loadDm, (req, res) => {
+  res.json({ emoji: emojiForDm(req.dm.id) });
 });
 
 router.get('/:dmId/messages', loadDm, (req, res) => {

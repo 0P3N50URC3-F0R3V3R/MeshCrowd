@@ -37,6 +37,12 @@ object NotificationMapper {
         return out
     }
 
+    // The conversation on screen, as the page reports it ("dm:11", "channel:3", "thread:9").
+    fun isOnScreen(item: JSONObject, openScope: String): Boolean {
+        val message = item.optJSONObject("message") ?: return false
+        return openScope == "${message.optString("scopeType")}:${message.optLong("scopeId", -1)}"
+    }
+
     private const val MAX_BODY = 200
 
     // The server's cursor endpoint for clients without an open WebSocket.

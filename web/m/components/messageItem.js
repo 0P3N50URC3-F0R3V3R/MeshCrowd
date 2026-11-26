@@ -49,10 +49,10 @@ function reactionGlyph(emoji, customEmoji) {
   return custom ? `<img class="custom-emoji" src="${escapeHtml(custom.image_path)}" alt="${escapeHtml(emoji)}">` : escapeHtml(emoji);
 }
 
-function reactionsHtml(msg, meId, customEmoji) {
+function reactionsHtml(msg, meId, emojiOfReaction) {
   if (!msg.reactions?.length) return '';
   return `<div class="m-reacts">${msg.reactions.map((r) => `
-    <button class="m-react${r.userIds.includes(meId) ? ' mine' : ''}" data-react="${escapeHtml(r.emoji)}">${reactionGlyph(r.emoji, customEmoji)} <span>${r.userIds.length}</span></button>`).join('')}</div>`;
+    <button class="m-react${r.userIds.includes(meId) ? ' mine' : ''}" data-react="${escapeHtml(r.emoji)}">${reactionGlyph(r.emoji, emojiOfReaction(r))} <span>${r.userIds.length}</span></button>`).join('')}</div>`;
 }
 
 export function authorDisplay(msg, detail) {
@@ -69,8 +69,9 @@ export function messageHtml(msg, ctx) {
   const compact = shouldCompact(ctx.prev, msg);
   const member = ctx.detail?.members?.find((m) => m.user.id === msg.author.id);
   const fx = member ? memberNameFx(ctx.detail.roles, member) : (ctx.detail ? {} : personalFx(msg.author));
+  const customEmoji = ctx.emojiOf ? ctx.emojiOf(msg.author.id) : ctx.detail?.customEmoji;
   const editedTag = msg.editedAt ? `<span class="m-edited">${msg.editedBy ? t('m.editedBy', { name: escapeHtml(msg.editedBy.displayName) }) : t('m.edited')}</span>` : '';
-  const text = (msg.content && !msg.checklist ? `<div class="m-text${isEmojiOnly(msg.content, ctx.detail?.customEmoji) ? ' m-emoji-only' : ''}">${renderMessageContent(msg.content, { channels: ctx.detail?.channels, customEmoji: ctx.detail?.customEmoji, rawHtmlEnabled: !!ctx.detail?.server?.raw_html_enabled, mentionNames: ctx.mentionNames })}</div>` : '');
+  const text = (msg.content && !msg.checklist ? `<div class="m-text${isEmojiOnly(msg.content, customEmoji) ? ' m-emoji-only' : ''}">${renderMessageContent(msg.content, { channels: ctx.detail?.channels, customEmoji, rawHtmlEnabled: !!ctx.detail?.server?.raw_html_enabled, mentionNames: ctx.mentionNames })}</div>` : '');
   return `
   <div class="m-msg${compact ? ' compact' : ''}${msg.author.id === ctx.meId ? ' mine' : ''}" data-id="${msg.id}">
     <div class="m-msg-avatar" ${compact ? '' : `data-user="${msg.author.id}"`}>${compact ? '' : avatarHtml(msg.author, 36)}</div>
@@ -83,7 +84,7 @@ export function messageHtml(msg, ctx) {
       ${text}${editedTag}
       ${msg.sound ? soundHtml(msg.sound) : ''}
       ${msg.sticker ? `<img class="m-sticker anim-limit" src="${escapeHtml(msg.sticker.imagePath)}" alt="${escapeHtml(msg.sticker.name)}">` : ''}
-      ${attachmentsHtml(msg)}${msg.poll ? pollHtml(msg.poll, ctx.meId, msg.id) : ''}${msg.checklist ? checklistHtml(msg.checklist, ctx.meId, undefined, msg.content) : ''}${embedHtml(msg.embed)}${reactionsHtml(msg, ctx.meId, ctx.detail?.customEmoji)}
+      ${attachmentsHtml(msg)}${msg.poll ? pollHtml(msg.poll, ctx.meId, msg.id) : ''}${msg.checklist ? checklistHtml(msg.checklist, ctx.meId, undefined, msg.content) : ''}${embedHtml(msg.embed)}${reactionsHtml(msg, ctx.meId, ctx.reactionEmoji || (() => ctx.detail?.customEmoji))}
     </div>
   </div>`;
 }

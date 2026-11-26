@@ -424,6 +424,7 @@ export const api = {
   addDmMembers: (dmId, userIds, name) => post(`/api/dms/${dmId}/members`, { userIds, name }),
   listDmMessages: (dmId, { before, after, limit, around } = {}) => get(`/api/dms/${dmId}/messages`, { before, after, limit, around }),
   listAvailableStickers: () => get('/api/dms/stickers'),
+  listDmEmoji: (dmId) => get(`/api/dms/${dmId}/emoji`),
   sendDmMessage: (dmId, { content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal }) =>
     uploadMessage(`/api/dms/${dmId}/messages`, content, files, onProgress, replyToMessageId, stickerId, voiceDurationMs, signal),
   linkPreview: (url) => post('/api/link-preview', { url }),

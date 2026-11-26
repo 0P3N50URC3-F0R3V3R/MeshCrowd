@@ -17,6 +17,10 @@ export function androidBridge() {
     takeShare() { try { return b.takeShare() || ''; } catch { return ''; } },
     setShareTargets(list) { try { if (typeof b.setShareTargets === 'function') b.setShareTargets(JSON.stringify(list)); } catch { /* not in the app */ } },
     finishShare() { try { b.finishShare(); } catch { /* not in the app */ } },
+    // Notifications while the app is on screen (older APKs lack these).
+    hasNativeNotify: typeof b.setOpenScope === 'function',
+    setOpenScope(scope) { if (typeof b.setOpenScope === 'function') b.setOpenScope(scope); },
+    checkNotifications() { if (typeof b.checkNotifications === 'function') b.checkNotifications(); },
     // UnifiedPush (older APKs lack these).
     hasPushSupport: typeof b.pushEnable === 'function',
     pushDistributors() { try { return JSON.parse(b.pushDistributors()); } catch { return []; } },

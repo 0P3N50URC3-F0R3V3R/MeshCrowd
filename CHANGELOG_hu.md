@@ -2,6 +2,18 @@
 
 A MeshCrowd minden jelentős változása. A legújabb elöl. Formátum: [Keep a Changelog](https://keepachangelog.com/).
 
+### 2026-11-26
+#### Módosítva
+- Android alkalmazás 3.28: "A MeshCrowd csatlakoztatva van" értesítés mostantól nyitott alkalmazásnál is megmarad, nem csak a háttérben.
+- Android alkalmazás 3.28: az új üzenetek az alkalmazás használata közben is értesítenek. Csak a képernyőn lévő beszélgetés marad csendben; a többi csatorna, szál és privát üzenet ugyanúgy értesít, mint a háttérben, a némítás, a "csak említések" és az értesítési rács beállításai szerint. Egy beszélgetés megnyitása eltünteti az értesítéseit. Az új APK és a szerver/web telepítése kell hozzá; régebbi szerverrel az alkalmazás a korábbi módon működik. A service worker gyorsítótár most v14.
+
+#### Javítva
+- A képelőnézetek minden kliensen megtartják a saját arányukat. A telefonos felület oldalra nyújtotta őket, majd levágta a magasságukat; az asztali, webes, Electron és C# kliens körbevágta őket. A kis képek már nem nagyítódnak fel.
+- Az egyéni emojik a privát üzenetekben csak `:név:` formában jelentek meg, és a választóban nem voltak szerver emojik. A privát üzenetekben mostantól elérhetők a szervereid emojijai, és minden üzenet a szerzője szervereinek képét mutatja (új `GET /api/dms/:dmId/emoji`, ezért a szervert frissíteni és újraindítani kell).
+- Telefonos emoji választó: a Legutóbbiak sor `:név:` szövegként írta ki az egyéni emojikat.
+- Az egyéni emoji külön sorba került a szövegen belüli helye helyett.
+- Telefonos felület: új vagy szerkesztett üzenet elküldése után a csevegés az adott üzenethez ugrik, nyitott billentyűzettel és még töltődő képek mellett is.
+
 ### 2026-11-25
 #### Hozzáadva
 - Android alkalmazás 3.26: "Küldés a MeshCrowdnak". Az alkalmazás megjelenik más appok (böngésző, galéria, fájlkezelő) rendszer Megosztás menüjében: linkek, szöveg, képek, videók, hang és bármilyen fájl, akár egyszerre többet is. Megnyílik a "Küldés ide..." lap előnézettel, kereséssel, a bejelentkezett szerver privát üzeneteivel és írható szöveges csatornáival (legutóbbiak elöl, mindegyik avatárral vagy szerverikonnal), és egy opcionális megjegyzéssel. A fájlok a szokásos feltöltésen mennek át (a szerver feltöltési korlátja érvényes, és érthetően jelezzük), semmi nem megy el a Küldés gomb előtt, a Mégse nem küld semmit, és utána visszakerülsz abba az appba, ahonnan megosztottál. A négy legutóbbi úti cél Direct Share célként is megjelenik a rendszer megosztási lapján. Csak content:// fájlok fogadhatók, és az oldal csak a függőben lévő megosztás fájljait olvashatja. A telefonos weboldal megkapja a lapot (a szerver/web telepítése kell hozzá; a service worker gyorsítótár most v13).

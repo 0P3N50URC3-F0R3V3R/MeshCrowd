@@ -22,6 +22,17 @@ class NotificationMapperTest {
         assertEquals(true, m.mentioned)
     }
 
+    @Test fun onlyTheConversationOnScreenCountsAsBeingRead() {
+        val reply = item("""{"scopeType":"channel","scopeId":3,"message":{"id":50,"scopeType":"thread","scopeId":9}}""")
+        assertEquals(true, NotificationMapper.isOnScreen(reply, "thread:9"))
+        assertEquals(false, NotificationMapper.isOnScreen(reply, "channel:3"))
+        assertEquals(false, NotificationMapper.isOnScreen(reply, ""))
+        val dm = item("""{"scopeType":"dm","scopeId":11,"message":{"id":51,"scopeType":"dm","scopeId":11}}""")
+        assertEquals(true, NotificationMapper.isOnScreen(dm, "dm:11"))
+        assertEquals(false, NotificationMapper.isOnScreen(dm, "dm:12"))
+        assertEquals(false, NotificationMapper.isOnScreen(item("""{"scopeType":"dm"}"""), "dm:11"))
+    }
+
     @Test fun readPositionRetiresOnlyMessagesAtOrBelowIt() {
         val read = NotificationMapper.readPositions(org.json.JSONArray("""[{"scopeType":"dm","scopeId":11,"lastReadMessageId":60}]"""))
         assertEquals(true, NotificationMapper.isRetiredBy("dm:11", 60, read))

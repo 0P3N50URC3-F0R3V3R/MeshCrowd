@@ -73,7 +73,7 @@ export async function openMessageSheet(msg, ctx) {
   if (id.startsWith('emoji:')) return toggleReaction(msg, id.slice(6));
   try {
     switch (id) {
-      case 'react': { const e = await openEmojiSheet(ctx.detail?.customEmoji || []); if (e) await toggleReaction(msg, e); break; }
+      case 'react': { const e = await openEmojiSheet(ctx.customEmoji || [], null, ctx.kind === 'dm' ? t('emojiPicker.serverEmoji') : undefined); if (e) await toggleReaction(msg, e); break; }
       case 'reply': ctx.composer.setReply(msg); break;
       case 'copy': await copyText(msg.content); toast(t('m.copied')); break;
       case 'edit': ctx.composer.setEdit(msg); break;

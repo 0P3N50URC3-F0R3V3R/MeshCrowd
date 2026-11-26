@@ -25,13 +25,13 @@ function pushRecent(e) {
 // unicode character for a built-in emoji, or a ":name:" shortcode for a server custom emoji.
 // `customEmoji` (optional, [{id, name, image_path}]) adds a "This Server" tab of uploaded images —
 // self-hosted (data/emoji/), no third-party emoji service involved.
-export function openEmojiPicker(anchorEl, onPick, customEmoji = [], onClose) {
+export function openEmojiPicker(anchorEl, onPick, customEmoji = [], onClose, customLabel = t('emojiPicker.thisServer')) {
   document.querySelectorAll('.emoji-picker').forEach((n) => n.remove());
 
   const picker = document.createElement('div');
   picker.className = 'emoji-picker';
   const categories = customEmoji.length
-    ? [{ id: 'custom', label: t('emojiPicker.thisServer'), icon: '⭐', custom: true, emoji: customEmoji }, ...getSupportedCategories()]
+    ? [{ id: 'custom', label: customLabel, icon: '⭐', custom: true, emoji: customEmoji }, ...getSupportedCategories()]
     : getSupportedCategories();
   let activeCat = categories[0].id;
   let query = '';

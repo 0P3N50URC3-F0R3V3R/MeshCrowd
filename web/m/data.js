@@ -7,6 +7,7 @@ import { wireUserSync } from '../js/userSync.js';
 import { t } from '../js/i18n.js';
 import { toast } from '../js/utils.js';
 import { readDetail, writeDetail } from './lib/stateCache.js';
+import { androidBridge } from './lib/androidBridge.js';
 import { notifySound } from '../js/notifySound.js';
 import { eventNotice } from '../js/notifyEvent.mjs';
 import { refreshRemoteServers } from '../js/views/remoteServer.js';
@@ -132,7 +133,9 @@ export function wireRealtime() {
     }
   });
   bus.on('ws:notify', (payload) => {
-    if (shouldPlayNotifySound(payload.gridEvent) && (document.hidden || !state.mOpenScope || state.mOpenScope !== `${payload.scopeType}:${payload.scopeId}`)) notifySound.play();
+    // In the Android app the system notification (with its own sound) announces it.
+    androidBridge()?.checkNotifications?.();
+    if (!androidBridge()?.hasNativeNotify && shouldPlayNotifySound(payload.gridEvent) && (document.hidden || !state.mOpenScope || state.mOpenScope !== `${payload.scopeType}:${payload.scopeId}`)) notifySound.play();
     const author = payload.message.author;
     const notice = eventNotice(payload, t);
     const title = notice ? notice.title : payload.scopeType === 'dm'
@@ -205,5 +208,6 @@ export function wireRealtime() {
     resync();
     bus.emit('m:resume');
   });
+  androidBridge()?.setOpenScope?.(state.mOpenScope || '');
   ws.connect();
 }

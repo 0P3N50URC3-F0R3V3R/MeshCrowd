@@ -29,6 +29,20 @@ class AndroidBridge(private val activity: MainActivity) {
         settings.serverName = name.trim().take(80).ifEmpty { null }
     }
 
+    // The page reports which conversation is on screen, and asks for a check when something new arrived:
+    // everything outside that conversation is then announced like in the background.
+    @JavascriptInterface
+    fun setOpenScope(scope: String) {
+        NotificationPoller.openScope = scope
+        NotificationHelper.cancelScope(activity, scope)
+    }
+
+    @JavascriptInterface
+    fun checkNotifications() {
+        val app = activity.applicationContext
+        kotlin.concurrent.thread { try { NotificationPoller.poll(app) } catch (_: Exception) { /* the next check catches up */ } }
+    }
+
     @JavascriptInterface
     fun setPollMinutes(minutes: Int) {
         settings.pollMinutes = minutes

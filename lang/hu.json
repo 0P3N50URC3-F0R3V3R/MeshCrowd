@@ -1195,6 +1195,7 @@
     "inVoiceChannel": "Egy hangcsatornában van"
   },
   "emojiPicker": {
+    "serverEmoji": "Szerver emojik",
     "thisServer": "Ez a szerver",
     "noMatchingCategories": "Nincs egyező kategória",
     "searchPlaceholder": "Kategóriák keresése"

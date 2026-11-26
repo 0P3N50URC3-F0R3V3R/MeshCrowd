@@ -35,6 +35,7 @@ import { openScheduleModal } from './scheduled.js';
 import { openSoundboardPicker } from './soundboardPicker.js';
 import { playSoundboardAudio } from '../soundboardPrefs.js';
 import { canRecordVoice, openRecorderBar, voiceMessageHtml, wireVoicePlayers } from '../voiceMessage.js';
+import { emojiFor, emojiForReaction } from '../dmEmoji.mjs';
 
 const GROUP_WINDOW_MS = 7 * 60 * 1000;
 const maxChars = () => state.config.maxMessageChars || 15000;
@@ -71,6 +72,9 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   let typingTimer = null;
 
   let wsQueue = Promise.resolve();
+  let dmEmoji = [];
+  // In a DM a message shows its author's server emoji; scope.customEmoji holds our own, for the picker.
+  const emojiOf = (userId) => (scope.kind === 'dm' ? emojiFor(dmEmoji, userId) : scope.customEmoji);
 
   const scopeType = scope.kind === 'dm' ? 'dm' : scope.kind === 'thread' ? 'thread' : 'channel';
   const scopeId = scope.kind === 'dm' ? scope.dmId : scope.kind === 'thread' ? scope.threadId : scope.channelId;
@@ -237,6 +241,18 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.channel-ref')) { e.preventDefault(); e.target.click(); }
   });
   listEl.addEventListener('contextmenu', onListContextMenu);
+
+  if (scope.kind === 'dm') {
+    api.listDmEmoji(scope.dmId).then((r) => {
+      dmEmoji = r.emoji;
+      scope.customEmoji = emojiFor(dmEmoji, state.me.id);
+      if (!loading && messages.length) {
+        const atBottom = isNearBottom();
+        renderKeepingPosition();
+        if (atBottom && !hasNewer) scrollToBottom();
+      }
+    }).catch(() => {});
+  }
 
   function fetchMessages(opts) {
     if (scope.kind === 'dm') return api.listDmMessages(scope.dmId, opts);
@@ -567,8 +583,9 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
       </div>`);
     }
     if (m.content && !m.checklist) {
-      const emojiOnly = isEmojiOnly(m.content, scope.customEmoji) && !m.poll;
-      parts.push(`<div class="msg-line ${emojiOnly ? 'msg-emoji-only' : ''}">${renderMessageContent(m.content, { channels: scope.channels, customEmoji: scope.customEmoji, rawHtmlEnabled: scope.rawHtmlEnabled, mentionNames: scopeMentionNames() })}${m.editedAt ? `<span class="edited-tag${m.editedBy ? ' edited-by' : ''}">${m.editedBy ? t('chat.editedByTag', { name: escapeHtml(m.editedBy.displayName) }) : t('chat.editedTag')}</span>` : ''}</div>`);
+      const customEmoji = emojiOf(m.author.id);
+      const emojiOnly = isEmojiOnly(m.content, customEmoji) && !m.poll;
+      parts.push(`<div class="msg-line ${emojiOnly ? 'msg-emoji-only' : ''}">${renderMessageContent(m.content, { channels: scope.channels, customEmoji, rawHtmlEnabled: scope.rawHtmlEnabled, mentionNames: scopeMentionNames() })}${m.editedAt ? `<span class="edited-tag${m.editedBy ? ' edited-by' : ''}">${m.editedBy ? t('chat.editedByTag', { name: escapeHtml(m.editedBy.displayName) }) : t('chat.editedTag')}</span>` : ''}</div>`);
     }
     if (m.sticker) parts.push(`<img class="sticker-message anim-limit" src="${escapeHtml(m.sticker.imagePath)}" alt="${escapeHtml(m.sticker.name)}" title="${escapeHtml(m.sticker.name)}">`);
     if (m.sound) parts.push(`<div class="sound-message"><button type="button" class="btn sound-play" data-sound-src="${escapeHtml(m.sound.audioPath)}" title="${escapeHtml(m.sound.name)}">${icons.music(18)} ${m.sound.emoji ? `${escapeHtml(m.sound.emoji)} ` : ''}${escapeHtml(m.sound.name)}</button></div>`);
@@ -598,9 +615,13 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     </div>`;
   }
 
-  function reactionGlyphHtml(emoji) {
+  const customLabel = () => (scope.kind === 'dm' ? t('emojiPicker.serverEmoji') : undefined);
+
+  function reactionGlyphHtml(reaction) {
+    const { emoji } = reaction;
+    const list = scope.kind === 'dm' ? emojiForReaction(dmEmoji, reaction) : scope.customEmoji;
     const m = /^:([a-zA-Z0-9_]{2,32}):$/.exec(emoji);
-    const custom = m && (scope.customEmoji || []).find((e) => e.name.toLowerCase() === m[1].toLowerCase());
+    const custom = m && (list || []).find((e) => e.name.toLowerCase() === m[1].toLowerCase());
     return custom
       ? `<img class="custom-emoji" src="${escapeHtml(custom.image_path)}" alt="${escapeHtml(emoji)}">`
       : `<span>${escapeHtml(emoji)}</span>`;
@@ -611,7 +632,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     return `<div class="msg-reactions">${m.reactions.map((r) => {
       const mine = r.userIds.includes(state.me.id);
       return `<button class="reaction-pill ${mine ? 'mine' : ''}" data-reaction="${escapeHtml(r.emoji)}" title="${escapeHtml(t('chat.reactedTitle', { count: r.userIds.length }))}">
-        ${reactionGlyphHtml(r.emoji)}<span class="count">${r.userIds.length}</span>
+        ${reactionGlyphHtml(r)}<span class="count">${r.userIds.length}</span>
       </button>`;
     }).join('')}</div>`;
   }
@@ -1093,7 +1114,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
   }
 
   function openReactionPicker(anchor, msg) {
-    openEmojiPicker(anchor, (emoji) => toggleReaction(msg, emoji), scope.customEmoji || [], focusComposer);
+    openEmojiPicker(anchor, (emoji) => toggleReaction(msg, emoji), scope.customEmoji || [], focusComposer, customLabel());
   }
 
   function openLightbox(url, fileName) {
@@ -1247,7 +1268,7 @@ export function mountChat(container, scope, { emptyTitle, emptyBody } = {}) {
     emojiBtn.addEventListener('click', () => {
       openEmojiPicker(emojiBtn, (emoji) => {
         insertAtCursor(input, emoji);
-      }, scope.customEmoji || [], focusComposer);
+      }, scope.customEmoji || [], focusComposer, customLabel());
     });
 
     const stickerBtn = composerWrap.querySelector('#btn-sticker');

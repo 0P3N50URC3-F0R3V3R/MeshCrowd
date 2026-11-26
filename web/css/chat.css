@@ -171,7 +171,7 @@
 }
 .msg-line .edited-tag { font-size: 10px; color: var(--text-faint); margin-left: 4px; }
 .msg-line .edited-tag.edited-by { line-height: 1; }
-.custom-emoji { width: 1.375em; height: 1.375em; object-fit: contain; vertical-align: bottom; margin: 0 1px; }
+.custom-emoji { display: inline-block; width: 1.375em; height: 1.375em; object-fit: contain; vertical-align: bottom; margin: 0 1px; }
 .msg-line a { color: var(--link); }
 .msg-line .mention {
   background: rgba(13, 148, 136, 0.15); color: var(--brand); border-radius: 3px; padding: 0 2px; font-weight: 500;
@@ -246,10 +246,11 @@
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--border-subtle);
-  max-width: 300px;
+  width: fit-content;
+  max-width: min(100%, 300px);
   cursor: pointer;
 }
-.attachment-image img { width: 100%; max-height: 240px; object-fit: cover; display: block; }
+.attachment-image img { width: auto; height: auto; max-width: 100%; max-height: 300px; display: block; }
 .gif-toggle {
   position: absolute;
   left: 8px;

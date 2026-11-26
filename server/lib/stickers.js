@@ -59,6 +59,22 @@ function stickersForUser(userId) {
   ).all(userId).map(({ serverName, ...st }) => ({ ...st, serverName }));
 }
 
+// Custom emoji of every server a conversation member belongs to, each with the members who have it.
+function emojiForDm(dmId) {
+  const rows = db.prepare(
+    `SELECT e.id, e.name, e.image_path, sm.user_id AS userId FROM custom_emoji e
+       JOIN server_members sm ON sm.server_id = e.server_id
+       JOIN dm_members dm ON dm.user_id = sm.user_id AND dm.dm_channel_id = ?
+      ORDER BY e.server_id, e.id`
+  ).all(dmId);
+  const byId = new Map();
+  for (const { userId, ...e } of rows) {
+    if (!byId.has(e.id)) byId.set(e.id, { ...e, userIds: [] });
+    byId.get(e.id).userIds.push(userId);
+  }
+  return [...byId.values()];
+}
+
 function userCanUseSticker(userId, stickerId) {
   return !!db.prepare(
     `SELECT 1 FROM stickers st JOIN server_members sm ON sm.server_id = st.server_id AND sm.user_id = ?
@@ -66,4 +82,4 @@ function userCanUseSticker(userId, stickerId) {
   ).get(userId, Number(stickerId));
 }
 
-module.exports = { uploadSticker, createSticker, deleteSticker, stickersForUser, userCanUseSticker };
+module.exports = { uploadSticker, createSticker, deleteSticker, stickersForUser, userCanUseSticker, emojiForDm };

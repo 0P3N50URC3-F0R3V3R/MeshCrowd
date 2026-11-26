@@ -1195,6 +1195,7 @@
     "inVoiceChannel": "In a voice channel"
   },
   "emojiPicker": {
+    "serverEmoji": "Server emoji",
     "thisServer": "This Server",
     "noMatchingCategories": "No matching categories",
     "searchPlaceholder": "Search categories"

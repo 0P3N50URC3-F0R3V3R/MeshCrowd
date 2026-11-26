@@ -17,12 +17,16 @@ function pushRecent(e) {
 
 // Resolves to a unicode character, or ":name:" for a server custom emoji.
 // With `onPick` the sheet stays open after each tap (so several can be added) and resolves null when dismissed.
-export function openEmojiSheet(customEmoji = [], onPick = null) {
+export function openEmojiSheet(customEmoji = [], onPick = null, customLabel = t('emojiPicker.thisServer')) {
   return new Promise((resolve) => {
     let chosen = null;
-    const recent = recentEmoji();
+    // A recent custom emoji is stored as ":name:": draw its image, and leave it out where it does not exist.
+    const recent = recentEmoji().map((v) => {
+      const m = /^:(.+):$/.exec(v);
+      return m ? customEmoji.find((c) => c.name === m[1]) : v;
+    }).filter(Boolean);
     const cats = [
-      customEmoji.length && { id: 'custom', icon: '⭐', label: t('emojiPicker.thisServer'), custom: customEmoji },
+      customEmoji.length && { id: 'custom', icon: '⭐', label: customLabel, custom: customEmoji },
       recent.length && { id: 'recent', icon: '🕘', label: t('m.emojiRecent'), emoji: recent },
       ...EMOJI_CATEGORIES.filter((c) => c.id !== 'all').map((c) => ({ ...c, emoji: c.emoji.filter(isEmojiSupported) })).filter((c) => c.emoji.length),
     ].filter(Boolean);

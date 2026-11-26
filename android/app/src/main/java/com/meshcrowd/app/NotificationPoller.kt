@@ -5,11 +5,15 @@ import android.webkit.CookieManager
 import org.json.JSONObject
 
 object NotificationPoller {
-    // True while the WebView is on screen: new messages are then visible in the page itself.
+    // True while the WebView is on screen.
     @Volatile var appVisible = false
 
-    // Messages that arrived while the page was on screen were seen there; without moving the cursor past
-    // them the next background poll announced them as new.
+    // The conversation the page shows ("" = none). null = a server whose page does not report it, where
+    // everything stays silent while the app is on screen.
+    @Volatile var openScope: String? = null
+
+    // For pages that do not report the open conversation: messages that arrived while the page was on screen
+    // were seen there; without moving the cursor past them the next background poll announced them as new.
     fun markSeen(context: Context) {
         val settings = SettingsStore(context)
         val origin = settings.origin ?: return
@@ -23,6 +27,8 @@ object NotificationPoller {
 
     // One poll of GET /api/notifications/poll?since=<lastId>. Returns how many notifications were shown.
     // The very first poll only records the newest id so an old backlog never floods the shade.
+    // Synchronized: the page, the timers and the services all poll, and two at once would announce twice.
+    @Synchronized
     fun poll(context: Context): Int {
         val settings = SettingsStore(context)
         val origin = settings.origin ?: return 0
@@ -41,10 +47,13 @@ object NotificationPoller {
         val labels = NotificationMapper.Labels(context.getString(R.string.notify_encrypted), context.getString(R.string.notify_attachment), context.getString(R.string.notify_pinned), context.getString(R.string.notify_thread), context.getString(R.string.notify_sticker))
         NotificationHelper.cancelRead(context, NotificationMapper.readPositions(json.optJSONArray("read")))
         var shown = 0
-        if (since > 0 && items != null && !appVisible) {
+        val onScreen = if (appVisible) openScope else ""
+        if (since > 0 && items != null && onScreen != null) {
             NotificationHelper.createChannels(context)
             for (i in 0 until items.length()) {
-                val mapped = NotificationMapper.map(items.getJSONObject(i), labels) ?: continue
+                val item = items.getJSONObject(i)
+                if (NotificationMapper.isOnScreen(item, onScreen)) continue
+                val mapped = NotificationMapper.map(item, labels) ?: continue
                 NotificationHelper.showMessage(context, mapped)
                 shown++
             }

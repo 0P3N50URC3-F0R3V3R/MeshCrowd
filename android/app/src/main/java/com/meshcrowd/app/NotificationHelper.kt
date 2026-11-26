@@ -71,6 +71,15 @@ object NotificationHelper {
         }
     }
 
+    // The user is now reading this conversation.
+    fun cancelScope(context: Context, readScope: String) {
+        if (readScope.isEmpty()) return
+        val nm = context.getSystemService(NotificationManager::class.java)
+        nm.activeNotifications
+            .filter { it.notification.channelId == CHANNEL_MESSAGES && it.notification.extras.getString(EXTRA_READ_SCOPE) == readScope }
+            .forEach { nm.cancel(it.tag, it.id) }
+    }
+
     // Opening the app is how the user sees what the background poller announced; leaving those
     // notifications up afterwards made the shade keep showing messages that were already read.
     fun cancelMessages(context: Context) {
