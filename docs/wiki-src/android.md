@@ -72,7 +72,18 @@ The app polls your server itself, so it needs no Firebase or Google Play Service
 | Fast mode (on by default) | A foreground service with a permanent notification, polling every 1 to 1440 minutes | Heavier |
 | UnifiedPush | The server wakes the phone through a distributor app such as ntfy | Light and instant |
 
-The permanent notification of fast mode comes back by itself if you swipe it away (Android 14 and newer allow dismissing it). While the app is open, messages arrive instantly over the WebSocket. Encrypted DMs show only a generic "New encrypted message". Tapping a notification opens that conversation. Notification and app texts follow the phone's language (English and Hungarian). Notifications are only sent for messages that arrived while the app was in the background, never for what you already saw with the app open. The **Notifications** tab has a trash button that clears the whole list, and the tab only lists messages from conversations you are not looking at.
+The permanent notification of fast mode comes back by itself if you swipe it away (Android 14 and newer allow dismissing it). Encrypted DMs show only a generic "New encrypted message". Tapping a notification opens that conversation. Notification and app texts follow the phone's language (English and Hungarian). The **Notifications** tab has a trash button that clears the whole list, and the tab only lists messages from conversations you are not looking at.
+
+### While you use the app
+
+From 3.28, with an up-to-date server:
+
+- The **MeshCrowd is connected** notification stays up while the app is open as well as in the background. It reads **MeshCrowd is offline** when the phone has no internet connection. With fast mode on you also see its own permanent notification.
+- Messages arrive instantly over the WebSocket. Only the conversation you are looking at stays silent: other channels, threads and direct messages raise a system notification as they do in the background.
+- Your settings still decide what notifies you: muted conversations, **mentions only** and [the notification grid](messaging.html#the-notification-grid).
+- Opening a conversation removes its notifications.
+
+With an older server, nothing is announced while the app is open.
 
 ### UnifiedPush
 
